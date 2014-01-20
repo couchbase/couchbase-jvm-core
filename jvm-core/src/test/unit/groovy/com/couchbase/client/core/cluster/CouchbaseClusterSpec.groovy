@@ -50,7 +50,7 @@ class CouchbaseClusterSpec extends Specification {
 
     def "A CouchbaseCluster should add a node if instructed"() {
         when:
-        def responsePromise = (Promise) cluster.send(new AddNodeRequest(new InetSocketAddress(11210)));
+        def responsePromise = cluster.send(new AddNodeRequest(new InetSocketAddress(11210)));
 
         then:
         1 * registry.select(_) >> new ArrayList<Registration<Node>>()
@@ -66,7 +66,7 @@ class CouchbaseClusterSpec extends Specification {
         def request = new AddNodeRequest(new InetSocketAddress(11210))
 
         when:
-        def responsePromise = (Promise) cluster.send(request);
+        def responsePromise = cluster.send(request);
 
         then:
         1 * registry.select(_) >> registries
@@ -77,7 +77,7 @@ class CouchbaseClusterSpec extends Specification {
         }
 
         when:
-        responsePromise = (Promise) cluster.send(request);
+        responsePromise = cluster.send(request);
 
         then:
         1 * registry.select(_) >> registries
@@ -92,7 +92,7 @@ class CouchbaseClusterSpec extends Specification {
         def request = new RemoveNodeRequest(new InetSocketAddress(11210))
 
         when:
-        def responsePromise = (Promise) cluster.send(request)
+        def responsePromise = cluster.send(request)
 
         then:
         1 * registry.select(_) >> new ArrayList<Registration<Node>>()
@@ -110,7 +110,7 @@ class CouchbaseClusterSpec extends Specification {
         def request = new RemoveNodeRequest(new InetSocketAddress(11210))
 
         when:
-        def responsePromise = (Promise) cluster.send(request)
+        def responsePromise = cluster.send(request)
 
         then:
         1 * registry.select(_) >> registrations

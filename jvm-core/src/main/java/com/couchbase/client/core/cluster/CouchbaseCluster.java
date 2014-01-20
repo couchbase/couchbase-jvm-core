@@ -109,7 +109,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 	}
 
 	@Override
-	public Composable<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
+	public Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
         if (request instanceof CommonRequest) {
             return dispatchCommon((CommonRequest) request);
         } else if (request instanceof InternalRequest) {
@@ -125,7 +125,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
      * @param request
      * @return
      */
-    private Composable<? extends CommonResponse> dispatchCommon(final CommonRequest request) {
+    private Promise<? extends CommonResponse> dispatchCommon(final CommonRequest request) {
         if (request instanceof ConnectRequest) {
             return handleConnect((ConnectRequest) request);
         } else {
@@ -139,7 +139,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
      * @param request
      * @return
      */
-    private Composable<? extends InternalResponse> dispatchInternal(final InternalRequest request) {
+    private Promise<? extends InternalResponse> dispatchInternal(final InternalRequest request) {
         if (request instanceof AddNodeRequest) {
             return handleAddNode((AddNodeRequest) request);
         } else if (request instanceof AddServiceRequest) {
@@ -159,7 +159,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
      * @param request
      * @return
      */
-	private Composable<ConnectResponse> handleConnect(final ConnectRequest request) {
+	private Promise<ConnectResponse> handleConnect(final ConnectRequest request) {
         Promise<Configuration> connectPromise = configurationManager.connect(
             request.getSeedNodes(), request.getBucketName(), request.getBucketPassword()
         );

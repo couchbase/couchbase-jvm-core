@@ -26,7 +26,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
-import reactor.core.composable.Composable;
+import reactor.core.composable.Promise;
 
 /**
  * Represents a Couchbase Cluster.
@@ -39,6 +39,6 @@ public interface Cluster extends Stateful<LifecycleState> {
 	 * @param request the request message.
 	 * @return a response wrapped in a composable.
 	 */
-	Composable<? extends CouchbaseResponse> send(CouchbaseRequest request);
+	Promise<? extends CouchbaseResponse> send(CouchbaseRequest request);
 
 }
