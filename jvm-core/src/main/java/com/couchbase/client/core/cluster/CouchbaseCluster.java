@@ -47,7 +47,6 @@ import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
-import reactor.core.composable.Composable;
 import reactor.core.composable.Deferred;
 import reactor.core.composable.Promise;
 import reactor.core.composable.spec.Promises;

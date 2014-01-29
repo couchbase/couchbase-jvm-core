@@ -22,7 +22,9 @@
 
 package com.couchbase.client.core.environment;
 
-public class EnvironmentException extends RuntimeException {
+import com.couchbase.client.core.CouchbaseException;
+
+public class EnvironmentException extends CouchbaseException {
 
 	private static final long serialVersionUID = -5347402369944018053L;
 

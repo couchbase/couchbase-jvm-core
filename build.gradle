@@ -32,12 +32,15 @@ subprojects {
     repositories {
     	mavenLocal()
         mavenCentral()
+        maven { url 'http://repo.spring.io/libs-snapshot' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
 	sourceSets {
         main { java.srcDirs = ['src/main/java'] }
         test { java.srcDirs = ['src/test/java'] }
     }
+
 }
 
 project(':jvm-core') {
@@ -48,11 +51,6 @@ project(':jvm-core') {
             groovy { srcDirs = ['src/test/unit/groovy', 'src/test/integration/groovy'] }
             java { srcDirs = ['src/test/unit/java', 'src/test/integration/java', 'src/test/performance/java'] }
         }
-    }
-
-    repositories {
-    	maven { url 'http://repo.spring.io/libs-snapshot' }
-    	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
     dependencies {
@@ -67,6 +65,21 @@ project(':jvm-core') {
 		testCompile group: 'org.spockframework', name: 'spock-core', version: '0.7-groovy-2.0'
 		testCompile group: 'cglib', name: 'cglib-nodep', version: '2.2'
 		testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
+    }
+}
+
+project(':java-client') {
+    apply plugin: 'groovy'
+
+    sourceSets {
+        test {
+            groovy { srcDirs = ['src/test/unit/groovy', 'src/test/integration/groovy'] }
+            java { srcDirs = ['src/test/unit/java', 'src/test/integration/java', 'src/test/performance/java'] }
+        }
+    }
+
+    dependencies {
+        compile project(':jvm-core')
     }
 }
 
