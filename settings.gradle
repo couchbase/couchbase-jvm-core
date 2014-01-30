@@ -1,1 +1,1 @@
-include "jvm-core", "java-client"
+include "jvm-core", "java-client", "scala-client"
