@@ -94,10 +94,7 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 			configPromises.add(loadConfigForNode(node, bucket, password));
 		}
 
-		final Deferred<Configuration,Promise<Configuration>> configPromise =
-				Promises.defer(env.reactorEnv());
-
-		Promises.when(configPromises).map(new Function<List<Configuration>, Configuration>() {
+		return Promises.when(configPromises).map(new Function<List<Configuration>, Configuration>() {
 			@Override
 			public Configuration apply(List<Configuration> configurations) {
 				// list of configs found.
@@ -108,11 +105,8 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 			@Override
 			public void accept(final Configuration configuration) {
 				currentConfigs.put(bucket, configuration);
-				configPromise.accept(configuration);
 			}
 		});
-
-		return configPromise.compose();
 	}
 
 	/**
@@ -129,33 +123,28 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 				Promises.defer(env.reactorEnv());
 
 		Promise<Configuration> binaryConfig = loadConfigOverBinary(seedNode, bucket, password);
-		binaryConfig.consume(new Consumer<Configuration>() {
-			@Override
-			public void accept(Configuration configuration) {
-				configPromise.accept(configuration);
-			}
-		}).when(Exception.class, new Consumer<Exception>() {
-			@Override
-			public void accept(Exception e) {
-				Promise<Configuration> httpConfig = loadConfigOverHttp(seedNode, bucket, password);
-				httpConfig.consume(new Consumer<Configuration>() {
-					@Override
-					public void accept(Configuration configuration) {
-						configPromise.accept(configuration);
-					}
-				}).when(Exception.class, new Consumer<Exception>() {
-					@Override
-					public void accept(Exception e) {
-						configPromise.accept(e);
-					}
-				});
-			}
-		});
+		binaryConfig
+			.consume(configPromise)
+			.when(Exception.class, new Consumer<Exception>() {
+				@Override
+				public void accept(Exception e) {
+					Promise<Configuration> httpConfig = loadConfigOverHttp(seedNode, bucket, password);
+					httpConfig
+						.consume(configPromise)
+						.when(Exception.class, new Consumer<Exception>() {
+							@Override
+							public void accept(Exception e) {
+								configPromise.accept(e);
+							}
+						});
+				}
+			});
 
 		return configPromise.compose();
 	}
 
 	/**
+	 * Try to load the config over HTTP from the given node.
 	 *
 	 * @param seedNode
 	 * @param bucket
@@ -164,10 +153,19 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 	 */
 	private Promise<Configuration> loadConfigOverHttp(final InetSocketAddress seedNode, final String bucket,
 		final String password) {
-		return null;
+		HttpConfigurationLoader configurationLoader = new HttpConfigurationLoader(env, seedNode, bucket, password,
+			cluster);
+
+		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
+			@Override
+			public Configuration apply(String rawConfig) {
+				return null;
+			}
+		});
 	}
 
 	/**
+	 * Try to load the config over BINARY from the given node.
 	 *
 	 * @param seedNode
 	 * @param bucket
@@ -176,8 +174,15 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 	 */
 	private Promise<Configuration> loadConfigOverBinary(final InetSocketAddress seedNode, final String bucket,
 		final String password) {
-		return null;
-	}
+		BinaryConfigurationLoader configurationLoader = new BinaryConfigurationLoader(env, seedNode, bucket, password,
+			cluster);
 
+		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
+			@Override
+			public Configuration apply(String rawConfig) {
+				return null;
+			}
+		});
+	}
 
 }
