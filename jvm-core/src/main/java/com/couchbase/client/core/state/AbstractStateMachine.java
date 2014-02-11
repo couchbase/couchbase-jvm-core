@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.composable.Deferred;
 import reactor.core.composable.Stream;
 import reactor.core.composable.spec.Streams;
+import reactor.event.registry.Registry;
 
 public class AbstractStateMachine<S extends Enum> implements Stateful<S> {
 
@@ -41,6 +42,7 @@ public class AbstractStateMachine<S extends Enum> implements Stateful<S> {
 		currentState = initialState;
 		deferredStream = Streams.defer(env.reactorEnv(), env.reactorEnv().getDefaultDispatcher());
 		stateStream = deferredStream.compose();
+
 	}
 
 	@Override

@@ -22,5 +22,25 @@
 
 package com.couchbase.client.core.message.internal;
 
-public class AddServiceRequest implements InternalRequest {
+import com.couchbase.client.core.service.ServiceType;
+
+import java.net.InetSocketAddress;
+
+public class EnableServiceRequest implements InternalRequest {
+
+	private final InetSocketAddress address;
+	private final ServiceType type;
+
+	public EnableServiceRequest(InetSocketAddress address, ServiceType type) {
+		this.address = address;
+		this.type = type;
+	}
+
+	public InetSocketAddress getAddress() {
+		return address;
+	}
+
+	public ServiceType getType() {
+		return type;
+	}
 }

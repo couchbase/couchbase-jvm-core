@@ -39,6 +39,6 @@ public interface Cluster extends Stateful<LifecycleState> {
 	 * @param request the request message.
 	 * @return a response wrapped in a composable.
 	 */
-	Promise<? extends CouchbaseResponse> send(CouchbaseRequest request);
+	<R extends CouchbaseResponse> Promise<R> send(CouchbaseRequest request);
 
 }

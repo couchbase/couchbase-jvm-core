@@ -22,5 +22,16 @@
 
 package com.couchbase.client.core.message.internal;
 
-public class AddServiceResponse implements InternalResponse {
+import java.net.InetSocketAddress;
+
+public class DisableServiceRequest implements InternalRequest {
+	private final InetSocketAddress address;
+
+	public DisableServiceRequest(InetSocketAddress address) {
+		this.address = address;
+	}
+
+	public InetSocketAddress getAddress() {
+		return address;
+	}
 }

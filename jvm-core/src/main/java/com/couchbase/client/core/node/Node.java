@@ -22,6 +22,12 @@
 
 package com.couchbase.client.core.node;
 
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.internal.DisableServiceRequest;
+import com.couchbase.client.core.message.internal.DisableServiceResponse;
+import com.couchbase.client.core.message.internal.EnableServiceRequest;
+import com.couchbase.client.core.message.internal.EnableServiceResponse;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import reactor.core.composable.Promise;
@@ -34,4 +40,8 @@ public interface Node extends Stateful<LifecycleState> {
      * @return
      */
     Promise<Boolean> shutdown();
+
+
+	Promise<EnableServiceResponse> enableService(EnableServiceRequest request);
+	Promise<DisableServiceResponse> disableService(DisableServiceRequest request);
 }

@@ -22,5 +22,34 @@
 
 package com.couchbase.client.core.message.internal;
 
-public class RemoveServiceResponse implements InternalResponse {
+public class EnableServiceResponse implements InternalResponse {
+
+	private final Status status;
+	private final String message;
+
+	public EnableServiceResponse(Status status, String message) {
+		this.status = status;
+		this.message = message;
+	}
+
+	public Status getStatus() {
+		return status;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public static EnableServiceResponse serviceEnabled() {
+		return new EnableServiceResponse(Status.ENABLED, "Successfully enabled service.");
+	}
+
+	public static EnableServiceResponse noNodeFound() {
+		return new EnableServiceResponse(Status.NOT_ENABLED, "No node found to enable the service for.");
+	}
+
+	public enum Status {
+		ENABLED,
+		NOT_ENABLED
+	}
 }

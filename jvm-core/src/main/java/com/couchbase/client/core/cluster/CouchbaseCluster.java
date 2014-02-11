@@ -35,14 +35,14 @@ import com.couchbase.client.core.message.common.ConnectRequest;
 import com.couchbase.client.core.message.common.ConnectResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
-import com.couchbase.client.core.message.internal.AddServiceRequest;
-import com.couchbase.client.core.message.internal.AddServiceResponse;
+import com.couchbase.client.core.message.internal.DisableServiceRequest;
+import com.couchbase.client.core.message.internal.DisableServiceResponse;
+import com.couchbase.client.core.message.internal.EnableServiceRequest;
+import com.couchbase.client.core.message.internal.EnableServiceResponse;
 import com.couchbase.client.core.message.internal.InternalRequest;
 import com.couchbase.client.core.message.internal.InternalResponse;
 import com.couchbase.client.core.message.internal.RemoveNodeRequest;
 import com.couchbase.client.core.message.internal.RemoveNodeResponse;
-import com.couchbase.client.core.message.internal.RemoveServiceRequest;
-import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.AbstractStateMachine;
@@ -64,12 +64,6 @@ import static reactor.event.selector.Selectors.$;
  * The default implementation of a {@link Cluster}.
  *
  * TODO:
- *  - add service (check if node is in reg if not, add it), delegate to node
- *  - test add service
- *
- *  - remove service, delegate to node
- *  - test remove service
- *
  *  - attach streams to all connected nodes, react on changes and build the states for the cluster.
  *
  *  - implement mock test of config loading from connecting
@@ -89,13 +83,6 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
     private final ConfigurationManager configurationManager;
     private final Registry<Node> nodeRegistry;
 
-    CouchbaseCluster(final Environment env, final ConfigurationManager manager, final Registry<Node> registry) {
-        super(LifecycleState.DISCONNECTED, env);
-        this.env = env;
-        configurationManager = manager;
-        nodeRegistry = registry;
-    }
-
     public CouchbaseCluster() {
         this(new CouchbaseEnvironment());
     }
@@ -105,6 +92,13 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
         this.env = env;
         configurationManager = new DefaultConfigurationManager(env, this);
         nodeRegistry = new CachingRegistry<Node>();
+	}
+
+	CouchbaseCluster(final Environment env, final ConfigurationManager manager, final Registry<Node> registry) {
+		super(LifecycleState.DISCONNECTED, env);
+		this.env = env;
+		configurationManager = manager;
+		nodeRegistry = registry;
 	}
 
 	@Override
@@ -141,12 +135,12 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
     private Promise<? extends InternalResponse> dispatchInternal(final InternalRequest request) {
         if (request instanceof AddNodeRequest) {
             return handleAddNode((AddNodeRequest) request);
-        } else if (request instanceof AddServiceRequest) {
-            return handleAddService((AddServiceRequest) request);
+        } else if (request instanceof EnableServiceRequest) {
+            return handleEnableService((EnableServiceRequest) request);
         } else if (request instanceof RemoveNodeRequest) {
             return handleRemoveNode((RemoveNodeRequest) request);
-        } else if (request instanceof RemoveServiceRequest) {
-            return handleRemoveService((RemoveServiceRequest) request);
+        } else if (request instanceof DisableServiceRequest) {
+            return handleDisableService((DisableServiceRequest) request);
         } else {
             throw new UnsupportedOperationException("Unsupported CouchbaseRequest type: " + request);
         }
@@ -190,11 +184,11 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
     private Promise<AddNodeResponse> handleAddNode(final AddNodeRequest request) {
         InetSocketAddress address = request.getAddress();
 
-        List<Registration<? extends Node>> registrations = nodeRegistry.select(address);
-        if (registrations.isEmpty()) {
-            Node node = new CouchbaseNode(env, address);
-            nodeRegistry.register($(address), node);
-        }
+		if (!hasNodeRegistered(address)) {
+			Node node = new CouchbaseNode(env, address);
+			nodeRegistry.register($(address), node);
+		}
+
         return Promises.success(AddNodeResponse.nodeAdded()).get();
     }
 
@@ -208,44 +202,75 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
         final Deferred<RemoveNodeResponse, Promise<RemoveNodeResponse>> deferredResponse =
             Promises.defer(env.reactorEnv());
 
-        List<Registration<? extends Node>> registrations = nodeRegistry.select(request.getAddress());
-        if (registrations.isEmpty()) {
-            deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
-        } else {
-            Node node = registrations.get(0).getObject();
-            node.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
-                @Override
-                public void accept(Promise<Boolean> shutdownPromise) {
-                    if (shutdownPromise.isSuccess()) {
-                        deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
-                    } else {
-                        deferredResponse.accept(shutdownPromise.reason());
-                    }
-                }
-            });
-        }
-        return deferredResponse.compose();
+		InetSocketAddress address = request.getAddress();
+		if (hasNodeRegistered(address)) {
+			Node node = nodeRegistry.select(address).get(0).getObject();
+			node.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
+				@Override
+				public void accept(Promise<Boolean> shutdownPromise) {
+					nodeRegistry.unregister(request.getAddress());
+					if (shutdownPromise.isSuccess()) {
+						deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
+					} else {
+						deferredResponse.accept(shutdownPromise.reason());
+					}
+				}
+			});
+		} else {
+			deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
+		}
+
+		return deferredResponse.compose();
     }
 
     /**
-     *
+     * Enable the service for the given node (if registered).
+	 *
      * @param request
      * @return
      */
-    private Promise<AddServiceResponse> handleAddService(final AddServiceRequest request) {
-        // send add service request to node
+    private Promise<EnableServiceResponse> handleEnableService(final EnableServiceRequest request) {
+		InetSocketAddress address = request.getAddress();
 
-        return null;
+		if (hasNodeRegistered(address)) {
+			Node node = nodeRegistry.select(address).get(0).getObject();
+			return node.enableService(request);
+		} else {
+			return Promises.success(EnableServiceResponse.noNodeFound()).get();
+		}
     }
 
     /**
-     *
+     * Disable the service for the given node (if registered).
+	 *
      * @param request
      * @return
      */
-    private Promise<RemoveServiceResponse> handleRemoveService(final RemoveServiceRequest request) {
-        // send remove service to node
-        return null;
+    private Promise<DisableServiceResponse> handleDisableService(final DisableServiceRequest request) {
+		InetSocketAddress address = request.getAddress();
+
+		if (hasNodeRegistered(address)) {
+			Node node = nodeRegistry.select(address).get(0).getObject();
+			return node.disableService(request);
+		} else {
+			return Promises.success(DisableServiceResponse.noNodeFound()).get();
+		}
     }
+
+	/**
+	 * Helper method to see if the given node is registered already.
+	 *
+	 * @param address the address to validate against.
+	 * @return true if it is registered, false otherwise.
+	 */
+	private boolean hasNodeRegistered(InetSocketAddress address) {
+		List<Registration<? extends Node>> registrations = nodeRegistry.select(address);
+		for (Registration<? extends Node> registration : registrations) {
+			if (!registration.isCancelled()) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 }

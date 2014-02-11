@@ -24,23 +24,160 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.environment.Environment;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.internal.AddNodeRequest;
+import com.couchbase.client.core.message.internal.AddNodeResponse;
+import com.couchbase.client.core.message.internal.EnableServiceRequest;
+import com.couchbase.client.core.message.internal.EnableServiceResponse;
+import com.couchbase.client.core.state.LifecycleState;
+import reactor.core.composable.Deferred;
 import reactor.core.composable.Promise;
+import reactor.core.composable.spec.Promises;
+import reactor.function.Consumer;
+import reactor.function.Function;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultConfigurationManager implements ConfigurationManager {
 
+	/**
+	 * The global environment and configuration.
+	 */
     private final Environment env;
+
+	/**
+	 * A reference to the cluster for all underlying service operations.
+	 */
     private final Cluster cluster;
 
+	/**
+	 * Holds all current stored configurations, one per bucket.
+	 */
+	private final Map<String, Configuration> currentConfigs;
+
+	/**
+	 * Create a new DefaultConfigurationManager}.
+	 *
+	 * @param env the environment.
+	 * @param cluster the cluster reference.
+	 */
     public DefaultConfigurationManager(Environment env, Cluster cluster) {
         this.env = env;
         this.cluster = cluster;
+		currentConfigs = new ConcurrentHashMap<String, Configuration>();
     }
 
     @Override
     public Promise<Configuration> connect(List<InetSocketAddress> seedNodes, String bucket, String password) {
-        return null;
+		if (currentConfigs.containsKey(bucket)) {
+			return Promises.success(currentConfigs.get(bucket)).get();
+		}
+
+		return loadConfig(seedNodes, bucket, password);
     }
+
+	/**
+	 * Try to load a config from all the given seed nodes.
+	 *
+	 * @param seedNodes
+	 * @param bucket
+	 * @param password
+	 * @return
+	 */
+	private Promise<Configuration> loadConfig(List<InetSocketAddress> seedNodes, final String bucket, String password) {
+		List<Promise<Configuration>> configPromises = new ArrayList<Promise<Configuration>>(seedNodes.size());
+		for (InetSocketAddress node : seedNodes) {
+			configPromises.add(loadConfigForNode(node, bucket, password));
+		}
+
+		final Deferred<Configuration,Promise<Configuration>> configPromise =
+				Promises.defer(env.reactorEnv());
+
+		Promises.when(configPromises).map(new Function<List<Configuration>, Configuration>() {
+			@Override
+			public Configuration apply(List<Configuration> configurations) {
+				// list of configs found.
+				// pick the right one (quorum...)
+				return null;
+			}
+		}).consume(new Consumer<Configuration>() {
+			@Override
+			public void accept(final Configuration configuration) {
+				currentConfigs.put(bucket, configuration);
+				configPromise.accept(configuration);
+			}
+		});
+
+		return configPromise.compose();
+	}
+
+	/**
+	 * Load a config from a specific node in the cluster.
+	 *
+	 * @param seedNode
+	 * @param bucket
+	 * @param password
+	 * @return
+	 */
+	private Promise<Configuration> loadConfigForNode(final InetSocketAddress seedNode, final String bucket,
+		final String password) {
+		final Deferred<Configuration,Promise<Configuration>> configPromise =
+				Promises.defer(env.reactorEnv());
+
+		Promise<Configuration> binaryConfig = loadConfigOverBinary(seedNode, bucket, password);
+		binaryConfig.consume(new Consumer<Configuration>() {
+			@Override
+			public void accept(Configuration configuration) {
+				configPromise.accept(configuration);
+			}
+		}).when(Exception.class, new Consumer<Exception>() {
+			@Override
+			public void accept(Exception e) {
+				Promise<Configuration> httpConfig = loadConfigOverHttp(seedNode, bucket, password);
+				httpConfig.consume(new Consumer<Configuration>() {
+					@Override
+					public void accept(Configuration configuration) {
+						configPromise.accept(configuration);
+					}
+				}).when(Exception.class, new Consumer<Exception>() {
+					@Override
+					public void accept(Exception e) {
+						configPromise.accept(e);
+					}
+				});
+			}
+		});
+
+		return configPromise.compose();
+	}
+
+	/**
+	 *
+	 * @param seedNode
+	 * @param bucket
+	 * @param password
+	 * @return
+	 */
+	private Promise<Configuration> loadConfigOverHttp(final InetSocketAddress seedNode, final String bucket,
+		final String password) {
+		return null;
+	}
+
+	/**
+	 *
+	 * @param seedNode
+	 * @param bucket
+	 * @param password
+	 * @return
+	 */
+	private Promise<Configuration> loadConfigOverBinary(final InetSocketAddress seedNode, final String bucket,
+		final String password) {
+		return null;
+	}
+
+
 }

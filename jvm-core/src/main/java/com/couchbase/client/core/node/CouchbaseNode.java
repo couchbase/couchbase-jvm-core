@@ -23,6 +23,10 @@
 package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.environment.Environment;
+import com.couchbase.client.core.message.internal.DisableServiceRequest;
+import com.couchbase.client.core.message.internal.DisableServiceResponse;
+import com.couchbase.client.core.message.internal.EnableServiceRequest;
+import com.couchbase.client.core.message.internal.EnableServiceResponse;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import reactor.core.composable.Promise;
@@ -44,4 +48,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     public Promise<Boolean> shutdown() {
         return null;
     }
+
+	@Override
+	public Promise<EnableServiceResponse> enableService(EnableServiceRequest request) {
+		return null;
+	}
+
+	@Override
+	public Promise<DisableServiceResponse> disableService(DisableServiceRequest request) {
+		return null;
+	}
 }

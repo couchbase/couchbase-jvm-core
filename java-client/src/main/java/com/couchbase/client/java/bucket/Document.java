@@ -13,7 +13,7 @@ public interface Document {
 
     int getExpiration();
 
-    int getGroupId();
+    String getGroupId();
 
     Document setId(String id);
 
@@ -23,6 +23,6 @@ public interface Document {
 
     Document setExpiration(int expiration);
 
-    Document setGroupId(int groupId);
+    Document setGroupId(String groupId);
 
 }

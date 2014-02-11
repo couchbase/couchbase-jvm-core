@@ -22,5 +22,34 @@
 
 package com.couchbase.client.core.message.internal;
 
-public class RemoveServiceRequest implements InternalRequest {
+public class DisableServiceResponse implements InternalResponse {
+
+	private final Status status;
+	private final String message;
+
+	public DisableServiceResponse(Status status, String message) {
+		this.status = status;
+		this.message = message;
+	}
+
+	public Status getStatus() {
+		return status;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public static DisableServiceResponse serviceDisabled() {
+		return new DisableServiceResponse(Status.DISABLED, "Successfully disabled service.");
+	}
+
+	public static DisableServiceResponse noNodeFound() {
+		return new DisableServiceResponse(Status.NOT_DISABLED, "No node found to disable the service for.");
+	}
+
+	public enum Status {
+		DISABLED,
+		NOT_DISABLED
+	}
 }
