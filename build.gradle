@@ -56,6 +56,7 @@ project(':jvm-core') {
     	compile group: 'org.projectreactor', name: 'reactor-core', version: '1.1.0.BUILD-SNAPSHOT', changing: true
     	compile group: 'io.netty', name: 'netty-all', version: '5.0.0.Alpha2-SNAPSHOT', changing: true
         compile group: 'com.typesafe', name: 'config', version: '1.2.0'
+        compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.3.1'
 
 		testCompile 'org.codehaus.groovy:groovy-all:2.2.1'
 		testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'

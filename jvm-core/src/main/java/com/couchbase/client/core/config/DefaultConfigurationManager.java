@@ -60,6 +60,11 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 	private final Map<String, Configuration> currentConfigs;
 
 	/**
+	 * The configuration parser.
+	 */
+	private final ConfigurationParser configurationParser;
+
+	/**
 	 * Create a new DefaultConfigurationManager}.
 	 *
 	 * @param env the environment.
@@ -68,6 +73,8 @@ public class DefaultConfigurationManager implements ConfigurationManager {
     public DefaultConfigurationManager(Environment env, Cluster cluster) {
         this.env = env;
         this.cluster = cluster;
+
+		configurationParser = new JSONConfigurationParser();
 		currentConfigs = new ConcurrentHashMap<String, Configuration>();
     }
 
@@ -159,7 +166,7 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
 			@Override
 			public Configuration apply(String rawConfig) {
-				return null;
+				return configurationParser.parse(rawConfig);
 			}
 		});
 	}
@@ -180,7 +187,7 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
 			@Override
 			public Configuration apply(String rawConfig) {
-				return null;
+				return configurationParser.parse(rawConfig);
 			}
 		});
 	}

@@ -23,4 +23,12 @@
 package com.couchbase.client.core.config;
 
 public interface ConfigurationParser {
+
+	/**
+	 * Parses the raw configuration into a {@link Configuration} instance.
+	 *
+	 * @param raw the raw configuration as a string.
+	 * @return the parsed configuration.
+	 */
+	Configuration parse(String raw);
 }

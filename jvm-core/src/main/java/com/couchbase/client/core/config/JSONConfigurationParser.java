@@ -22,5 +22,21 @@
 
 package com.couchbase.client.core.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+
 public class JSONConfigurationParser implements ConfigurationParser {
+
+	private static final ObjectMapper MAPPER = new ObjectMapper();
+
+	@Override
+	public Configuration parse(final String raw) {
+		try {
+			return MAPPER.readValue(raw, DefaultConfiguration.class);
+		} catch (IOException e) {
+			throw new ConfigurationException("Could not convert raw configuration into JSON.", e);
+		}
+	}
+
 }
