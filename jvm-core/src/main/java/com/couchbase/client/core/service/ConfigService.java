@@ -1,12 +1,23 @@
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.endpoint.config.ConfigEndpoint;
+import com.couchbase.client.core.environment.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.message.config.GetBucketConfigResponse;
+import com.couchbase.client.core.state.LifecycleState;
 import reactor.core.composable.Promise;
-import reactor.core.composable.spec.Promises;
 
-public class ConfigService implements Service {
+import java.net.InetSocketAddress;
+
+public class ConfigService extends AbstractService {
+
+    // FIXME: we need a registry here too, N endpoints and multiplexing
+    private final ConfigEndpoint endpoint;
+
+    public ConfigService(InetSocketAddress address, Environment env) {
+        super(env);
+        endpoint = new ConfigEndpoint(address, env);
+    }
 
     @Override
     public Promise<Boolean> shutdown() {
@@ -14,7 +25,12 @@ public class ConfigService implements Service {
     }
 
     @Override
-    public  Promise<? extends CouchbaseResponse> send(CouchbaseRequest request) {
-        return Promises.success(new GetBucketConfigResponse("foobar")).get();
+    public Promise<LifecycleState> connect() {
+        return endpoint.connect();
+    }
+
+    @Override
+    public  Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
+        return endpoint.send(request);
     }
 }

@@ -39,8 +39,8 @@ import reactor.core.composable.spec.Promises;
 import reactor.event.registry.CachingRegistry;
 import reactor.event.registry.Registration;
 import reactor.event.registry.Registry;
-import reactor.event.selector.Selector;
 import reactor.function.Consumer;
+import reactor.function.Function;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -83,10 +83,17 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 	@Override
 	public Promise<EnableServiceResponse> enableService(final EnableServiceRequest request) {
         if (!hasServiceRegistered(request.type(), request.bucket())) {
-            ConfigService service = new ConfigService();
-            serviceRegistry.register(U(selector(request.type(), request.bucket())), service);
+            final ConfigService service = new ConfigService(request.address(), env);
+            return service.connect().map(new Function<LifecycleState, EnableServiceResponse>() {
+                @Override
+                public EnableServiceResponse apply(LifecycleState lifecycleState) {
+                    serviceRegistry.register(U(selector(request.type(), request.bucket())), service);
+                    return EnableServiceResponse.serviceEnabled();
+                }
+            });
+        } else {
+		    return Promises.success(EnableServiceResponse.serviceEnabled()).get();
         }
-		return Promises.success(EnableServiceResponse.serviceEnabled()).get();
 	}
 
 	@Override

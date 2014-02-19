@@ -24,9 +24,11 @@ package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.state.Stateful;
 import reactor.core.composable.Promise;
 
-public interface Service {
+public interface Service extends Stateful<LifecycleState> {
 
     /**
      * Shutdown the service.
@@ -34,6 +36,8 @@ public interface Service {
      * @return
      */
     Promise<Boolean> shutdown();
+
+    Promise<LifecycleState> connect();
 
     /**
      *

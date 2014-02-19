@@ -23,14 +23,9 @@
 package com.couchbase.client.core.config
 
 import com.couchbase.client.core.cluster.Cluster
-import com.couchbase.client.core.cluster.CouchbaseCluster
 import com.couchbase.client.core.environment.CouchbaseEnvironment
-import com.couchbase.client.core.environment.Environment
 import com.couchbase.client.core.message.config.GetBucketConfigRequest
 import com.couchbase.client.core.message.config.GetBucketConfigResponse
-import com.couchbase.client.core.message.internal.AddNodeRequest
-import com.couchbase.client.core.message.internal.EnableServiceRequest
-import com.couchbase.client.core.service.ServiceType
 import reactor.core.composable.spec.Promises
 import spock.lang.Specification
 
@@ -43,30 +38,13 @@ class HttpConfigurationLoaderSpec extends Specification {
     def clusterMock = Mock(Cluster)
     def loader = new HttpConfigurationLoader(env, node, bucket, password, clusterMock)
 
-    def "A HttpConfigurationLoader should load the config through the terse config"() {
+    def "A HttpConfigurationLoader should load the raw config from the cluster"() {
         when:
         def rawConfigPromise = loader.loadRawConfig()
 
         then:
         1 * clusterMock.send(_ as GetBucketConfigRequest) >> Promises.success(new GetBucketConfigResponse("foo")).get()
         rawConfigPromise.await() == "foo"
-    }
-
-    def "A HttpConfigurationLoader should fallback to regular config when terse is not available"() {
-
-        expect:
-        def c = new CouchbaseCluster(env)
-        def l = new HttpConfigurationLoader(env, node, bucket, password, c)
-
-        c.send(new AddNodeRequest(node)).await()
-        c.send(new EnableServiceRequest(node, ServiceType.CONFIG, bucket)).await()
-
-        l.load()
-
-    }
-
-    def "A HttpConfigurationLoader should fail if no config is available"() {
-
     }
 
 }
