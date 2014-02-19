@@ -33,6 +33,10 @@ import com.couchbase.client.core.message.common.CommonRequest;
 import com.couchbase.client.core.message.common.CommonResponse;
 import com.couchbase.client.core.message.common.ConnectRequest;
 import com.couchbase.client.core.message.common.ConnectResponse;
+import com.couchbase.client.core.message.config.ConfigRequest;
+import com.couchbase.client.core.message.config.ConfigResponse;
+import com.couchbase.client.core.message.config.GetBucketConfigRequest;
+import com.couchbase.client.core.message.config.GetBucketConfigResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.DisableServiceRequest;
@@ -54,8 +58,10 @@ import reactor.event.registry.CachingRegistry;
 import reactor.event.registry.Registration;
 import reactor.event.registry.Registry;
 import reactor.function.Consumer;
+import reactor.function.Function;
 
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 import java.util.List;
 
 import static reactor.event.selector.Selectors.$;
@@ -107,6 +113,8 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
             return dispatchCommon((CommonRequest) request);
         } else if (request instanceof InternalRequest) {
             return dispatchInternal((InternalRequest) request);
+		} else if (request instanceof ConfigRequest) {
+			return dispatchConfig((ConfigRequest) request);
         } else {
 			throw new UnsupportedOperationException("Unsupported CouchbaseRequest type: " + request);
 		}
@@ -145,6 +153,22 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
             throw new UnsupportedOperationException("Unsupported CouchbaseRequest type: " + request);
         }
     }
+
+	/**
+	 * Helper method to dispatch config service messages.
+	 *
+	 * @param request
+	 * @return
+	 */
+	private Promise<ConfigResponse> dispatchConfig(final ConfigRequest request) {
+		if (request instanceof GetBucketConfigRequest) {
+			GetBucketConfigRequest req = (GetBucketConfigRequest) request;
+            Registration<? extends Node> registration = nodeRegistry.select(req.node()).get(0);
+			return registration.getObject().send(request);
+		}
+		// TODO: fixme when not found
+		return null;
+	}
 
     /**
      * Handle a {@link ConnectRequest}.
@@ -205,10 +229,10 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 		InetSocketAddress address = request.getAddress();
 		if (hasNodeRegistered(address)) {
 			Node node = nodeRegistry.select(address).get(0).getObject();
+            nodeRegistry.unregister(request.getAddress());
 			node.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
 				@Override
 				public void accept(Promise<Boolean> shutdownPromise) {
-					nodeRegistry.unregister(request.getAddress());
 					if (shutdownPromise.isSuccess()) {
 						deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
 					} else {
@@ -230,7 +254,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
      * @return
      */
     private Promise<EnableServiceResponse> handleEnableService(final EnableServiceRequest request) {
-		InetSocketAddress address = request.getAddress();
+		InetSocketAddress address = request.address();
 
 		if (hasNodeRegistered(address)) {
 			Node node = nodeRegistry.select(address).get(0).getObject();
@@ -247,7 +271,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
      * @return
      */
     private Promise<DisableServiceResponse> handleDisableService(final DisableServiceRequest request) {
-		InetSocketAddress address = request.getAddress();
+		InetSocketAddress address = request.address();
 
 		if (hasNodeRegistered(address)) {
 			Node node = nodeRegistry.select(address).get(0).getObject();

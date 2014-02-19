@@ -29,7 +29,7 @@ subprojects {
 	targetCompatibility = JavaVersion.VERSION_1_6
 
     repositories {
-    	mavenLocal()
+    	//mavenLocal()
         mavenCentral()
         maven { url 'http://repo.spring.io/libs-snapshot' }
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }

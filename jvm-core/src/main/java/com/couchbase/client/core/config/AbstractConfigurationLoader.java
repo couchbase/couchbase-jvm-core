@@ -31,6 +31,8 @@ import com.couchbase.client.core.message.internal.EnableServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import reactor.core.composable.Composable;
 import reactor.core.composable.Promise;
+import reactor.core.composable.spec.Promises;
+import reactor.function.Consumer;
 import reactor.function.Function;
 
 import java.net.InetSocketAddress;
@@ -70,7 +72,7 @@ public abstract class AbstractConfigurationLoader {
 		});
 	}
 
-	private Promise<Boolean> addNode() {
+	Promise<Boolean> addNode() {
 		return cluster.<AddNodeResponse>send(new AddNodeRequest(node)).map(new Function<AddNodeResponse, Boolean>() {
 			@Override
 			public Boolean apply(AddNodeResponse response) {
@@ -80,7 +82,7 @@ public abstract class AbstractConfigurationLoader {
 	}
 
 	private Promise<Boolean> addService() {
-		return cluster.<EnableServiceResponse>send(new EnableServiceRequest(node, serviceType))
+		return cluster.<EnableServiceResponse>send(new EnableServiceRequest(node, serviceType, bucket))
 			.map(new Function<EnableServiceResponse, Boolean>() {
 				@Override
 				public Boolean apply(EnableServiceResponse response) {

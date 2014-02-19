@@ -24,9 +24,7 @@ package com.couchbase.client.core.config;
 
 import spock.lang.Specification;
 
-/**
- * Created by michael on 11/02/14.
- */
+
 public class BinaryConfigurationLoaderSpec extends Specification {
 
     def "A BinaryConfigurationLoader should load the config through a binary command"() {

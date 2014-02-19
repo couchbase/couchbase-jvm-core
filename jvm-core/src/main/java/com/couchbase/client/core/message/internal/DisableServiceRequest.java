@@ -22,16 +22,31 @@
 
 package com.couchbase.client.core.message.internal;
 
+import com.couchbase.client.core.service.ServiceType;
+
 import java.net.InetSocketAddress;
 
 public class DisableServiceRequest implements InternalRequest {
-	private final InetSocketAddress address;
 
-	public DisableServiceRequest(InetSocketAddress address) {
-		this.address = address;
-	}
+    private final InetSocketAddress address;
+    private final ServiceType type;
+    private final String bucket;
 
-	public InetSocketAddress getAddress() {
-		return address;
-	}
+    public DisableServiceRequest(InetSocketAddress address, ServiceType type, String bucket) {
+        this.address = address;
+        this.type = type;
+        this.bucket = bucket;
+    }
+
+    public InetSocketAddress address() {
+        return address;
+    }
+
+    public ServiceType type() {
+        return type;
+    }
+
+    public String bucket() {
+        return bucket;
+    }
 }

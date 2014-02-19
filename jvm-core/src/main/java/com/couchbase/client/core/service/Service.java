@@ -22,6 +22,8 @@
 
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
 import reactor.core.composable.Promise;
 
 public interface Service {
@@ -32,4 +34,12 @@ public interface Service {
      * @return
      */
     Promise<Boolean> shutdown();
+
+    /**
+     *
+     * @param request
+     * @param <R>
+     * @return
+     */
+    <R extends CouchbaseResponse> Promise<R> send(CouchbaseRequest request);
 }

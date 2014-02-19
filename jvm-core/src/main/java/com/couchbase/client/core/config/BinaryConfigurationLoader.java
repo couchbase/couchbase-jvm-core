@@ -40,4 +40,5 @@ public class BinaryConfigurationLoader extends AbstractConfigurationLoader {
 	Promise<String> loadRawConfig() {
 		return null;
 	}
+
 }

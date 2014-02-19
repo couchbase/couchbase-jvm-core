@@ -35,6 +35,7 @@ import reactor.core.composable.Promise;
 import reactor.core.composable.spec.Promises;
 import reactor.function.Consumer;
 import reactor.function.Function;
+import reactor.function.Predicate;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -101,12 +102,15 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 			configPromises.add(loadConfigForNode(node, bucket, password));
 		}
 
-		return Promises.when(configPromises).map(new Function<List<Configuration>, Configuration>() {
+		return Promises.when(configPromises).filter(new Predicate<List<Configuration>>() {
+			@Override
+			public boolean test(List<Configuration> configurations) {
+				return configurations.size() > 0;
+			}
+		}).map(new Function<List<Configuration>, Configuration>() {
 			@Override
 			public Configuration apply(List<Configuration> configurations) {
-				// list of configs found.
-				// pick the right one (quorum...)
-				return null;
+				return configurations.get(0);
 			}
 		}).consume(new Consumer<Configuration>() {
 			@Override

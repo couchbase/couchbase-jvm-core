@@ -30,17 +30,23 @@ public class EnableServiceRequest implements InternalRequest {
 
 	private final InetSocketAddress address;
 	private final ServiceType type;
+    private final String bucket;
 
-	public EnableServiceRequest(InetSocketAddress address, ServiceType type) {
+	public EnableServiceRequest(InetSocketAddress address, ServiceType type, String bucket) {
 		this.address = address;
 		this.type = type;
+        this.bucket = bucket;
 	}
 
-	public InetSocketAddress getAddress() {
+	public InetSocketAddress address() {
 		return address;
 	}
 
-	public ServiceType getType() {
+	public ServiceType type() {
 		return type;
 	}
+
+    public String bucket() {
+        return bucket;
+    }
 }

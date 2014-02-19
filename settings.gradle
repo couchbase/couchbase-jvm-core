@@ -1,1 +1,2 @@
 include "jvm-core", "java-client", "scala-client"
+rootProject.name = "Couchbase JVM Client"

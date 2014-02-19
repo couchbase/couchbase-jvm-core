@@ -32,6 +32,9 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import reactor.core.composable.Promise;
 
+/**
+ *
+ */
 public interface Node extends Stateful<LifecycleState> {
 
     /**
@@ -41,7 +44,25 @@ public interface Node extends Stateful<LifecycleState> {
      */
     Promise<Boolean> shutdown();
 
+    /**
+     *
+     * @param request
+     * @param <R>
+     * @return
+     */
+    <R extends CouchbaseResponse> Promise<R> send(CouchbaseRequest request);
 
+    /**
+     *
+     * @param request
+     * @return
+     */
 	Promise<EnableServiceResponse> enableService(EnableServiceRequest request);
+
+    /**
+     *
+     * @param request
+     * @return
+     */
 	Promise<DisableServiceResponse> disableService(DisableServiceRequest request);
 }

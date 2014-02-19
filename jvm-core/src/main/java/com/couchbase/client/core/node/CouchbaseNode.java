@@ -23,25 +23,114 @@
 package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.environment.Environment;
-import com.couchbase.client.core.message.internal.DisableServiceRequest;
-import com.couchbase.client.core.message.internal.DisableServiceResponse;
-import com.couchbase.client.core.message.internal.EnableServiceRequest;
-import com.couchbase.client.core.message.internal.EnableServiceResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.config.ConfigRequest;
+import com.couchbase.client.core.message.config.ConfigResponse;
+import com.couchbase.client.core.message.internal.*;
+import com.couchbase.client.core.service.ConfigService;
+import com.couchbase.client.core.service.Service;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import reactor.core.composable.Deferred;
 import reactor.core.composable.Promise;
+import reactor.core.composable.spec.Promises;
+import reactor.event.registry.CachingRegistry;
+import reactor.event.registry.Registration;
+import reactor.event.registry.Registry;
+import reactor.event.selector.Selector;
+import reactor.function.Consumer;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
+import static reactor.event.selector.Selectors.U;
+
+/**
+ *
+ */
 public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implements Node {
 
+
+    /**
+     *
+     */
     private final InetSocketAddress address;
+
+    /**
+     *
+     */
     private final Environment env;
 
-    public CouchbaseNode(Environment env, InetSocketAddress address) {
+    /**
+     *
+     */
+    private final Registry<Service> serviceRegistry;
+
+    /**
+     *
+     * @param env
+     * @param address
+     */
+    public CouchbaseNode(final Environment env, final InetSocketAddress address) {
         super(LifecycleState.DISCONNECTED, env);
         this.env = env;
         this.address = address;
+        serviceRegistry = new CachingRegistry<Service>();
+    }
+
+	@Override
+	public Promise<EnableServiceResponse> enableService(final EnableServiceRequest request) {
+        if (!hasServiceRegistered(request.type(), request.bucket())) {
+            ConfigService service = new ConfigService();
+            serviceRegistry.register(U(selector(request.type(), request.bucket())), service);
+        }
+		return Promises.success(EnableServiceResponse.serviceEnabled()).get();
+	}
+
+	@Override
+	public Promise<DisableServiceResponse> disableService(final DisableServiceRequest request) {
+        final Deferred<DisableServiceResponse, Promise<DisableServiceResponse>> deferredResponse =
+             Promises.defer(env.reactorEnv());
+
+        if (hasServiceRegistered(request.type(), request.bucket())) {
+            Service service = serviceRegistry.select(selector(request.type(), request.bucket())).get(0).getObject();
+            serviceRegistry.unregister(selector(request.type(), request.bucket()));
+            service.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
+                @Override
+                public void accept(Promise<Boolean> shutdownPromise) {
+                    if (shutdownPromise.isSuccess()) {
+                        deferredResponse.accept(DisableServiceResponse.serviceDisabled());
+                    } else {
+                        deferredResponse.accept(shutdownPromise.reason());
+                    }
+                }
+            });
+        } else {
+            deferredResponse.accept(DisableServiceResponse.serviceDisabled());
+        }
+
+        return deferredResponse.compose();
+	}
+
+    @Override
+    public Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
+        if (request instanceof ConfigRequest) {
+            return handleConfigRequest((ConfigRequest) request);
+        } else {
+            throw new IllegalStateException("Node doesn't understand the given request message: " + request);
+        }
+    }
+
+    private Promise<ConfigResponse> handleConfigRequest(final ConfigRequest request) {
+        if (hasServiceRegistered(request.type(), request.bucket())) {
+            Service service = serviceRegistry.select(selector(request.type(), request.bucket())).get(0).getObject();
+            return service.send(request);
+        } else {
+            // FAIL! service not registered
+        }
+        return null;
     }
 
     @Override
@@ -49,13 +138,36 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         return null;
     }
 
-	@Override
-	public Promise<EnableServiceResponse> enableService(EnableServiceRequest request) {
-		return null;
-	}
+    /**
+     *
+     * @param type
+     * @return
+     */
+    private boolean hasServiceRegistered(final ServiceType type, final String bucket) {
+        List<Registration<? extends Service>> registrations = serviceRegistry.select(selector(type, bucket));
+        for (Registration<? extends Service> registration : registrations) {
+            if (!registration.isCancelled()) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	@Override
-	public Promise<DisableServiceResponse> disableService(DisableServiceRequest request) {
-		return null;
-	}
+    /**
+     *
+     * @param type
+     * @param bucket
+     * @return
+     */
+    private String selector(final ServiceType type, final String bucket) {
+        switch(type.mapping()) {
+            case ONE_BY_ONE:
+                return "/" + type + "/" + bucket;
+            case ONE_FOR_ALL:
+                return "/" + type;
+            default:
+                throw new IllegalStateException("I dont speak service type: " + type);
+        }
+    }
+
 }

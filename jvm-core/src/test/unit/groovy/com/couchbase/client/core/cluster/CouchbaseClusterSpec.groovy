@@ -140,7 +140,7 @@ class CouchbaseClusterSpec extends Specification {
 
     def "A CouchbaseCluster should return with message if no node is found for service enable"() {
         setup:
-        def request = new EnableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY)
+        def request = new EnableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY, "default")
 
         when:
         def responsePromise = cluster.send(request)
@@ -160,7 +160,7 @@ class CouchbaseClusterSpec extends Specification {
         registrations.add(registration)
 
         when:
-        def enablePromise = cluster.send(new EnableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY))
+        def enablePromise = cluster.send(new EnableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY, "default"))
 
         then:
         2 * registry.select(_) >> registrations
@@ -173,7 +173,7 @@ class CouchbaseClusterSpec extends Specification {
 
     def "A CouchbaseCluster should return with message if no node is found for service disable"() {
         setup:
-        def request = new DisableServiceRequest(new InetSocketAddress(11210))
+        def request = new DisableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY, "default")
 
         when:
         def responsePromise = cluster.send(request)
@@ -193,7 +193,7 @@ class CouchbaseClusterSpec extends Specification {
         registrations.add(registration)
 
         when:
-        def disablePromise = cluster.send(new DisableServiceRequest(new InetSocketAddress(11210)))
+        def disablePromise = cluster.send(new DisableServiceRequest(new InetSocketAddress(11210), ServiceType.BINARY, "default"))
 
         then:
         2 * registry.select(_) >> registrations

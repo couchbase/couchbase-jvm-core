@@ -23,6 +23,7 @@
 package com.couchbase.client.core.config
 
 import com.couchbase.client.core.cluster.Cluster
+import com.couchbase.client.core.cluster.CouchbaseCluster
 import com.couchbase.client.core.environment.CouchbaseEnvironment
 import com.couchbase.client.core.environment.Environment
 import com.couchbase.client.core.message.internal.AddNodeRequest
@@ -31,7 +32,8 @@ import com.couchbase.client.core.message.internal.EnableServiceRequest
 import com.couchbase.client.core.message.internal.EnableServiceResponse
 import com.couchbase.client.core.service.ServiceType
 import reactor.core.composable.Promise
-import reactor.core.composable.spec.Promises;
+import reactor.core.composable.spec.Promises
+import reactor.function.Function;
 import spock.lang.Specification;
 
 public class AbstractConfigurationLoaderSpec extends Specification {
@@ -55,6 +57,18 @@ public class AbstractConfigurationLoaderSpec extends Specification {
         config == "content"
     }
 
+
+    def "aa"() {
+        setup:
+        def cluster = new CouchbaseCluster(env)
+        def loader = new DummyConfigurationLoader(env, serviceType, node, bucket, password, cluster)
+
+        expect:
+        loader.load()
+
+    }
+
+
     /*
     def "A ConfigurationLoader should fail when a node could not be added"() {
         when:
@@ -62,7 +76,8 @@ public class AbstractConfigurationLoaderSpec extends Specification {
 
         then:
         1 * cluster.send(_ as AddNodeRequest) >> Promises.error(new Exception("Something went wrong")).get()
-
+       // 1 * cluster.send(_ as AddNodeRequest) >> Promises.success(AddNodeResponse.nodeAdded()).get()
+        System.out.println(configPromise.await())
     }
 
 
