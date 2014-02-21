@@ -24,8 +24,11 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.environment.Environment;
+import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
 import reactor.core.composable.Promise;
+import reactor.function.Function;
 
 import java.net.InetSocketAddress;
 
@@ -38,7 +41,13 @@ public class BinaryConfigurationLoader extends AbstractConfigurationLoader {
 
 	@Override
 	Promise<String> loadRawConfig() {
-		return null;
+		GetBucketConfigRequest req = new GetBucketConfigRequest(node(), bucket(), password());
+		return cluster().<GetBucketConfigResponse>send(req).map(new Function<GetBucketConfigResponse, String>() {
+			@Override
+			public String apply(GetBucketConfigResponse response) {
+				return response.content();
+			}
+		});
 	}
 
 }

@@ -25,11 +25,14 @@ package com.couchbase.client.core.node;
 import com.couchbase.client.core.environment.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.binary.BinaryResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.config.ConfigResponse;
 import com.couchbase.client.core.message.internal.*;
 import com.couchbase.client.core.service.ConfigService;
 import com.couchbase.client.core.service.Service;
+import com.couchbase.client.core.service.ServiceSpec;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
@@ -83,7 +86,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 	@Override
 	public Promise<EnableServiceResponse> enableService(final EnableServiceRequest request) {
         if (!hasServiceRegistered(request.type(), request.bucket())) {
-            final ConfigService service = new ConfigService(request.address(), env);
+			final Service service = new ServiceSpec(request.type(), request.address(), env).get();
             return service.connect().map(new Function<LifecycleState, EnableServiceResponse>() {
                 @Override
                 public EnableServiceResponse apply(LifecycleState lifecycleState) {
@@ -125,6 +128,8 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     public Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
         if (request instanceof ConfigRequest) {
             return handleConfigRequest((ConfigRequest) request);
+		} else if (request instanceof BinaryRequest) {
+			return handleBinaryRequest((BinaryRequest) request);
         } else {
             throw new IllegalStateException("Node doesn't understand the given request message: " + request);
         }
@@ -139,6 +144,16 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         }
         return null;
     }
+
+	private Promise<BinaryResponse> handleBinaryRequest(final BinaryRequest request) {
+		if (hasServiceRegistered(request.type(), request.bucket())) {
+			Service service = serviceRegistry.select(selector(request.type(), request.bucket())).get(0).getObject();
+			return service.send(request);
+		} else {
+			// FAIL! service not registered
+		}
+		return null;
+	}
 
     @Override
     public Promise<Boolean> shutdown() {

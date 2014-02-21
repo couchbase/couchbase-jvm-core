@@ -21,7 +21,7 @@ public class ConfigCodec extends MessageToMessageCodec<FullHttpResponse, ConfigR
         queue.offer(msg.getClass());
 
         if (msg instanceof GetBucketConfigRequest) {
-            HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
+            HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET,
                 "/pools/default/buckets/" + msg.bucket());
             out.add(request);
         }

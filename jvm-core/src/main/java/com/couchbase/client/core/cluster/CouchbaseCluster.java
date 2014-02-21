@@ -29,6 +29,8 @@ import com.couchbase.client.core.environment.CouchbaseEnvironment;
 import com.couchbase.client.core.environment.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.binary.BinaryResponse;
 import com.couchbase.client.core.message.common.CommonRequest;
 import com.couchbase.client.core.message.common.CommonResponse;
 import com.couchbase.client.core.message.common.ConnectRequest;
@@ -51,6 +53,8 @@ import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.composable.Deferred;
 import reactor.core.composable.Promise;
 import reactor.core.composable.spec.Promises;
@@ -88,6 +92,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
     private final Environment env;
     private final ConfigurationManager configurationManager;
     private final Registry<Node> nodeRegistry;
+	private static final Logger LOGGER = LoggerFactory.getLogger(CouchbaseCluster.class);
 
     public CouchbaseCluster() {
         this(new CouchbaseEnvironment());
@@ -115,6 +120,8 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
             return dispatchInternal((InternalRequest) request);
 		} else if (request instanceof ConfigRequest) {
 			return dispatchConfig((ConfigRequest) request);
+		} else if (request instanceof BinaryRequest) {
+			return dispatchBinary((BinaryRequest) request);
         } else {
 			throw new UnsupportedOperationException("Unsupported CouchbaseRequest type: " + request);
 		}
@@ -170,6 +177,16 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 		return null;
 	}
 
+	private Promise<BinaryResponse> dispatchBinary(final BinaryRequest request) {
+		if (request instanceof com.couchbase.client.core.message.binary.GetBucketConfigRequest) {
+			com.couchbase.client.core.message.binary.GetBucketConfigRequest req = (com.couchbase.client.core.message.binary.GetBucketConfigRequest) request;
+			Registration<? extends Node> registration = nodeRegistry.select(req.node()).get(0);
+			return registration.getObject().send(request);
+		}
+		// TODO: fixme when not found
+		return null;
+	}
+
     /**
      * Handle a {@link ConnectRequest}.
      *
@@ -211,6 +228,7 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 		if (!hasNodeRegistered(address)) {
 			Node node = new CouchbaseNode(env, address);
 			nodeRegistry.register($(address), node);
+			LOGGER.info("Node \"" + address.getHostName() + "\" joined the cluster.");
 		}
 
         return Promises.success(AddNodeResponse.nodeAdded()).get();
@@ -226,13 +244,14 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
         final Deferred<RemoveNodeResponse, Promise<RemoveNodeResponse>> deferredResponse =
             Promises.defer(env.reactorEnv());
 
-		InetSocketAddress address = request.getAddress();
+		final InetSocketAddress address = request.getAddress();
 		if (hasNodeRegistered(address)) {
 			Node node = nodeRegistry.select(address).get(0).getObject();
             nodeRegistry.unregister(request.getAddress());
 			node.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
 				@Override
 				public void accept(Promise<Boolean> shutdownPromise) {
+					LOGGER.info("Node \"" + address.getHostName() + "\" left the cluster.");
 					if (shutdownPromise.isSuccess()) {
 						deferredResponse.accept(RemoveNodeResponse.nodeRemoved());
 					} else {
