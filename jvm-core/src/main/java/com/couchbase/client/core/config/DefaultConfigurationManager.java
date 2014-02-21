@@ -188,7 +188,7 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 		BinaryConfigurationLoader configurationLoader = new BinaryConfigurationLoader(env, seedNode, bucket, password,
 			cluster);
 
-		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
+		return configurationLoader.load().map(new Function<String, Configuration>() {
 			@Override
 			public Configuration apply(String rawConfig) {
 				return configurationParser.parse(rawConfig);

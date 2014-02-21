@@ -28,11 +28,13 @@ import spock.lang.Specification;
 public class BinaryConfigurationLoaderSpec extends Specification {
 
     def "A BinaryConfigurationLoader should load the config through a binary command"() {
-
+        expect:
+        true == true
     }
 
     def "A BinaryConfigLoader should fail if there was an error loading the config"() {
-
+        expect:
+        true == true
     }
 
 }

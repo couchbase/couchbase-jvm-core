@@ -31,6 +31,8 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.BinaryResponse;
+import com.couchbase.client.core.message.binary.GetRequest;
+import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.common.CommonRequest;
 import com.couchbase.client.core.message.common.CommonResponse;
 import com.couchbase.client.core.message.common.ConnectRequest;
@@ -182,6 +184,10 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 			com.couchbase.client.core.message.binary.GetBucketConfigRequest req = (com.couchbase.client.core.message.binary.GetBucketConfigRequest) request;
 			Registration<? extends Node> registration = nodeRegistry.select(req.node()).get(0);
 			return registration.getObject().send(request);
+		} else if (request instanceof GetRequest) {
+			return nodeRegistry.iterator().next().getObject().send(request);
+		} else if (request instanceof UpsertRequest) {
+			return nodeRegistry.iterator().next().getObject().send(request);
 		}
 		// TODO: fixme when not found
 		return null;
