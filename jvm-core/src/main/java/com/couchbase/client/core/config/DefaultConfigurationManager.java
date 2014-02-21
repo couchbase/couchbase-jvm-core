@@ -167,12 +167,18 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 		HttpConfigurationLoader configurationLoader = new HttpConfigurationLoader(env, seedNode, bucket, password,
 			cluster);
 
-		return configurationLoader.loadRawConfig().map(new Function<String, Configuration>() {
-			@Override
-			public Configuration apply(String rawConfig) {
-				return configurationParser.parse(rawConfig);
-			}
-		});
+		return configurationLoader.load()
+			.map(new Function<String, String>() {
+				@Override
+				public String apply(String config) {
+					return config.replaceAll("\\$HOST", seedNode.getHostName());
+				}
+			}).map(new Function<String, Configuration>() {
+				@Override
+				public Configuration apply(String config) {
+					return configurationParser.parse(config);
+				}
+			});
 	}
 
 	/**
@@ -188,12 +194,22 @@ public class DefaultConfigurationManager implements ConfigurationManager {
 		BinaryConfigurationLoader configurationLoader = new BinaryConfigurationLoader(env, seedNode, bucket, password,
 			cluster);
 
-		return configurationLoader.load().map(new Function<String, Configuration>() {
-			@Override
-			public Configuration apply(String rawConfig) {
-				return configurationParser.parse(rawConfig);
-			}
-		});
+		return configurationLoader.load()
+			.map(new Function<String, String>() {
+				@Override
+				public String apply(String config) {
+					return config.replaceAll("\\$HOST", seedNode.getHostName());
+				}
+			}).map(new Function<String, Configuration>() {
+				@Override
+				public Configuration apply(String config) {
+					return configurationParser.parse(config);
+				}
+			});
 	}
 
+	@Override
+	public Configuration get(String bucket) {
+		return currentConfigs.get(bucket);
+	}
 }

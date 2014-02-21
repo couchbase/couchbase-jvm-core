@@ -34,4 +34,6 @@ public interface ConfigurationManager {
 
     Promise<Configuration> connect(List<InetSocketAddress> seedNodes, String bucket, String password);
 
+	Configuration get(String bucket);
+
 }

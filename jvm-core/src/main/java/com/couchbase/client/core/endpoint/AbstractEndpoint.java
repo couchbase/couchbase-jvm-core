@@ -39,9 +39,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel ch) throws Exception {
                     ChannelPipeline pipeline = ch.pipeline();
-                    //if (LOGGER.isTraceEnabled()) {
-                        pipeline.addLast(new CustomLoggingHandler(LogLevel.DEBUG));
-                    //}
+                    if (LOGGER.isTraceEnabled()) {
+                        pipeline.addLast(new CustomLoggingHandler(LogLevel.TRACE));
+                    }
 
                     customEndpointHandlers(pipeline);
                     pipeline.addLast(new GenericEndpointHandler());

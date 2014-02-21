@@ -22,6 +22,7 @@
 
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.cluster.locate.BinaryLocator;
 import com.couchbase.client.core.config.Configuration;
 import com.couchbase.client.core.config.ConfigurationManager;
 import com.couchbase.client.core.config.DefaultConfigurationManager;
@@ -74,20 +75,6 @@ import static reactor.event.selector.Selectors.$;
 
 /**
  * The default implementation of a {@link Cluster}.
- *
- * TODO:
- *  - attach streams to all connected nodes, react on changes and build the states for the cluster.
- *
- *  - implement mock test of config loading from connecting
- *
- *  - Implement basic bootstrapping in config manager (+ cccp)
- *
- *  - implement node layer
- *
- *  - implement service layer
- *
- *  - implement endpoint layer + netty transition
- *
  */
 public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> implements Cluster {
 
@@ -180,17 +167,9 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 	}
 
 	private Promise<BinaryResponse> dispatchBinary(final BinaryRequest request) {
-		if (request instanceof com.couchbase.client.core.message.binary.GetBucketConfigRequest) {
-			com.couchbase.client.core.message.binary.GetBucketConfigRequest req = (com.couchbase.client.core.message.binary.GetBucketConfigRequest) request;
-			Registration<? extends Node> registration = nodeRegistry.select(req.node()).get(0);
-			return registration.getObject().send(request);
-		} else if (request instanceof GetRequest) {
-			return nodeRegistry.iterator().next().getObject().send(request);
-		} else if (request instanceof UpsertRequest) {
-			return nodeRegistry.iterator().next().getObject().send(request);
-		}
-		// TODO: fixme when not found
-		return null;
+		return BinaryLocator.locate(request, nodeRegistry, configurationManager.get(request.bucket()));
+
+
 	}
 
     /**

@@ -22,8 +22,20 @@
 
 package com.couchbase.client.core.config;
 
+import java.util.List;
+
 /**
  * Describes a cluster {@link Configuration}.
  */
 public interface Configuration {
+
+	public String uri();
+
+	public String streamingUri();
+
+	public List<DefaultConfiguration.Node> nodes();
+
+	public String locatorType();
+
+	public DefaultConfiguration.PartitionMap partitionMap();
 }
