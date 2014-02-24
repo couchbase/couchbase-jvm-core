@@ -8,61 +8,70 @@ import com.couchbase.client.core.message.binary.GetResponse;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheRequestHeader;
-import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequestHeader;
-import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
+/**
+ * Codec that handles encoding of binary memcache requests and decoding of binary memcache responses.
+ */
 public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheResponse, BinaryRequest> {
 
-	private final Queue<Class<?>> queue = new ArrayDeque<Class<?>>();
+    /**
+     * The Queue which holds the request types so that proper decoding can happen async.
+     */
+	private final Queue<Class<?>> queue;
+
+    /**
+     * The current request header, shared across requests and reset inbetween.
+     */
+    private BinaryMemcacheRequestHeader requestHeader;
+
+    /**
+     * Creates a new {@link BinaryCodec} with the default dequeue.
+     */
+    public BinaryCodec() {
+        this(new ArrayDeque<Class<?>>());
+    }
+
+    /**
+     * Creates a new {@link BinaryCodec} with a custom dequeue.
+     *
+     * @param queue a custom queue to test encoding/decoding.
+     */
+    public BinaryCodec(final Queue<Class<?>> queue) {
+        this.queue = queue;
+        requestHeader = new DefaultBinaryMemcacheRequestHeader();
+    }
 
 	@Override
-	protected void encode(ChannelHandlerContext ctx, BinaryRequest msg, List<Object> out) throws Exception {
-		queue.offer(msg.getClass());
+	protected void encode(final ChannelHandlerContext ctx, final BinaryRequest msg, final List<Object> out)
+        throws Exception {
+        resetRequestState();
 
-		if (msg instanceof GetBucketConfigRequest) {
-			BinaryMemcacheRequestHeader header = new DefaultBinaryMemcacheRequestHeader();
-			header.setOpcode((byte) 0xb5);
-			out.add(new DefaultBinaryMemcacheRequest(header));
-		} else if (msg instanceof GetRequest) {
-			GetRequest request = (GetRequest) msg;
-			BinaryMemcacheRequestHeader header = new DefaultBinaryMemcacheRequestHeader();
-			header.setOpcode(BinaryMemcacheOpcodes.GET);
-			header.setKeyLength((short) request.key().length());
-			header.setTotalBodyLength((short) request.key().length());
-			header.setReserved((short) 28);
-			out.add(new DefaultBinaryMemcacheRequest(header, request.key()));
-		} else if (msg instanceof UpsertRequest) {
-			UpsertRequest request = (UpsertRequest) msg;
+        BinaryMemcacheRequest request;
+        if (msg instanceof GetBucketConfigRequest) {
+            request = handleGetBucketConfigRequest();
+        } else if (msg instanceof GetRequest) {
+            request = handleGetRequest((GetRequest) msg);
+        } else if (msg instanceof UpsertRequest) {
+            request = handleUpsertRequest((UpsertRequest) msg, ctx);
+        } else {
+            throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
+        }
 
-			ByteBuf extras = ctx.alloc().buffer();
-			extras.writeInt(0);
-			extras.writeInt(0);
-
-			BinaryMemcacheRequestHeader header = new DefaultBinaryMemcacheRequestHeader();
-			header.setOpcode(BinaryMemcacheOpcodes.SET);
-			header.setKeyLength((short) request.key().length());
-			header.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
-			header.setReserved((short) 28);
-			header.setExtrasLength((byte) extras.readableBytes());
-
-			out.add(new DefaultFullBinaryMemcacheRequest(header, request.key(), extras, request.content()));
-		}
+        out.add(request);
+        queue.offer(msg.getClass());
 	}
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg, List<Object> in) throws Exception {
+	protected void decode(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg, final List<Object> in)
+        throws Exception {
 		Class<?> clazz = queue.poll();
 
 		if(clazz.equals(GetBucketConfigRequest.class)) {
@@ -71,7 +80,61 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
 			in.add(new GetResponse(msg.content().toString(CharsetUtil.UTF_8)));
 		} else if (clazz.equals(UpsertRequest.class)) {
 			in.add(new UpsertResponse());
-		}
+		} else {
+            throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
+        }
 	}
+
+    /**
+     * Reset all shared variables across requests.
+     */
+    private void resetRequestState() {
+        requestHeader = new DefaultBinaryMemcacheRequestHeader();
+    }
+
+    /**
+     * Creates the actual protocol level request for an incoming get request.
+     *
+     * @param request the incoming get request.
+     * @return the built protocol request.
+     */
+    private BinaryMemcacheRequest handleGetRequest(final GetRequest request) {
+        requestHeader.setOpcode(BinaryMemcacheOpcodes.GET);
+        requestHeader.setKeyLength((short) request.key().length());
+        requestHeader.setTotalBodyLength((short) request.key().length());
+        requestHeader.setReserved((short) 28); // TODO: make me dynamic
+        return new DefaultBinaryMemcacheRequest(requestHeader, request.key());
+    }
+
+    /**
+     * Creates the actual protocol level request for an incoming upsert request.
+     *
+     * @param request the incoming upsert request.
+     * @param ctx the channel handler context for buffer allocations.
+     * @return the built protocol request.
+     */
+    private BinaryMemcacheRequest handleUpsertRequest(final UpsertRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf extras = ctx.alloc().buffer();
+        extras.writeInt(0); // TODO: make me dynamic
+        extras.writeInt(0); // TODO: make me dynamic
+
+        requestHeader.setOpcode(BinaryMemcacheOpcodes.SET);
+        requestHeader.setKeyLength((short) request.key().length());
+        requestHeader.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
+        requestHeader.setReserved((short) 28); // TODO: make me dynamic
+        requestHeader.setExtrasLength((byte) extras.readableBytes());
+
+        return new DefaultFullBinaryMemcacheRequest(requestHeader, request.key(), extras, request.content());
+    }
+
+    /**
+     * Creates the actual protocol level request for an incoming bucket config request.
+     *
+     * @return the built protocol request.
+     */
+    private BinaryMemcacheRequest handleGetBucketConfigRequest() {
+        requestHeader.setOpcode((byte) 0xb5);
+        return new DefaultBinaryMemcacheRequest(requestHeader);
+    }
 
 }

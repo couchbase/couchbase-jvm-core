@@ -52,13 +52,14 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
             out.add(msg.getData());
         }
 
-        @Override
+
+        /*@Override
         public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
             super.channelWritabilityChanged(ctx);
             if (ctx.channel().isWritable() == false && ctx.channel().isActive()) {
                 ctx.flush();
             }
-        }
+        }*/
     }
 
 }

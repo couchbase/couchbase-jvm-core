@@ -55,7 +55,7 @@ project(':jvm-core') {
 
     dependencies {
     	compile group: 'org.projectreactor', name: 'reactor-core', version: '1.1.0.BUILD-SNAPSHOT', changing: true
-    	compile group: 'io.netty', name: 'netty-all', version: '5.0.0.Alpha2-SNAPSHOT', changing: true
+    	compile group: 'io.netty', name: 'netty-all', version: '4.1.0.Alpha1-SNAPSHOT', changing: true
         compile group: 'com.typesafe', name: 'config', version: '1.2.0'
         compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.3.1'
 
