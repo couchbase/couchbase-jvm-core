@@ -4,6 +4,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import reactor.core.composable.Deferred;
@@ -34,6 +35,15 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
         }, 0, 75, TimeUnit.MICROSECONDS);
     }
 
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+        super.channelWritabilityChanged(ctx);
+
+        if (ctx.channel().isWritable() == false && ctx.channel().isActive()) {
+            ctx.flush();
+        }
+    }
+
     final class EventResponseDecoder extends MessageToMessageDecoder<CouchbaseResponse> {
 
         @Override
@@ -52,14 +62,6 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
             out.add(msg.getData());
         }
 
-
-        /*@Override
-        public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-            super.channelWritabilityChanged(ctx);
-            if (ctx.channel().isWritable() == false && ctx.channel().isActive()) {
-                ctx.flush();
-            }
-        }*/
     }
 
 }
