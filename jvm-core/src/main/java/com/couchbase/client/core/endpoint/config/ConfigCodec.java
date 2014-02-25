@@ -95,7 +95,7 @@ public class ConfigCodec extends MessageToMessageCodec<FullHttpResponse, ConfigR
      * @param request the incoming request.
      * @return the actual protocl level request.
      */
-    private HttpRequest handleGetBucketConfigRequest(final GetBucketConfigRequest request) {
+    private static HttpRequest handleGetBucketConfigRequest(final GetBucketConfigRequest request) {
         String path = "/pools/default/buckets/" + request.bucket();
         return new DefaultFullHttpRequest(HTTP_VERSION, HttpMethod.GET, path);
     }

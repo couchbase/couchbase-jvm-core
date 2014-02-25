@@ -42,6 +42,8 @@ import reactor.core.composable.spec.Promises;
 import reactor.event.Event;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The {@link AbstractEndpoint} implements common functionality needed across all {@link Endpoint}s.
@@ -72,11 +74,16 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private volatile Channel channel;
 
     /**
+     * The reconnect delay that increases with backoff.
+     */
+    private final AtomicLong reconnectDelay;
+
+    /**
      * Add custom endpoint handlers to the {@link ChannelPipeline}.
      *
      * @param pipeline the pipeline where to add handlers.
      */
-    protected abstract void customEndpointHandlers(final ChannelPipeline pipeline);
+    protected abstract void customEndpointHandlers(ChannelPipeline pipeline);
 
     /**
      * Create a new {@link Endpoint}.
@@ -90,7 +97,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         super(LifecycleState.DISCONNECTED, env);
 
         this.env = env;
+        reconnectDelay = new AtomicLong(0);
 
+        final ChannelHandler endpointHandler = new GenericEndpointHandler(this);
         bootstrap = new Bootstrap()
             .group(env.ioPool())
             .channel(NioSocketChannel.class)
@@ -103,7 +112,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         pipeline.addLast(new DebugLoggingHandler(LogLevel.TRACE));
                     }
                     customEndpointHandlers(pipeline);
-                    pipeline.addLast(new GenericEndpointHandler());
+                    pipeline.addLast(endpointHandler);
                 }
             })
             .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -114,27 +123,47 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     @Override
     public Promise<LifecycleState> connect() {
         final Deferred<LifecycleState, Promise<LifecycleState>> deferred = Promises.defer(env.reactorEnv());
+        transitionState(LifecycleState.CONNECTING);
+
         bootstrap.connect().addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
                     channel = future.channel();
                     transitionState(LifecycleState.CONNECTED);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
-                    }
-                    deferred.accept(state());
+                    LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
+                } else {
+                    LOGGER.warn("Could not connect to endpoint, retrying with delay." + channel.remoteAddress());
+                    transitionState(LifecycleState.CONNECTING);
+                    channel.eventLoop().schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            connect();
+                        }
+                    }, reconnectDelay(), TimeUnit.MILLISECONDS);
                 }
-                // TODO HANDLE ME FAILURE
+                deferred.accept(state());
             }
         });
+
         return deferred.compose();
     }
 
     @Override
     public Promise<LifecycleState> disconnect() {
-        // TODO: handle disconnect
-        return null;
+        final Deferred<LifecycleState, Promise<LifecycleState>> deferred = Promises.defer(env.reactorEnv());
+        transitionState(LifecycleState.DISCONNECTING);
+        channel.disconnect().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    LOGGER.warn("Received an error during disconnect.", future.cause());
+                }
+                transitionState(LifecycleState.DISCONNECTED);
+                deferred.accept(state());
+            }
+        });
+        return deferred.compose();
     }
 
     @Override
@@ -159,6 +188,27 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         }
 
         return deferred.compose();
+    }
+
+    /**
+     * Helper method that is called inside from the event loop to notify the upper endpoint of a disconnect.
+     *
+     * Subsequent reconnect attempts are triggered from here.
+     */
+    void notifyChannelInactive() {
+        transitionState(LifecycleState.DISCONNECTED);
+        connect();
+    }
+
+    /**
+     * Returns the reconnect retry delay in Miliseconds.
+     *
+     * Currently, it uses linear backoff.
+     *
+     * @return the retry delay.
+     */
+    private long reconnectDelay() {
+        return reconnectDelay.getAndIncrement();
     }
 
 }

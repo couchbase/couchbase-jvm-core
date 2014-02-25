@@ -24,27 +24,58 @@ package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import reactor.core.composable.Deferred;
 import reactor.event.Event;
+import reactor.function.Consumer;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * The toplevel handler which accepts and completes promises and handles writing tasks.
+ *
+ * This handler implements common functionality needed by all pipelines and reduces code duplication. It is designed
+ * that the actual endpoint codecs only have to implement the protocol-level translation and never deal with connection
+ * management and promise completions. It automatically handles flushing/writing and notifies the upper endpoint if
+ * the channel has been disconnected (so that a proper reconnect can be established).
+ *
+ * The encoder/decoder present in this handler have the purpose of completing the right deferred promises with the
+ * correct set of data given from the underlying handlers.
+ */
 public class GenericEndpointHandler extends ChannelHandlerAppender {
 
+    /**
+     * A queue which holds all the outgoing request in order.
+     */
     private final Queue<Event<CouchbaseRequest>> queue = new ArrayDeque<Event<CouchbaseRequest>>();
 
-    public GenericEndpointHandler() {
+    /**
+     * Reference to the parent endpoint (to notify certain signals).
+     */
+    private final AbstractEndpoint endpoint;
+
+    /**
+     * Create a new {@link GenericEndpointHandler}.
+     *
+     * @param endpoint the parent endpoint for communication purposes.
+     */
+    public GenericEndpointHandler(final AbstractEndpoint endpoint) {
         add(new EventResponseDecoder(), new EventRequestEncoder());
+        this.endpoint = endpoint;
     }
 
+    /**
+     * Once the handler has been added to the pipeline, start flushing the write queue in intervals.
+     *
+     * @param ctx the channel handler context.
+     * @throws Exception if something goes wrong while adding the handler.
+     */
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
@@ -52,36 +83,77 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
         ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                ctx.flush();
+                flushMeMaybe(ctx);
             }
         }, 0, 75, TimeUnit.MICROSECONDS);
     }
 
     @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
+        flushMeMaybe(ctx);
+        ctx.fireChannelWritabilityChanged();
+    }
 
-        if (ctx.channel().isWritable() == false && ctx.channel().isActive()) {
+    /**
+     * Notify the endpoint if the channel is inactive now.
+     *
+     * This is important as the upper endpoint needs to coordinate the reconnect process.
+     *
+     * @param ctx the channel handler context.
+     * @throws Exception if something goes wrong while setting the channel inactive.
+     */
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
+        endpoint.notifyChannelInactive();
+        ctx.fireChannelInactive();
+    }
+
+    /**
+     * Helper method to flush the pipeline if possible.
+     *
+     * Hey, I just connected you,
+     * And this is crazy,
+     * But here's my data,
+     * So flush me maybe!
+     * It's hard to read right,
+     * From your channel,
+     * But here's my data,
+     * So flush me maybe!
+     *
+     * @param ctx the channel handler context.
+     */
+    private static void flushMeMaybe(final ChannelHandlerContext ctx) {
+        Channel channel = ctx.channel();
+        if (channel.isWritable() && channel.isActive()) {
             ctx.flush();
         }
     }
 
-    final class EventResponseDecoder extends MessageToMessageDecoder<CouchbaseResponse> {
+    /**
+     * The {@link EventRequestEncoder} stores the {@link CouchbaseRequest} and puts the payload into the pipeline.
+     */
+    final class EventRequestEncoder extends MessageToMessageEncoder<Event<CouchbaseRequest>> {
 
         @Override
-        protected void decode(ChannelHandlerContext ctx, CouchbaseResponse in, List<Object> out) throws Exception {
-            Event<CouchbaseRequest> event = queue.poll();
-            ((Deferred) event.getReplyTo()).accept(in);
+        protected void encode(final ChannelHandlerContext ctx, final Event<CouchbaseRequest> msg,
+            final List<Object> out) throws Exception {
+            queue.offer(msg);
+            out.add(msg.getData());
         }
 
     }
 
-    final class EventRequestEncoder extends MessageToMessageEncoder<Event<CouchbaseRequest>> {
+    /**
+     * The {@link EventResponseDecoder} takes the {@link CouchbaseRequest} off the queue and completes the promise.
+     */
+    final class EventResponseDecoder extends MessageToMessageDecoder<CouchbaseResponse> {
 
         @Override
-        protected void encode(ChannelHandlerContext ctx, Event<CouchbaseRequest> msg, List<Object> out) throws Exception {
-            queue.offer(msg);
-            out.add(msg.getData());
+        @SuppressWarnings("unchecked")
+        protected void decode(final ChannelHandlerContext ctx, final CouchbaseResponse in, final List<Object> out)
+            throws Exception {
+            Event<CouchbaseRequest> event = queue.poll();
+            ((Consumer<CouchbaseResponse>) event.getReplyTo()).accept(in);
         }
 
     }

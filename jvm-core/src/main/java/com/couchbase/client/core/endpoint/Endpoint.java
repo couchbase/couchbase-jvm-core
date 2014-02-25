@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import reactor.core.composable.Promise;
@@ -37,7 +38,7 @@ import reactor.core.composable.Promise;
  *
  * Every endpoint exposes its state so that the upper layer can always orchestrate it based on the state. Strictly
  * speaking, a endpoint represents a underlying socket. This means that if multiplexing is needed, the upper layer
- * ({@link com.couchbase.client.core.service.Service} has to handle it.
+ * ({@link Service} has to handle it.
  *
  * Note that sending will only work if the endpoint is in the {@link LifecycleState#CONNECTED} state. If not, the future
  * will return an error (and the upper layer should close this endpoint, create a new one or choose another one,
