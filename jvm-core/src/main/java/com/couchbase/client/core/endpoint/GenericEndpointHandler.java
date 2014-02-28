@@ -29,13 +29,23 @@ import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import reactor.core.Reactor;
+import reactor.core.spec.Reactors;
 import reactor.event.Event;
+import reactor.event.selector.Selector;
 import reactor.function.Consumer;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static reactor.event.selector.Selectors.$;
 
 /**
  * The toplevel handler which accepts and completes promises and handles writing tasks.
@@ -61,37 +71,39 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
     private final AbstractEndpoint endpoint;
 
     /**
+     * The flush interval in microseconds.
+     */
+    private final long flushInterval;
+
+    /**
      * Create a new {@link GenericEndpointHandler}.
      *
      * @param endpoint the parent endpoint for communication purposes.
      */
-    public GenericEndpointHandler(final AbstractEndpoint endpoint) {
+    public GenericEndpointHandler(final AbstractEndpoint endpoint, long flushInterval) {
         add(new EventResponseDecoder(), new EventRequestEncoder());
         this.endpoint = endpoint;
-    }
-
-    /**
-     * Once the handler has been added to the pipeline, start flushing the write queue in intervals.
-     *
-     * @param ctx the channel handler context.
-     * @throws Exception if something goes wrong while adding the handler.
-     */
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-        super.handlerAdded(ctx);
-
-        ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                flushMeMaybe(ctx);
-            }
-        }, 0, 75, TimeUnit.MICROSECONDS);
+        this.flushInterval = flushInterval;
     }
 
     @Override
     public void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
         flushMeMaybe(ctx);
         ctx.fireChannelWritabilityChanged();
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        super.handlerAdded(ctx);
+
+        if (flushInterval > 0) {
+            ctx.channel().eventLoop().scheduleWithFixedDelay(new Runnable() {
+                @Override
+                public void run() {
+                    flushMeMaybe(ctx);
+                }
+            }, 0, flushInterval, TimeUnit.MICROSECONDS);
+        }
     }
 
     /**
@@ -122,7 +134,7 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
      *
      * @param ctx the channel handler context.
      */
-    private static void flushMeMaybe(final ChannelHandlerContext ctx) {
+    private void flushMeMaybe(final ChannelHandlerContext ctx) {
         Channel channel = ctx.channel();
         if (channel.isWritable() && channel.isActive()) {
             ctx.flush();
@@ -139,6 +151,9 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
             final List<Object> out) throws Exception {
             queue.offer(msg);
             out.add(msg.getData());
+            if (flushInterval <= 0) {
+                flushMeMaybe(ctx);
+            }
         }
 
     }

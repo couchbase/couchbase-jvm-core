@@ -29,10 +29,10 @@ subprojects {
 	targetCompatibility = JavaVersion.VERSION_1_6
 
     repositories {
-    	//mavenLocal()
+    	mavenLocal()
         mavenCentral()
-        maven { url 'http://repo.spring.io/libs-snapshot' }
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'http://repo.spring.io/libs-snapshot' }
     }
 
 	sourceSets {
@@ -44,7 +44,7 @@ subprojects {
 
 project(':jvm-core') {
 	apply plugin: 'groovy'
-    apply plugin: 'checkstyle'
+    //apply plugin: 'checkstyle'
 
 	sourceSets {
         test {
@@ -65,6 +65,7 @@ project(':jvm-core') {
 		testCompile group: 'junit', name: 'junit', version: '4.11'
 		testCompile group: 'org.spockframework', name: 'spock-core', version: '0.7-groovy-2.0'
 		testCompile group: 'cglib', name: 'cglib-nodep', version: '2.2'
+        testCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.4.2'
 		testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
     }
 }

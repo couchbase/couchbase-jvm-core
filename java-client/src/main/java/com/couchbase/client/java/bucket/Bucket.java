@@ -1,5 +1,6 @@
 package com.couchbase.client.java.bucket;
 
+import com.couchbase.client.core.document.Document;
 import com.couchbase.client.java.query.Criteria;
 import com.couchbase.client.java.query.QueryResult;
 import com.couchbase.client.java.view.View;

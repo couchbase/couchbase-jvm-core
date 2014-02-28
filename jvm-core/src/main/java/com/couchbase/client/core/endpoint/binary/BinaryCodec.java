@@ -50,11 +50,6 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
 	private final Queue<Class<?>> queue;
 
     /**
-     * The current request header, shared across requests and reset inbetween.
-     */
-    private BinaryMemcacheRequestHeader requestHeader;
-
-    /**
      * Creates a new {@link BinaryCodec} with the default dequeue.
      */
     public BinaryCodec() {
@@ -68,13 +63,11 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      */
     public BinaryCodec(final Queue<Class<?>> queue) {
         this.queue = queue;
-        requestHeader = new DefaultBinaryMemcacheRequestHeader();
     }
 
 	@Override
 	protected void encode(final ChannelHandlerContext ctx, final BinaryRequest msg, final List<Object> out)
         throws Exception {
-        resetRequestState();
 
         BinaryMemcacheRequest request;
         if (msg instanceof GetBucketConfigRequest) {
@@ -108,24 +101,18 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
 	}
 
     /**
-     * Reset all shared variables across requests.
-     */
-    private void resetRequestState() {
-        requestHeader = new DefaultBinaryMemcacheRequestHeader();
-    }
-
-    /**
      * Creates the actual protocol level request for an incoming get request.
      *
      * @param request the incoming get request.
      * @return the built protocol request.
      */
     private BinaryMemcacheRequest handleGetRequest(final GetRequest request) {
-        requestHeader.setOpcode(BinaryMemcacheOpcodes.GET);
-        requestHeader.setKeyLength((short) request.key().length());
-        requestHeader.setTotalBodyLength((short) request.key().length());
-        requestHeader.setReserved((short) 28); // TODO: make me dynamic
-        return new DefaultBinaryMemcacheRequest(requestHeader, request.key());
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
+        msg.setOpcode(BinaryMemcacheOpcodes.GET);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length());
+        msg.setReserved((short) 28); // TODO: make me dynamic
+        return msg;
     }
 
     /**
@@ -140,13 +127,15 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         extras.writeInt(0); // TODO: make me dynamic
         extras.writeInt(0); // TODO: make me dynamic
 
-        requestHeader.setOpcode(BinaryMemcacheOpcodes.SET);
-        requestHeader.setKeyLength((short) request.key().length());
-        requestHeader.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
-        requestHeader.setReserved((short) 28); // TODO: make me dynamic
-        requestHeader.setExtrasLength((byte) extras.readableBytes());
+        FullBinaryMemcacheRequest msg = new DefaultFullBinaryMemcacheRequest(request.key(), extras, request.content());
 
-        return new DefaultFullBinaryMemcacheRequest(requestHeader, request.key(), extras, request.content());
+        msg.setOpcode(BinaryMemcacheOpcodes.SET);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
+        msg.setReserved((short) 28); // TODO: make me dynamic
+        msg.setExtrasLength((byte) extras.readableBytes());
+
+        return msg;
     }
 
     /**
@@ -155,8 +144,9 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * @return the built protocol request.
      */
     private BinaryMemcacheRequest handleGetBucketConfigRequest() {
-        requestHeader.setOpcode((byte) 0xb5);
-        return new DefaultBinaryMemcacheRequest(requestHeader);
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest();
+        msg.setOpcode((byte) 0xb5);
+        return msg;
     }
 
 }

@@ -20,41 +20,33 @@
  * IN THE SOFTWARE.
  */
 
-package com.couchbase.client.core.endpoint.config;
+package com.couchbase.client.core.state;
 
-import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.environment.Environment;
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-
-import java.net.InetSocketAddress;
+import com.couchbase.client.core.CouchbaseException;
 
 /**
- * This endpoint defines the pipeline for config requests and responses.
+ * Thrown if the contacted entity is not connected.
  */
-public class ConfigEndpoint extends AbstractEndpoint {
+public class NotConnectedException extends CouchbaseException {
 
-    /**
-     * Create a new {@link ConfigEndpoint}.
-     *
-     * @param address the address to connect on this endpoint.
-     * @param env the couchbase environment.
-     */
-    public ConfigEndpoint(InetSocketAddress address, Environment env) {
-        super(address, env);
+    private static final long serialVersionUID = 1093906979963191815L;
+
+    public NotConnectedException() {
     }
 
-    @Override
-    protected void customEndpointHandlers(ChannelPipeline pipeline) {
-        pipeline
-            .addLast(new HttpClientCodec())
-            .addLast(new HttpObjectAggregator(Integer.MAX_VALUE))
-            .addLast(new ConfigCodec());
+    public NotConnectedException(String message) {
+        super(message);
     }
 
-    @Override
-    protected long flushInterval(Environment env) {
-        return env.ioConfigFlushInterval();
+    public NotConnectedException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public NotConnectedException(Throwable cause) {
+        super(cause);
+    }
+
+    public NotConnectedException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

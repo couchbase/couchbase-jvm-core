@@ -53,4 +53,8 @@ public class BinaryEndpoint extends AbstractEndpoint {
 			.addLast(new BinaryCodec());
 	}
 
+    @Override
+    protected long flushInterval(Environment env) {
+        return env.ioBinaryFlushInterval();
+    }
 }

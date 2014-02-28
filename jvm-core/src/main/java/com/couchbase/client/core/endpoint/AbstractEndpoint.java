@@ -27,11 +27,13 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.state.NotConnectedException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
@@ -59,6 +61,16 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private static final Logger LOGGER = LoggerFactory.getLogger(Endpoint.class);
 
     /**
+     * A shared logging handler for all endpoints.
+     */
+    private static final ChannelHandler LOGGING_HANDLER_INSTANCE = new DebugLoggingHandler(LogLevel.TRACE);
+
+    /**
+     * Precreated not connected exception for performance reasons.
+     */
+    private static final NotConnectedException NOT_CONNECTED_EXCEPTION = new NotConnectedException();
+
+    /**
      * The couchbase environment.
      */
     private final Environment env;
@@ -66,7 +78,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * The IO (netty) bootstrapper.
      */
-    private final Bootstrap bootstrap;
+    private final BootstrapAdapter bootstrap;
 
     /**
      * The underlying IO (netty) channel.
@@ -76,7 +88,14 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * The reconnect delay that increases with backoff.
      */
-    private final AtomicLong reconnectDelay;
+    private final AtomicLong reconnectDelay = new AtomicLong(0);
+
+    /**
+     * Preset the stack trace for the static exceptions.
+     */
+    static {
+        NOT_CONNECTED_EXCEPTION.setStackTrace(new StackTraceElement[0]);
+    }
 
     /**
      * Add custom endpoint handlers to the {@link ChannelPipeline}.
@@ -84,6 +103,30 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param pipeline the pipeline where to add handlers.
      */
     protected abstract void customEndpointHandlers(ChannelPipeline pipeline);
+
+    /**
+     * Returns the flush interval for this endpoint.
+     *
+     * @param env the environment to use.
+     * @return the flush interval for this endpoint.
+     */
+    protected abstract long flushInterval(Environment env);
+
+    /**
+     * Create a new {@link Endpoint} with a custom bootstrap.
+     *
+     * This constructor normally only needs to be used during unit-testing scenarios where a
+     * mocked bootstrap can be passed in. For regular extensions, use
+     * {@link #AbstractEndpoint(InetSocketAddress, Environment)}.
+     *
+     * @param bootstrap the netty bootstrap.
+     * @param env the environment to use.
+     */
+    protected AbstractEndpoint(final BootstrapAdapter bootstrap, final Environment env) {
+        super(LifecycleState.DISCONNECTED, env);
+        this.bootstrap = bootstrap;
+        this.env = env;
+    }
 
     /**
      * Create a new {@link Endpoint}.
@@ -95,12 +138,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     protected AbstractEndpoint(final InetSocketAddress address, final Environment env) {
         super(LifecycleState.DISCONNECTED, env);
-
         this.env = env;
-        reconnectDelay = new AtomicLong(0);
 
-        final ChannelHandler endpointHandler = new GenericEndpointHandler(this);
-        bootstrap = new Bootstrap()
+        final ChannelHandler endpointHandler = new GenericEndpointHandler(this, flushInterval(env));
+        bootstrap = new BootstrapAdapter(new Bootstrap()
             .group(env.ioPool())
             .channel(NioSocketChannel.class)
             .handler(new ChannelInitializer<Channel>() {
@@ -109,7 +150,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     ChannelPipeline pipeline = ch.pipeline();
 
                     if (LOGGER.isTraceEnabled()) {
-                        pipeline.addLast(new DebugLoggingHandler(LogLevel.TRACE));
+                        pipeline.addLast(LOGGING_HANDLER_INSTANCE);
                     }
                     customEndpointHandlers(pipeline);
                     pipeline.addLast(endpointHandler);
@@ -117,30 +158,42 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             })
             .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
             .option(ChannelOption.TCP_NODELAY, false)
-            .remoteAddress(address);
+            .remoteAddress(address));
     }
 
     @Override
     public Promise<LifecycleState> connect() {
+        if (state() != LifecycleState.DISCONNECTED) {
+            return Promises.success(state()).get();
+        }
+
         final Deferred<LifecycleState, Promise<LifecycleState>> deferred = Promises.defer(env.reactorEnv());
         transitionState(LifecycleState.CONNECTING);
 
         bootstrap.connect().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    channel = future.channel();
-                    transitionState(LifecycleState.CONNECTED);
-                    LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
+                if (state() == LifecycleState.DISCONNECTING || state() == LifecycleState.DISCONNECTED) {
+                    LOGGER.debug("Endpoint connect completed, but got instructed to disconnect in the meantime.");
+                    transitionState(LifecycleState.DISCONNECTED);
+                    channel = null;
                 } else {
-                    LOGGER.warn("Could not connect to endpoint, retrying with delay." + channel.remoteAddress());
-                    transitionState(LifecycleState.CONNECTING);
-                    channel.eventLoop().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            connect();
-                        }
-                    }, reconnectDelay(), TimeUnit.MILLISECONDS);
+                    if (future.isSuccess()) {
+                        channel = future.channel();
+                        transitionState(LifecycleState.CONNECTED);
+                        LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
+                    } else {
+                        long delay = reconnectDelay();
+                        LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: "
+                            + future.channel().remoteAddress());
+                        transitionState(LifecycleState.CONNECTING);
+                        future.channel().eventLoop().schedule(new Runnable() {
+                            @Override
+                            public void run() {
+                                connect();
+                            }
+                        }, delay, TimeUnit.MILLISECONDS);
+                    }
                 }
                 deferred.accept(state());
             }
@@ -151,16 +204,28 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     @Override
     public Promise<LifecycleState> disconnect() {
-        final Deferred<LifecycleState, Promise<LifecycleState>> deferred = Promises.defer(env.reactorEnv());
+        if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
+            return Promises.success(state()).get();
+        }
+
+        if (state() == LifecycleState.CONNECTING) {
+            transitionState(LifecycleState.DISCONNECTED);
+            return Promises.success(state()).get();
+        }
+
         transitionState(LifecycleState.DISCONNECTING);
+        final Deferred<LifecycleState, Promise<LifecycleState>> deferred = Promises.defer(env.reactorEnv());
         channel.disconnect().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
-                if (!future.isSuccess()) {
+                if (future.isSuccess()) {
+                    LOGGER.debug("Successfully disconnected from Endpoint " + channel.remoteAddress());
+                } else {
                     LOGGER.warn("Received an error during disconnect.", future.cause());
                 }
                 transitionState(LifecycleState.DISCONNECTED);
                 deferred.accept(state());
+                channel = null;
             }
         });
         return deferred.compose();
@@ -183,8 +248,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 }
             });
         } else {
-            // TODO: use better exceptions (also precreated ones for perf)
-            deferred.accept(new Exception("Not connected :("));
+            deferred.accept(NOT_CONNECTED_EXCEPTION);
         }
 
         return deferred.compose();

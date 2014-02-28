@@ -20,41 +20,40 @@
  * IN THE SOFTWARE.
  */
 
-package com.couchbase.client.core.endpoint.config;
+package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.environment.Environment;
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-
-import java.net.InetSocketAddress;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelFuture;
 
 /**
- * This endpoint defines the pipeline for config requests and responses.
+ * A wrapper for the IO {@link Bootstrap} class.
+ *
+ * This adapter is needed in order to properly mock the underlying {@link Bootstrap} class, since it is a final class
+ * and can't be tested properly otherwise.
  */
-public class ConfigEndpoint extends AbstractEndpoint {
+public class BootstrapAdapter {
 
     /**
-     * Create a new {@link ConfigEndpoint}.
-     *
-     * @param address the address to connect on this endpoint.
-     * @param env the couchbase environment.
+     * The underlying {@link Bootstrap}.
      */
-    public ConfigEndpoint(InetSocketAddress address, Environment env) {
-        super(address, env);
+    private final Bootstrap bootstrap;
+
+    /**
+     * Create a new {@link BootstrapAdapter}.
+     *
+     * @param bootstrap the wrapped bootstrap.
+     */
+    public BootstrapAdapter(final Bootstrap bootstrap) {
+        this.bootstrap = bootstrap;
     }
 
-    @Override
-    protected void customEndpointHandlers(ChannelPipeline pipeline) {
-        pipeline
-            .addLast(new HttpClientCodec())
-            .addLast(new HttpObjectAggregator(Integer.MAX_VALUE))
-            .addLast(new ConfigCodec());
+    /**
+     * Connect the underlying {@link Bootstrap} and return a {@link ChannelFuture}.
+     *
+     * @return the future containing the channel and connect status.
+     */
+    public ChannelFuture connect() {
+        return bootstrap.connect();
     }
 
-    @Override
-    protected long flushInterval(Environment env) {
-        return env.ioConfigFlushInterval();
-    }
 }

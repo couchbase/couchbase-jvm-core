@@ -81,4 +81,11 @@ public interface Environment {
 	 * @return the configured IO pool.
 	 */
 	EventLoopGroup ioPool();
+
+    String blockingPoolPrefix();
+    String nonBlockingPoolPrefix();
+    String ioPoolPrefix();
+
+    long ioBinaryFlushInterval();
+    long ioConfigFlushInterval();
 }
