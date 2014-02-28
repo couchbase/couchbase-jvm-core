@@ -31,15 +31,21 @@ import reactor.core.composable.Promise;
 public interface Service extends Stateful<LifecycleState> {
 
     /**
-     * Shutdown the service.
+     * Disconnect the service.
      *
      * @return
      */
-    Promise<Boolean> shutdown();
+    Promise<LifecycleState> disconnect();
 
+    /**
+     * Connect the service.
+     *
+     * @return
+     */
     Promise<LifecycleState> connect();
 
     /**
+     * Send a request to the service.
      *
      * @param request
      * @param <R>

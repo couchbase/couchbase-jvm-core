@@ -107,9 +107,9 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         if (hasServiceRegistered(request.type(), request.bucket())) {
             Service service = serviceRegistry.select(selector(request.type(), request.bucket())).get(0).getObject();
             serviceRegistry.unregister(selector(request.type(), request.bucket()));
-            service.shutdown().onComplete(new Consumer<Promise<Boolean>>() {
+            service.disconnect().onComplete(new Consumer<Promise<LifecycleState>>() {
                 @Override
-                public void accept(Promise<Boolean> shutdownPromise) {
+                public void accept(Promise<LifecycleState> shutdownPromise) {
                     if (shutdownPromise.isSuccess()) {
                         deferredResponse.accept(DisableServiceResponse.serviceDisabled());
                     } else {

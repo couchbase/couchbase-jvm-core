@@ -1,36 +1,25 @@
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.config.ConfigEndpoint;
 import com.couchbase.client.core.environment.Environment;
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.state.LifecycleState;
-import reactor.core.composable.Promise;
-
+import com.couchbase.client.core.service.strategies.RandomSelectionStrategy;
 import java.net.InetSocketAddress;
 
 public class ConfigService extends AbstractService {
 
-    // FIXME: we need a registry here too, N endpoints and multiplexing
-    private final ConfigEndpoint endpoint;
+    private static final SelectionStrategy strategy = new RandomSelectionStrategy();
+    private final InetSocketAddress address;
+    private final Environment environment;
 
     public ConfigService(InetSocketAddress address, Environment env) {
-        super(env);
-        endpoint = new ConfigEndpoint(address, env);
+        super(env, 1, strategy);
+        this.address = address;
+        environment = env;
     }
 
     @Override
-    public Promise<Boolean> shutdown() {
-        return null;
-    }
-
-    @Override
-    public Promise<LifecycleState> connect() {
-        return endpoint.connect();
-    }
-
-    @Override
-    public  Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
-        return endpoint.send(request);
+    protected Endpoint newEndpoint() {
+        return new ConfigEndpoint(address, environment);
     }
 }
