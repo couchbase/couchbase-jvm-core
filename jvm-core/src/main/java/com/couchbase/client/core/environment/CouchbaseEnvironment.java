@@ -169,7 +169,6 @@ public class CouchbaseEnvironment implements Environment {
             new BlockingWaitStrategy()
         ));
 
-        System.out.println(blockingPoolPrefix());
         reactorEnv.addDispatcher(reactor.core.Environment.THREAD_POOL, new ThreadPoolExecutorDispatcher(
             blockingPoolSize(),
             blockingPoolBacklog(),

@@ -14,18 +14,14 @@ import java.net.InetSocketAddress;
 public class BinaryService extends AbstractService {
 
     private static final SelectionStrategy strategy = new KeyHashSelectionStrategy();
-    private final InetSocketAddress address;
-    private final Environment environment;
 
 	public BinaryService(InetSocketAddress address, Environment env) {
-		super(env, 3, strategy);
-        this.address = address;
-        environment = env;
+		super(address, env, 3, strategy);
 	}
 
     @Override
     protected Endpoint newEndpoint() {
-        return new BinaryEndpoint(address, environment);
+        return new BinaryEndpoint(address(), environment());
     }
 
 }

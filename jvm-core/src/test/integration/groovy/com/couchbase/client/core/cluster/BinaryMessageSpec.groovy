@@ -29,6 +29,8 @@ import com.couchbase.client.core.message.binary.UpsertResponse
 import com.couchbase.client.core.message.common.ConnectRequest
 import io.netty.buffer.Unpooled
 import io.netty.util.CharsetUtil
+import reactor.function.Consumer
+import reactor.function.Function
 import spock.lang.Specification
 
 /**

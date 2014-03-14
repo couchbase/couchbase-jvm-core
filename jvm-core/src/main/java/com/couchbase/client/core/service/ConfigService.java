@@ -9,17 +9,13 @@ import java.net.InetSocketAddress;
 public class ConfigService extends AbstractService {
 
     private static final SelectionStrategy strategy = new RandomSelectionStrategy();
-    private final InetSocketAddress address;
-    private final Environment environment;
 
     public ConfigService(InetSocketAddress address, Environment env) {
-        super(env, 1, strategy);
-        this.address = address;
-        environment = env;
+        super(address, env, 1, strategy);
     }
 
     @Override
     protected Endpoint newEndpoint() {
-        return new ConfigEndpoint(address, environment);
+        return new ConfigEndpoint(address(), environment());
     }
 }

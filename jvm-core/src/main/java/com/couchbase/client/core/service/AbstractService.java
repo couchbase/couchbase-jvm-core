@@ -17,11 +17,13 @@ import reactor.event.registry.Registry;
 import reactor.event.selector.Selector;
 import reactor.function.Consumer;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import static reactor.event.selector.Selectors.$;
+import static reactor.event.selector.Selectors.regex;
 
 
 public abstract class AbstractService extends AbstractStateMachine<LifecycleState> implements Service  {
@@ -54,9 +56,26 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     protected abstract Endpoint newEndpoint();
 
     /**
-     *
+     * The environment to use.
      */
     private final Environment environment;
+
+    /**
+     * The address to connect the endpoints to.
+     */
+    private final InetSocketAddress address;
+
+    /**
+     *
+     * @param address
+     * @param env
+     * @param endpointCount
+     * @param strategy
+     */
+    protected AbstractService(InetSocketAddress address, Environment env, int endpointCount,
+        SelectionStrategy strategy) {
+        this(address, env, endpointCount, strategy, new CachingRegistry<Endpoint>());
+    }
 
     /**
      *
@@ -64,12 +83,14 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
      * @param endpointCount
      * @param strategy
      */
-    protected AbstractService(Environment env, int endpointCount, SelectionStrategy strategy) {
+    protected AbstractService(InetSocketAddress address, Environment env, int endpointCount, SelectionStrategy strategy,
+        Registry<Endpoint> endpointRegistry) {
         super(LifecycleState.DISCONNECTED, env);
         this.endpointCount = endpointCount;
         this.strategy = strategy;
+        this.address = address;
+        this.endpointRegistry = endpointRegistry;
         environment = env;
-        endpointRegistry = new CachingRegistry<Endpoint>();
 
         for (int i = 0; i < endpointCount; i++) {
             Selector selector = $(new Integer(i));
@@ -92,6 +113,11 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             if (!registration.isCancelled()) {
                 endpointPromises.add(registration.getObject().connect());
             }
+        }
+
+        if(endpointPromises.isEmpty()) {
+            transitionState(LifecycleState.DISCONNECTED);
+            deferred.accept(state());
         }
 
         Promises.when(endpointPromises).consume(new Consumer<List<LifecycleState>>() {
@@ -118,7 +144,8 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                     endState = LifecycleState.DISCONNECTED;
                 }
 
-                deferred.accept(endState);
+                transitionState(endState);
+                deferred.accept(state());
             }
         });
 
@@ -165,5 +192,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
      */
     private Endpoint select(CouchbaseRequest request) {
         return strategy.select(endpointRegistry, request);
+    }
+
+    protected Environment environment() {
+        return environment;
+    }
+
+    protected InetSocketAddress address() {
+        return address;
     }
 }
