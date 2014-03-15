@@ -9,6 +9,6 @@ public class RandomSelectionStrategy implements SelectionStrategy {
 
     @Override
     public Endpoint select(final Registry<Endpoint> endpointRegistry, final CouchbaseRequest request) {
-        return null;
+        return endpointRegistry.select(new Integer(0)).get(0).getObject();
     }
 }

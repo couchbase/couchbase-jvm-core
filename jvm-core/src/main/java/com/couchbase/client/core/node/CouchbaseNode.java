@@ -87,6 +87,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 	public Promise<EnableServiceResponse> enableService(final EnableServiceRequest request) {
         if (!hasServiceRegistered(request.type(), request.bucket())) {
 			final Service service = new ServiceSpec(request.type(), request.address(), env).get();
+
             return service.connect().map(new Function<LifecycleState, EnableServiceResponse>() {
                 @Override
                 public EnableServiceResponse apply(LifecycleState lifecycleState) {

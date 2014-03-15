@@ -94,7 +94,8 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
 
         for (int i = 0; i < endpointCount; i++) {
             Selector selector = $(new Integer(i));
-            endpointRegistry.register(selector, newEndpoint());
+            Endpoint endpoint = newEndpoint();
+            this.endpointRegistry.register(selector, endpoint);
         }
     }
 
@@ -110,7 +111,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         List<Promise<LifecycleState>> endpointPromises = new ArrayList<Promise<LifecycleState>>();
         while(iterator.hasNext()) {
             Registration<? extends Endpoint> registration = iterator.next();
-            if (!registration.isCancelled()) {
+            if (registration != null && !registration.isCancelled()) {
                 endpointPromises.add(registration.getObject().connect());
             }
         }
@@ -156,11 +157,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     public Promise<LifecycleState> disconnect() {
         final Deferred<LifecycleState,Promise<LifecycleState>> deferred = Promises.defer(environment.reactorEnv());
 
+        transitionState(LifecycleState.DISCONNECTING);
+
         Iterator<Registration<? extends Endpoint>> iterator = endpointRegistry.iterator();
         List<Promise<LifecycleState>> endpointPromises = new ArrayList<Promise<LifecycleState>>();
         while(iterator.hasNext()) {
             Registration<? extends Endpoint> registration = iterator.next();
-            if (!registration.isCancelled()) {
+            if (registration != null && !registration.isCancelled()) {
                 endpointPromises.add(registration.getObject().disconnect());
             }
         }
@@ -173,7 +176,9 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                         LOGGER.warn("Underlying Endpoint did not disconnect cleanly on shutdown.");
                     }
                 }
-                deferred.accept(LifecycleState.DISCONNECTED);
+
+                transitionState(LifecycleState.DISCONNECTED);
+                deferred.accept(state());
             }
         });
 

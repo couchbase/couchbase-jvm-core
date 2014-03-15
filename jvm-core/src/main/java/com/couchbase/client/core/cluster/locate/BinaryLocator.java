@@ -38,12 +38,12 @@ public class BinaryLocator {
 			long rv = (crc32.getValue() >> 16) & 0x7fff;
 			int vBucket = (int) rv & partitionMap.partitions().size() - 1;
 			int node = partitionMap.partitions().get(vBucket).get(0);
-			System.out.println(partitionMap.nodes().get(node));
+			//System.out.println(partitionMap.nodes().get(node));
 
-			Iterator<Registration<? extends Node>> iterator = registry.iterator();
-			while(iterator.hasNext()) {
-				System.out.println(iterator.next());
-			}
+			//Iterator<Registration<? extends Node>> iterator = registry.iterator();
+			//while(iterator.hasNext()) {
+			//	System.out.println(iterator.next());
+			//}
 
 			// TODO: register node in cluster with string hostname...
 			// then look it up here..
