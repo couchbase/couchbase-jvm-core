@@ -102,15 +102,16 @@ public class CouchbaseCluster extends AbstractStateMachine<LifecycleState> imple
 	}
 
 	@Override
-	public Promise<? extends CouchbaseResponse> send(final CouchbaseRequest request) {
+    @SuppressWarnings("unchecked")
+	public <R extends CouchbaseResponse> Promise<R> send(final CouchbaseRequest request) {
         if (request instanceof CommonRequest) {
-            return dispatchCommon((CommonRequest) request);
+            return (Promise<R>) dispatchCommon((CommonRequest) request);
         } else if (request instanceof InternalRequest) {
-            return dispatchInternal((InternalRequest) request);
+            return (Promise<R>) dispatchInternal((InternalRequest) request);
 		} else if (request instanceof ConfigRequest) {
-			return dispatchConfig((ConfigRequest) request);
+			return (Promise<R>) dispatchConfig((ConfigRequest) request);
 		} else if (request instanceof BinaryRequest) {
-			return dispatchBinary((BinaryRequest) request);
+			return (Promise<R>) dispatchBinary((BinaryRequest) request);
         } else {
 			throw new UnsupportedOperationException("Unsupported CouchbaseRequest type: " + request);
 		}
