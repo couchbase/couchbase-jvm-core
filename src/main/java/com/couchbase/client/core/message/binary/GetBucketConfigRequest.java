@@ -13,4 +13,9 @@ public class GetBucketConfigRequest extends AbstractCouchbaseRequest implements 
     public short partition() {
         return 0;
     }
+
+    @Override
+    public BinaryRequest partition(short id) {
+        return null;
+    }
 }

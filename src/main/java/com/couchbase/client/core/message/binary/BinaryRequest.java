@@ -44,4 +44,12 @@ public interface BinaryRequest extends CouchbaseRequest {
      * @return the partition to use.
      */
     short partition();
+
+    /**
+     * Set the partition ID.
+     *
+     * @param id the id of the partition.
+     * @return the {@link BinaryRequest} for proper chaining.
+     */
+    BinaryRequest partition(short id);
 }

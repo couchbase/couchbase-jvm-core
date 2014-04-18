@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.config.Configuration;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 public class ClusterNodeHandlerTest {
 
     private static final Environment environment = new CouchbaseEnvironment();
-    private static final Observable<Configuration> configObservable = Observable.from(mock(Configuration.class));
+    private static final Observable<ClusterConfig> configObservable = Observable.from(mock(ClusterConfig.class));
 
     @Test
     public void shouldAddNodes() {
@@ -158,7 +158,7 @@ public class ClusterNodeHandlerTest {
 
         class DummyLocator implements Locator {
             @Override
-            public Observable<Node> locate(CouchbaseRequest request, Set<Node> nodes, Configuration config) {
+            public Observable<Node> locate(CouchbaseRequest request, Set<Node> nodes, ClusterConfig config) {
                 return Observable.from(nodes.iterator().next());
             }
         }

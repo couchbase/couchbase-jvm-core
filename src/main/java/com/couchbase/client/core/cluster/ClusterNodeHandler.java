@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.config.Configuration;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
@@ -82,12 +82,12 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
     /**
      * Contains the current cluster configuration.
      */
-    private final AtomicReference<Configuration> configuration;
+    private final AtomicReference<ClusterConfig> configuration;
 
     /**
      * Create a new {@link ClusterNodeHandler}.
      */
-    public ClusterNodeHandler(Environment environment, Observable<Configuration> configObservable) {
+    public ClusterNodeHandler(Environment environment, Observable<ClusterConfig> configObservable) {
         this(new HashSet<Node>(INITIAL_NODE_SIZE), environment, configObservable);
     }
 
@@ -97,14 +97,14 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    ClusterNodeHandler(Set<Node> nodes, Environment environment, Observable<Configuration> configObservable) {
+    ClusterNodeHandler(Set<Node> nodes, Environment environment, Observable<ClusterConfig> configObservable) {
         this.nodes = nodes;
         this.environment = environment;
-        configuration = new AtomicReference<Configuration>();
+        configuration = new AtomicReference<ClusterConfig>();
 
-        configObservable.subscribe(new Action1<Configuration>() {
+        configObservable.subscribe(new Action1<ClusterConfig>() {
             @Override
-            public void call(final Configuration config) {
+            public void call(final ClusterConfig config) {
                 configuration.set(config);
             }
         });

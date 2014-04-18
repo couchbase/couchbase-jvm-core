@@ -34,4 +34,8 @@ public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryReq
         return 0;
     }
 
+    @Override
+    public BinaryRequest partition(short id) {
+        return null;
+    }
 }

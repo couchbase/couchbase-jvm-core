@@ -5,9 +5,9 @@ import rx.Observable;
 public interface ConfigurationProvider {
 
     /**
-     * Returns an {@link Observable}, which pushes a new {@link Configuration} once available.
+     * Returns an {@link Observable}, which pushes a new {@link ClusterConfig} once available.
      *
      * @return the configuration.
      */
-    Observable<Configuration> configs();
+    Observable<ClusterConfig> configs();
 }

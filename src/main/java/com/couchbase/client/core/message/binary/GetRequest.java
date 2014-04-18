@@ -30,4 +30,9 @@ public class GetRequest extends AbstractCouchbaseRequest implements BinaryReques
     public short partition() {
         return 0;
     }
+
+    @Override
+    public BinaryRequest partition(short id) {
+        return null;
+    }
 }

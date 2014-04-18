@@ -12,7 +12,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public Observable<Configuration> configs() {
+    public Observable<ClusterConfig> configs() {
         return null;
     }
 }
