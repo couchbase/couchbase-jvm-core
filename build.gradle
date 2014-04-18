@@ -27,14 +27,18 @@ apply plugin: 'idea'
 group = 'com.couchbase.client'
 description = 'Official Couchbase JVM Core Library'
 
-sourceCompatibility = '1.6'
-targetCompatibility = '1.6'
+sourceCompatibility = JavaVersion.VERSION_1_6
 
 buildscript {
     repositories {
-        mavenLocal()
-        mavenCentral()
+        maven {
+            name 'Shadow'
+            url 'http://dl.bintray.com/content/gvsmirnov/gradle-plugins'
+        }
         jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:0.8.1'
     }
 }
 
@@ -46,15 +50,13 @@ repositories {
 }
 
 sourceSets {
-    perf {
-        compileClasspath += sourceSets.main.output
-    }
+    perf
     integration
 }
 
 configurations {
-    perfCompile.extendsFrom compile
-    perfRuntime.extendsFrom runtime
+    perfCompile.extendsFrom compile, testCompile
+    perfRuntime.extendsFrom runtime, testRuntime
 
     integrationCompile.extendsFrom compile, testCompile
     integrationRuntime.extendsFrom runtime, testRuntime
@@ -73,12 +75,46 @@ dependencies {
 
     integrationCompile sourceSets.main.output
 
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.5.6'
     perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.5.6'
+    perfCompile project
+}
+
+idea {
+    module {
+        scopes.PROVIDED.plus  += configurations.perfCompile
+        scopes.PROVIDED.minus += configurations.compile
+    }
+}
+
+eclipse {
+    classpath {
+        plusConfigurations += configurations.perfCompile
+    }
 }
 
 task integrationTest(type: Test) {
     testClassesDir = sourceSets.integration.output.classesDir
     classpath = sourceSets.integration.runtimeClasspath
+}
+
+task perfJar(type: Jar, dependsOn: perfClasses) {
+    from sourceSets.perf.output + sourceSets.main.output
+}
+
+task benchmarks(dependsOn: perfJar) {
+    apply plugin: 'shadow'
+    shadow {
+        classifier = "benchmarks"
+        includeDependenciesFor = ["runtime", "perfRuntime"]
+
+        transformer(com.github.jengelman.gradle.plugins.shadow.transformers.ManifestResourceTransformer) {
+            mainClass = "org.openjdk.jmh.Main"
+        }
+    }
+    doLast {
+        shadowJar.execute()
+    }
 }
 
 task wrapper(type: Wrapper) {
