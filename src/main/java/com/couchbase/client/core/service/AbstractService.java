@@ -1,16 +1,44 @@
+/**
+ * Copyright (C) 2014 Couchbase, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
+ * IN THE SOFTWARE.
+ */
 package com.couchbase.client.core.service;
-
 
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Func1;
 
 import java.util.List;
 
 public abstract class AbstractService extends AbstractStateMachine<LifecycleState> implements Service {
+
+    /**
+     * The logger to use for all endpoints.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(Service.class);
 
     private final String hostname;
     private final Environment environment;
@@ -50,12 +78,49 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
 
     @Override
     public Observable<LifecycleState> connect() {
-        return Observable.from(LifecycleState.CONNECTED);
+        if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
+            return Observable.from(state());
+        }
+        transitionState(LifecycleState.CONNECTING);
+        return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
+            @Override
+            public Observable<LifecycleState> call(final Endpoint endpoint) {
+                return endpoint.connect();
+            }
+        }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
+            @Override
+            public LifecycleState call(List<LifecycleState> endpointStates) {
+                LifecycleState serviceState = calculateStateFrom(endpointStates);
+                transitionState(serviceState);
+                return serviceState;
+            }
+        });
     }
 
     @Override
     public Observable<LifecycleState> disconnect() {
-        return Observable.from(LifecycleState.DISCONNECTED);
+        if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
+            return Observable.from(state());
+        }
+
+        transitionState(LifecycleState.DISCONNECTING);
+        return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
+            @Override
+            public Observable<LifecycleState> call(Endpoint endpoint) {
+                return endpoint.disconnect();
+            }
+        }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
+            @Override
+            public LifecycleState call(List<LifecycleState> endpointStates) {
+                for (LifecycleState endpointState : endpointStates) {
+                    if (endpointState != LifecycleState.DISCONNECTED) {
+                        LOGGER.warn("Underlying Endpoint did not disconnect cleanly on shutdown.");
+                    }
+                }
+                transitionState(LifecycleState.DISCONNECTED);
+                return state();
+            }
+        });
     }
 
     protected Environment environment() {

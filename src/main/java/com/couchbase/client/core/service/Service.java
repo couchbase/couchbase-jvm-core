@@ -26,12 +26,13 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.state.Stateful;
 import rx.Observable;
 
 /**
  * Represents a {@link Service} on a {@link Node}.
  */
-public interface Service {
+public interface Service extends Stateful<LifecycleState> {
 
     /**
      * Sends a {@link CouchbaseRequest} into the service and eventually returns a {@link CouchbaseResponse}.

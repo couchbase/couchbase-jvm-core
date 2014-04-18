@@ -41,5 +41,5 @@ public interface Cluster {
      * @param request the request to send.
      * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
      */
-    Observable<CouchbaseResponse> send(CouchbaseRequest request);
+    <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
 }

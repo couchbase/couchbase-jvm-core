@@ -1,19 +1,8 @@
 package com.couchbase.client.node;
 
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.node.DefaultServiceRegistry;
-import com.couchbase.client.core.node.ServiceRegistry;
-import com.couchbase.client.core.service.BucketServiceMapping;
-import com.couchbase.client.core.service.Service;
-import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.state.LifecycleState;
-import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import rx.Observable;
-
 public class DefaultServiceRegistryBenchmark {
 
+    /*
     @State(Scope.Thread)
     public static class Input {
         public ServiceRegistry registry = new DefaultServiceRegistry();
@@ -29,7 +18,11 @@ public class DefaultServiceRegistryBenchmark {
         input.registry.addService(new LocalService(), "bucket");
     }
 
-    static abstract class DummyService implements Service {
+    static abstract class DummyService extends AbstractService {
+
+        protected DummyService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy) {
+            super(hostname, env, numEndpoints, strategy);
+        }
 
         @Override
         public void send(CouchbaseRequest request) {
@@ -65,4 +58,5 @@ public class DefaultServiceRegistryBenchmark {
             return ServiceType.BINARY;
         }
     }
+    */
 }

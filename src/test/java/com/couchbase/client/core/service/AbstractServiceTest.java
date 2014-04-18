@@ -21,8 +21,93 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.endpoint.Endpoint;
+import com.couchbase.client.core.env.CouchbaseEnvironment;
+import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.state.LifecycleState;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 /**
  * Verifies the correct functionality of a {@link AbstractService}.
  */
 public class AbstractServiceTest {
+
+    private final String hostname = "127.0.0.1";
+    private final Environment environment = new CouchbaseEnvironment();
+
+    @Test
+    public void shouldBeDisconnectAfterInit() {
+        Service service = new DummyService(hostname, environment, 1, mock(SelectionStrategy.class));
+        assertEquals(LifecycleState.DISCONNECTED, service.state());
+    }
+
+    @Test
+    public void shouldBeDisconnectedIfNoEndpointConfigured() {
+
+    }
+
+    @Test
+    public void shouldConnectToOneEndpoint() {
+
+    }
+
+    @Test
+    public void shouldConnectToThreeEndpoints() {
+
+    }
+
+    @Test
+    public void shouldBeDegradedIfNotAllEndpointsConnected() {
+
+    }
+
+    @Test
+    public void shouldDisconnectAllEndpointsOnDisconnect() {
+
+    }
+
+    @Test
+    public void shouldBeDegradedAndConnectedIfOneEndpointReconnects() {
+
+    }
+
+    @Test
+    public void shouldSwallowDuplicateConnectAttempt() {
+
+    }
+
+    @Test
+    public void shouldSwallowConnectWhenConnected() {
+
+    }
+
+    @Test
+    public void shouldSwallowDuplicateDisconnect() {
+
+    }
+
+    @Test
+    public void shouldSwallowDisconnectIfDisconnected() {
+
+    }
+
+    static class DummyService extends AbstractService {
+
+        DummyService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy) {
+            super(hostname, env, numEndpoints, strategy);
+        }
+
+        @Override
+        protected Endpoint newEndpoint() {
+            return mock(Endpoint.class);
+        }
+
+        @Override
+        public ServiceType type() {
+            return ServiceType.BINARY;
+        }
+    }
 }
