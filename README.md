@@ -1,5 +1,18 @@
 # Couchbase JVM Core
 
+The Couchbase JVM Core is the foundation module for the next generation of Couchbase JVM SDKs. It implements all the
+groundwork without imposing a specific language API. Language bindings like Java, Scala and so forth are implemented
+separately.
+
+Note that while properly documented and supported, the core package is not intended to be used directly by general
+Couchbase adopters. Instead, use the higher level language bindings and come back here if you need to implement custom
+piece of software which needs are not satisfied by the provided bindings.
+
+## Introduction
+
+## Getting Started
+
+## Usage
 
 ## Contributing
 
@@ -18,8 +31,6 @@ located under the `src/test` namespace and can be run directly from the IDE or t
 :test
 
 BUILD SUCCESSFUL
-
-Total time: 10.603 secs
 ```
 
 ## Integration Tests
@@ -33,8 +44,6 @@ command:
 :integrationTest
 
 BUILD SUCCESSFUL
-
-Total time: 8.239 secs
 ```
 
 ## Performance Tests
@@ -47,8 +56,6 @@ such a jar, use the `gradle benchmarks` command:
 :benchmarks
 
 BUILD SUCCESSFUL
-
-Total time: 9.508 secs
 ```
 
 This creates a jar in the `build/distributions` directory which can be executed with JMH params. If you do not supply
