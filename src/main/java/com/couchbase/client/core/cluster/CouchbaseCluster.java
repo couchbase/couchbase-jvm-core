@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.config.DefaultConfigurationProvider;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -77,6 +79,9 @@ public class CouchbaseCluster implements Cluster {
      */
     private final ClusterNodeHandler clusterNodeHandler;
 
+    private final ConfigurationProvider configProvider;
+
+
     /**
      * Populate the static exceptions with stack trace elements.
      */
@@ -95,6 +100,8 @@ public class CouchbaseCluster implements Cluster {
      * Creates a new {@link CouchbaseCluster}.
      */
     public CouchbaseCluster(Environment environment) {
+        configProvider = new DefaultConfigurationProvider(this);
+
         // TODO: maybe make part of the blocking pool? at least give a name
         Executor nodeExecutor = Executors.newFixedThreadPool(1);
         Disruptor<RequestEvent> disruptor = new Disruptor<RequestEvent>(
@@ -103,7 +110,7 @@ public class CouchbaseCluster implements Cluster {
             nodeExecutor
         );
 
-        clusterNodeHandler = new ClusterNodeHandler(environment);
+        clusterNodeHandler = new ClusterNodeHandler(environment, configProvider.configs());
         disruptor.handleEventsWith(clusterNodeHandler);
         disruptor.start();
 

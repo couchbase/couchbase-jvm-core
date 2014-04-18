@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.config.Configuration;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
@@ -36,10 +37,12 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventHandler;
 import rx.Observable;
 import rx.Observer;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -71,13 +74,21 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
      */
     private final Set<Node> nodes;
 
+    /**
+     * The shared couchbase environment.
+     */
     private final Environment environment;
+
+    /**
+     * Contains the current cluster configuration.
+     */
+    private final AtomicReference<Configuration> configuration;
 
     /**
      * Create a new {@link ClusterNodeHandler}.
      */
-    public ClusterNodeHandler(Environment environment) {
-        this(new HashSet<Node>(INITIAL_NODE_SIZE), environment);
+    public ClusterNodeHandler(Environment environment, Observable<Configuration> configObservable) {
+        this(new HashSet<Node>(INITIAL_NODE_SIZE), environment, configObservable);
     }
 
     /**
@@ -86,9 +97,17 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    ClusterNodeHandler(Set<Node> nodes, Environment environment) {
+    ClusterNodeHandler(Set<Node> nodes, Environment environment, Observable<Configuration> configObservable) {
         this.nodes = nodes;
         this.environment = environment;
+        configuration = new AtomicReference<Configuration>();
+
+        configObservable.subscribe(new Action1<Configuration>() {
+            @Override
+            public void call(final Configuration config) {
+                configuration.set(config);
+            }
+        });
     }
 
     @Override
@@ -96,7 +115,7 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
         final CouchbaseRequest request = event.getRequest();
         nodeLock.readLock().lock();
 
-        locator(request).locate(request, nodes).subscribe(new Observer<Node>() {
+        locator(request).locate(request, nodes, configuration.get()).subscribe(new Observer<Node>() {
             @Override
             public void onCompleted() {
                 cleanup();

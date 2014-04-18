@@ -37,7 +37,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * A shared logging handler for all endpoints.
      */
-    private static final ChannelHandler LOGGING_HANDLER_INSTANCE = new DebugLoggingHandler(LogLevel.INFO);
+    private static final ChannelHandler LOGGING_HANDLER_INSTANCE = new DebugLoggingHandler(LogLevel.TRACE);
 
     /**
      * Precreated not connected exception for performance reasons.
@@ -82,9 +82,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
-                    //if (LOGGER.isTraceEnabled()) {
+                    if (LOGGER.isTraceEnabled()) {
                         pipeline.addLast(LOGGING_HANDLER_INSTANCE);
-                    //}
+                    }
                     customEndpointHandlers(pipeline);
                     pipeline.addLast(endpointHandler);
                 }

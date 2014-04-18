@@ -3,9 +3,6 @@ package com.couchbase.client.core.message.binary;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import io.netty.buffer.ByteBuf;
 
-/**
- * Created by michael on 17/04/14.
- */
 public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryRequest {
 
     private final String key;
@@ -23,4 +20,18 @@ public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryReq
     public ByteBuf content() {
         return content;
     }
+
+    @Override
+    public short partition() {
+        return 0;
+    }
+
+    public int expiration() {
+        return 0;
+    }
+
+    public int flags() {
+        return 0;
+    }
+
 }

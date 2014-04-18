@@ -107,11 +107,12 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * @return the built protocol request.
      */
     private BinaryMemcacheRequest handleGetRequest(final GetRequest request) {
+        int length = request.key().length();
         BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
         msg.setOpcode(BinaryMemcacheOpcodes.GET);
-        msg.setKeyLength((short) request.key().length());
-        msg.setTotalBodyLength((short) request.key().length());
-        msg.setReserved((short) 28); // TODO: make me dynamic
+        msg.setKeyLength((short) length);
+        msg.setTotalBodyLength((short) length);
+        msg.setReserved(request.partition());
         return msg;
     }
 
@@ -123,16 +124,16 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * @return the built protocol request.
      */
     private BinaryMemcacheRequest handleUpsertRequest(final UpsertRequest request, final ChannelHandlerContext ctx) {
-        ByteBuf extras = ctx.alloc().buffer();
-        extras.writeInt(0); // TODO: make me dynamic
-        extras.writeInt(0); // TODO: make me dynamic
+        ByteBuf extras = ctx.alloc().buffer(8);
+        extras.writeInt(request.flags());
+        extras.writeInt(request.expiration());
 
         FullBinaryMemcacheRequest msg = new DefaultFullBinaryMemcacheRequest(request.key(), extras, request.content());
 
         msg.setOpcode(BinaryMemcacheOpcodes.SET);
         msg.setKeyLength((short) request.key().length());
         msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
-        msg.setReserved((short) 28); // TODO: make me dynamic
+        msg.setReserved(request.partition());
         msg.setExtrasLength((byte) extras.readableBytes());
 
         return msg;

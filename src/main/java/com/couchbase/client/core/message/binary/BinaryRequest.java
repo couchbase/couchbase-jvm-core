@@ -31,5 +31,17 @@ import com.couchbase.client.core.message.CouchbaseRequest;
  */
 public interface BinaryRequest extends CouchbaseRequest {
 
+    /**
+     * The key of the document.
+     *
+     * @return the key of the document, if set.
+     */
     String key();
+
+    /**
+     * The partition (vbucket) to use for this request.
+     *
+     * @return the partition to use.
+     */
+    short partition();
 }
