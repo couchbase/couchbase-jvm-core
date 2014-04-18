@@ -49,18 +49,15 @@ sourceSets {
     perf {
         compileClasspath += sourceSets.main.output
     }
-    integrationTest {
-        java.srcDir file('src/integration/java')
-        resources.srcDir file('src/integration/resources')
-    }
+    integration
 }
 
 configurations {
     perfCompile.extendsFrom compile
     perfRuntime.extendsFrom runtime
 
-    integrationTestCompile.extendsFrom compile, testCompile
-    integrationTestRuntime.extendsFrom runtime, testRuntime
+    integrationCompile.extendsFrom compile, testCompile
+    integrationRuntime.extendsFrom runtime, testRuntime
 }
 
 dependencies {
@@ -74,14 +71,14 @@ dependencies {
     testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
     testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
 
-    integrationTestCompile sourceSets.main.output
+    integrationCompile sourceSets.main.output
 
     perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.5.6'
 }
 
 task integrationTest(type: Test) {
-    testClassesDir = sourceSets.integrationTest.output.classesDir
-    classpath = sourceSets.integrationTest.runtimeClasspath
+    testClassesDir = sourceSets.integration.output.classesDir
+    classpath = sourceSets.integration.runtimeClasspath
 }
 
 task wrapper(type: Wrapper) {
