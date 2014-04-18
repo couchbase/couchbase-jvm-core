@@ -20,80 +20,70 @@
  * IN THE SOFTWARE.
  */
 
-subprojects {
-	apply plugin: 'java'
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
 
-	group = 'com.couchbase.client'
-	version = '2.0.0-SNAPSHOT'
-	sourceCompatibility = JavaVersion.VERSION_1_6
-	targetCompatibility = JavaVersion.VERSION_1_6
+group = 'com.couchbase.client'
+description = 'Official Couchbase JVM Core Library'
 
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+
+buildscript {
     repositories {
-    	mavenLocal()
+        mavenLocal()
         mavenCentral()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-        maven { url 'http://repo.spring.io/libs-snapshot' }
-    }
-
-	sourceSets {
-        main { java.srcDirs = ['src/main/java'] }
-        test { java.srcDirs = ['src/test/java'] }
-    }
-
-}
-
-project(':jvm-core') {
-	apply plugin: 'groovy'
-    //apply plugin: 'checkstyle'
-
-	sourceSets {
-        test {
-            groovy { srcDirs = ['src/test/unit/groovy', 'src/test/integration/groovy'] }
-            java { srcDirs = ['src/test/unit/java', 'src/test/integration/java', 'src/test/performance/java'] }
-        }
-    }
-
-    dependencies {
-    	compile group: 'org.projectreactor', name: 'reactor-core', version: '1.1.0.BUILD-SNAPSHOT', changing: true
-    	compile group: 'io.netty', name: 'netty-all', version: '4.1.0.Alpha1-SNAPSHOT', changing: true
-        compile group: 'com.typesafe', name: 'config', version: '1.2.0'
-        compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.3.1'
-
-		testCompile 'org.codehaus.groovy:groovy-all:2.2.1'
-		testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
-		testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: '1.3'
-		testCompile group: 'junit', name: 'junit', version: '4.11'
-		testCompile group: 'org.spockframework', name: 'spock-core', version: '0.7-groovy-2.0'
-		testCompile group: 'cglib', name: 'cglib-nodep', version: '2.2'
-        testCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.4.2'
-		testRuntime group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
+        jcenter()
     }
 }
 
-project(':java-client') {
-    apply plugin: 'groovy'
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
 
-    sourceSets {
-        test {
-            groovy { srcDirs = ['src/test/unit/groovy', 'src/test/integration/groovy'] }
-            java { srcDirs = ['src/test/unit/java', 'src/test/integration/java', 'src/test/performance/java'] }
-        }
+sourceSets {
+    perf {
+        compileClasspath += sourceSets.main.output
     }
-
-    dependencies {
-        compile project(':jvm-core')
+    integrationTest {
+        java.srcDir file('src/integration/java')
+        resources.srcDir file('src/integration/resources')
     }
 }
 
-/*project(':scala-client') {
-    apply plugin: 'scala'
+configurations {
+    perfCompile.extendsFrom compile
+    perfRuntime.extendsFrom runtime
 
-    dependencies {
-        compile project(':jvm-core')
-        compile group: 'org.scala-lang', name: 'scala-library', version: '2.10.3'
-    }
-}*/
+    integrationTestCompile.extendsFrom compile, testCompile
+    integrationTestRuntime.extendsFrom runtime, testRuntime
+}
+
+dependencies {
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.0.Alpha1-SNAPSHOT', changing: true
+    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.17.6'
+    compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
+    compile group: 'com.typesafe', name: 'config', version: '1.2.0'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
+    testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
+
+    integrationTestCompile sourceSets.main.output
+
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.5.6'
+}
+
+task integrationTest(type: Test) {
+    testClassesDir = sourceSets.integrationTest.output.classesDir
+    classpath = sourceSets.integrationTest.runtimeClasspath
+}
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.10'
+    gradleVersion = '1.11'
 }

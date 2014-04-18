@@ -3,4 +3,5 @@
 classes/
 *.iml
 
-**/build/
+build/
+target/

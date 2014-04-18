@@ -1,2 +1,1 @@
-include "jvm-core", "java-client", "scala-client"
-rootProject.name = "Couchbase JVM Client"
+rootProject.name = "Couchbase JVM Core"
