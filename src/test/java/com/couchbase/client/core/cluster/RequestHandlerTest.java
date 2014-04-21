@@ -43,9 +43,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the functionality of {@link ClusterNodeHandler}.
+ * Verifies the functionality of {@link RequestHandler}.
  */
-public class ClusterNodeHandlerTest {
+public class RequestHandlerTest {
 
     private static final Environment environment = new CouchbaseEnvironment();
     private static final Observable<ClusterConfig> configObservable = Observable.from(mock(ClusterConfig.class));
@@ -53,7 +53,7 @@ public class ClusterNodeHandlerTest {
     @Test
     public void shouldAddNodes() {
         Set<Node> nodes = new HashSet<Node>();
-        ClusterNodeHandler handler = new ClusterNodeHandler(nodes, environment, configObservable);
+        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
 
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
@@ -65,7 +65,7 @@ public class ClusterNodeHandlerTest {
     @Test
     public void shouldIgnoreAlreadyAddedNode() throws Exception {
         Set<Node> nodes = new HashSet<Node>();
-        ClusterNodeHandler handler = new ClusterNodeHandler(nodes, environment, configObservable);
+        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
 
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
@@ -79,7 +79,7 @@ public class ClusterNodeHandlerTest {
     @Test
     public void shouldRemoveNodes() {
         Set<Node> nodes = new HashSet<Node>();
-        ClusterNodeHandler handler = new ClusterNodeHandler(nodes, environment, configObservable);
+        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
 
         Node node1 = mock(Node.class);
         when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
@@ -113,7 +113,7 @@ public class ClusterNodeHandlerTest {
     @Test
     public void shouldRemoveNodeEvenIfNotDisconnected() throws Exception {
         Set<Node> nodes = new HashSet<Node>();
-        ClusterNodeHandler handler = new ClusterNodeHandler(nodes, environment, configObservable);
+        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
 
         Node node1 = mock(Node.class);
         when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
@@ -127,7 +127,7 @@ public class ClusterNodeHandlerTest {
 
     @Test
     public void shouldRouteEventToNode() throws Exception {
-        ClusterNodeHandler handler = new DummyLocatorClusterNodeHandler(environment);
+        RequestHandler handler = new DummyLocatorClusterNodeHandler(environment);
         Node mockNode = mock(Node.class);
         when(mockNode.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         handler.addNode(mockNode).toBlockingObservable().single();
@@ -143,12 +143,12 @@ public class ClusterNodeHandlerTest {
     /**
      * Helper class which implements a dummy locator for testing purposes.
      */
-    class DummyLocatorClusterNodeHandler extends ClusterNodeHandler {
+    class DummyLocatorClusterNodeHandler extends RequestHandler {
 
         private Locator LOCATOR = new DummyLocator();
 
         DummyLocatorClusterNodeHandler(Environment environment) {
-            super(environment, configObservable);
+            super(environment, configObservable, null);
         }
 
         @Override

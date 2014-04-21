@@ -1,16 +1,18 @@
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.BinaryEndpoint;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.service.strategies.KeyHashSelectionStrategy;
+import com.lmax.disruptor.RingBuffer;
 
 public class BinaryService extends AbstractService {
 
     private static final SelectionStrategy strategy = new KeyHashSelectionStrategy();
 
-    public BinaryService(String hostname, Environment env) {
-        super(hostname, env, env.binaryServiceEndpoints(), strategy);
+    public BinaryService(String hostname, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, env, env.binaryServiceEndpoints(), strategy, responseBuffer);
     }
 
     @Override
@@ -19,7 +21,7 @@ public class BinaryService extends AbstractService {
     }
 
     @Override
-    protected Endpoint newEndpoint() {
-        return new BinaryEndpoint(hostname(), environment());
+    protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
+        return new BinaryEndpoint(hostname(), environment(), responseBuffer);
     }
 }

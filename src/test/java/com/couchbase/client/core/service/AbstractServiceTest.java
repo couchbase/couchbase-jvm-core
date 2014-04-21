@@ -21,10 +21,12 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.state.LifecycleState;
+import com.lmax.disruptor.RingBuffer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -97,11 +99,11 @@ public class AbstractServiceTest {
     static class DummyService extends AbstractService {
 
         DummyService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy) {
-            super(hostname, env, numEndpoints, strategy);
+            super(hostname, env, numEndpoints, strategy, null);
         }
 
         @Override
-        protected Endpoint newEndpoint() {
+        protected Endpoint newEndpoint(RingBuffer<ResponseEvent> responseBuffer) {
             return mock(Endpoint.class);
         }
 

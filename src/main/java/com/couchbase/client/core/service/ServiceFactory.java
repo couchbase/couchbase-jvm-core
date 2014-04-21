@@ -22,7 +22,9 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.env.Environment;
+import com.lmax.disruptor.RingBuffer;
 
 /**
  * Created by michael on 17/04/14.
@@ -32,16 +34,17 @@ public class ServiceFactory {
     private ServiceFactory() {
     }
 
-    public static Service create(String hostname, Environment env, ServiceType type) {
+    public static Service create(String hostname, Environment env, ServiceType type,
+        final RingBuffer<ResponseEvent> responseBuffer) {
         switch(type) {
             case BINARY:
-                return new BinaryService(hostname, env);
+                return new BinaryService(hostname, env, responseBuffer);
             case DESIGN:
-                return new DesignService(hostname, env);
+                return new DesignService(hostname, env, responseBuffer);
             case CONFIG:
-                return new ConfigService(hostname, env);
+                return new ConfigService(hostname, env, responseBuffer);
             case STREAM:
-                return new StreamService(hostname, env);
+                return new StreamService(hostname, env, responseBuffer);
             default:
                 throw new IllegalArgumentException("Unknown Service Type: " + type);
         }

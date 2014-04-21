@@ -89,11 +89,20 @@ public class CouchbaseEnvironment implements Environment {
 
     @Override
     public int requestBufferSize() {
-        int ioPoolSize = getInt("core.requestBufferSize");
-        if (ioPoolSize <= 0) {
+        int reqBufSize = getInt("core.requestBufferSize");
+        if (reqBufSize <= 0) {
             throw new EnvironmentException("Request Buffer Size must be > 0 and power of two");
         }
-        return ioPoolSize;
+        return reqBufSize;
+    }
+
+    @Override
+    public int responseBufferSize() {
+        int resBufSize = getInt("core.responseBufferSize");
+        if (resBufSize <= 0) {
+            throw new EnvironmentException("Response Buffer Size must be > 0 and power of two");
+        }
+        return resBufSize;
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.couchbase.client.core.message.binary;
 
-public class GetBucketConfigResponse implements BinaryResponse {
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+
+public class GetBucketConfigResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
     private final String content;
 

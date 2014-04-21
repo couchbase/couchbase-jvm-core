@@ -235,7 +235,7 @@ public class AbstractEndpointTest {
         }
 
         DummyEndpoint(String hostname, Environment environment) {
-            super(hostname, environment);
+            super(hostname, environment, null);
         }
 
         @Override

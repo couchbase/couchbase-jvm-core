@@ -72,12 +72,17 @@ public class CouchbaseCluster implements Cluster {
     /**
      * The {@link RequestEvent} {@link RingBuffer}.
      */
-    private final RingBuffer<RequestEvent> ringBuffer;
+    private final RingBuffer<RequestEvent> requestRingBuffer;
+
+    /**
+     * The {@link ResponseEvent} {@link RingBuffer}.
+     */
+    private final RingBuffer<ResponseEvent> responseRingBuffer;
 
     /**
      * The handler for all cluster nodes.
      */
-    private final ClusterNodeHandler clusterNodeHandler;
+    private final RequestHandler requestHandler;
 
     private final ConfigurationProvider configProvider;
 
@@ -101,20 +106,26 @@ public class CouchbaseCluster implements Cluster {
      */
     public CouchbaseCluster(Environment environment) {
         configProvider = new DefaultConfigurationProvider(this);
+        Executor executor = Executors.newFixedThreadPool(2);
 
-        // TODO: maybe make part of the blocking pool? at least give a name
-        Executor nodeExecutor = Executors.newFixedThreadPool(1);
-        Disruptor<RequestEvent> disruptor = new Disruptor<RequestEvent>(
+        Disruptor<ResponseEvent> responseDisruptor = new Disruptor<ResponseEvent>(
+            new ResponseEventFactory(),
+            environment.responseBufferSize(),
+            executor
+        );
+        responseDisruptor.handleEventsWith(new ResponseHandler());
+        responseDisruptor.start();
+        responseRingBuffer = responseDisruptor.getRingBuffer();
+
+        Disruptor<RequestEvent> requestDisruptor = new Disruptor<RequestEvent>(
             new RequestEventFactory(),
             environment.requestBufferSize(),
-            nodeExecutor
+            executor
         );
-
-        clusterNodeHandler = new ClusterNodeHandler(environment, configProvider.configs());
-        disruptor.handleEventsWith(clusterNodeHandler);
-        disruptor.start();
-
-        ringBuffer = disruptor.getRingBuffer();
+        requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);
+        requestDisruptor.handleEventsWith(requestHandler);
+        requestDisruptor.start();
+        requestRingBuffer = requestDisruptor.getRingBuffer();
     }
 
     @Override
@@ -125,7 +136,7 @@ public class CouchbaseCluster implements Cluster {
         if (request instanceof InternalRequest) {
             handleInternalRequest(request);
         } else {
-            boolean published = ringBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
+            boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
             if (!published) {
                 observable.onError(BACKPRESSURE_EXCEPTION);
             }
@@ -144,7 +155,7 @@ public class CouchbaseCluster implements Cluster {
      */
     private void handleInternalRequest(final CouchbaseRequest request) {
         if (request instanceof AddNodeRequest) {
-            clusterNodeHandler.addNode(((AddNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
+            requestHandler.addNode(((AddNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
                 @Override
                 public void onCompleted() {
                     request.observable().onCompleted();
@@ -162,7 +173,7 @@ public class CouchbaseCluster implements Cluster {
                 }
             });
         } else if (request instanceof RemoveNodeRequest) {
-            clusterNodeHandler.removeNode(((RemoveNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
+            requestHandler.removeNode(((RemoveNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
                 @Override
                 public void onCompleted() {
                     request.observable().onCompleted();
@@ -180,7 +191,7 @@ public class CouchbaseCluster implements Cluster {
                 }
             });
         } else if (request instanceof AddServiceRequest) {
-            clusterNodeHandler.addService((AddServiceRequest) request).subscribe(new Observer<Service>() {
+            requestHandler.addService((AddServiceRequest) request).subscribe(new Observer<Service>() {
                 @Override
                 public void onCompleted() {
                     request.observable().onCompleted();
@@ -198,7 +209,7 @@ public class CouchbaseCluster implements Cluster {
                 }
             });
         } else if (request instanceof RemoveServiceRequest) {
-            clusterNodeHandler.removeService((RemoveServiceRequest) request).subscribe(new Observer<Service>() {
+            requestHandler.removeService((RemoveServiceRequest) request).subscribe(new Observer<Service>() {
                 @Override
                 public void onCompleted() {
                     request.observable().onCompleted();

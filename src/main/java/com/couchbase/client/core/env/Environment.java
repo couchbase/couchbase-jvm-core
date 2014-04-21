@@ -64,6 +64,13 @@ public interface Environment {
     int requestBufferSize();
 
     /**
+     * Returns the size of the response ringbuffer.
+     *
+     * @return the size of the ringbuffer.
+     */
+    int responseBufferSize();
+
+    /**
      * The number of binary service endpoints.
      *
      * @return amount of endpoints per service.

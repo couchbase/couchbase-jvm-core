@@ -1,7 +1,11 @@
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.cluster.RequestEvent;
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.lmax.disruptor.EventTranslatorOneArg;
+import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -14,6 +18,17 @@ import java.util.Queue;
 public class GenericEndpointHandler extends ChannelHandlerAppender {
 
     /**
+     * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
+     */
+    private static final EventTranslatorOneArg<ResponseEvent, CouchbaseResponse> RESPONSE_TRANSLATOR =
+        new EventTranslatorOneArg<ResponseEvent, CouchbaseResponse>() {
+            @Override
+            public void translateTo(ResponseEvent event, long sequence, CouchbaseResponse response) {
+                event.setResponse(response);
+            }
+        };
+
+    /**
      * Reference to the parent endpoint (to notify certain signals).
      */
     private final AbstractEndpoint endpoint;
@@ -23,9 +38,15 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
      */
     private final Queue<CouchbaseRequest> queue = new ArrayDeque<CouchbaseRequest>();
 
-    public GenericEndpointHandler(final AbstractEndpoint endpoint) {
+    /**
+     * The {@link ResponseEvent} {@link RingBuffer}.
+     */
+    private final RingBuffer<ResponseEvent> responseBuffer;
+
+    public GenericEndpointHandler(final AbstractEndpoint endpoint, final RingBuffer<ResponseEvent> responseBuffer) {
         add(new EventResponseDecoder(), new EventRequestEncoder());
         this.endpoint = endpoint;
+        this.responseBuffer = responseBuffer;
     }
 
     /**
@@ -50,7 +71,7 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
 
         @Override
         protected void encode(final ChannelHandlerContext ctx, final CouchbaseRequest msg,
-                              final List<Object> out) throws Exception {
+            final List<Object> out) throws Exception {
             queue.offer(msg);
             out.add(msg);
         }
@@ -66,9 +87,9 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
         @SuppressWarnings("unchecked")
         protected void decode(final ChannelHandlerContext ctx, final CouchbaseResponse in, final List<Object> out)
             throws Exception {
-            CouchbaseRequest event = queue.poll();
-            event.observable().onNext(in);
-            event.observable().onCompleted();
+            CouchbaseRequest request = queue.poll();
+            in.observable(request.observable());
+            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in);
         }
 
     }

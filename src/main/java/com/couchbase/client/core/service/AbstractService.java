@@ -21,11 +21,13 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import com.lmax.disruptor.RingBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
@@ -45,7 +47,8 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
 
-    protected AbstractService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy) {
+    protected AbstractService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy,
+        final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
 
         this.hostname = hostname;
@@ -54,7 +57,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
 
         endpoints = new Endpoint[numEndpoints];
         for (int i = 0; i < numEndpoints; i++) {
-            endpoints[i] = newEndpoint();
+            endpoints[i] = newEndpoint(responseBuffer);
         }
     }
 
@@ -63,7 +66,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
      *
      * @return the endpoint to be used.
      */
-    protected abstract Endpoint newEndpoint();
+    protected abstract Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer);
 
     @Override
     public BucketServiceMapping mapping() {

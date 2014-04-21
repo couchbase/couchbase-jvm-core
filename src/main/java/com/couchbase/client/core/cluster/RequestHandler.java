@@ -35,6 +35,7 @@ import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
 import rx.Observer;
 import rx.functions.Action1;
@@ -47,12 +48,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * The {@link ClusterNodeHandler} handles the overall concept of {@link Node}s and manages them concurrently.
+ * The {@link RequestHandler} handles the overall concept of {@link Node}s and manages them concurrently.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class ClusterNodeHandler implements EventHandler<RequestEvent> {
+public class RequestHandler implements EventHandler<RequestEvent> {
 
     /**
      * The initial number of nodes, will expand automatically if more are needed.
@@ -85,21 +86,29 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
     private final AtomicReference<ClusterConfig> configuration;
 
     /**
-     * Create a new {@link ClusterNodeHandler}.
+     * The {@link ResponseEvent} {@link RingBuffer}.
      */
-    public ClusterNodeHandler(Environment environment, Observable<ClusterConfig> configObservable) {
-        this(new HashSet<Node>(INITIAL_NODE_SIZE), environment, configObservable);
+    private final RingBuffer<ResponseEvent> responseBuffer;
+
+    /**
+     * Create a new {@link RequestHandler}.
+     */
+    public RequestHandler(Environment environment, Observable<ClusterConfig> configObservable,
+        RingBuffer<ResponseEvent> responseBuffer) {
+        this(new HashSet<Node>(INITIAL_NODE_SIZE), environment, configObservable, responseBuffer);
     }
 
     /**
-     * Create a new {@link ClusterNodeHandler} with a custom node list.
+     * Create a new {@link RequestHandler} with a custom node list.
      *
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    ClusterNodeHandler(Set<Node> nodes, Environment environment, Observable<ClusterConfig> configObservable) {
+    RequestHandler(Set<Node> nodes, Environment environment, Observable<ClusterConfig> configObservable,
+        RingBuffer<ResponseEvent> responseBuffer) {
         this.nodes = nodes;
         this.environment = environment;
+        this.responseBuffer = responseBuffer;
         configuration = new AtomicReference<ClusterConfig>();
 
         configObservable.subscribe(new Action1<ClusterConfig>() {
@@ -148,7 +157,7 @@ public class ClusterNodeHandler implements EventHandler<RequestEvent> {
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
     public Observable<LifecycleState> addNode(final String hostname) {
-        return addNode(new CouchbaseNode(hostname, environment));
+        return addNode(new CouchbaseNode(hostname, environment, responseBuffer));
     }
 
     /**

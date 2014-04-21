@@ -1,11 +1,13 @@
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.NotConnectedException;
+import com.lmax.disruptor.RingBuffer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -68,10 +70,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         bootstrap = adapter;
     }
 
-    protected AbstractEndpoint(String hostname, Environment environment) {
+    protected AbstractEndpoint(String hostname, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
 
-        final ChannelHandler endpointHandler = new GenericEndpointHandler(this);
+        final ChannelHandler endpointHandler = new GenericEndpointHandler(this, responseBuffer);
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port())
             .group(environment.ioPool())

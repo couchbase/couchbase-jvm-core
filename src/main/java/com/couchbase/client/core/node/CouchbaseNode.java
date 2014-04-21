@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.node;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -29,6 +30,7 @@ import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceFactory;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
+import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -56,19 +58,27 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     private final Environment environment;
 
     /**
+     * The {@link ResponseEvent} {@link RingBuffer}.
+     */
+    private final RingBuffer<ResponseEvent> responseBuffer;
+
+    /**
      * A registry containing all of the services associated with one or more buckets.
      */
     private final ServiceRegistry serviceRegistry;
 
-    public CouchbaseNode(final String hostname, final Environment environment) {
-        this(hostname, new DefaultServiceRegistry(), environment);
+    public CouchbaseNode(final String hostname, final Environment environment,
+        final RingBuffer<ResponseEvent> responseBuffer) {
+        this(hostname, new DefaultServiceRegistry(), environment, responseBuffer);
     }
 
-    CouchbaseNode(String hostname, ServiceRegistry registry, final Environment environment) {
+    CouchbaseNode(String hostname, ServiceRegistry registry, final Environment environment,
+        final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;
         this.serviceRegistry = registry;
         this.environment = environment;
+        this.responseBuffer = responseBuffer;
     }
 
     @Override
@@ -117,7 +127,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> addService(final AddServiceRequest request) {
-        Service service = ServiceFactory.create(request.hostname(), environment, request.type());
+        Service service = ServiceFactory.create(request.hostname(), environment, request.type(), responseBuffer);
         serviceRegistry.addService(service, request.bucket());
         // TODO: register for states
         return Observable.from(service);
