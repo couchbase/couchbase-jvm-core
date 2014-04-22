@@ -12,6 +12,8 @@ public class GetRequest extends AbstractCouchbaseRequest implements BinaryReques
      */
     private final String key;
 
+    private short partition = 0;
+
     /**
      * Create a new {@link GetRequest}.
      *
@@ -28,11 +30,21 @@ public class GetRequest extends AbstractCouchbaseRequest implements BinaryReques
 
     @Override
     public short partition() {
-        return 0;
+        return partition;
     }
 
     @Override
     public BinaryRequest partition(short id) {
-        return null;
+        this.partition = id;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("GetRequest{");
+        sb.append("key='").append(key).append('\'');
+        sb.append(", partition=").append(partition);
+        sb.append('}');
+        return sb.toString();
     }
 }

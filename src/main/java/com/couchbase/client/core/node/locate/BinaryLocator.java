@@ -6,6 +6,7 @@ import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.config.MemcacheBucketConfig;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.node.Node;
 import io.netty.util.CharsetUtil;
 import rx.Observable;
@@ -23,6 +24,10 @@ public class BinaryLocator implements Locator {
 
     @Override
     public Observable<Node> locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
+        if (request instanceof GetBucketConfigRequest) {
+            return Observable.from(nodes);
+        }
+
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
             return locateForCouchbaseBucket((BinaryRequest) request, nodes, (CouchbaseBucketConfig) bucket);

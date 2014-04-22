@@ -19,4 +19,5 @@ public class DefaultPartition implements Partition {
     public short replica(int num) {
         return replicas[num];
     }
+
 }

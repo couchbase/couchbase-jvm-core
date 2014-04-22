@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Sends the targeted bootstrap seed nodes before opening a bucket.
  */
-public class SeedNodesRequest extends AbstractCouchbaseRequest {
+public class SeedNodesRequest extends AbstractCouchbaseRequest implements ClusterRequest {
 
     private List<String> nodes;
 

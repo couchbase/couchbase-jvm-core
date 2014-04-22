@@ -25,6 +25,7 @@ import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
@@ -74,9 +75,14 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     }
 
     @Override
-    public void send(CouchbaseRequest request) {
-        request.observable().onNext(null);
-        request.observable().onCompleted();
+    public void send(final CouchbaseRequest request) {
+        if (request instanceof SignalFlush) {
+            for (int i = 0; i < endpoints.length; i++) {
+                endpoints[i].send(request);
+            }
+            return;
+        }
+        strategy.select(request, endpoints).send(request);
     }
 
     @Override

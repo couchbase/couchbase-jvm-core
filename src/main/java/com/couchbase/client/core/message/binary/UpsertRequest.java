@@ -7,10 +7,12 @@ public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryReq
 
     private final String key;
     private final ByteBuf content;
+    private short partition;
 
     public UpsertRequest(String key, ByteBuf content, String bucket, String password) {
         this.key = key;
         this.content = content;
+        bucket(bucket);
     }
 
     public String key() {
@@ -23,7 +25,7 @@ public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryReq
 
     @Override
     public short partition() {
-        return 0;
+        return partition;
     }
 
     public int expiration() {
@@ -36,6 +38,7 @@ public class UpsertRequest extends AbstractCouchbaseRequest implements BinaryReq
 
     @Override
     public BinaryRequest partition(short id) {
-        return null;
+        this.partition = id;
+        return this;
     }
 }

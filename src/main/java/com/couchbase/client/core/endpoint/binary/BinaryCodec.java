@@ -35,6 +35,7 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
@@ -68,7 +69,6 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     @Override
     protected void encode(final ChannelHandlerContext ctx, final BinaryRequest msg, final List<Object> out)
         throws Exception {
-
         BinaryMemcacheRequest request;
         if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
@@ -90,7 +90,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         Class<?> clazz = queue.poll();
 
         if(clazz.equals(GetBucketConfigRequest.class)) {
-            in.add(new GetBucketConfigResponse(msg.content().toString(CharsetUtil.UTF_8)));
+            InetSocketAddress addr = (InetSocketAddress) ctx.channel().remoteAddress();
+            in.add(new GetBucketConfigResponse(msg.content().toString(CharsetUtil.UTF_8), addr.getHostString()));
         } else if (clazz.equals(GetRequest.class)) {
             in.add(new GetResponse(msg.content().toString(CharsetUtil.UTF_8)));
         } else if (clazz.equals(UpsertRequest.class)) {

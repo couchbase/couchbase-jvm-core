@@ -21,14 +21,22 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.DefaultConfigurationProvider;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.cluster.ClusterRequest;
+import com.couchbase.client.core.message.cluster.OpenBucketRequest;
+import com.couchbase.client.core.message.cluster.OpenBucketResponse;
+import com.couchbase.client.core.message.cluster.SeedNodesRequest;
+import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
+import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
+import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.message.internal.InternalRequest;
 import com.couchbase.client.core.message.internal.RemoveNodeRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
@@ -135,6 +143,8 @@ public class CouchbaseCluster implements Cluster {
 
         if (request instanceof InternalRequest) {
             handleInternalRequest(request);
+        } else if (request instanceof ClusterRequest) {
+            handleClusterRequest(request);
         } else {
             boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
             if (!published) {
@@ -143,6 +153,33 @@ public class CouchbaseCluster implements Cluster {
         }
 
         return observable;
+    }
+
+    private void handleClusterRequest(final CouchbaseRequest request) {
+        if (request instanceof SeedNodesRequest) {
+            boolean success = configProvider.seedHosts(((SeedNodesRequest) request).nodes());
+            request.observable().onNext(new SeedNodesResponse(success));
+            request.observable().onCompleted();
+        } else if (request instanceof OpenBucketRequest) {
+            configProvider.openBucket(request.bucket(), ((OpenBucketRequest) request).password()).subscribe(
+                new Observer<ClusterConfig>() {
+                    @Override
+                    public void onCompleted() {
+                        request.observable().onCompleted();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        request.observable().onError(e);
+                    }
+
+                    @Override
+                    public void onNext(ClusterConfig clusterConfig) {
+                        request.observable().onNext(new OpenBucketResponse());
+                    }
+                }
+            );
+        }
     }
 
     /**
@@ -169,7 +206,7 @@ public class CouchbaseCluster implements Cluster {
                 @Override
                 public void onNext(LifecycleState lifecycleState) {
                     // TODO: its a hack.
-                    request.observable().onNext(null);
+                    request.observable().onNext(new AddNodeResponse(((AddNodeRequest) request).hostname()));
                 }
             });
         } else if (request instanceof RemoveNodeRequest) {
@@ -204,8 +241,8 @@ public class CouchbaseCluster implements Cluster {
 
                 @Override
                 public void onNext(Service service) {
-                    // TODO: its a hack.
-                    request.observable().onNext(null);
+
+                    request.observable().onNext(new AddServiceResponse(((AddServiceRequest) request).hostname()));
                 }
             });
         } else if (request instanceof RemoveServiceRequest) {

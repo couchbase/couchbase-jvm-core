@@ -15,6 +15,8 @@ public interface ClusterConfig {
      */
     BucketConfig bucketConfig(String bucketName);
 
+    void setBucketConfig(String bucketName, BucketConfig config);
+
     /**
      * True if there is a bucket config with the given name, false otherwise.
      *

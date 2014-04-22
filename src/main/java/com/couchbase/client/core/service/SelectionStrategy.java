@@ -1,7 +1,10 @@
 package com.couchbase.client.core.service;
 
-/**
- * Created by michael on 17/04/14.
- */
+
+import com.couchbase.client.core.endpoint.Endpoint;
+import com.couchbase.client.core.message.CouchbaseRequest;
+
 public interface SelectionStrategy {
+
+    Endpoint select(CouchbaseRequest request, Endpoint[] endpoints);
 }

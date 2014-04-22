@@ -1,7 +1,7 @@
 package com.couchbase.client.core.config;
 
 /**
- * Created by michael on 18/04/14.
+ * A configuration representing a memcache bucket.
  */
 public interface MemcacheBucketConfig extends BucketConfig {
 }

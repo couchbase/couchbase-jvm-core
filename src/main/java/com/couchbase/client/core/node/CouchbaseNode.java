@@ -26,12 +26,14 @@ import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
+import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceFactory;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.List;
@@ -83,7 +85,16 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public void send(final CouchbaseRequest request) {
-        serviceRegistry.locate(request).send(request);
+        if (request instanceof SignalFlush) {
+            serviceRegistry.services().subscribe(new Action1<Service>() {
+                @Override
+                public void call(Service service) {
+                    service.send(request);
+                }
+            });
+        } else {
+            serviceRegistry.locate(request).send(request);
+        }
     }
 
     @Override
@@ -127,10 +138,15 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> addService(final AddServiceRequest request) {
-        Service service = ServiceFactory.create(request.hostname(), environment, request.type(), responseBuffer);
+        final Service service = ServiceFactory.create(request.hostname(), environment, request.type(), responseBuffer);
         serviceRegistry.addService(service, request.bucket());
+        return service.connect().map(new Func1<LifecycleState, Service>() {
+            @Override
+            public Service call(LifecycleState state) {
+                return service;
+            }
+        });
         // TODO: register for states
-        return Observable.from(service);
     }
 
     @Override

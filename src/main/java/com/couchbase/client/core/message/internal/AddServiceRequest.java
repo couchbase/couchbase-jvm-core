@@ -27,9 +27,7 @@ package com.couchbase.client.core.message.internal;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.service.ServiceType;
 
-/**
- * Created by michael on 17/04/14.
- */
+
 public class AddServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
     private final ServiceType type;
     private final String bucket;
