@@ -19,33 +19,53 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.binary;
-
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
+package com.couchbase.client.core.util;
 
 /**
- * Represents a response with a bucket configuration.
+ * Helper class to centralize test properties that can be modified through system properties.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetBucketConfigResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public class TestProperties {
 
-    private final String content;
-    private String hostname;
+    private static String seedNode;
+    private static String bucket;
+    private static String password;
 
-    public GetBucketConfigResponse(final ResponseStatus status, final String content, final String hostname) {
-        super(status);
-        this.content = content;
-        this.hostname = hostname;
+    /**
+     * Initialize static the properties.
+     */
+    static {
+        seedNode = System.getProperty("seedNode", "127.0.0.1");
+        bucket = System.getProperty("bucket", "default");
+        password = System.getProperty("password", "");
     }
 
-    public String content() {
-        return content;
+    /**
+     * The seed node to bootstrap from.
+     *
+     * @return the seed node.
+     */
+    public static String seedNode() {
+        return seedNode;
     }
 
-    public String hostname() {
-        return hostname;
+    /**
+     * The bucket to work against.
+     *
+     * @return the name of the bucket.
+     */
+    public static String bucket() {
+        return bucket;
+    }
+
+    /**
+     * The password of the bucket.
+     *
+     * @return the password of the bucket.
+     */
+    public static String password() {
+        return password;
     }
 }

@@ -21,7 +21,8 @@
  */
 package com.couchbase.client.core.message.binary;
 
-import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 
 /**
  * Response to an {@link UpsertRequest}.
@@ -29,5 +30,10 @@ import com.couchbase.client.core.message.CouchbaseResponse;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class UpsertResponse implements BinaryResponse, CouchbaseResponse {
+public class UpsertResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+
+    public UpsertResponse(ResponseStatus status) {
+        super(status);
+    }
+
 }

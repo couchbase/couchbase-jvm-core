@@ -1,16 +1,12 @@
 package com.couchbase.client.core.message.cluster;
 
-import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 
-public class SeedNodesResponse implements CouchbaseResponse {
+public class SeedNodesResponse extends AbstractCouchbaseResponse {
 
-    private final boolean success;
-
-    public SeedNodesResponse(boolean success) {
-        this.success = success;
+    public SeedNodesResponse(ResponseStatus status) {
+        super(status);
     }
 
-    public boolean success() {
-        return success;
-    }
 }

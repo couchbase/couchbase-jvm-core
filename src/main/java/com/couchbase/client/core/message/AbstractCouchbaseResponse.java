@@ -19,33 +19,32 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.binary;
-
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
+package com.couchbase.client.core.message;
 
 /**
- * Represents a response with a bucket configuration.
+ * The default representation of a {@link CouchbaseResponse}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetBucketConfigResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
 
-    private final String content;
-    private String hostname;
+    /**
+     * The status for this response.
+     */
+    private final ResponseStatus status;
 
-    public GetBucketConfigResponse(final ResponseStatus status, final String content, final String hostname) {
-        super(status);
-        this.content = content;
-        this.hostname = hostname;
+    /**
+     * Sets the required properties for the response.
+     *
+     * @param status the status of the response.
+     */
+    protected AbstractCouchbaseResponse(final ResponseStatus status) {
+        this.status = status;
     }
 
-    public String content() {
-        return content;
-    }
-
-    public String hostname() {
-        return hostname;
+    @Override
+    public ResponseStatus status() {
+        return status;
     }
 }

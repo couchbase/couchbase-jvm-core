@@ -19,22 +19,17 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
 package com.couchbase.client.core.endpoint.binary;
 
-import com.couchbase.client.core.message.binary.BinaryRequest;
-import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
-import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
-import com.couchbase.client.core.message.binary.GetRequest;
-import com.couchbase.client.core.message.binary.GetResponse;
-import com.couchbase.client.core.message.binary.UpsertRequest;
-import com.couchbase.client.core.message.binary.UpsertResponse;
+import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.binary.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 
+import javax.xml.ws.Response;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -76,6 +71,10 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleGetRequest((GetRequest) msg);
         } else if (msg instanceof UpsertRequest) {
             request = handleUpsertRequest((UpsertRequest) msg, ctx);
+        } else if (msg instanceof InsertRequest) {
+            request = handleInsertRequest((InsertRequest) msg, ctx);
+        } else if (msg instanceof ReplaceRequest) {
+            request = handleReplaceRequest((ReplaceRequest) msg, ctx);
         } else {
             throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
         }
@@ -89,15 +88,41 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         throws Exception {
         Class<?> clazz = queue.poll();
 
+
         if(clazz.equals(GetBucketConfigRequest.class)) {
             InetSocketAddress addr = (InetSocketAddress) ctx.channel().remoteAddress();
-            in.add(new GetBucketConfigResponse(msg.content().toString(CharsetUtil.UTF_8), addr.getHostString()));
+            in.add(new GetBucketConfigResponse(convertStatus(msg.getStatus()), msg.content().toString(CharsetUtil.UTF_8), addr.getHostString()));
         } else if (clazz.equals(GetRequest.class)) {
-            in.add(new GetResponse(msg.content().toString(CharsetUtil.UTF_8)));
+            in.add(new GetResponse(convertStatus(msg.getStatus()), msg.content().toString(CharsetUtil.UTF_8)));
+        } else if (clazz.equals(InsertRequest.class)) {
+            in.add(new InsertResponse(convertStatus(msg.getStatus())));
         } else if (clazz.equals(UpsertRequest.class)) {
-            in.add(new UpsertResponse());
+            in.add(new UpsertResponse(convertStatus(msg.getStatus())));
+        } else if (clazz.equals(ReplaceRequest.class)) {
+            in.add(new ReplaceResponse(convertStatus(msg.getStatus())));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
+        }
+    }
+
+    /**
+     * Convert the binary protocol status in a typesafe enum that can be acted upon later.
+     *
+     * @param status the status to convert.
+     * @return the converted response status.
+     */
+    private ResponseStatus convertStatus(short status) {
+        switch (status) {
+            case BinaryMemcacheResponseStatus.SUCCESS:
+                return ResponseStatus.OK;
+            case BinaryMemcacheResponseStatus.KEY_EEXISTS:
+                return ResponseStatus.EXISTS;
+            case BinaryMemcacheResponseStatus.KEY_ENOENT:
+                return ResponseStatus.NOT_EXISTS;
+            case 0x07: // Represents NOT_MY_VBUCKET
+                return ResponseStatus.RETRY;
+            default:
+                return ResponseStatus.FAILURE;
         }
     }
 
@@ -136,7 +161,51 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
         msg.setReserved(request.partition());
         msg.setExtrasLength((byte) extras.readableBytes());
+        return msg;
+    }
 
+    /**
+     * Creates the actual protocol level request for an incoming replacer request.
+     *
+     * @param request the incoming replace request.
+     * @param ctx the channel handler context for buffer allocations.
+     * @return the built protocol request.
+     */
+    private BinaryMemcacheRequest handleReplaceRequest(final ReplaceRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf extras = ctx.alloc().buffer(8);
+        extras.writeInt(request.flags());
+        extras.writeInt(request.expiration());
+
+        FullBinaryMemcacheRequest msg = new DefaultFullBinaryMemcacheRequest(request.key(), extras, request.content());
+
+        msg.setOpcode(BinaryMemcacheOpcodes.REPLACE);
+        msg.setCAS(request.cas());
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
+        msg.setReserved(request.partition());
+        msg.setExtrasLength((byte) extras.readableBytes());
+        return msg;
+    }
+
+    /**
+     * Creates the actual protocol level request for an incoming insert request.
+     *
+     * @param request the incoming insert request.
+     * @param ctx the channel handler context for buffer allocations.
+     * @return the built protocol request.
+     */
+    private BinaryMemcacheRequest handleInsertRequest(final InsertRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf extras = ctx.alloc().buffer(8);
+        extras.writeInt(request.flags());
+        extras.writeInt(request.expiration());
+
+        FullBinaryMemcacheRequest msg = new DefaultFullBinaryMemcacheRequest(request.key(), extras, request.content());
+
+        msg.setOpcode(BinaryMemcacheOpcodes.ADD);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
+        msg.setReserved(request.partition());
+        msg.setExtrasLength((byte) extras.readableBytes());
         return msg;
     }
 

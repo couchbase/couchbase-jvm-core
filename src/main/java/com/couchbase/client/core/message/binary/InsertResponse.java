@@ -25,27 +25,14 @@ import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 
 /**
- * Represents a response with a bucket configuration.
+ * Response to an {@link InsertRequest}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetBucketConfigResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public class InsertResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
-    private final String content;
-    private String hostname;
-
-    public GetBucketConfigResponse(final ResponseStatus status, final String content, final String hostname) {
+    public InsertResponse(ResponseStatus status) {
         super(status);
-        this.content = content;
-        this.hostname = hostname;
-    }
-
-    public String content() {
-        return content;
-    }
-
-    public String hostname() {
-        return hostname;
     }
 }

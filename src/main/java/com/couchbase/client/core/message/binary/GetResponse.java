@@ -21,7 +21,9 @@
  */
 package com.couchbase.client.core.message.binary;
 
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 
 /**
  * Represents a response to a {@link GetRequest}.
@@ -29,11 +31,12 @@ import com.couchbase.client.core.message.CouchbaseResponse;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetResponse implements BinaryResponse, CouchbaseResponse {
+public class GetResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
     private final String content;
 
-    public GetResponse(final String content) {
+    public GetResponse(final ResponseStatus status, final String content) {
+        super(status);
         this.content = content;
     }
 

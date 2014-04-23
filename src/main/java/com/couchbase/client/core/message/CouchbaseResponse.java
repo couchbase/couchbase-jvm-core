@@ -26,4 +26,11 @@ package com.couchbase.client.core.message;
  */
 public interface CouchbaseResponse {
 
+    /**
+     * The typesafe status of the response.
+     *
+     * @return the status.
+     */
+    ResponseStatus status();
+
 }

@@ -294,7 +294,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     }
 
     private void reconfigureBucket(final BucketConfig config) {
-        System.out.println(config);
         for (final NodeInfo nodeInfo : config.nodes()) {
             addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<ServiceType>>() {
                 @Override
