@@ -22,14 +22,31 @@
 package com.couchbase.client.core.endpoint.binary;
 
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.binary.*;
+import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
+import com.couchbase.client.core.message.binary.GetRequest;
+import com.couchbase.client.core.message.binary.GetResponse;
+import com.couchbase.client.core.message.binary.InsertRequest;
+import com.couchbase.client.core.message.binary.InsertResponse;
+import com.couchbase.client.core.message.binary.RemoveRequest;
+import com.couchbase.client.core.message.binary.RemoveResponse;
+import com.couchbase.client.core.message.binary.ReplaceRequest;
+import com.couchbase.client.core.message.binary.ReplaceResponse;
+import com.couchbase.client.core.message.binary.UpsertRequest;
+import com.couchbase.client.core.message.binary.UpsertResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.handler.codec.memcache.binary.*;
+import io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
+import io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
+import io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
+import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
+import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
+import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
+import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 import io.netty.util.CharsetUtil;
 
-import javax.xml.ws.Response;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -75,6 +92,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleInsertRequest((InsertRequest) msg, ctx);
         } else if (msg instanceof ReplaceRequest) {
             request = handleReplaceRequest((ReplaceRequest) msg, ctx);
+        } else if (msg instanceof RemoveRequest) {
+            request = handleRemoveRequest((RemoveRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
         }
@@ -88,18 +107,21 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         throws Exception {
         Class<?> clazz = queue.poll();
 
-
+        ResponseStatus status = convertStatus(msg.getStatus());
+        long cas = msg.getCAS();
         if(clazz.equals(GetBucketConfigRequest.class)) {
             InetSocketAddress addr = (InetSocketAddress) ctx.channel().remoteAddress();
             in.add(new GetBucketConfigResponse(convertStatus(msg.getStatus()), msg.content().toString(CharsetUtil.UTF_8), addr.getHostString()));
         } else if (clazz.equals(GetRequest.class)) {
-            in.add(new GetResponse(convertStatus(msg.getStatus()), msg.content().toString(CharsetUtil.UTF_8)));
+            in.add(new GetResponse(status, cas, msg.content().toString(CharsetUtil.UTF_8)));
         } else if (clazz.equals(InsertRequest.class)) {
-            in.add(new InsertResponse(convertStatus(msg.getStatus())));
+            in.add(new InsertResponse(status, cas));
         } else if (clazz.equals(UpsertRequest.class)) {
-            in.add(new UpsertResponse(convertStatus(msg.getStatus())));
+            in.add(new UpsertResponse(status, cas));
         } else if (clazz.equals(ReplaceRequest.class)) {
-            in.add(new ReplaceResponse(convertStatus(msg.getStatus())));
+            in.add(new ReplaceResponse(status, cas));
+        } else if (clazz.equals(RemoveRequest.class)) {
+            in.add(new RemoveResponse(convertStatus(msg.getStatus())));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
@@ -206,6 +228,17 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setTotalBodyLength((short) request.key().length() + request.content().readableBytes() + extras.readableBytes());
         msg.setReserved(request.partition());
         msg.setExtrasLength((byte) extras.readableBytes());
+        return msg;
+    }
+
+    private BinaryMemcacheRequest handleRemoveRequest(final RemoveRequest request) {
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
+
+        msg.setOpcode(BinaryMemcacheOpcodes.DELETE);
+        msg.setCAS(request.cas());
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length());
+        msg.setReserved(request.partition());
         return msg;
     }
 

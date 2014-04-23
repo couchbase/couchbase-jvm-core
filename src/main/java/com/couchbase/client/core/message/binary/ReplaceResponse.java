@@ -5,7 +5,14 @@ import com.couchbase.client.core.message.ResponseStatus;
 
 public class ReplaceResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
-    public ReplaceResponse(ResponseStatus status) {
+    private final long cas;
+
+    public ReplaceResponse(ResponseStatus status, long cas) {
         super(status);
+        this.cas = cas;
+    }
+
+    public long cas() {
+        return cas;
     }
 }

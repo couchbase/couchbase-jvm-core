@@ -32,7 +32,14 @@ import com.couchbase.client.core.message.ResponseStatus;
  */
 public class InsertResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
-    public InsertResponse(ResponseStatus status) {
+    private long cas;
+
+    public InsertResponse(ResponseStatus status, long cas) {
         super(status);
+        this.cas = cas;
+    }
+
+    public long cas() {
+        return cas;
     }
 }

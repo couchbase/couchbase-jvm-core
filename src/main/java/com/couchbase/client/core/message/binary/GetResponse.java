@@ -22,7 +22,6 @@
 package com.couchbase.client.core.message.binary;
 
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
-import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 
 /**
@@ -34,13 +33,19 @@ import com.couchbase.client.core.message.ResponseStatus;
 public class GetResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
     private final String content;
+    private final long cas;
 
-    public GetResponse(final ResponseStatus status, final String content) {
+    public GetResponse(final ResponseStatus status, final long cas, final String content) {
         super(status);
         this.content = content;
+        this.cas = cas;
     }
 
     public String content() {
         return content;
+    }
+
+    public long cas() {
+        return cas;
     }
 }
