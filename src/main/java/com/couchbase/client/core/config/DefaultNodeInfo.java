@@ -19,25 +19,47 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.binary;
+package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.message.CouchbaseResponse;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Map;
 
 /**
- * Represents a response to a {@link GetRequest}.
+ * Default implementation of {@link NodeInfo}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetResponse implements BinaryResponse, CouchbaseResponse {
+public class DefaultNodeInfo implements NodeInfo {
 
-    private final String content;
+    private final String viewUri;
+    private final String hostname;
+    private final Map<String, Integer> ports;
 
-    public GetResponse(final String content) {
-        this.content = content;
+    @JsonCreator
+    public DefaultNodeInfo(
+        @JsonProperty("couchApiBase") String viewUri,
+        @JsonProperty("hostname") String hostname,
+        @JsonProperty("ports") Map<String, Integer> ports) {
+        this.viewUri = viewUri;
+        this.hostname = hostname;
+        this.ports = ports;
     }
 
-    public String content() {
-        return content;
+    @Override
+    public String viewUri() {
+        return viewUri;
+    }
+
+    @Override
+    public String hostname() {
+        return hostname;
+    }
+
+    @Override
+    public Map<String, Integer> ports() {
+        return ports;
     }
 }

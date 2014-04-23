@@ -27,6 +27,9 @@ import java.util.Observable;
 
 /**
  * High-Level marker interface for all {@link CouchbaseRequest}s.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public interface CouchbaseRequest {
 
@@ -53,11 +56,10 @@ public interface CouchbaseRequest {
     String bucket();
 
     /**
-     * Set the associated bucket name for this request.
+     * The password associated with the bucket for this request.
      *
-     * @param bucket the bucket name.
-     * @return the {@link CouchbaseRequest} for chaining purposes.
+     * @return the password.
      */
-    CouchbaseRequest bucket(String bucket);
+    String password();
 
 }

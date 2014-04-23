@@ -119,6 +119,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.from(currentConfig.get());
         }
 
+       /* Observable<ClusterConfig> httpFallback = bootstrapThroughHttp(bucket, password).map(
+            new Func1<BucketConfig, ClusterConfig>() {
+                @Override
+                public ClusterConfig call(BucketConfig bucketConfig) {
+                    applyBucketConfig(bucket, bucketConfig);
+                    return currentConfig.get();
+                }
+            }
+        );*/
+
         return bootstrapThroughCarrierPublication(bucket, password).map(new Func1<BucketConfig, ClusterConfig>() {
             @Override
             public ClusterConfig call(final BucketConfig bucketConfig) {
@@ -126,8 +136,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 return currentConfig.get();
             }
         });
+        ///*.onExceptionResumeNext(httpFallback)/*
     }
 
+    /**
+     * Try to bootstrap from one of the given seed nodes through the carrier publication binary mechanism.
+     *
+     * @param bucket
+     * @param password
+     * @return
+     */
     private Observable<BucketConfig> bootstrapThroughCarrierPublication(final String bucket, final String password) {
         return Observable.from(seedHosts.get()).flatMap(new Func1<String, Observable<AddNodeResponse>>() {
             @Override
@@ -158,6 +176,13 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         });
     }
 
+    /**
+     * Try to bootstrap from the given seed nodes through HTTP.
+     *
+     * @param bucket
+     * @param password
+     * @return
+     */
     private Observable<BucketConfig> bootstrapThroughHttp(final String bucket, final String password) {
         return null;
     }

@@ -1,6 +1,7 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.CouchbaseResponse;
+import rx.subjects.Subject;
 
 /**
  * A pre allocated event which carries a {@link CouchbaseResponse} and associated information.
@@ -15,6 +16,8 @@ public class ResponseEvent {
      */
     private CouchbaseResponse response;
 
+    private Subject<CouchbaseResponse, CouchbaseResponse> observable;
+
     /**
      * Set the new response as a payload for this event.
      *
@@ -26,7 +29,21 @@ public class ResponseEvent {
         return this;
     }
 
+    /**
+     * Get the response from the payload.
+     *
+     * @return the actual response.
+     */
     public CouchbaseResponse getResponse() {
         return response;
+    }
+
+    public Subject<CouchbaseResponse, CouchbaseResponse> getObservable() {
+        return observable;
+    }
+
+    public ResponseEvent setObservable(final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        this.observable = observable;
+        return this;
     }
 }

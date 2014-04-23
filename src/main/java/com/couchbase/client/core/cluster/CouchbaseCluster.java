@@ -83,17 +83,14 @@ public class CouchbaseCluster implements Cluster {
     private final RingBuffer<RequestEvent> requestRingBuffer;
 
     /**
-     * The {@link ResponseEvent} {@link RingBuffer}.
-     */
-    private final RingBuffer<ResponseEvent> responseRingBuffer;
-
-    /**
      * The handler for all cluster nodes.
      */
     private final RequestHandler requestHandler;
 
+    /**
+     * The configuration provider in use.
+     */
     private final ConfigurationProvider configProvider;
-
 
     /**
      * Populate the static exceptions with stack trace elements.
@@ -123,7 +120,7 @@ public class CouchbaseCluster implements Cluster {
         );
         responseDisruptor.handleEventsWith(new ResponseHandler());
         responseDisruptor.start();
-        responseRingBuffer = responseDisruptor.getRingBuffer();
+        RingBuffer<ResponseEvent> responseRingBuffer = responseDisruptor.getRingBuffer();
 
         Disruptor<RequestEvent> requestDisruptor = new Disruptor<RequestEvent>(
             new RequestEventFactory(),
@@ -137,7 +134,8 @@ public class CouchbaseCluster implements Cluster {
     }
 
     @Override
-    public Observable<CouchbaseResponse> send(final CouchbaseRequest request) {
+    @SuppressWarnings("unchecked")
+    public <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request) {
         final Subject<CouchbaseResponse, CouchbaseResponse> observable = AsyncSubject.create();
         request.observable(observable);
 
@@ -152,16 +150,21 @@ public class CouchbaseCluster implements Cluster {
             }
         }
 
-        return observable;
+        return (Observable<R>) observable;
     }
 
+    /**
+     * Helper method to handle the cluster requests.
+     *
+     * @param request the request to dispatch.
+     */
     private void handleClusterRequest(final CouchbaseRequest request) {
         if (request instanceof SeedNodesRequest) {
             boolean success = configProvider.seedHosts(((SeedNodesRequest) request).nodes());
             request.observable().onNext(new SeedNodesResponse(success));
             request.observable().onCompleted();
         } else if (request instanceof OpenBucketRequest) {
-            configProvider.openBucket(request.bucket(), ((OpenBucketRequest) request).password()).subscribe(
+            configProvider.openBucket(request.bucket(), request.password()).subscribe(
                 new Observer<ClusterConfig>() {
                     @Override
                     public void onCompleted() {

@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -42,6 +43,7 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -115,6 +117,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             @Override
             public void call(final ClusterConfig config) {
                 configuration.set(config);
+                reconfigure();
             }
         });
     }
@@ -170,10 +173,22 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         return removeNode(nodeBy(hostname));
     }
 
+    /**
+     * Add the service to the node.
+     *
+     * @param request the request which contains infos about the service and node to add.
+     * @return an observable which contains the newly created service.
+     */
     public Observable<Service> addService(final AddServiceRequest request) {
         return nodeBy(request.hostname()).addService(request);
     }
 
+    /**
+     * Remove a service from a node.
+     *
+     * @param request the request which contains infos about the service and node to remove.
+     * @return an observable which contains the removed service.
+     */
     public Observable<Service> removeService(final RemoveServiceRequest request) {
         return nodeBy(request.hostname()).removeService(request);
     }
@@ -256,6 +271,24 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         } else {
             throw new IllegalArgumentException("Unknown Request Type: " + request);
         }
+    }
+
+    /**
+     * Helper method which grabs the current configuration and checks if the node setup is out of sync.
+     *
+     * This method is always called when a new configuration arrives and it will try to sync the actual node
+     * and service setup with the one proposed by the configuration.
+     */
+    private void reconfigure() {
+        ClusterConfig config = configuration.get();
+        for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
+            BucketConfig bucketConfig = bucket.getValue();
+            reconfigureBucket(bucketConfig);
+        }
+    }
+
+    private void reconfigureBucket(final BucketConfig config) {
+        System.out.println(config);
     }
 
 }

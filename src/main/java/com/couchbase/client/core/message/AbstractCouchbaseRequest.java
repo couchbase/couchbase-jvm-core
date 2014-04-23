@@ -23,10 +23,42 @@ package com.couchbase.client.core.message;
 
 import rx.subjects.Subject;
 
+/**
+ * Default implementation for a {@link CouchbaseRequest}, should be extended by child messages.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
 
+    /**
+     * The observable which eventually completes the response.
+     */
     private Subject<CouchbaseResponse, CouchbaseResponse> observable;
-    private String bucket;
+
+    /**
+     * The name of the bucket for this request.
+     */
+    private final String bucket;
+
+    /**
+     * The password of the bucket for this request.
+     */
+    private final String password;
+
+    /**
+     * Create a new {@link AbstractCouchbaseRequest}.
+     *
+     * Depending on the type of operation, bucket and password may be null, this needs to
+     * be enforced properly by the child implementations.
+     *
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     */
+    protected AbstractCouchbaseRequest(final String bucket, final String password) {
+        this.bucket = bucket;
+        this.password = password;
+    }
 
     @Override
     public CouchbaseRequest observable(final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
@@ -45,8 +77,7 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     }
 
     @Override
-    public CouchbaseRequest bucket(String bucket) {
-        this.bucket = bucket;
-        return this;
+    public String password() {
+        return password;
     }
 }

@@ -8,7 +8,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
     @Override
     public void onEvent(final ResponseEvent event, long sequence, boolean endOfBatch) throws Exception {
         CouchbaseResponse response = event.getResponse();
-        event.getResponse().observable().onNext(response);
-        event.getResponse().observable().onCompleted();
+        event.getObservable().onNext(response);
+        event.getObservable().onCompleted();
     }
 }

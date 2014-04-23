@@ -4,12 +4,13 @@ import com.couchbase.client.core.cluster.RequestEvent;
 import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.lmax.disruptor.EventTranslatorOneArg;
+import com.lmax.disruptor.EventTranslatorTwoArg;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import rx.subjects.Subject;
 
 import java.util.ArrayDeque;
 import java.util.List;
@@ -20,11 +21,12 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
     /**
      * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
      */
-    private static final EventTranslatorOneArg<ResponseEvent, CouchbaseResponse> RESPONSE_TRANSLATOR =
-        new EventTranslatorOneArg<ResponseEvent, CouchbaseResponse>() {
+    private static final EventTranslatorTwoArg<ResponseEvent, CouchbaseResponse, Subject<CouchbaseResponse, CouchbaseResponse>> RESPONSE_TRANSLATOR =
+        new EventTranslatorTwoArg<ResponseEvent, CouchbaseResponse, Subject<CouchbaseResponse, CouchbaseResponse>>() {
             @Override
-            public void translateTo(ResponseEvent event, long sequence, CouchbaseResponse response) {
+            public void translateTo(ResponseEvent event, long sequence, CouchbaseResponse response, Subject<CouchbaseResponse, CouchbaseResponse> observable) {
                 event.setResponse(response);
+                event.setObservable(observable);
             }
         };
 
@@ -88,8 +90,7 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
         protected void decode(final ChannelHandlerContext ctx, final CouchbaseResponse in, final List<Object> out)
             throws Exception {
             CouchbaseRequest request = queue.poll();
-            in.observable(request.observable());
-            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in);
+            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in, request.observable());
         }
 
     }

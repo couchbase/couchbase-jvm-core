@@ -21,22 +21,57 @@
  */
 package com.couchbase.client.core.message.binary;
 
+import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+
 /**
- * Fetch a document from the cluster and return it if found.
+ * Default implementation of a {@link BinaryRequest}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetRequest extends AbstractBinaryRequest {
+public abstract class AbstractBinaryRequest extends AbstractCouchbaseRequest implements BinaryRequest {
 
     /**
-     * Create a new {@link GetRequest}.
+     * The key of the document, should be null if not tied to any.
+     */
+    private final String key;
+
+    /**
+     * The partition (vbucket) of the document.
+     */
+    private short partition = -1;
+
+    /**
+     * Creates a new {@link AbstractBinaryRequest}.
      *
      * @param key the key of the document.
      * @param bucket the bucket of the document.
+     * @param password the optional password of the bucket.
      */
-    public GetRequest(final String key, final String bucket) {
-        super(key, bucket, null);
+    protected AbstractBinaryRequest(String key, String bucket, String password) {
+        super(bucket, password);
+        this.key = key;
     }
 
+    @Override
+    public String key() {
+        return key;
+    }
+
+    @Override
+    public short partition() {
+        if (partition == -1) {
+            throw new IllegalStateException("Partition requested but not set beforehand");
+        }
+        return partition;
+    }
+
+    @Override
+    public BinaryRequest partition(short partition) {
+        if (partition < 0) {
+            throw new IllegalArgumentException("Partition must be larger than or equal to zero");
+        }
+        this.partition = partition;
+        return this;
+    }
 }

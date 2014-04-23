@@ -28,5 +28,6 @@ public class SignalFlush extends AbstractCouchbaseRequest implements InternalReq
     public static SignalFlush INSTANCE = new SignalFlush();
 
     private SignalFlush() {
+        super(null, null);
     }
 }

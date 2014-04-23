@@ -19,25 +19,38 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.binary;
+package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.message.CouchbaseResponse;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import java.util.Map;
 
 /**
- * Represents a response to a {@link GetRequest}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetResponse implements BinaryResponse, CouchbaseResponse {
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonDeserialize(as = DefaultNodeInfo.class)
+public interface NodeInfo {
 
-    private final String content;
+    /**
+     *
+     * @return
+     */
+    String viewUri();
 
-    public GetResponse(final String content) {
-        this.content = content;
-    }
+    /**
+     *
+     * @return
+     */
+    String hostname();
 
-    public String content() {
-        return content;
-    }
+    /**
+     *
+     * @return
+     */
+    Map<String, Integer> ports();
+
 }

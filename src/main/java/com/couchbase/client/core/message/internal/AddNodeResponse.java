@@ -1,12 +1,11 @@
 package com.couchbase.client.core.message.internal;
 
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseResponse;
 
 /**
  * Created by michael on 22/04/14.
  */
-public class AddNodeResponse extends AbstractCouchbaseResponse implements CouchbaseResponse {
+public class AddNodeResponse implements CouchbaseResponse {
 
     private final String hostname;
 

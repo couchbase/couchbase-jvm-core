@@ -82,7 +82,12 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             }
             return;
         }
-        strategy.select(request, endpoints).send(request);
+        Endpoint endpoint = strategy.select(request, endpoints);
+        if (endpoint == null) {
+            request.observable().onError(new IllegalStateException("Endpoint not found for request: " + request));
+        } else {
+            endpoint.send(request);
+        }
     }
 
     @Override

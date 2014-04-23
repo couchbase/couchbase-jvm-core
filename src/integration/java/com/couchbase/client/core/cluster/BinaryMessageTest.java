@@ -19,22 +19,27 @@ import static org.junit.Assert.assertTrue;
 /**
  * Verifies basic functionality of binary operations.
  */
-public class ClusterBinaryTest {
+public class BinaryMessageTest {
+
 
     @Test
     public void shouldUpsertAndGetDocument() throws Exception {
         final Cluster cluster = new CouchbaseCluster();
 
+        // Send seed nodes list
         Observable<SeedNodesResponse> initObservable = cluster.send(new SeedNodesRequest("127.0.0.1"));
         assertTrue(initObservable.toBlockingObservable().single().success());
+
+        // Open bucket
         Observable<OpenBucketResponse> bucketObservable = cluster.send(new OpenBucketRequest("default", ""));
         bucketObservable.toBlockingObservable().single();
 
-        UpsertRequest upsert = new UpsertRequest("key", Unpooled.copiedBuffer("Hello", CharsetUtil.UTF_8), "default", "");
+        // Do a upsert (== set for new api)
+        UpsertRequest upsert = new UpsertRequest("key", Unpooled.copiedBuffer("Hello", CharsetUtil.UTF_8), "default");
         cluster.<UpsertResponse>send(upsert).toBlockingObservable().single();
 
-        GetRequest request = new GetRequest("key");
-        request.bucket("default");
+        // Do a get request
+        GetRequest request = new GetRequest("key", "default");
         assertEquals("Hello", cluster.<GetResponse>send(request).toBlockingObservable().single().content());
     }
 

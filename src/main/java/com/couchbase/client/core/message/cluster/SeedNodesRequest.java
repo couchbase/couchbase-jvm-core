@@ -17,6 +17,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
     }
 
     public SeedNodesRequest(final List<String> nodes) {
+        super(null, null);
         this.nodes = nodes;
     }
 

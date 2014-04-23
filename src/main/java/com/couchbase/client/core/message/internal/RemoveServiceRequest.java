@@ -33,21 +33,16 @@ import com.couchbase.client.core.service.ServiceType;
 public class RemoveServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
     private final ServiceType type;
-    private final String bucket;
     private final String hostname;
 
     public RemoveServiceRequest(ServiceType type, String bucket, String hostname) {
+        super(bucket, null);
         this.type = type;
-        this.bucket = bucket;
         this.hostname = hostname;
     }
 
     public ServiceType type() {
         return type;
-    }
-
-    public String bucket() {
-        return bucket;
     }
 
     public String hostname() {

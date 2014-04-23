@@ -63,7 +63,7 @@ public class BinaryLocator implements Locator {
                 return Observable.from(node);
             }
         }
-        return Observable.error(new IllegalStateException("Node not found for key" + key));
+        return Observable.error(new IllegalStateException("Node not found for request" + request));
     }
 
     /**

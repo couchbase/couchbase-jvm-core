@@ -1,9 +1,8 @@
 package com.couchbase.client.core.message.cluster;
 
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseResponse;
 
-public class SeedNodesResponse extends AbstractCouchbaseResponse implements CouchbaseResponse {
+public class SeedNodesResponse implements CouchbaseResponse {
 
     private final boolean success;
 

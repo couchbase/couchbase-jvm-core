@@ -46,6 +46,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private static final NotConnectedException NOT_CONNECTED_EXCEPTION = new NotConnectedException();
 
+    /**
+     * The netty bootstrap adapter.
+     */
     private final BootstrapAdapter bootstrap;
 
     /**
