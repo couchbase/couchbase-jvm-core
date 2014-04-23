@@ -51,16 +51,6 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     private final Map<String, Map<ServiceType, Service>> localServices;
 
     /**
-     * The read/write lock for the global services.
-     */
-    private final ReadWriteLock globalServiceLock = new ReentrantReadWriteLock();
-
-    /**
-     * The read/write lock for the local services.
-     */
-    private final ReadWriteLock localServiceLock = new ReentrantReadWriteLock();
-
-    /**
      * Create a new {@link DefaultServiceRegistry} with custom containers.
      *
      * This constructor is intended to be used for unit tests only.
@@ -84,25 +74,15 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     @Override
     public Service addService(final Service service, final String bucket) {
         if (service.mapping() == BucketServiceMapping.ONE_BY_ONE) {
-            try {
-                localServiceLock.writeLock().lock();
-                if (!localServices.containsKey(bucket)) {
-                    localServices.put(bucket, new HashMap<ServiceType, Service>());
-                }
-                if (!localServices.get(bucket).containsKey(service.type())) {
-                    localServices.get(bucket).put(service.type(), service);
-                }
-            } finally {
-                localServiceLock.writeLock().unlock();
+            if (!localServices.containsKey(bucket)) {
+                localServices.put(bucket, new HashMap<ServiceType, Service>());
+            }
+            if (!localServices.get(bucket).containsKey(service.type())) {
+                localServices.get(bucket).put(service.type(), service);
             }
         } else {
-            try {
-                globalServiceLock.writeLock().lock();
-                if (!globalServices.containsKey(service.type())) {
-                    globalServices.put(service.type(), service);
-                }
-            } finally {
-                globalServiceLock.writeLock().unlock();
+            if (!globalServices.containsKey(service.type())) {
+                globalServices.put(service.type(), service);
             }
         }
         return service;
@@ -111,25 +91,15 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     @Override
     public Service removeService(final Service service, final String bucket) {
         if (service.mapping() == BucketServiceMapping.ONE_BY_ONE) {
-            try {
-                localServiceLock.writeLock().lock();
-                if (localServices.containsKey(bucket) && localServices.get(bucket).containsKey(service.type())) {
-                    localServices.get(bucket).remove(service.type());
-                }
-                if (localServices.get(bucket).isEmpty()) {
-                    localServices.remove(bucket);
-                }
-            } finally {
-                localServiceLock.writeLock().unlock();
+            if (localServices.containsKey(bucket) && localServices.get(bucket).containsKey(service.type())) {
+                localServices.get(bucket).remove(service.type());
+            }
+            if (localServices.get(bucket).isEmpty()) {
+                localServices.remove(bucket);
             }
         } else {
-            try {
-                globalServiceLock.writeLock().lock();
-                if (globalServices.containsKey(service.type())) {
-                    globalServices.remove(service.type());
-                }
-            } finally {
-                globalServiceLock.writeLock().unlock();
+            if (globalServices.containsKey(service.type())) {
+                globalServices.remove(service.type());
             }
         }
         return service;
@@ -139,19 +109,9 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     public Service locate(final CouchbaseRequest request) {
         ServiceType type = serviceTypeFor(request);
         if (type.mapping() == BucketServiceMapping.ONE_BY_ONE) {
-            try {
-                localServiceLock.readLock().lock();
-                return localServices.get(request.bucket()).get(type);
-            } finally {
-                localServiceLock.readLock().unlock();
-            }
+            return localServices.get(request.bucket()).get(type);
         } else {
-            try {
-                globalServiceLock.readLock().lock();
-                return globalServices.get(type);
-            } finally {
-                globalServiceLock.readLock().unlock();
-            }
+            return globalServices.get(type);
         }
     }
 
@@ -162,11 +122,9 @@ public class DefaultServiceRegistry implements ServiceRegistry {
             public void call(Subscriber<? super Service> subscriber) {
                 if (!subscriber.isUnsubscribed()) {
                     try {
-                        globalServiceLock.readLock().lock();
                         for (Service service : globalServices.values()) {
                             subscriber.onNext(service);
                         }
-                        localServiceLock.readLock().lock();
                         for (Map<ServiceType, Service> bucket : localServices.values()) {
                             for (Service service : bucket.values()) {
                                 subscriber.onNext(service);
@@ -175,9 +133,6 @@ public class DefaultServiceRegistry implements ServiceRegistry {
                         subscriber.onCompleted();
                     } catch (Exception ex) {
                         subscriber.onError(ex);
-                    } finally {
-                        localServiceLock.readLock().unlock();
-                        globalServiceLock.readLock().unlock();
                     }
                 }
             }
@@ -187,19 +142,9 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     @Override
     public Service serviceBy(final ServiceType type, final String bucket) {
         if (type.mapping() == BucketServiceMapping.ONE_BY_ONE) {
-            try {
-                localServiceLock.readLock().lock();
-                return localServices.get(bucket).get(type);
-            } finally {
-                localServiceLock.readLock().unlock();
-            }
+            return localServices.get(bucket).get(type);
         } else {
-            try {
-                globalServiceLock.readLock().lock();
-                return globalServices.get(type);
-            } finally {
-                globalServiceLock.readLock().unlock();
-            }
+            return globalServices.get(type);
         }
     }
 

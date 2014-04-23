@@ -2,7 +2,7 @@ package com.couchbase.client.core.config;
 
 import java.util.List;
 
-public class AbstractBucketConfig implements BucketConfig {
+public abstract class AbstractBucketConfig implements BucketConfig {
 
     private final String name;
     private final BucketNodeLocator locator;

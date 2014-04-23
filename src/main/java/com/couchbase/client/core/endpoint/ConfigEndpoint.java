@@ -13,7 +13,7 @@ public class ConfigEndpoint extends AbstractEndpoint {
 
     @Override
     protected int port() {
-        return 0;
+        return 8091;
     }
 
     @Override

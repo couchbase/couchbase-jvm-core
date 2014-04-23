@@ -44,7 +44,7 @@ public class DefaultNodeInfo implements NodeInfo {
         @JsonProperty("hostname") String hostname,
         @JsonProperty("ports") Map<String, Integer> ports) {
         this.viewUri = viewUri;
-        this.hostname = hostname;
+        this.hostname = trimPort(hostname);
         this.ports = ports;
     }
 
@@ -61,5 +61,10 @@ public class DefaultNodeInfo implements NodeInfo {
     @Override
     public Map<String, Integer> ports() {
         return ports;
+    }
+
+    private static String trimPort(String hostname) {
+        String[] parts =  hostname.split(":");
+        return parts[0];
     }
 }

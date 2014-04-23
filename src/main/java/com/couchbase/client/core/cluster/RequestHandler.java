@@ -23,6 +23,7 @@ package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
@@ -34,6 +35,7 @@ import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.BinaryLocator;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.service.Service;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -160,6 +162,10 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
     public Observable<LifecycleState> addNode(final String hostname) {
+        Node node = nodeBy(hostname);
+        if (node != null) {
+            return Observable.from(node.state());
+        }
         return addNode(new CouchbaseNode(hostname, environment, responseBuffer));
     }
 
@@ -289,6 +295,20 @@ public class RequestHandler implements EventHandler<RequestEvent> {
 
     private void reconfigureBucket(final BucketConfig config) {
         System.out.println(config);
+        for (final NodeInfo nodeInfo : config.nodes()) {
+            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<ServiceType>>() {
+                @Override
+                public Observable<ServiceType> call(LifecycleState lifecycleState) {
+                    return Observable.from(config.services());
+                }
+            }).flatMap(new Func1<ServiceType, Observable<Service>>() {
+                @Override
+                public Observable<Service> call(ServiceType serviceType) {
+                    AddServiceRequest request = new AddServiceRequest(serviceType, config.name(), nodeInfo.hostname());
+                    return addService(request);
+                }
+            }).subscribe();
+        }
     }
 
 }

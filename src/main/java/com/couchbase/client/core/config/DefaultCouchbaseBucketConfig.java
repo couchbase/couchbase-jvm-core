@@ -1,5 +1,6 @@
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,6 +10,10 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
+
+    private static final ServiceType[] services = new ServiceType[] {
+        ServiceType.BINARY, ServiceType.CONFIG
+    };
 
     private final PartitionInfo partitionInfo;
 
@@ -37,6 +42,11 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     @Override
     public int numberOfReplicas() {
         return partitionInfo.numberOfReplicas();
+    }
+
+    @Override
+    public ServiceType[] services() {
+        return services;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

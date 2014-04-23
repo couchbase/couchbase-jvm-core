@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -68,6 +69,18 @@ public interface BucketConfig {
      */
     String streamingUri();
 
+    /**
+     * The list of nodes associated with this bucket.
+     *
+     * @return the list of nodes.
+     */
     List<NodeInfo> nodes();
+
+    /**
+     * All services supported by this bucket.
+     *
+     * @return the service types for this bucket.
+     */
+    ServiceType[] services();
 
 }

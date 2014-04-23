@@ -21,13 +21,12 @@ import static org.junit.Assert.assertTrue;
  */
 public class BinaryMessageTest {
 
-
     @Test
     public void shouldUpsertAndGetDocument() throws Exception {
         final Cluster cluster = new CouchbaseCluster();
 
         // Send seed nodes list
-        Observable<SeedNodesResponse> initObservable = cluster.send(new SeedNodesRequest("127.0.0.1"));
+        Observable<SeedNodesResponse> initObservable = cluster.send(new SeedNodesRequest("192.168.56.101"));
         assertTrue(initObservable.toBlockingObservable().single().success());
 
         // Open bucket
