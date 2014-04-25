@@ -30,10 +30,12 @@ import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
+import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.BinaryLocator;
 import com.couchbase.client.core.node.locate.Locator;
+import com.couchbase.client.core.node.locate.ViewLocator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
@@ -67,7 +69,12 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * The node locator for the binary service.
      */
-    private static final Locator BINARY_LOCATOR = new BinaryLocator();
+    private final Locator BINARY_LOCATOR = new BinaryLocator();
+
+    /**
+     * The node locator for the view service;
+     */
+    private final Locator VIEW_LOCATOR = new ViewLocator();
 
     /**
      * The read/write lock for the list of managed nodes.
@@ -274,6 +281,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     protected Locator locator(final CouchbaseRequest request) {
         if (request instanceof BinaryRequest) {
             return BINARY_LOCATOR;
+        } else if (request instanceof ViewRequest) {
+            return VIEW_LOCATOR;
         } else {
             throw new IllegalArgumentException("Unknown Request Type: " + request);
         }

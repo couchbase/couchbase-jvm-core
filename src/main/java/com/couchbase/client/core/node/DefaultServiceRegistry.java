@@ -24,6 +24,7 @@ package com.couchbase.client.core.node;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
+import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.service.BucketServiceMapping;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
@@ -32,8 +33,6 @@ import rx.Subscriber;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The default implementation of a {@link ServiceRegistry}.
@@ -159,6 +158,8 @@ public class DefaultServiceRegistry implements ServiceRegistry {
             return ServiceType.BINARY;
         } else if (request instanceof ConfigRequest) {
             return ServiceType.CONFIG;
+        } else if (request instanceof ViewRequest) {
+            return ServiceType.VIEW;
         } else {
             throw new IllegalStateException("Unknown Request: " + request);
         }

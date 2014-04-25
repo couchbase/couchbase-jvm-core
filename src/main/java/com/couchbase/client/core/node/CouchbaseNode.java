@@ -93,7 +93,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
                 }
             });
         } else {
-            serviceRegistry.locate(request).send(request);
+            Service service = serviceRegistry.locate(request);
+            if (service == null) {
+                request.observable().onError(new IllegalStateException("Service not found for request: " + request));
+            } else {
+                service.send(request);
+            }
         }
     }
 

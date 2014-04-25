@@ -23,6 +23,7 @@ package com.couchbase.client.core.message.binary;
 
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Represents a response to a {@link GetRequest}.
@@ -32,16 +33,16 @@ import com.couchbase.client.core.message.ResponseStatus;
  */
 public class GetResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
-    private final String content;
+    private final ByteBuf content;
     private final long cas;
 
-    public GetResponse(final ResponseStatus status, final long cas, final String content) {
+    public GetResponse(final ResponseStatus status, final long cas, final ByteBuf content) {
         super(status);
         this.content = content;
         this.cas = cas;
     }
 
-    public String content() {
+    public ByteBuf content() {
         return content;
     }
 

@@ -29,7 +29,7 @@ public enum ServiceType {
     /**
      * Views and Design Documents.
      */
-    DESIGN(BucketServiceMapping.ONE_FOR_ALL),
+    VIEW(BucketServiceMapping.ONE_FOR_ALL),
 
     /**
      * Memcache type operations.

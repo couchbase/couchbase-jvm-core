@@ -52,12 +52,12 @@ public class DefaultServiceRegistryTest {
         assertEquals(0, global.size());
 
         Service service = mock(Service.class);
-        when(service.type()).thenReturn(ServiceType.DESIGN);
-        when(service.mapping()).thenReturn(ServiceType.DESIGN.mapping());
+        when(service.type()).thenReturn(ServiceType.VIEW);
+        when(service.mapping()).thenReturn(ServiceType.VIEW.mapping());
         registry.addService(service, null);
 
         assertEquals(1, global.size());
-        assertEquals(service, global.get(ServiceType.DESIGN));
+        assertEquals(service, global.get(ServiceType.VIEW));
     }
 
     @Test
@@ -86,20 +86,20 @@ public class DefaultServiceRegistryTest {
         assertEquals(0, global.size());
 
         Service service = mock(Service.class);
-        when(service.type()).thenReturn(ServiceType.DESIGN);
-        when(service.mapping()).thenReturn(ServiceType.DESIGN.mapping());
+        when(service.type()).thenReturn(ServiceType.VIEW);
+        when(service.mapping()).thenReturn(ServiceType.VIEW.mapping());
         registry.addService(service, null);
 
         assertEquals(1, global.size());
-        assertEquals(service, global.get(ServiceType.DESIGN));
+        assertEquals(service, global.get(ServiceType.VIEW));
 
         Service service2 = mock(Service.class);
-        when(service2.type()).thenReturn(ServiceType.DESIGN);
-        when(service2.mapping()).thenReturn(ServiceType.DESIGN.mapping());
+        when(service2.type()).thenReturn(ServiceType.VIEW);
+        when(service2.mapping()).thenReturn(ServiceType.VIEW.mapping());
         registry.addService(service2, null);
 
         assertEquals(1, global.size());
-        assertEquals(service, global.get(ServiceType.DESIGN));
+        assertEquals(service, global.get(ServiceType.VIEW));
     }
 
     @Test
@@ -134,8 +134,8 @@ public class DefaultServiceRegistryTest {
         DefaultServiceRegistry registry = new DefaultServiceRegistry(global, local);
 
         Service service1 = mock(Service.class);
-        when(service1.type()).thenReturn(ServiceType.DESIGN);
-        when(service1.mapping()).thenReturn(ServiceType.DESIGN.mapping());
+        when(service1.type()).thenReturn(ServiceType.VIEW);
+        when(service1.mapping()).thenReturn(ServiceType.VIEW.mapping());
         Service service2 = mock(Service.class);
         when(service2.type()).thenReturn(ServiceType.CONFIG);
         when(service2.mapping()).thenReturn(ServiceType.CONFIG.mapping());

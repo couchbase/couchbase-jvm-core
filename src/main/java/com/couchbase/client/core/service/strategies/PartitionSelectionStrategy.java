@@ -7,7 +7,7 @@ import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.service.SelectionStrategy;
 import com.couchbase.client.core.state.LifecycleState;
 
-public class KeyHashSelectionStrategy implements SelectionStrategy {
+public class PartitionSelectionStrategy implements SelectionStrategy {
 
     @Override
     public Endpoint select(CouchbaseRequest request, Endpoint[] endpoints) {

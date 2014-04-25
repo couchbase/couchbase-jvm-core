@@ -78,23 +78,23 @@ public interface Environment {
     int binaryServiceEndpoints();
 
     /**
-     * The number of binary service endpoints.
+     * The number of config service endpoints.
      *
      * @return amount of endpoints per service.
      */
     int configServiceEndpoints();
 
     /**
-     * The number of binary service endpoints.
+     * The number of stream service endpoints.
      *
      * @return amount of endpoints per service.
      */
     int streamServiceEndpoints();
 
     /**
-     * The number of binary service endpoints.
+     * The number of view service endpoints.
      *
      * @return amount of endpoints per service.
      */
-    int designServiceEndpoints();
+    int viewServiceEndpoints();
 }

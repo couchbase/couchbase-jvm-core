@@ -12,7 +12,7 @@ import java.util.List;
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
 
     private static final ServiceType[] services = new ServiceType[] {
-        ServiceType.BINARY, ServiceType.CONFIG
+        ServiceType.BINARY, ServiceType.CONFIG, ServiceType.VIEW
     };
 
     private final PartitionInfo partitionInfo;

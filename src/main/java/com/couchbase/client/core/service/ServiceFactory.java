@@ -39,8 +39,8 @@ public class ServiceFactory {
         switch(type) {
             case BINARY:
                 return new BinaryService(hostname, env, responseBuffer);
-            case DESIGN:
-                return new DesignService(hostname, env, responseBuffer);
+            case VIEW:
+                return new ViewService(hostname, env, responseBuffer);
             case CONFIG:
                 return new ConfigService(hostname, env, responseBuffer);
             case STREAM:

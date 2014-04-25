@@ -138,8 +138,8 @@ public class CouchbaseEnvironment implements Environment {
     }
 
     @Override
-    public int designServiceEndpoints() {
-        int endpoints = getInt("core.service.endpoints.design");
+    public int viewServiceEndpoints() {
+        int endpoints = getInt("core.service.endpoints.view");
         if (endpoints <= 0) {
             throw new EnvironmentException("At least one Endpoint per Service is required");
         }
