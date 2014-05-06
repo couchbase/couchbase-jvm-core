@@ -136,7 +136,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     private ResponseStatus convertStatus(short status) {
         switch (status) {
             case BinaryMemcacheResponseStatus.SUCCESS:
-                return ResponseStatus.OK;
+                return ResponseStatus.SUCCESS;
             case BinaryMemcacheResponseStatus.KEY_EEXISTS:
                 return ResponseStatus.EXISTS;
             case BinaryMemcacheResponseStatus.KEY_ENOENT:

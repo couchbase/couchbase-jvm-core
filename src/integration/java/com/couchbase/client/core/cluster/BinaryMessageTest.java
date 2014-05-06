@@ -102,7 +102,7 @@ public class BinaryMessageTest {
         String key = "insert-key";
         String content = "Hello World!";
         InsertRequest insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.OK, cluster.<InsertResponse>send(insert).toBlockingObservable().single().status());
+        assertEquals(ResponseStatus.SUCCESS, cluster.<InsertResponse>send(insert).toBlockingObservable().single().status());
 
         insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
         assertEquals(ResponseStatus.EXISTS, cluster.<InsertResponse>send(insert).toBlockingObservable().single().status());
@@ -126,7 +126,7 @@ public class BinaryMessageTest {
             }
         ).toBlockingObservable().single();
 
-        assertEquals(ResponseStatus.OK, response.status());
+        assertEquals(ResponseStatus.SUCCESS, response.status());
     }
 
     @Test
@@ -166,7 +166,7 @@ public class BinaryMessageTest {
                 }
             }).toBlockingObservable().single();
 
-        assertEquals(ResponseStatus.OK, response.status());
+        assertEquals(ResponseStatus.SUCCESS, response.status());
     }
 
     @Test
@@ -174,10 +174,10 @@ public class BinaryMessageTest {
         String key = "remove-key";
         String content = "Hello World!";
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.OK, cluster.<UpsertResponse>send(upsert).toBlockingObservable().single().status());
+        assertEquals(ResponseStatus.SUCCESS, cluster.<UpsertResponse>send(upsert).toBlockingObservable().single().status());
 
         RemoveRequest remove = new RemoveRequest(key, bucket);
-        assertEquals(ResponseStatus.OK, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
+        assertEquals(ResponseStatus.SUCCESS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
         assertEquals(ResponseStatus.NOT_EXISTS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
     }
 
@@ -187,12 +187,12 @@ public class BinaryMessageTest {
         String content = "Hello World!";
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
         UpsertResponse upsertResponse = cluster.<UpsertResponse>send(upsert).toBlockingObservable().single();
-        assertEquals(ResponseStatus.OK, upsertResponse.status());
+        assertEquals(ResponseStatus.SUCCESS, upsertResponse.status());
 
         RemoveRequest remove = new RemoveRequest(key, 1233443, bucket);
         assertEquals(ResponseStatus.EXISTS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket);
-        assertEquals(ResponseStatus.OK, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
+        assertEquals(ResponseStatus.SUCCESS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
     }
 
 }

@@ -32,8 +32,12 @@ import com.lmax.disruptor.RingBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.FuncN;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public abstract class AbstractService extends AbstractStateMachine<LifecycleState> implements Service {
@@ -47,6 +51,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final Environment environment;
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
+    private final List<Observable<LifecycleState>> endpointStates;
 
     protected AbstractService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy,
         final RingBuffer<ResponseEvent> responseBuffer) {
@@ -55,11 +60,26 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         this.hostname = hostname;
         this.environment = env;
         this.strategy = strategy;
-
+        endpointStates = new ArrayList<Observable<LifecycleState>>();
         endpoints = new Endpoint[numEndpoints];
         for (int i = 0; i < numEndpoints; i++) {
-            endpoints[i] = newEndpoint(responseBuffer);
+            Endpoint endpoint = newEndpoint(responseBuffer);
+            endpoints[i] = endpoint;
+            endpointStates.add(endpoint.states());
         }
+
+        Observable.combineLatest(endpointStates, new FuncN<LifecycleState>() {
+            @Override
+            public LifecycleState call(Object... args) {
+                LifecycleState[] states = Arrays.copyOf(args, args.length, LifecycleState[].class);
+                return calculateStateFrom(Arrays.asList(states));
+            }
+        }).subscribe(new Action1<LifecycleState>() {
+            @Override
+            public void call(LifecycleState state) {
+                transitionState(state);
+            }
+        });
     }
 
     /**
@@ -95,7 +115,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             return Observable.from(state());
         }
-        transitionState(LifecycleState.CONNECTING);
+
         return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
             @Override
             public Observable<LifecycleState> call(final Endpoint endpoint) {
@@ -117,7 +137,6 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             return Observable.from(state());
         }
 
-        transitionState(LifecycleState.DISCONNECTING);
         return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
             @Override
             public Observable<LifecycleState> call(Endpoint endpoint) {
@@ -131,7 +150,6 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                         LOGGER.warn("Underlying Endpoint did not disconnect cleanly on shutdown.");
                     }
                 }
-                transitionState(LifecycleState.DISCONNECTED);
                 return state();
             }
         });

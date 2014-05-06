@@ -4,6 +4,7 @@ import com.couchbase.client.core.cluster.RequestEvent;
 import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.lmax.disruptor.EventTranslatorTwoArg;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelHandlerAppender;
@@ -39,6 +40,8 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
      * A queue which holds all the outgoing request in order.
      */
     private final Queue<CouchbaseRequest> queue = new ArrayDeque<CouchbaseRequest>();
+
+    private CouchbaseRequest currentRequest;
 
     /**
      * The {@link ResponseEvent} {@link RingBuffer}.
@@ -89,8 +92,14 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
         @SuppressWarnings("unchecked")
         protected void decode(final ChannelHandlerContext ctx, final CouchbaseResponse in, final List<Object> out)
             throws Exception {
-            CouchbaseRequest request = queue.poll();
-            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in, request.observable());
+            if (currentRequest == null) {
+                currentRequest = queue.poll();
+            }
+
+            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in, currentRequest.observable());
+            if (in.status() != ResponseStatus.CHUNKED) {
+                currentRequest = null;
+            }
         }
 
     }

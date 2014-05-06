@@ -24,7 +24,7 @@ package com.couchbase.client.core.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import rx.subjects.PublishSubject;
+import rx.subjects.BehaviorSubject;
 
 /**
  * State machine which helps with general states transitions and notifications.
@@ -33,11 +33,11 @@ public class AbstractStateMachine<S extends Enum> implements Stateful<S> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Stateful.class);
     private volatile S currentState;
-    private final PublishSubject<S> observable;
+    private final BehaviorSubject<S> observable;
 
     protected AbstractStateMachine(S initialState) {
         currentState = initialState;
-        observable = PublishSubject.create();
+        observable = BehaviorSubject.create(currentState);
     }
 
     @Override

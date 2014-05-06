@@ -61,6 +61,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private volatile Channel channel;
 
+    private volatile boolean hasWritten;
+
     /**
      * Preset the stack trace for the static exceptions.
      */
@@ -184,7 +186,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     public void send(final CouchbaseRequest request) {
         if (state() == LifecycleState.CONNECTED) {
             if (request instanceof SignalFlush) {
-                channel.flush();
+                if (hasWritten) {
+                    channel.flush();
+                    hasWritten = false;
+                }
             } else {
                 channel.write(request).addListener(new GenericFutureListener<Future<Void>>() {
                     @Override
@@ -194,8 +199,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         }
                     }
                 });
+                hasWritten = true;
             }
         } else {
+            if (request instanceof SignalFlush) {
+                return;
+            }
             request.observable().onError(NOT_CONNECTED_EXCEPTION);
         }
     }

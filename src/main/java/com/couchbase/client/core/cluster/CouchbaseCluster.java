@@ -48,10 +48,9 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import rx.Observable;
 import rx.Observer;
-import rx.subjects.AsyncSubject;
+import rx.subjects.ReplaySubject;
 import rx.subjects.Subject;
 
-import javax.xml.ws.Response;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -138,7 +137,7 @@ public class CouchbaseCluster implements Cluster {
     @Override
     @SuppressWarnings("unchecked")
     public <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request) {
-        final Subject<CouchbaseResponse, CouchbaseResponse> observable = AsyncSubject.create();
+        final Subject<CouchbaseResponse, CouchbaseResponse> observable = ReplaySubject.create();
         request.observable(observable);
 
         if (request instanceof InternalRequest) {
@@ -163,7 +162,7 @@ public class CouchbaseCluster implements Cluster {
     private void handleClusterRequest(final CouchbaseRequest request) {
         if (request instanceof SeedNodesRequest) {
             boolean success = configProvider.seedHosts(((SeedNodesRequest) request).nodes());
-            ResponseStatus status = success ? ResponseStatus.OK : ResponseStatus.FAILURE;
+            ResponseStatus status = success ? ResponseStatus.SUCCESS : ResponseStatus.FAILURE;
             request.observable().onNext(new SeedNodesResponse(status));
             request.observable().onCompleted();
         } else if (request instanceof OpenBucketRequest) {
@@ -181,7 +180,7 @@ public class CouchbaseCluster implements Cluster {
 
                     @Override
                     public void onNext(ClusterConfig clusterConfig) {
-                        request.observable().onNext(new OpenBucketResponse(ResponseStatus.OK));
+                        request.observable().onNext(new OpenBucketResponse(ResponseStatus.SUCCESS));
                     }
                 }
             );
@@ -212,7 +211,7 @@ public class CouchbaseCluster implements Cluster {
                 @Override
                 public void onNext(LifecycleState lifecycleState) {
                     // TODO: its a hack.
-                    request.observable().onNext(new AddNodeResponse(ResponseStatus.OK, ((AddNodeRequest) request).hostname()));
+                    request.observable().onNext(new AddNodeResponse(ResponseStatus.SUCCESS, ((AddNodeRequest) request).hostname()));
                 }
             });
         } else if (request instanceof RemoveNodeRequest) {
@@ -248,7 +247,7 @@ public class CouchbaseCluster implements Cluster {
                 @Override
                 public void onNext(Service service) {
 
-                    request.observable().onNext(new AddServiceResponse(ResponseStatus.OK, ((AddServiceRequest) request).hostname()));
+                    request.observable().onNext(new AddServiceResponse(ResponseStatus.SUCCESS, ((AddServiceRequest) request).hostname()));
                 }
             });
         } else if (request instanceof RemoveServiceRequest) {

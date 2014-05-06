@@ -9,9 +9,9 @@ package com.couchbase.client.core.message;
 public enum ResponseStatus {
 
     /**
-     * If the response is successful.
+     * If the response is successful and finished.
      */
-    OK,
+    SUCCESS,
 
     /**
      * If the request expected the document to not exist, but it existed already.
@@ -24,6 +24,11 @@ public enum ResponseStatus {
     NOT_EXISTS,
 
     /**
+     * Generic failure status.
+     */
+    FAILURE,
+
+    /**
      * The underlying response indicates retry is in order.
      *
      * This is a internal response and should not bubble up to the user level.
@@ -31,7 +36,9 @@ public enum ResponseStatus {
     RETRY,
 
     /**
-     * Generic failure status.
+     * The underlying response is ok, but more chunks to follow. A chunk is followed by SUCCESS or failure
+     * messages.
      */
-    FAILURE
+    CHUNKED
+
 }

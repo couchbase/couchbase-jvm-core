@@ -48,12 +48,18 @@ public class AbstractServiceTest {
 
     @Test
     public void shouldBeDisconnectedIfNoEndpointConfigured() {
-
+        Service service = new DummyService(hostname, environment, 0, mock(SelectionStrategy.class));
+        service.connect().toBlockingObservable().single();
+        assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
     @Test
     public void shouldConnectToOneEndpoint() {
+        Service service = new DummyService(hostname, environment, 1, mock(SelectionStrategy.class));
+        assertEquals(LifecycleState.DISCONNECTED, service.state());
 
+        service.connect().toBlockingObservable().single();
+        assertEquals(LifecycleState.CONNECTED, service.state());
     }
 
     @Test

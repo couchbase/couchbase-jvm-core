@@ -28,8 +28,6 @@ apply plugin: 'maven'
 group = 'com.couchbase.client'
 description = 'Official Couchbase JVM Core Library'
 
-sourceCompatibility = JavaVersion.VERSION_1_6
-
 buildscript {
     repositories {
         maven {
@@ -61,11 +59,13 @@ configurations {
 
     integrationCompile.extendsFrom compile, testCompile
     integrationRuntime.extendsFrom runtime, testRuntime
+
+    markdownDoclet
 }
 
 dependencies {
     compile group: 'io.netty', name: 'netty-all', version: '4.1.0.Alpha1-SNAPSHOT', changing: true
-    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.18.1'
+    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.18.2'
     compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
     compile group: 'com.typesafe', name: 'config', version: '1.2.0'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
@@ -80,6 +80,8 @@ dependencies {
     perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.5.6'
     perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.5.6'
     perfCompile project
+
+    markdownDoclet 'ch.raffael.pegdown-doclet:pegdown-doclet:1.1.1'
 }
 
 idea {
@@ -93,6 +95,17 @@ eclipse {
     classpath {
         plusConfigurations += configurations.perfCompile
     }
+}
+
+javadoc.options {
+    docletpath = configurations.markdownDoclet.files.asType(List)
+    doclet = "ch.raffael.doclets.pegdown.PegdownDoclet"
+    addStringOption("parse-timeout", "10")
+}
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = "1.6"
+    targetCompatibility = "1.6"
 }
 
 task integrationTest(type: Test) {

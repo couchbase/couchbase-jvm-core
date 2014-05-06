@@ -7,16 +7,18 @@ public class ViewQueryRequest extends AbstractCouchbaseRequest implements ViewRe
     private final String design;
     private final String view;
     private final String query;
+    private final boolean development;
 
-    public ViewQueryRequest(String design, String view, String bucket, String password) {
-        this(design, view, null, bucket, password);
+    public ViewQueryRequest(String design, String view, boolean development, String bucket, String password) {
+        this(design, view, development, null, bucket, password);
     }
 
-    public ViewQueryRequest(String design, String view, String query, String bucket, String password) {
+    public ViewQueryRequest(String design, String view, boolean development, String query, String bucket, String password) {
         super(bucket, password);
         this.design = design;
         this.view = view;
         this.query = query;
+        this.development = development;
     }
 
     public String design() {
@@ -29,5 +31,9 @@ public class ViewQueryRequest extends AbstractCouchbaseRequest implements ViewRe
 
     public String query() {
         return query;
+    }
+
+    public boolean development() {
+        return development;
     }
 }
