@@ -122,14 +122,13 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
                 currentState = ParsingState.ROWS;
             case ROWS:
                 if (msg instanceof HttpContent) {
-                    // parse rows until done
                     HttpContent content = (HttpContent) msg;
                     if (content.content().readableBytes() > 0) {
                         currentChunk.writeBytes(content.content());
                         content.content().clear();
                     }
                     MarkerProcessor processor = new MarkerProcessor();
-                    currentChunk.forEachByte(new MarkerProcessor());
+                    currentChunk.forEachByte(processor);
 
                     boolean last = msg instanceof LastHttpContent;
                     ResponseStatus status = last ? ResponseStatus.SUCCESS : ResponseStatus.CHUNKED;

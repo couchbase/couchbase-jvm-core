@@ -130,7 +130,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 } else {
                     if (future.isSuccess()) {
                         channel = future.channel();
-                        transitionState(LifecycleState.CONNECTED);
                         LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
                     } else {
                         long delay = reconnectDelay();
@@ -214,7 +213,17 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      *
      * Subsequent reconnect attempts are triggered from here.
      */
-    void notifyChannelInactive() {
+    public void notifyChannelInactive() {
+        transitionState(LifecycleState.DISCONNECTED);
+        connect();
+    }
+
+    public void notifyChannelAuthSuccess() {
+        transitionState(LifecycleState.CONNECTED);
+        LOGGER.debug("Successfully authenticated to Endpoint " + channel.remoteAddress());
+    }
+
+    public void notifyChannelAuthFailure() {
         transitionState(LifecycleState.DISCONNECTED);
         connect();
     }

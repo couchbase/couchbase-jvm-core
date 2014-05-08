@@ -48,8 +48,6 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import rx.Observable;
 import rx.Observer;
-import rx.subjects.ReplaySubject;
-import rx.subjects.Subject;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -137,9 +135,6 @@ public class CouchbaseCluster implements Cluster {
     @Override
     @SuppressWarnings("unchecked")
     public <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request) {
-        final Subject<CouchbaseResponse, CouchbaseResponse> observable = ReplaySubject.create();
-        request.observable(observable);
-
         if (request instanceof InternalRequest) {
             handleInternalRequest(request);
         } else if (request instanceof ClusterRequest) {
@@ -147,11 +142,11 @@ public class CouchbaseCluster implements Cluster {
         } else {
             boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
             if (!published) {
-                observable.onError(BACKPRESSURE_EXCEPTION);
+                request.observable().onError(BACKPRESSURE_EXCEPTION);
             }
         }
 
-        return (Observable<R>) observable;
+        return (Observable<R>) request.observable();
     }
 
     /**

@@ -76,9 +76,10 @@ public class AbstractStateMachineTest {
 
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
-        assertEquals(LifecycleState.CONNECTING, states.get(0));
-        assertEquals(LifecycleState.CONNECTED, states.get(1));
-        assertEquals(LifecycleState.DISCONNECTING, states.get(2));
+        assertEquals(LifecycleState.DISCONNECTED, states.get(0));
+        assertEquals(LifecycleState.CONNECTING, states.get(1));
+        assertEquals(LifecycleState.CONNECTED, states.get(2));
+        assertEquals(LifecycleState.DISCONNECTING, states.get(3));
     }
 
     @Test
@@ -103,8 +104,9 @@ public class AbstractStateMachineTest {
 
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
-        assertEquals(LifecycleState.CONNECTED, states.get(0));
-        assertEquals(LifecycleState.DISCONNECTING, states.get(1));
+        assertEquals(LifecycleState.CONNECTING, states.get(0));
+        assertEquals(LifecycleState.CONNECTED, states.get(1));
+        assertEquals(LifecycleState.DISCONNECTING, states.get(2));
     }
 
     class SimpleStateMachine extends AbstractStateMachine<LifecycleState> {

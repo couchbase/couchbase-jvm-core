@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.util.List;
@@ -147,33 +148,35 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @return
      */
     private Observable<BucketConfig> bootstrapThroughCarrierPublication(final String bucket, final String password) {
-        return Observable.from(seedHosts.get()).flatMap(new Func1<String, Observable<AddNodeResponse>>() {
-            @Override
-            public Observable<AddNodeResponse> call(String hostname) {
-                return cluster.send(new AddNodeRequest(hostname));
-            }
-        }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
-            @Override
-            public Observable<AddServiceResponse> call(AddNodeResponse response) {
-                return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, response.hostname()));
-            }
-        }).flatMap(new Func1<AddServiceResponse, Observable<GetBucketConfigResponse>>() {
-            @Override
-            public Observable<GetBucketConfigResponse> call(AddServiceResponse response) {
-                GetBucketConfigRequest request = new GetBucketConfigRequest(bucket, response.hostname());
-                return cluster.send(request);
-            }
-        }).map(new Func1<GetBucketConfigResponse, BucketConfig>() {
-            @Override
-            public BucketConfig call(GetBucketConfigResponse response) {
-                try {
-                    String config = response.content().replace("$HOST", response.hostname());
-                    return objectMapper.readValue(config, BucketConfig.class);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        return Observable
+            .from(seedHosts.get(), Schedulers.computation())
+            .flatMap(new Func1<String, Observable<AddNodeResponse>>() {
+                @Override
+                public Observable<AddNodeResponse> call(String hostname) {
+                    return cluster.send(new AddNodeRequest(hostname));
                 }
-            }
-        });
+            }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
+                @Override
+                public Observable<AddServiceResponse> call(AddNodeResponse response) {
+                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, response.hostname()));
+                }
+            }).flatMap(new Func1<AddServiceResponse, Observable<GetBucketConfigResponse>>() {
+                @Override
+                public Observable<GetBucketConfigResponse> call(AddServiceResponse response) {
+                    GetBucketConfigRequest request = new GetBucketConfigRequest(bucket, response.hostname());
+                    return cluster.send(request);
+                }
+            }).map(new Func1<GetBucketConfigResponse, BucketConfig>() {
+                @Override
+                public BucketConfig call(GetBucketConfigResponse response) {
+                    try {
+                        String config = response.content().replace("$HOST", response.hostname());
+                        return objectMapper.readValue(config, BucketConfig.class);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
     }
 
     /**

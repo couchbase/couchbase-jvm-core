@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.message;
 
+import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 /**
@@ -34,7 +35,7 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     /**
      * The observable which eventually completes the response.
      */
-    private Subject<CouchbaseResponse, CouchbaseResponse> observable;
+    private final Subject<CouchbaseResponse, CouchbaseResponse> observable;
 
     /**
      * The name of the bucket for this request.
@@ -52,18 +53,31 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
      * Depending on the type of operation, bucket and password may be null, this needs to
      * be enforced properly by the child implementations.
      *
+     * This constructor will create a AsyncSubject, which implies that the response for this
+     * request only emits one message. If you need to expose a streaming response, use the
+     * other constructor and feed it a ReplaySubject or something similar.
+     *
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
      */
-    protected AbstractCouchbaseRequest(final String bucket, final String password) {
-        this.bucket = bucket;
-        this.password = password;
+    protected AbstractCouchbaseRequest(String bucket, String password) {
+        this(bucket, password, AsyncSubject.<CouchbaseResponse>create());
     }
 
-    @Override
-    public CouchbaseRequest observable(final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+    /**
+     * Create a new {@link AbstractCouchbaseRequest}.
+     *
+     * Depending on the type of operation, bucket and password may be null, this needs to
+     * be enforced properly by the child implementations.
+     *
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     */
+    protected AbstractCouchbaseRequest(final String bucket, final String password,
+        final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        this.bucket = bucket;
+        this.password = password;
         this.observable = observable;
-        return this;
     }
 
     @Override

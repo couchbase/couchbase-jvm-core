@@ -223,10 +223,11 @@ public class AbstractEndpointTest {
         observable = endpoint.disconnect();
         assertEquals(LifecycleState.DISCONNECTED, observable.toBlockingObservable().single());
 
-        assertEquals(LifecycleState.CONNECTING, states.get(0));
-        assertEquals(LifecycleState.CONNECTED, states.get(1));
-        assertEquals(LifecycleState.DISCONNECTING, states.get(2));
-        assertEquals(LifecycleState.DISCONNECTED, states.get(3));
+        assertEquals(LifecycleState.DISCONNECTED, states.get(0));
+        assertEquals(LifecycleState.CONNECTING, states.get(1));
+        assertEquals(LifecycleState.CONNECTED, states.get(2));
+        assertEquals(LifecycleState.DISCONNECTING, states.get(3));
+        assertEquals(LifecycleState.DISCONNECTED, states.get(4));
     }
 
     static class DummyEndpoint extends AbstractEndpoint {

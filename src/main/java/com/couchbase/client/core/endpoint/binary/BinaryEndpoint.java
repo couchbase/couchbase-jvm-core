@@ -19,7 +19,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
 package com.couchbase.client.core.endpoint.binary;
 
 import com.couchbase.client.core.cluster.ResponseEvent;
@@ -57,6 +56,7 @@ public class BinaryEndpoint extends AbstractEndpoint {
         pipeline
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
+            .addLast(new BinarySaslClient("test", "test", this))
             .addLast(new BinaryCodec());
     }
 
