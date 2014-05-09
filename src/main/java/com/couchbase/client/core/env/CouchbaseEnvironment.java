@@ -79,6 +79,47 @@ public class CouchbaseEnvironment implements Environment {
     }
 
     @Override
+    public boolean enableSsl() {
+        return getBoolean("core.bootstrap.enableSsl");
+    }
+
+    @Override
+    public int bootstrapHttpDirectPort() {
+        int port = getInt("core.bootstrap.http.directPort");
+        if (port <= 0) {
+            throw new EnvironmentException("Port must be greater than 0.");
+        }
+        return port;
+    }
+
+    @Override
+    public int bootstrapHttpSslPort() {
+        int port = getInt("core.bootstrap.http.sslPort");
+        if (port <= 0) {
+            throw new EnvironmentException("Port must be greater than 0.");
+        }
+        return port;
+    }
+
+    @Override
+    public int bootstrapCarrierDirectPort() {
+        int port = getInt("core.bootstrap.carrier.directPort");
+        if (port <= 0) {
+            throw new EnvironmentException("Port must be greater than 0.");
+        }
+        return port;
+    }
+
+    @Override
+    public int bootstrapCarrierSslPort() {
+        int port = getInt("core.bootstrap.carrier.sslPort");
+        if (port <= 0) {
+            throw new EnvironmentException("Port must be greater than 0.");
+        }
+        return port;
+    }
+
+    @Override
     public int ioPoolSize() {
         int ioPoolSize = getInt("core.io.poolSize");
         if (ioPoolSize <= 0) {
@@ -165,6 +206,14 @@ public class CouchbaseEnvironment implements Environment {
     protected String getString(String path) {
         try {
             return config.getString(namespace + '.' + path);
+        } catch (Exception e) {
+            throw new EnvironmentException("Could not load environment setting " + path + '.', e);
+        }
+    }
+
+    protected boolean getBoolean(String path) {
+        try {
+            return config.getBoolean(namespace + '.' + path);
         } catch (Exception e) {
             throw new EnvironmentException("Could not load environment setting " + path + '.', e);
         }

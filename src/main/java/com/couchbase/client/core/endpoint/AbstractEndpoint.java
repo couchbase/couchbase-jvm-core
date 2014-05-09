@@ -80,12 +80,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.password = password;
     }
 
-    protected AbstractEndpoint(String hostname, String bucket, String password, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+    protected AbstractEndpoint(String hostname, String bucket, String password, int port, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
         bootstrap = new BootstrapAdapter(new Bootstrap()
-            .remoteAddress(hostname, port())
+            .remoteAddress(hostname, port)
             .group(environment.ioPool())
             .channel(NioSocketChannel.class)
             .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -102,13 +102,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 }
             }));
     }
-
-    /**
-     * Returns the port of the endpoint.
-     *
-     * @return the port of the endpoint.
-     */
-    protected abstract int port();
 
     /**
      * Add custom endpoint handlers to the {@link ChannelPipeline}.

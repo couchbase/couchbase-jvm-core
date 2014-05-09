@@ -43,6 +43,41 @@ public interface Environment {
     Observable<Boolean> shutdown();
 
     /**
+     * Identifies if SSL should be enabled.
+     *
+     * @return true if SSL is enabled, false otherwise.
+     */
+    boolean enableSsl();
+
+    /**
+     * The port to use when bootstrapping through HTTP without SSL.
+     *
+     * @return the direct http port.
+     */
+    int bootstrapHttpDirectPort();
+
+    /**
+     * The port to use when bootstrapping through HTTP with SSL.
+     *
+     * @return the https port.
+     */
+    int bootstrapHttpSslPort();
+
+    /**
+     * The port to use when bootstrapping through carrier publication without SSL.
+     *
+     * @return the direct carrier publication port.
+     */
+    int bootstrapCarrierDirectPort();
+
+    /**
+     * The port to use when bootstrapping through carrier publication with SSL.
+     *
+     * @return the ssl carrier publication port.
+     */
+    int bootstrapCarrierSslPort();
+
+    /**
      * Returns the configured IO pool size.
      *
      * @return the pool size (number of threads to use).

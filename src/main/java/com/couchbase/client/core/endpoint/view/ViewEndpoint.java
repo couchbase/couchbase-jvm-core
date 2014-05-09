@@ -12,21 +12,14 @@ import io.netty.handler.codec.http.HttpClientCodec;
  */
 public class ViewEndpoint extends AbstractEndpoint {
 
-    private static final int PORT = 8092;
-
     /**
      * Create a new {@link ViewEndpoint}.
      *
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public ViewEndpoint(final String hostname, String bucket, String password, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, env, responseBuffer);
-    }
-
-    @Override
-    protected int port() {
-        return PORT;
+    public ViewEndpoint(final String hostname, String bucket, String password, int port, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, responseBuffer);
     }
 
     @Override

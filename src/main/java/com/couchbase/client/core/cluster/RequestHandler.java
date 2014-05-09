@@ -46,7 +46,9 @@ import rx.Observer;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -304,15 +306,24 @@ public class RequestHandler implements EventHandler<RequestEvent> {
 
     private void reconfigureBucket(final BucketConfig config) {
         for (final NodeInfo nodeInfo : config.nodes()) {
-            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<ServiceType>>() {
+            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                 @Override
-                public Observable<ServiceType> call(LifecycleState lifecycleState) {
-                    return Observable.from(config.services());
+                public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
+                    return Observable.from(nodeInfo.services());
                 }
-            }).flatMap(new Func1<ServiceType, Observable<Service>>() {
+            }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
                 @Override
-                public Observable<Service> call(ServiceType serviceType) {
-                    AddServiceRequest request = new AddServiceRequest(serviceType, config.name(), config.password(), nodeInfo.hostname());
+                public Observable<AddServiceRequest> call(final Map<ServiceType, Integer> services) {
+                    List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
+                    for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
+                        requests.add( new AddServiceRequest(service.getKey(), config.name(), config.password(),
+                            service.getValue(), nodeInfo.hostname()));
+                    }
+                    return Observable.from(requests);
+                }
+            }).flatMap(new Func1<AddServiceRequest, Observable<Service>>() {
+                @Override
+                public Observable<Service> call(AddServiceRequest request) {
                     return addService(request);
                 }
             }).subscribe();

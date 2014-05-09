@@ -34,17 +34,17 @@ public class ServiceFactory {
     private ServiceFactory() {
     }
 
-    public static Service create(String hostname, String bucket, String password, Environment env, ServiceType type,
+    public static Service create(String hostname, String bucket, String password, int port, Environment env, ServiceType type,
         final RingBuffer<ResponseEvent> responseBuffer) {
         switch(type) {
             case BINARY:
-                return new BinaryService(hostname, bucket, password, env, responseBuffer);
+                return new BinaryService(hostname, bucket, password, port, env, responseBuffer);
             case VIEW:
-                return new ViewService(hostname, bucket, password, env, responseBuffer);
+                return new ViewService(hostname, bucket, password, port, env, responseBuffer);
             case CONFIG:
-                return new ConfigService(hostname, bucket, password, env, responseBuffer);
+                return new ConfigService(hostname, bucket, password, port, env, responseBuffer);
             case STREAM:
-                return new StreamService(hostname, bucket, password, env, responseBuffer);
+                return new StreamService(hostname, bucket, password, port, env, responseBuffer);
             default:
                 throw new IllegalArgumentException("Unknown Service Type: " + type);
         }

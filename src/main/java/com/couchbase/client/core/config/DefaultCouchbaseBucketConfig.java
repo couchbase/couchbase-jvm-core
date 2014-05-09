@@ -44,11 +44,6 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         return partitionInfo.numberOfReplicas();
     }
 
-    @Override
-    public ServiceType[] services() {
-        return services;
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class PartitionInfo {
 

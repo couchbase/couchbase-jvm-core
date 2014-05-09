@@ -21,9 +21,12 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -36,7 +39,8 @@ public class DefaultNodeInfo implements NodeInfo {
 
     private final String viewUri;
     private final String hostname;
-    private final Map<String, Integer> ports;
+    private int configPort;
+    private final Map<ServiceType, Integer> ports;
 
     @JsonCreator
     public DefaultNodeInfo(
@@ -44,8 +48,9 @@ public class DefaultNodeInfo implements NodeInfo {
         @JsonProperty("hostname") String hostname,
         @JsonProperty("ports") Map<String, Integer> ports) {
         this.viewUri = viewUri;
+        System.out.println(hostname);
         this.hostname = trimPort(hostname);
-        this.ports = ports;
+        this.ports = parseServices(ports);
     }
 
     @Override
@@ -59,12 +64,27 @@ public class DefaultNodeInfo implements NodeInfo {
     }
 
     @Override
-    public Map<String, Integer> ports() {
+    public Map<ServiceType, Integer> services() {
         return ports;
     }
 
-    private static String trimPort(String hostname) {
+    private Map<ServiceType, Integer> parseServices(final Map<String, Integer> input) {
+        Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
+        for (Map.Entry<String, Integer> entry : input.entrySet()) {
+            String type = entry.getKey();
+            Integer port = entry.getValue();
+            if (type.equals("direct")) {
+                services.put(ServiceType.BINARY, port);
+            }
+        }
+        services.put(ServiceType.CONFIG, configPort);
+        services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
+        return services;
+    }
+
+    private String trimPort(String hostname) {
         String[] parts =  hostname.split(":");
+        configPort = Integer.parseInt(parts[1]);
         return parts[0];
     }
 }

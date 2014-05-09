@@ -22,6 +22,7 @@
 package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
@@ -80,6 +81,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final Environment environment;
+
     /**
      * Signals if the provider is bootstrapped and serving configs.
      */
@@ -90,11 +93,12 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      *
      * @param cluster the cluster reference.
      */
-    public DefaultConfigurationProvider(final Cluster cluster) {
+    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment) {
         this.cluster = cluster;
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<List<String>>();
         bootstrapped = false;
+        this.environment = environment;
         currentConfig = new AtomicReference<ClusterConfig>(new DefaultClusterConfig());
     }
 
@@ -158,7 +162,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
                 @Override
                 public Observable<AddServiceResponse> call(AddNodeResponse response) {
-                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, password, response.hostname()));
+                    int port = environment.enableSsl()
+                        ? environment.bootstrapCarrierSslPort() : environment.bootstrapCarrierDirectPort();
+                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, password, port, response.hostname()));
                 }
             }).flatMap(new Func1<AddServiceResponse, Observable<GetBucketConfigResponse>>() {
                 @Override

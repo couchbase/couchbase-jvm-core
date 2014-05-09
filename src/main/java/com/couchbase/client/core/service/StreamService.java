@@ -31,8 +31,8 @@ public class StreamService extends AbstractService {
 
     private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
 
-    public StreamService(String hostname, String bucket, String password, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, env, env.streamServiceEndpoints(), strategy, responseBuffer);
+    public StreamService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, env.streamServiceEndpoints(), strategy, responseBuffer);
     }
 
     @Override

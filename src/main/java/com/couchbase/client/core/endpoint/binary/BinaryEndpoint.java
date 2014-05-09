@@ -34,23 +34,17 @@ import io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator;
  */
 public class BinaryEndpoint extends AbstractEndpoint {
 
-    private static final int PORT = 11210;
-
     /**
      * Create a new {@link BinaryEndpoint}.
      *
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public BinaryEndpoint(final String hostname, final String bucket, final String password, final Environment env,
+    public BinaryEndpoint(final String hostname, final String bucket, final String password, int port, final Environment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, env, responseBuffer);
+        super(hostname, bucket, password, port, env, responseBuffer);
     }
 
-    @Override
-    protected int port() {
-        return PORT;
-    }
 
     @Override
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {

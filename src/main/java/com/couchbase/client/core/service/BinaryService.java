@@ -11,9 +11,9 @@ public class BinaryService extends AbstractService {
 
     private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
 
-    public BinaryService(String hostname, String bucket, String password, Environment env,
+    public BinaryService(String hostname, String bucket, String password, int port, Environment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, env, env.binaryServiceEndpoints(), strategy, responseBuffer);
+        super(hostname, bucket, password, port, env, env.binaryServiceEndpoints(), strategy, responseBuffer);
     }
 
     @Override
@@ -23,6 +23,6 @@ public class BinaryService extends AbstractService {
 
     @Override
     protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        return new BinaryEndpoint(hostname(), bucket(), password(), environment(), responseBuffer);
+        return new BinaryEndpoint(hostname(), bucket(), password(), port(), environment(), responseBuffer);
     }
 }

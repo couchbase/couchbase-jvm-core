@@ -236,12 +236,7 @@ public class AbstractEndpointTest {
         }
 
         DummyEndpoint(String hostname, Environment environment) {
-            super(hostname, "default", null, environment, null);
-        }
-
-        @Override
-        protected int port() {
-            return 0;
+            super(hostname, "default", null, 0, environment, null);
         }
 
         @Override

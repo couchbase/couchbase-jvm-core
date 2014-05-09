@@ -109,7 +109,7 @@ public class CouchbaseCluster implements Cluster {
      * Creates a new {@link CouchbaseCluster}.
      */
     public CouchbaseCluster(Environment environment) {
-        configProvider = new DefaultConfigurationProvider(this);
+        configProvider = new DefaultConfigurationProvider(this, environment);
         Executor executor = Executors.newFixedThreadPool(2);
 
         Disruptor<ResponseEvent> responseDisruptor = new Disruptor<ResponseEvent>(

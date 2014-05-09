@@ -51,18 +51,20 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final String hostname;
     private final String bucket;
     private final String password;
+    private final int port;
     private final Environment environment;
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
     private final RingBuffer<ResponseEvent> responseBuffer;
 
-    protected AbstractService(String hostname, String bucket, String password, Environment env, int numEndpoints,
+    protected AbstractService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
         SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
 
         this.hostname = hostname;
         this.bucket = bucket;
         this.password = password;
+        this.port = port;
         this.environment = env;
         this.strategy = strategy;
         this.responseBuffer = responseBuffer;
@@ -170,7 +172,12 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     }
 
     protected String bucket() {
-        return bucket; }
+        return bucket;
+    }
+
+    protected int port() {
+        return port;
+    }
 
     protected String password() {
         return password;
