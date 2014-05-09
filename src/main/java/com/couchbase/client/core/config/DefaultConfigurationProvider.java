@@ -158,7 +158,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
                 @Override
                 public Observable<AddServiceResponse> call(AddNodeResponse response) {
-                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, response.hostname()));
+                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, password, response.hostname()));
                 }
             }).flatMap(new Func1<AddServiceResponse, Observable<GetBucketConfigResponse>>() {
                 @Override
@@ -170,8 +170,10 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 @Override
                 public BucketConfig call(GetBucketConfigResponse response) {
                     try {
-                        String config = response.content().replace("$HOST", response.hostname());
-                        return objectMapper.readValue(config, BucketConfig.class);
+                        String rawConfig = response.content().replace("$HOST", response.hostname());
+                        BucketConfig config =  objectMapper.readValue(rawConfig, BucketConfig.class);
+                        config.password(password);
+                        return config;
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

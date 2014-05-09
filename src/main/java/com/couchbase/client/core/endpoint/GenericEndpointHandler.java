@@ -1,35 +1,21 @@
 package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.cluster.RequestEvent;
 import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.cluster.ResponseHandler;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-import com.lmax.disruptor.EventTranslatorTwoArg;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import rx.subjects.Subject;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
 public class GenericEndpointHandler extends ChannelHandlerAppender {
-
-    /**
-     * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
-     */
-    private static final EventTranslatorTwoArg<ResponseEvent, CouchbaseResponse, Subject<CouchbaseResponse, CouchbaseResponse>> RESPONSE_TRANSLATOR =
-        new EventTranslatorTwoArg<ResponseEvent, CouchbaseResponse, Subject<CouchbaseResponse, CouchbaseResponse>>() {
-            @Override
-            public void translateTo(ResponseEvent event, long sequence, CouchbaseResponse response, Subject<CouchbaseResponse, CouchbaseResponse> observable) {
-                event.setResponse(response);
-                event.setObservable(observable);
-            }
-        };
 
     /**
      * Reference to the parent endpoint (to notify certain signals).
@@ -96,7 +82,7 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
                 currentRequest = queue.poll();
             }
 
-            responseBuffer.publishEvent(RESPONSE_TRANSLATOR, in, currentRequest.observable());
+            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, in, currentRequest.observable());
             if (in.status() != ResponseStatus.CHUNKED) {
                 currentRequest = null;
             }

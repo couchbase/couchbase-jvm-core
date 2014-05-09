@@ -143,7 +143,7 @@ public class CouchbaseNodeTest {
     public void shouldRegisterGlobalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
-        Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, "127.0.0.1"))
+        Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, "127.0.0.1"))
             .toBlockingObservable().single();
 
         verify(registryMock).addService(any(ConfigService.class), anyString());
@@ -154,7 +154,7 @@ public class CouchbaseNodeTest {
     public void shouldRegisterLocalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
-        Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", "127.0.0.1"))
+        Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, "127.0.0.1"))
             .toBlockingObservable().single();
 
         verify(registryMock).addService(any(BinaryService.class), anyString());

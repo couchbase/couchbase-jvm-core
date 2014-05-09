@@ -7,8 +7,8 @@ import io.netty.channel.ChannelPipeline;
 
 public class ConfigEndpoint extends AbstractEndpoint {
 
-    public ConfigEndpoint(String hostname, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, environment, responseBuffer);
+    public ConfigEndpoint(String hostname, String bucket, String password, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, environment, responseBuffer);
     }
 
     @Override

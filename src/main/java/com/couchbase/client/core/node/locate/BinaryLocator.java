@@ -28,6 +28,8 @@ public class BinaryLocator implements Locator {
             return Observable.from(nodes);
         }
 
+        System.out.println("Bucket for request is: " + request.bucket());
+
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
             return locateForCouchbaseBucket((BinaryRequest) request, nodes, (CouchbaseBucketConfig) bucket);

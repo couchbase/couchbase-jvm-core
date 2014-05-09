@@ -38,24 +38,26 @@ import static org.mockito.Mockito.mock;
 public class AbstractServiceTest {
 
     private final String hostname = "127.0.0.1";
+    private final String bucket = "default";
+    private final String password = "";
     private final Environment environment = new CouchbaseEnvironment();
 
     @Test
     public void shouldBeDisconnectAfterInit() {
-        Service service = new DummyService(hostname, environment, 1, mock(SelectionStrategy.class));
+        Service service = new DummyService(hostname, bucket, password, environment, 1, mock(SelectionStrategy.class));
         assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
     @Test
     public void shouldBeDisconnectedIfNoEndpointConfigured() {
-        Service service = new DummyService(hostname, environment, 0, mock(SelectionStrategy.class));
+        Service service = new DummyService(hostname, bucket, password, environment, 0, mock(SelectionStrategy.class));
         service.connect().toBlockingObservable().single();
         assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
     @Test
     public void shouldConnectToOneEndpoint() {
-        Service service = new DummyService(hostname, environment, 1, mock(SelectionStrategy.class));
+        Service service = new DummyService(hostname, bucket, password, environment, 1, mock(SelectionStrategy.class));
         assertEquals(LifecycleState.DISCONNECTED, service.state());
 
         service.connect().toBlockingObservable().single();
@@ -104,8 +106,8 @@ public class AbstractServiceTest {
 
     static class DummyService extends AbstractService {
 
-        DummyService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy) {
-            super(hostname, env, numEndpoints, strategy, null);
+        DummyService(String hostname, String bucket, String password, Environment env, int numEndpoints, SelectionStrategy strategy) {
+            super(hostname, bucket, password, env, numEndpoints, strategy, null);
         }
 
         @Override

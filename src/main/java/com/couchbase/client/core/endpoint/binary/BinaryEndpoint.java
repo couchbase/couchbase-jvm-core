@@ -42,8 +42,9 @@ public class BinaryEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public BinaryEndpoint(final String hostname, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, env, responseBuffer);
+    public BinaryEndpoint(final String hostname, final String bucket, final String password, final Environment env,
+        final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, env, responseBuffer);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class BinaryEndpoint extends AbstractEndpoint {
         pipeline
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
-            .addLast(new BinarySaslClient("test", "test", this))
+            .addLast(new BinarySaslClient(bucket(), password(), this))
             .addLast(new BinaryCodec());
     }
 

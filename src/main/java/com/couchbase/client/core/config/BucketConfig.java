@@ -49,6 +49,21 @@ public interface BucketConfig {
     String name();
 
     /**
+     * The password of the bucket.
+     *
+     * @return the password of the bucket.
+     */
+    String password();
+
+    /**
+     * Setter to inject the password manually into the config.
+     *
+     * @param pasword
+     * @return
+     */
+    BucketConfig password(String pasword);
+
+    /**
      * The type of node locator in use for this bucket.
      *
      * @return the node locator type.

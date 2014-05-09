@@ -11,8 +11,8 @@ public class ConfigService extends AbstractService {
 
     private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
 
-    public ConfigService(String hostname, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, env, env.configServiceEndpoints(), strategy, responseBuffer);
+    public ConfigService(String hostname, String bucket, String password, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, env, env.configServiceEndpoints(), strategy, responseBuffer);
     }
 
     @Override
@@ -22,6 +22,6 @@ public class ConfigService extends AbstractService {
 
     @Override
     protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        return new ConfigEndpoint(hostname(), environment(), responseBuffer);
+        return new ConfigEndpoint(hostname(), bucket(), password(), environment(), responseBuffer);
     }
 }

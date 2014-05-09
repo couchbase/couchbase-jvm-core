@@ -312,7 +312,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             }).flatMap(new Func1<ServiceType, Observable<Service>>() {
                 @Override
                 public Observable<Service> call(ServiceType serviceType) {
-                    AddServiceRequest request = new AddServiceRequest(serviceType, config.name(), nodeInfo.hostname());
+                    AddServiceRequest request = new AddServiceRequest(serviceType, config.name(), config.password(), nodeInfo.hostname());
                     return addService(request);
                 }
             }).subscribe();

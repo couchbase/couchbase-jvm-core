@@ -81,7 +81,7 @@ public class BinaryMessageTest {
         cluster.<UpsertResponse>send(upsert).toBlockingObservable().single();
 
         GetRequest request = new GetRequest(key, bucket);
-        assertEquals(content, cluster.<GetResponse>send(request).toBlockingObservable().single().content());
+        assertEquals(content, cluster.<GetResponse>send(request).toBlockingObservable().single().content().toString(CharsetUtil.UTF_8));
     }
 
     @Test

@@ -56,6 +56,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private final AtomicLong reconnectDelay = new AtomicLong(0);
 
+    private final String bucket;
+    private final String password;
+
     /**
      * The underlying IO (netty) channel.
      */
@@ -70,15 +73,17 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         NOT_CONNECTED_EXCEPTION.setStackTrace(new StackTraceElement[0]);
     }
 
-    protected AbstractEndpoint(BootstrapAdapter adapter) {
+    protected AbstractEndpoint(String bucket, String password, BootstrapAdapter adapter) {
         super(LifecycleState.DISCONNECTED);
         bootstrap = adapter;
+        this.bucket = bucket;
+        this.password = password;
     }
 
-    protected AbstractEndpoint(String hostname, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+    protected AbstractEndpoint(String hostname, String bucket, String password, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
-
-        final ChannelHandler endpointHandler = new GenericEndpointHandler(this, responseBuffer);
+        this.bucket = bucket;
+        this.password = password;
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port())
             .group(environment.ioPool())
@@ -93,7 +98,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         pipeline.addLast(LOGGING_HANDLER_INSTANCE);
                     }
                     customEndpointHandlers(pipeline);
-                    pipeline.addLast(endpointHandler);
+                    pipeline.addLast(new GenericEndpointHandler(AbstractEndpoint.this, responseBuffer));
                 }
             }));
     }
@@ -225,7 +230,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     public void notifyChannelAuthFailure() {
         transitionState(LifecycleState.DISCONNECTED);
-        connect();
+        throw new RuntimeException("Auth failure");
     }
 
     /**
@@ -237,5 +242,13 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private long reconnectDelay() {
         return reconnectDelay.getAndIncrement();
+    }
+
+    protected String bucket() {
+        return bucket;
+    }
+
+    protected String password() {
+        return password;
     }
 }

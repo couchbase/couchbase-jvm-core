@@ -33,8 +33,8 @@ public class AddServiceRequest extends AbstractCouchbaseRequest implements Inter
     private final ServiceType type;
     private final String hostname;
 
-    public AddServiceRequest(ServiceType type, String bucket, String hostname) {
-        super(bucket, null);
+    public AddServiceRequest(ServiceType type, String bucket, String password, String hostname) {
+        super(bucket, password);
         this.type = type;
         this.hostname = hostname;
     }
@@ -45,5 +45,14 @@ public class AddServiceRequest extends AbstractCouchbaseRequest implements Inter
 
     public String hostname() {
         return hostname;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AddServiceRequest{");
+        sb.append("type=").append(type);
+        sb.append(", hostname='").append(hostname).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -22,6 +22,7 @@
 package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.cluster.ResponseHandler;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -48,19 +49,24 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private static final Logger LOGGER = LoggerFactory.getLogger(Service.class);
 
     private final String hostname;
+    private final String bucket;
+    private final String password;
     private final Environment environment;
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
-    private final List<Observable<LifecycleState>> endpointStates;
+    private final RingBuffer<ResponseEvent> responseBuffer;
 
-    protected AbstractService(String hostname, Environment env, int numEndpoints, SelectionStrategy strategy,
-        final RingBuffer<ResponseEvent> responseBuffer) {
+    protected AbstractService(String hostname, String bucket, String password, Environment env, int numEndpoints,
+        SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
 
         this.hostname = hostname;
+        this.bucket = bucket;
+        this.password = password;
         this.environment = env;
         this.strategy = strategy;
-        endpointStates = new ArrayList<Observable<LifecycleState>>();
+        this.responseBuffer = responseBuffer;
+        List<Observable<LifecycleState>> endpointStates = new ArrayList<Observable<LifecycleState>>();
         endpoints = new Endpoint[numEndpoints];
         for (int i = 0; i < numEndpoints; i++) {
             Endpoint endpoint = newEndpoint(responseBuffer);
@@ -104,7 +110,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         }
         Endpoint endpoint = strategy.select(request, endpoints);
         if (endpoint == null) {
-            request.observable().onError(new IllegalStateException("Endpoint not found for request: " + request));
+            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
         } else {
             endpoint.send(request);
         }
@@ -161,6 +167,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
 
     protected String hostname() {
         return hostname;
+    }
+
+    protected String bucket() {
+        return bucket; }
+
+    protected String password() {
+        return password;
     }
 
     /**

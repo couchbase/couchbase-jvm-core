@@ -141,6 +141,9 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     @Override
     public Service serviceBy(final ServiceType type, final String bucket) {
         if (type.mapping() == BucketServiceMapping.ONE_BY_ONE) {
+            if (localServices.get(bucket) == null) {
+                return null;
+            }
             return localServices.get(bucket).get(type);
         } else {
             return globalServices.get(type);

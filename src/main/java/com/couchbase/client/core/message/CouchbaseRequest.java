@@ -31,7 +31,7 @@ import java.util.Observable;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public interface CouchbaseRequest {
+public interface CouchbaseRequest extends CouchbaseMessage {
 
     /**
      * Get the underlying {@link Observable}.

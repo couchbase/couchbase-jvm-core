@@ -1,5 +1,6 @@
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import rx.subjects.Subject;
 
@@ -12,20 +13,20 @@ import rx.subjects.Subject;
 public class ResponseEvent {
 
     /**
-     * Contains the current request.
+     * Contains the current response message.
      */
-    private CouchbaseResponse response;
+    private CouchbaseMessage message;
 
     private Subject<CouchbaseResponse, CouchbaseResponse> observable;
 
     /**
      * Set the new response as a payload for this event.
      *
-     * @param response the response to override.
+     * @param message the response to override.
      * @return the {@link ResponseEvent} for method chaining.
      */
-    public ResponseEvent setResponse(final CouchbaseResponse response) {
-        this.response = response;
+    public ResponseEvent setMessage(final CouchbaseMessage message) {
+        this.message = message;
         return this;
     }
 
@@ -34,8 +35,8 @@ public class ResponseEvent {
      *
      * @return the actual response.
      */
-    public CouchbaseResponse getResponse() {
-        return response;
+    public CouchbaseMessage getMessage() {
+        return message;
     }
 
     public Subject<CouchbaseResponse, CouchbaseResponse> getObservable() {

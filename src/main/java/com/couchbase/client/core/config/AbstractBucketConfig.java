@@ -5,6 +5,7 @@ import java.util.List;
 public abstract class AbstractBucketConfig implements BucketConfig {
 
     private final String name;
+    private String password;
     private final BucketNodeLocator locator;
     private final String uri;
     private final String streamingUri;
@@ -42,5 +43,16 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     @Override
     public List<NodeInfo> nodes() {
         return nodeInfo;
+    }
+
+    @Override
+    public String password() {
+        return password;
+    }
+
+    @Override
+    public BucketConfig password(final String password) {
+        this.password = password;
+        return this;
     }
 }

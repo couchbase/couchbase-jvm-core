@@ -20,8 +20,8 @@ public class ViewEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public ViewEndpoint(final String hostname, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, env, responseBuffer);
+    public ViewEndpoint(final String hostname, String bucket, String password, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, env, responseBuffer);
     }
 
     @Override

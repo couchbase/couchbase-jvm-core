@@ -143,7 +143,19 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> addService(final AddServiceRequest request) {
-        final Service service = ServiceFactory.create(request.hostname(), environment, request.type(), responseBuffer);
+        Service addedService = serviceRegistry.serviceBy(request.type(), request.bucket());
+        if (addedService != null) {
+            return Observable.from(addedService);
+        }
+
+        final Service service = ServiceFactory.create(
+            request.hostname(),
+            request.bucket(),
+            request.password(),
+            environment,
+            request.type(),
+            responseBuffer
+        );
         serviceRegistry.addService(service, request.bucket());
         return service.connect().map(new Func1<LifecycleState, Service>() {
             @Override
@@ -151,14 +163,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
                 return service;
             }
         });
-        // TODO: register for states
     }
 
     @Override
     public Observable<Service> removeService(final RemoveServiceRequest request) {
         Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
-        // TODO: unregister from states
         return Observable.from(service);
     }
 

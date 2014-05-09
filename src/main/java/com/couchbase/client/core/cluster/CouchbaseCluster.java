@@ -117,7 +117,7 @@ public class CouchbaseCluster implements Cluster {
             environment.responseBufferSize(),
             executor
         );
-        responseDisruptor.handleEventsWith(new ResponseHandler());
+        responseDisruptor.handleEventsWith(new ResponseHandler(this));
         responseDisruptor.start();
         RingBuffer<ResponseEvent> responseRingBuffer = responseDisruptor.getRingBuffer();
 

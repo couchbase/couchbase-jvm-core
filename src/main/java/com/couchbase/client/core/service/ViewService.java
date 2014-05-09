@@ -11,8 +11,8 @@ public class ViewService extends AbstractService {
 
     private static final SelectionStrategy strategy = new RandomSelectionStrategy();
 
-    public ViewService(String hostname, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, env, env.viewServiceEndpoints(), strategy, responseBuffer);
+    public ViewService(String hostname, String bucket, String password, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, env, env.viewServiceEndpoints(), strategy, responseBuffer);
     }
 
     @Override
@@ -22,6 +22,6 @@ public class ViewService extends AbstractService {
 
     @Override
     protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        return new ViewEndpoint(hostname(), environment(), responseBuffer);
+        return new ViewEndpoint(hostname(), bucket(), password(), environment(), responseBuffer);
     }
 }
