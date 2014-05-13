@@ -79,8 +79,8 @@ public class CouchbaseEnvironment implements Environment {
     }
 
     @Override
-    public boolean enableSsl() {
-        return getBoolean("core.bootstrap.enableSsl");
+    public boolean sslEnabled() {
+        return getBoolean("core.bootstrap.sslEnabled");
     }
 
     @Override

@@ -162,7 +162,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
                 @Override
                 public Observable<AddServiceResponse> call(AddNodeResponse response) {
-                    int port = environment.enableSsl()
+                    int port = environment.sslEnabled()
                         ? environment.bootstrapCarrierSslPort() : environment.bootstrapCarrierDirectPort();
                     return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, password, port, response.hostname()));
                 }

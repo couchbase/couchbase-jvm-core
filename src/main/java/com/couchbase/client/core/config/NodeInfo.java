@@ -54,5 +54,7 @@ public interface NodeInfo {
      */
     Map<ServiceType, Integer> services();
 
+    Map<ServiceType, Integer> sslServices();
+
 
 }

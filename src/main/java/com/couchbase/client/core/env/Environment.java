@@ -47,7 +47,7 @@ public interface Environment {
      *
      * @return true if SSL is enabled, false otherwise.
      */
-    boolean enableSsl();
+    boolean sslEnabled();
 
     /**
      * The port to use when bootstrapping through HTTP without SSL.

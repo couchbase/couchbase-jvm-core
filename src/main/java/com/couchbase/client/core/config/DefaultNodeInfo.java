@@ -40,7 +40,8 @@ public class DefaultNodeInfo implements NodeInfo {
     private final String viewUri;
     private final String hostname;
     private int configPort;
-    private final Map<ServiceType, Integer> ports;
+    private final Map<ServiceType, Integer> directServices;
+    private final Map<ServiceType, Integer> sslServices;
 
     @JsonCreator
     public DefaultNodeInfo(
@@ -50,7 +51,8 @@ public class DefaultNodeInfo implements NodeInfo {
         this.viewUri = viewUri;
         System.out.println(hostname);
         this.hostname = trimPort(hostname);
-        this.ports = parseServices(ports);
+        this.directServices = parseDirectServices(ports);
+        this.sslServices = parseSslServices(ports);
     }
 
     @Override
@@ -65,10 +67,15 @@ public class DefaultNodeInfo implements NodeInfo {
 
     @Override
     public Map<ServiceType, Integer> services() {
-        return ports;
+        return directServices;
     }
 
-    private Map<ServiceType, Integer> parseServices(final Map<String, Integer> input) {
+    @Override
+    public Map<ServiceType, Integer> sslServices() {
+        return sslServices;
+    }
+
+    private Map<ServiceType, Integer> parseDirectServices(final Map<String, Integer> input) {
         Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
         for (Map.Entry<String, Integer> entry : input.entrySet()) {
             String type = entry.getKey();
@@ -79,6 +86,22 @@ public class DefaultNodeInfo implements NodeInfo {
         }
         services.put(ServiceType.CONFIG, configPort);
         services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
+        return services;
+    }
+
+    private Map<ServiceType, Integer> parseSslServices(final Map<String, Integer> input) {
+        Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
+        for (Map.Entry<String, Integer> entry : input.entrySet()) {
+            String type = entry.getKey();
+            Integer port = entry.getValue();
+            if (type.equals("sslDirect")) {
+                services.put(ServiceType.BINARY, port);
+            } else if (type.equals("httpsCAPI")) {
+                services.put(ServiceType.VIEW, port);
+            } else if (type.equals("httpsMgmt")) {
+                services.put(ServiceType.CONFIG, port);
+            }
+        }
         return services;
     }
 

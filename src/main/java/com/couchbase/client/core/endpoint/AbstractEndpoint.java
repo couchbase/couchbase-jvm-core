@@ -19,6 +19,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
@@ -80,7 +81,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.password = password;
     }
 
-    protected AbstractEndpoint(String hostname, String bucket, String password, int port, Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+    protected AbstractEndpoint(String hostname, String bucket, String password, int port, final Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
@@ -94,6 +95,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
+                    if (environment.sslEnabled()) {
+                        pipeline.addLast(new SslHandler(SSLEngineFactory.get()));
+                    }
                     if (LOGGER.isTraceEnabled()) {
                         pipeline.addLast(LOGGING_HANDLER_INSTANCE);
                     }
@@ -244,4 +248,5 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     protected String password() {
         return password;
     }
+
 }

@@ -309,7 +309,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                 @Override
                 public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
-                    return Observable.from(nodeInfo.services());
+                    Map<ServiceType, Integer> services =
+                        environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                    return Observable.from(services);
                 }
             }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
                 @Override
