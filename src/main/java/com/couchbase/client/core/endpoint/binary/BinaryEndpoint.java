@@ -48,11 +48,17 @@ public class BinaryEndpoint extends AbstractEndpoint {
 
     @Override
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {
+
+
         pipeline
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
             .addLast(new BinarySaslClient(bucket(), password(), this))
             .addLast(new BinaryCodec());
+
+
+
+
     }
 
 }

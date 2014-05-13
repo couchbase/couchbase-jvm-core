@@ -28,6 +28,9 @@ apply plugin: 'maven'
 group = 'com.couchbase.client'
 description = 'Official Couchbase JVM Core Library'
 
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
 buildscript {
     repositories {
         maven {
@@ -65,7 +68,7 @@ configurations {
 
 dependencies {
     compile group: 'io.netty', name: 'netty-all', version: '4.1.0.Alpha1-SNAPSHOT', changing: true
-    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.18.2'
+    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.18.3'
     compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
     compile group: 'com.typesafe', name: 'config', version: '1.2.0'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
@@ -101,11 +104,6 @@ javadoc.options {
     docletpath = configurations.markdownDoclet.files.asType(List)
     doclet = "ch.raffael.doclets.pegdown.PegdownDoclet"
     addStringOption("parse-timeout", "10")
-}
-
-tasks.withType(JavaCompile) {
-    sourceCompatibility = "1.6"
-    targetCompatibility = "1.6"
 }
 
 task integrationTest(type: Test) {

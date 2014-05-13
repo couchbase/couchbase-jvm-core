@@ -103,15 +103,22 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg, final List<Object> in)
-        throws Exception {
+    protected void decode(final ChannelHandlerContext ctx,
+                          final FullBinaryMemcacheResponse msg,
+                          final List<Object> in) throws Exception {
         Class<?> clazz = queue.poll();
 
         ResponseStatus status = convertStatus(msg.getStatus());
         long cas = msg.getCAS();
         if(clazz.equals(GetBucketConfigRequest.class)) {
             InetSocketAddress addr = (InetSocketAddress) ctx.channel().remoteAddress();
-            in.add(new GetBucketConfigResponse(convertStatus(msg.getStatus()), msg.content().toString(CharsetUtil.UTF_8), addr.getHostString()));
+            in.add(
+                new GetBucketConfigResponse(
+                    convertStatus(msg.getStatus()),
+                    msg.content().toString(CharsetUtil.UTF_8),
+                    addr.getHostName()
+                )
+            );
         } else if (clazz.equals(GetRequest.class)) {
             in.add(new GetResponse(status, cas, msg.content().copy()));
         } else if (clazz.equals(InsertRequest.class)) {
