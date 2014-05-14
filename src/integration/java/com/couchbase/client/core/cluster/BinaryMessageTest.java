@@ -54,10 +54,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class BinaryMessageTest {
 
-    //static {
-    //    System.setProperty("com.couchbase.client.core.bootstrap.sslEnabled", "true");
-    //}
-
     private static final String seedNode = TestProperties.seedNode();
     private static final String bucket = TestProperties.bucket();
     private static final String password = TestProperties.password();

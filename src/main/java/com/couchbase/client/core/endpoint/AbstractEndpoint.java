@@ -59,6 +59,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     private final String bucket;
     private final String password;
+    private SSLEngineFactory sslEngineFactory;
 
     /**
      * The underlying IO (netty) channel.
@@ -85,6 +86,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
+        if (environment.sslEnabled()) {
+            this.sslEngineFactory = new SSLEngineFactory(environment);
+        }
+
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(environment.ioPool())
@@ -96,7 +101,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
                     if (environment.sslEnabled()) {
-                        pipeline.addLast(new SslHandler(SSLEngineFactory.get()));
+                        pipeline.addLast(new SslHandler(sslEngineFactory.get()));
                     }
                     if (LOGGER.isTraceEnabled()) {
                         pipeline.addLast(LOGGING_HANDLER_INSTANCE);

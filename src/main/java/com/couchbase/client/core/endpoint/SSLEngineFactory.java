@@ -1,51 +1,45 @@
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.env.Environment;
+
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
+import java.security.KeyStore;
 
 /**
  * Creates a {@link SSLEngine} which will be passed into the handler if SSL is enabled.
  */
 public class SSLEngineFactory {
 
-    public static SSLEngine get() {
+    private static final String ALGORITHM = "SunX509";
+
+    private final Environment env;
+
+    public SSLEngineFactory(Environment env) {
+        this.env = env;
+    }
+
+    public SSLEngine get() {
         try {
-            SSLContext context = SSLContext.getInstance("TLS");
-            context.init(null, new TrustManager[] { TRUST_MANAGER }, new SecureRandom());
-            SSLEngine engine = context.createSSLEngine();
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            char[] password = env.sslKeystorePassword().isEmpty() ? null : env.sslKeystorePassword().toCharArray();
+            ks.load(new FileInputStream(env.sslKeystoreFile()), password);
+
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(ALGORITHM);
+            kmf.init(ks, password);
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(ALGORITHM);
+            tmf.init(ks);
+
+            SSLContext ctx = SSLContext.getInstance("TLS");
+            ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+            SSLEngine engine = ctx.createSSLEngine();
             engine.setUseClientMode(true);
             return engine;
         } catch(Exception ex) {
             throw new SSLException("Could not create SSLEngine because of:", ex);
         }
     }
-
-    private static final TrustManager TRUST_MANAGER = new X509TrustManager() {
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) {
-            // Always trust - it is an example.
-            // You should do something in the real world.
-            // You will reach here only if you enabled client certificate auth,
-            // as described in SecureChatSslContextFactory.
-            System.err.println(
-                "UNKNOWN CLIENT CERTIFICATE: " + chain[0].getSubjectDN());
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) {
-            // Always trust - it is an example.
-            // You should do something in the real world.
-            System.err.println(
-                "UNKNOWN SERVER CERTIFICATE: " + chain[0].getSubjectDN());
-        }
-    };
 }

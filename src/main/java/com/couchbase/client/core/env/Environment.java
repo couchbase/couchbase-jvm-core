@@ -49,6 +49,9 @@ public interface Environment {
      */
     boolean sslEnabled();
 
+    String sslKeystoreFile();
+    String sslKeystorePassword();
+
     /**
      * The port to use when bootstrapping through HTTP without SSL.
      *
