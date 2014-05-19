@@ -28,20 +28,29 @@ import com.couchbase.client.core.state.Stateful;
 import rx.Observable;
 
 /**
- * Represents a {@link Endpoint}.
+ * Represents a stateful {@link Endpoint} which abstracts the underlying channel.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
 public interface Endpoint extends Stateful<LifecycleState> {
 
+    /**
+     * Connect the {@link Endpoint} to the underlying channel.
+     *
+     * @return a {@link Observable} with the state after the connect process finishes.
+     */
     Observable<LifecycleState> connect();
+
+    /**
+     * Disconnect the {@link Endpoint} from the underlying channel.
+     *
+     * @return a {@link Observable} with the state after the disconnect process finishes.
+     */
     Observable<LifecycleState> disconnect();
 
     /**
      * Sends a {@link CouchbaseRequest} into the endpoint and eventually returns a {@link CouchbaseResponse}.
-     *
-     * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
      *
      * @param request the request to send.
      * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.

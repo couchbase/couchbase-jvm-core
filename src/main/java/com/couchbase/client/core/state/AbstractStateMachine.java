@@ -27,46 +27,67 @@ import rx.Observable;
 import rx.subjects.BehaviorSubject;
 
 /**
- * State machine which helps with general states transitions and notifications.
+ * Abstract {@link Stateful} implementation which acts like a simple state machine.
+ *
+ * This class is thread safe, so state transitions can be issued from any thread without any further synchronization.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public class AbstractStateMachine<S extends Enum> implements Stateful<S> {
 
+    /**
+     * The logger which should be used.
+     */
     private static final Logger LOGGER = LoggerFactory.getLogger(Stateful.class);
-    private volatile S currentState;
+
+    /**
+     * The observable which emits all the subsequent state changes.
+     */
     private final BehaviorSubject<S> observable;
 
-    protected AbstractStateMachine(S initialState) {
+    /**
+     * The current state of the state machine.
+     */
+    private volatile S currentState;
+
+    /**
+     * Creates a new state machine.
+     *
+     * @param initialState the initial state of the state machine.
+     */
+    protected AbstractStateMachine(final S initialState) {
         currentState = initialState;
         observable = BehaviorSubject.create(currentState);
     }
 
     @Override
-    public Observable<S> states() {
+    public final Observable<S> states() {
         return observable;
     }
 
     @Override
-    public S state() {
+    public final S state() {
         return currentState;
     }
 
     @Override
-    public boolean isState(S state) {
+    public final boolean isState(final S state) {
         return currentState == state;
     }
 
     /**
-     * Transition into the a new states.
+     * Transition into a new state.
      *
-     * If this method gets overridden, make sure to call the super method if you want to notify the stream
-     * listeners.
+     * This method is intentionally not public, because the subclass should only be responsible for the actual
+     * transitions, the other components only react on those transitions eventually.
      *
      * @param newState the states to transition into.
      */
     protected void transitionState(final S newState) {
         if (newState != currentState) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("State (" + getClass().getSimpleName() + ") " + currentState + " -> " + newState);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("State (" + getClass().getSimpleName() + ") " + currentState + " -> " + newState);
             }
             currentState = newState;
             observable.onNext(newState);

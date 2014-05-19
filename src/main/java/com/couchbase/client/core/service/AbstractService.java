@@ -41,37 +41,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The common implementation for all {@link Service}s.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public abstract class AbstractService extends AbstractStateMachine<LifecycleState> implements Service {
 
     /**
-     * The logger to use for all endpoints.
+     * The logger to use for all services.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(Service.class);
 
-    private final String hostname;
-    private final String bucket;
-    private final String password;
-    private final int port;
-    private final Environment environment;
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
     private final RingBuffer<ResponseEvent> responseBuffer;
 
     protected AbstractService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
-        SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer) {
+        SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer, EndpointFactory factory) {
         super(LifecycleState.DISCONNECTED);
 
-        this.hostname = hostname;
-        this.bucket = bucket;
-        this.password = password;
-        this.port = port;
-        this.environment = env;
         this.strategy = strategy;
         this.responseBuffer = responseBuffer;
         List<Observable<LifecycleState>> endpointStates = new ArrayList<Observable<LifecycleState>>();
         endpoints = new Endpoint[numEndpoints];
         for (int i = 0; i < numEndpoints; i++) {
-            Endpoint endpoint = newEndpoint(responseBuffer);
+            Endpoint endpoint = factory.create(hostname, bucket, password, port, env, responseBuffer);
             endpoints[i] = endpoint;
             endpointStates.add(endpoint.states());
         }
@@ -85,17 +81,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         }).subscribe(new Action1<LifecycleState>() {
             @Override
             public void call(LifecycleState state) {
+                if (state == LifecycleState.CONNECTED) {
+                    LOGGER.debug("Connected to " + AbstractService.this.getClass().getSimpleName());
+                }
                 transitionState(state);
             }
         });
     }
-
-    /**
-     * Create a new {@link Endpoint} to be used by this service.
-     *
-     * @return the endpoint to be used.
-     */
-    protected abstract Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer);
 
     @Override
     public BucketServiceMapping mapping() {
@@ -132,9 +124,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
             @Override
             public LifecycleState call(List<LifecycleState> endpointStates) {
-                LifecycleState serviceState = calculateStateFrom(endpointStates);
-                transitionState(serviceState);
-                return serviceState;
+                return state();
             }
         });
     }
@@ -155,32 +145,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             public LifecycleState call(List<LifecycleState> endpointStates) {
                 for (LifecycleState endpointState : endpointStates) {
                     if (endpointState != LifecycleState.DISCONNECTED) {
-                        LOGGER.warn("Underlying Endpoint did not disconnect cleanly on shutdown.");
+                        LOGGER.warn(AbstractService.this.getClass().getSimpleName() + " did not disconnect cleanly " +
+                            "on shutdown.");
                     }
                 }
                 return state();
             }
         });
-    }
-
-    protected Environment environment() {
-        return environment;
-    }
-
-    protected String hostname() {
-        return hostname;
-    }
-
-    protected String bucket() {
-        return bucket;
-    }
-
-    protected int port() {
-        return port;
-    }
-
-    protected String password() {
-        return password;
     }
 
     /**

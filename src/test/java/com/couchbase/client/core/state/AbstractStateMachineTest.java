@@ -115,9 +115,5 @@ public class AbstractStateMachineTest {
             super(initialState);
         }
 
-        @Override
-        public void transitionState(LifecycleState newState) {
-            super.transitionState(newState);
-        }
     }
 }

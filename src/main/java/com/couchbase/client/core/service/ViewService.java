@@ -10,9 +10,10 @@ import com.lmax.disruptor.RingBuffer;
 public class ViewService extends AbstractService {
 
     private static final SelectionStrategy strategy = new RandomSelectionStrategy();
+    private static final EndpointFactory factory = new ViewEndpointFactory();
 
     public ViewService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.viewServiceEndpoints(), strategy, responseBuffer);
+        super(hostname, bucket, password, port, env, env.viewServiceEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override
@@ -20,8 +21,11 @@ public class ViewService extends AbstractService {
         return ServiceType.VIEW;
     }
 
-    @Override
-    protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        return new ViewEndpoint(hostname(), bucket(), password(), port(), environment(), responseBuffer);
+    static class ViewEndpointFactory implements EndpointFactory {
+        @Override
+        public Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+            RingBuffer<ResponseEvent> responseBuffer) {
+            return new ViewEndpoint(hostname, bucket, password, port, env, responseBuffer);
+        }
     }
 }

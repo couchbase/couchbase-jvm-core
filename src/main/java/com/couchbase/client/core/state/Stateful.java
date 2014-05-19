@@ -24,28 +24,31 @@ package com.couchbase.client.core.state;
 import rx.Observable;
 
 /**
- * Describes a stateful component that can change its states and notify interested parties.
+ * A stateful component that changes its state and notifies subscribed parties.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public interface Stateful<S extends Enum> {
 
     /**
-     * Returns a never-ending observable which gets updated with the new states changes.
+     * Returns a infinite observable which gets updated when the state of the component changes.
      *
-     * @return a {@link Observable} containing states-changes.
+     * @return a {@link Observable} updated with state transitions.
      */
     Observable<S> states();
 
     /**
-     * Returns the current states.
+     * Returns the current state.
      *
-     * @return the current states.
+     * @return the current state.
      */
     S state();
 
     /**
-     * Check if the given states is the current one in place.
+     * Check if the given state is the same as the current one.
      *
-     * @param state the states to check against.
+     * @param state the stats to check against.
      * @return true if it is the same, false otherwise.
      */
     boolean isState(S state);

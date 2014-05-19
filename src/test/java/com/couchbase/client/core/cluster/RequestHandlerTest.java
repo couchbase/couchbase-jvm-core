@@ -158,8 +158,8 @@ public class RequestHandlerTest {
 
         class DummyLocator implements Locator {
             @Override
-            public Observable<Node> locate(CouchbaseRequest request, Set<Node> nodes, ClusterConfig config) {
-                return Observable.from(nodes.iterator().next());
+            public Node[] locate(CouchbaseRequest request, Set<Node> nodes, ClusterConfig config) {
+                return new Node[] { nodes.iterator().next() };
             }
         }
     }

@@ -21,16 +21,22 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
+import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
+import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
 
 /**
  * Represents a {@link Service} on a {@link Node}.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public interface Service extends Stateful<LifecycleState> {
 
@@ -71,4 +77,25 @@ public interface Service extends Stateful<LifecycleState> {
      * @return the states of the {@link Service} after the disconnect process for all enabled {@link Endpoint}s.
      */
     Observable<LifecycleState> disconnect();
+
+    /**
+     * A helper factory which generates endpoints.
+     */
+    interface EndpointFactory {
+
+        /**
+         * Create a new {@link Endpoint}.
+         *
+         * @param hostname the hostname of the endpoint.
+         * @param bucket the bucket name of the endpoint.
+         * @param password the password of the bucket.
+         * @param port the port of the endpoint.
+         * @param env the shared environment.
+         * @param responseBuffer the response buffer for messages.
+         * @return a new {@link Endpoint}.
+         */
+        Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+            RingBuffer<ResponseEvent> responseBuffer);
+
+    }
 }

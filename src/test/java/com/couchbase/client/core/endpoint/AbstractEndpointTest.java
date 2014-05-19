@@ -159,7 +159,6 @@ public class AbstractEndpointTest {
     @Test
     @Ignore
     public void shouldReconnectWithBackoff() {
-
     }
 
     @Test

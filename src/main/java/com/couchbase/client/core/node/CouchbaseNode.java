@@ -33,7 +33,6 @@ import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
-import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.util.List;
@@ -86,12 +85,9 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     @Override
     public void send(final CouchbaseRequest request) {
         if (request instanceof SignalFlush) {
-            serviceRegistry.services().subscribe(new Action1<Service>() {
-                @Override
-                public void call(Service service) {
-                    service.send(request);
-                }
-            });
+            for (Service service : serviceRegistry.services()) {
+                service.send(request);
+            }
         } else {
             Service service = serviceRegistry.locate(request);
             if (service == null) {
@@ -109,7 +105,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> connect() {
-        return serviceRegistry.services().flatMap(new Func1<Service, Observable<LifecycleState>>() {
+        return Observable.from(serviceRegistry.services()).flatMap(new Func1<Service, Observable<LifecycleState>>() {
             @Override
             public Observable<LifecycleState> call(final Service service) {
                 return service.connect();
@@ -126,7 +122,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> disconnect() {
-        return serviceRegistry.services().flatMap(new Func1<Service, Observable<LifecycleState>>() {
+        return Observable.from(serviceRegistry.services()).flatMap(new Func1<Service, Observable<LifecycleState>>() {
             @Override
             public Observable<LifecycleState> call(final Service service) {
                 return service.disconnect();
@@ -157,6 +153,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
             request.type(),
             responseBuffer
         );
+
         serviceRegistry.addService(service, request.bucket());
         return service.connect().map(new Func1<LifecycleState, Service>() {
             @Override

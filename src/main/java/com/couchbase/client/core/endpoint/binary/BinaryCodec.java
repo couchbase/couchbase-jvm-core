@@ -54,6 +54,9 @@ import java.util.Queue;
 
 /**
  * Codec that handles encoding of binary memcache requests and decoding of binary memcache responses.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheResponse, BinaryRequest> {
 

@@ -5,19 +5,18 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.service.SelectionStrategy;
 import com.couchbase.client.core.state.LifecycleState;
 
-import java.util.Random;
-
 public class RandomSelectionStrategy implements SelectionStrategy {
+
+    private volatile short next;
 
     @Override
     public Endpoint select(CouchbaseRequest request, Endpoint[] endpoints) {
-        // TODO: this is not the right thing to burn! if no endpoint can be found in number of tries
-        // TODO: then complete it with retry :/
-        Endpoint endpoint;
-        do {
-            int rand = new Random().nextInt(endpoints.length);
-            endpoint = endpoints[rand];
-        } while(endpoint.state() != LifecycleState.CONNECTED);
-        return endpoint;
+        for (int i = 0; i < endpoints.length; i++) {
+            Endpoint endpoint = endpoints[next++ % endpoints.length];
+            if (endpoint.isState(LifecycleState.CONNECTED)) {
+                return endpoint;
+            }
+        }
+        return null;
     }
 }

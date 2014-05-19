@@ -19,13 +19,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
 package com.couchbase.client.core.state;
 
 import com.couchbase.client.core.CouchbaseException;
 
 /**
- * Thrown if the contacted entity is not connected.
+ * Thrown if the stateful component is not connected.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public class NotConnectedException extends CouchbaseException {
 

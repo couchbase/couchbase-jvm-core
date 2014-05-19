@@ -8,9 +8,8 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.node.Node;
-import io.netty.util.CharsetUtil;
-import rx.Observable;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Set;
 import java.util.zip.CRC32;
 
@@ -23,9 +22,9 @@ import java.util.zip.CRC32;
 public class BinaryLocator implements Locator {
 
     @Override
-    public Observable<Node> locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
+    public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
         if (request instanceof GetBucketConfigRequest) {
-            return Observable.from(nodes);
+            return nodes.toArray(new Node[nodes.size()]);
         }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
@@ -46,12 +45,16 @@ public class BinaryLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private Observable<Node> locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
+    private Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
         final CouchbaseBucketConfig config) {
         String key = request.key();
 
         CRC32 crc32 = new CRC32();
-        crc32.update(key.getBytes(CharsetUtil.UTF_8));
+        try {
+            crc32.update(key.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         long rv = (crc32.getValue() >> 16) & 0x7fff;
         int partitionId = (int) rv & config.partitions().size() - 1;
         request.partition((short) partitionId);
@@ -60,10 +63,10 @@ public class BinaryLocator implements Locator {
         String hostname = config.partitionHosts().get(nodeId);
         for (Node node : nodes) {
             if (node.hostname().equals(hostname)) {
-                return Observable.from(node);
+                return new Node[] { node };
             }
         }
-        return Observable.error(new IllegalStateException("Node not found for request" + request));
+        throw new IllegalStateException("Node not found for request" + request);
     }
 
     /**
@@ -74,7 +77,7 @@ public class BinaryLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private Observable<Node> locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
+    private Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
         final MemcacheBucketConfig config) {
         // todo: ketama lookup
         throw new UnsupportedOperationException("implement me");

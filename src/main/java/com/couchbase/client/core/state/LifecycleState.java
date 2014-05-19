@@ -26,18 +26,33 @@ package com.couchbase.client.core.state;
  * Represents common lifecycle states of components.
  *
  * @author Michael Nitschinger
- * @since 2.0
+ * @since 1.0
  */
 public enum LifecycleState {
 
+    /**
+     * The component is currently disconnected.
+     */
     DISCONNECTED,
 
+    /**
+     * The component is currently connecting or reconnecting.
+     */
     CONNECTING,
 
+    /**
+     * The component is connected without degradation.
+     */
     CONNECTED,
 
+    /**
+     * The component is disconnecting.
+     */
     DISCONNECTING,
 
+    /**
+     * The component is connected, but with service degradation.
+     */
     DEGRADED
 
 }

@@ -94,7 +94,7 @@ public class BinaryMessageTest {
         Thread.sleep(2000);
 
         GetRequest request = new GetRequest(key, bucket);
-        assertEquals("Not found", cluster.<GetResponse>send(request).toBlockingObservable().single().content());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<GetResponse>send(request).toBlockingObservable().single().status());
     }
 
     @Test
@@ -178,7 +178,8 @@ public class BinaryMessageTest {
 
         RemoveRequest remove = new RemoveRequest(key, bucket);
         assertEquals(ResponseStatus.SUCCESS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<RemoveResponse>send(remove).toBlockingObservable().single().status());
+        GetRequest get = new GetRequest(key, bucket);
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<GetResponse>send(get).toBlockingObservable().single().status());
     }
 
     @Test

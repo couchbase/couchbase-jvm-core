@@ -1,3 +1,24 @@
+/**
+ * Copyright (C) 2014 Couchbase, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
+ * IN THE SOFTWARE.
+ */
 package com.couchbase.client.core.endpoint.view;
 
 import com.couchbase.client.core.message.ResponseStatus;
@@ -22,6 +43,12 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
+/**
+ * Code which handles encoding and decoding of requests/responses against the Couchbase View Engine.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
 
     /**
@@ -29,9 +56,24 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
      */
     private final Queue<Class<?>> queue;
 
+    /**
+     * The current request class.
+     */
     private Class<?> currentRequest;
+
+    /**
+     * The current chunked up buffer.
+     */
     private ByteBuf currentChunk;
+
+    /**
+     * The current state of the parser.
+     */
     private ParsingState currentState = ParsingState.INITIAL;
+
+    /**
+     * The number of total rows (if parsed) for this view response.
+     */
     private int currentTotalRows;
 
     /**
@@ -77,12 +119,14 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
     }
 
     private HttpRequest handleViewQueryRequest(final ViewQueryRequest msg) {
-        String design = msg.development() ? "dev_" + msg.design() : msg.design();
-        String uri = "/" + msg.bucket() + "/_design/" + design + "/_view/" + msg.view();
+        StringBuilder requestBuilder = new StringBuilder();
+        requestBuilder.append("/").append(msg.bucket()).append("/_design/");
+        requestBuilder.append(msg.development() ? "dev_" + msg.design() : msg.design());
+        requestBuilder.append("/_view/").append(msg.view());
         if (msg.query() != null && !msg.query().isEmpty()) {
-            uri = uri + "?" + msg.query();
+            requestBuilder.append("?").append(msg.query());
         }
-        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri);
+        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, requestBuilder.toString());
     }
 
     private void handleViewQueryResponse(ChannelHandlerContext ctx, HttpObject msg, List<Object> in) {
@@ -168,12 +212,17 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         ROWS
     }
 
+    /**
+     * A custom {@link ByteBufProcessor} which finds and counts open and closing JSON object markers.
+     */
     private static class MarkerProcessor implements ByteBufProcessor {
+
         private int marker = 0;
-        private int depth;
+        private int counter = 0;
+        private int depth = 0;
         private byte open = '{';
         private byte close = '}';
-        private int counter = 0;
+
         @Override
         public boolean process(byte value) throws Exception {
             counter++;

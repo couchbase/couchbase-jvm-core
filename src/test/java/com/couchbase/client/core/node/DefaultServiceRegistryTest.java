@@ -26,6 +26,7 @@ import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import org.junit.Test;
+import rx.Observable;
 import rx.functions.Action1;
 
 import java.util.HashMap;
@@ -224,7 +225,7 @@ public class DefaultServiceRegistryTest {
         registry.addService(globalService, null);
 
         final CountDownLatch latch = new CountDownLatch(2);
-        registry.services().subscribe(new Action1<Service>() {
+        Observable.from(registry.services()).subscribe(new Action1<Service>() {
             @Override
             public void call(Service service) {
                 assertTrue(service.equals(localService) || service.equals(globalService));

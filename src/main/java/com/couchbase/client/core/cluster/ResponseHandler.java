@@ -34,13 +34,19 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         if (message instanceof CouchbaseResponse) {
             CouchbaseResponse response = (CouchbaseResponse) message;
             ResponseStatus status = response.status();
-            if (status == ResponseStatus.CHUNKED || status == ResponseStatus.SUCCESS) {
-                event.getObservable().onNext(response);
-                if (status == ResponseStatus.SUCCESS) {
+            switch(status) {
+                case CHUNKED:
+                    event.getObservable().onNext(response);
+                    break;
+                case SUCCESS:
+                case EXISTS:
+                case NOT_EXISTS:
+                case FAILURE:
+                    event.getObservable().onNext(response);
                     event.getObservable().onCompleted();
-                }
-            } else {
-                throw new IllegalStateException("fixme in response handler: " + event);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("fixme");
             }
         } else if (message instanceof CouchbaseRequest) {
             cluster.send((CouchbaseRequest) message);

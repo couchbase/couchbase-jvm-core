@@ -10,10 +10,11 @@ import com.lmax.disruptor.RingBuffer;
 public class BinaryService extends AbstractService {
 
     private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
+    private static final EndpointFactory factory = new BinaryEndpointFactory();
 
     public BinaryService(String hostname, String bucket, String password, int port, Environment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.binaryServiceEndpoints(), strategy, responseBuffer);
+        super(hostname, bucket, password, port, env, env.binaryServiceEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override
@@ -21,8 +22,11 @@ public class BinaryService extends AbstractService {
         return ServiceType.BINARY;
     }
 
-    @Override
-    protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        return new BinaryEndpoint(hostname(), bucket(), password(), port(), environment(), responseBuffer);
+    static class BinaryEndpointFactory implements EndpointFactory {
+        @Override
+        public Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+            RingBuffer<ResponseEvent> responseBuffer) {
+            return new BinaryEndpoint(hostname, bucket, password, port, env, responseBuffer);
+        }
     }
 }

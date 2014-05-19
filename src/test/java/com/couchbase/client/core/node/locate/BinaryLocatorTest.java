@@ -7,7 +7,6 @@ import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.node.Node;
 import org.junit.Test;
-import rx.Observable;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -49,8 +48,8 @@ public class BinaryLocatorTest {
             "192.168.56.102"
         ));
 
-        Observable<Node> observable = locator.locate(getRequestMock, nodes, configMock);
-        assertEquals(node1Mock, observable.toBlockingObservable().single());
+        Node[] foundNodes = locator.locate(getRequestMock, nodes, configMock);
+        assertEquals(node1Mock, foundNodes[0]);
     }
 
     @Test

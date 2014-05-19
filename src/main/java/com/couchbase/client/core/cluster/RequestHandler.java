@@ -42,7 +42,6 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
-import rx.Observer;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -138,30 +137,20 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         final CouchbaseRequest request = event.getRequest();
         nodeLock.readLock().lock();
 
-        locator(request).locate(request, nodes, configuration.get()).subscribe(new Observer<Node>() {
-            @Override
-            public void onCompleted() {
-                cleanup();
-            }
-
-            @Override
-            public void onError(final Throwable e) {
-                cleanup();
-            }
-
-            @Override
-            public void onNext(final Node node) {
-                node.send(request);
+        Node[] found = locator(request).locate(request, nodes, configuration.get());
+        for (int i = 0; i < found.length; i++) {
+            try {
+                found[i].send(request);
                 if (endOfBatch) {
-                    node.send(SignalFlush.INSTANCE);
+                    found[i].send(SignalFlush.INSTANCE);
                 }
-            }
-
-            private void cleanup() {
+            } catch(Exception ex) {
+                request.observable().onError(ex);
+            } finally {
                 nodeLock.readLock().unlock();
                 event.setRequest(null);
             }
-        });
+        }
     }
 
     /**
@@ -304,6 +293,11 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         }
     }
 
+    /**
+     * For every bucket that is open, apply the reconfiguration.
+     *
+     * @param config the config for this bucket.
+     */
     private void reconfigureBucket(final BucketConfig config) {
         for (final NodeInfo nodeInfo : config.nodes()) {
             addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
@@ -318,7 +312,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 public Observable<AddServiceRequest> call(final Map<ServiceType, Integer> services) {
                     List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
                     for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
-                        requests.add( new AddServiceRequest(service.getKey(), config.name(), config.password(),
+                        requests.add(new AddServiceRequest(service.getKey(), config.name(), config.password(),
                             service.getValue(), nodeInfo.hostname()));
                     }
                     return Observable.from(requests);
@@ -330,6 +324,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 }
             }).subscribe();
         }
+
+
+
     }
 
 }

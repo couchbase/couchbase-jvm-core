@@ -30,9 +30,11 @@ import com.lmax.disruptor.RingBuffer;
 public class StreamService extends AbstractService {
 
     private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
+    private static final EndpointFactory factory = new StreamEndpointFactory();
+
 
     public StreamService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.streamServiceEndpoints(), strategy, responseBuffer);
+        super(hostname, bucket, password, port, env, env.streamServiceEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override
@@ -40,8 +42,11 @@ public class StreamService extends AbstractService {
         return ServiceType.STREAM;
     }
 
-    @Override
-    protected Endpoint newEndpoint(final RingBuffer<ResponseEvent> responseBuffer) {
-        throw new UnsupportedOperationException("implement me");
+    static class StreamEndpointFactory implements EndpointFactory {
+        @Override
+        public Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+            RingBuffer<ResponseEvent> responseBuffer) {
+            throw new UnsupportedOperationException("Implement streaming endpoint factory.");
+        }
     }
 }

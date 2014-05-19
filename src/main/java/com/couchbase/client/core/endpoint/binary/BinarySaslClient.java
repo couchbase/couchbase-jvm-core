@@ -25,6 +25,8 @@ import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandler;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
 import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
@@ -32,6 +34,8 @@ import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -41,6 +45,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import java.io.IOException;
+import java.net.SocketAddress;
 
 /**
  * A SASL Client which communicates through the memcache binary protocol.
@@ -50,7 +55,7 @@ import java.io.IOException;
  */
 public class BinarySaslClient
     extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
-    implements CallbackHandler {
+    implements CallbackHandler, ChannelOutboundHandler {
 
     /**
      * The memcache opcode for the SASL mechs list.
@@ -103,6 +108,11 @@ public class BinarySaslClient
      * Contains the selected SASL auth mechanism once decided.
      */
     private String selectedMechanism;
+
+    /**
+     * The connect promise issued by the connect process.
+     */
+    private ChannelPromise originalPromise;
 
     /**
      * Creates a new {@link BinarySaslClient}.
@@ -253,16 +263,64 @@ public class BinarySaslClient
     private void checkIsAuthed(final FullBinaryMemcacheResponse msg) {
         switch (msg.getStatus()) {
             case SASL_AUTH_SUCCESS:
-                endpoint.notifyChannelAuthSuccess();
+                originalPromise.setSuccess();
                 ctx.pipeline().remove(this);
                 break;
             case SASL_AUTH_FAILURE:
-                System.out.println(msg.content().toString(CharsetUtil.UTF_8));
-                endpoint.notifyChannelAuthFailure();
+                originalPromise.setFailure(new IllegalStateException("Auth Failure"));
                 break;
             default:
-                throw new IllegalStateException("Unhandled SASL auth status: " + msg.getStatus());
+                originalPromise.setFailure(new IllegalStateException("Unhandled SASL auth status: " + msg.getStatus()));
         }
     }
 
+    @Override
+    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, promise);
+    }
+
+    @Override
+    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+        originalPromise = promise;
+        ChannelPromise downPromise = ctx.newPromise();
+        downPromise.addListener(new GenericFutureListener<Future<Void>>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess() && !originalPromise.isDone()) {
+                    originalPromise.setFailure(future.cause());
+                }
+            }
+        });
+        ctx.connect(remoteAddress, localAddress, downPromise);
+    }
+
+    @Override
+    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.disconnect(promise);
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.close(promise);
+    }
+
+    @Override
+    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.deregister(promise);
+    }
+
+    @Override
+    public void read(ChannelHandlerContext ctx) throws Exception {
+        ctx.read();
+    }
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        ctx.write(msg, promise);
+    }
+
+    @Override
+    public void flush(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
 }

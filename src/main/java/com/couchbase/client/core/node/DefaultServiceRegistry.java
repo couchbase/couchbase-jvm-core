@@ -28,10 +28,10 @@ import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.service.BucketServiceMapping;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
-import rx.Observable;
-import rx.Subscriber;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,6 +49,8 @@ public class DefaultServiceRegistry implements ServiceRegistry {
      */
     private final Map<String, Map<ServiceType, Service>> localServices;
 
+    private List<Service> serviceCache;
+
     /**
      * Create a new {@link DefaultServiceRegistry} with custom containers.
      *
@@ -61,6 +63,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
         final Map<String, Map<ServiceType, Service>> localServices) {
         this.globalServices = globalServices;
         this.localServices = localServices;
+        this.serviceCache = new ArrayList<Service>();
     }
 
     /**
@@ -84,6 +87,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
                 globalServices.put(service.type(), service);
             }
         }
+        recalculateServiceCache();
         return service;
     }
 
@@ -101,6 +105,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
                 globalServices.remove(service.type());
             }
         }
+        recalculateServiceCache();
         return service;
     }
 
@@ -115,27 +120,21 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public Observable<Service> services() {
-        return Observable.create(new Observable.OnSubscribe<Service>() {
-            @Override
-            public void call(Subscriber<? super Service> subscriber) {
-                if (!subscriber.isUnsubscribed()) {
-                    try {
-                        for (Service service : globalServices.values()) {
-                            subscriber.onNext(service);
-                        }
-                        for (Map<ServiceType, Service> bucket : localServices.values()) {
-                            for (Service service : bucket.values()) {
-                                subscriber.onNext(service);
-                            }
-                        }
-                        subscriber.onCompleted();
-                    } catch (Exception ex) {
-                        subscriber.onError(ex);
-                    }
-                }
+    public List<Service> services() {
+        return serviceCache;
+    }
+
+    private void recalculateServiceCache() {
+        List<Service> services = new ArrayList<Service>();
+        for (Service service : globalServices.values()) {
+            services.add(service);
+        }
+        for (Map<ServiceType, Service> bucket : localServices.values()) {
+            for (Service service : bucket.values()) {
+                services.add(service);
             }
-        });
+        }
+        serviceCache = services;
     }
 
     @Override

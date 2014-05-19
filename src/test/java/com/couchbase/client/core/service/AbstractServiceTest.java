@@ -28,9 +28,17 @@ import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
 import org.junit.Test;
+import rx.Observable;
+import rx.subjects.BehaviorSubject;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Verifies the correct functionality of a {@link AbstractService}.
@@ -45,34 +53,91 @@ public class AbstractServiceTest {
 
     @Test
     public void shouldBeDisconnectAfterInit() {
-        Service service = new DummyService(hostname, bucket, password, port, environment, 1, mock(SelectionStrategy.class));
+        Endpoint endpoint = mock(Endpoint.class);
+        when(endpoint.states()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
+        List<Endpoint> endpoints = Arrays.asList(endpoint);
+        Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
+
+        Service service = new DummyService(hostname, bucket, password, port, environment, 1,
+            mock(SelectionStrategy.class), factory);
         assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
     @Test
     public void shouldBeDisconnectedIfNoEndpointConfigured() {
-        Service service = new DummyService(hostname, bucket, password, port, environment, 0, mock(SelectionStrategy.class));
+        List<Endpoint> endpoints = Collections.emptyList();
+        Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
+        Service service = new DummyService(hostname, bucket, password, port, environment, 0,
+            mock(SelectionStrategy.class), factory);
         service.connect().toBlockingObservable().single();
         assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
     @Test
     public void shouldConnectToOneEndpoint() {
-        Service service = new DummyService(hostname, bucket, password, port, environment, 1, mock(SelectionStrategy.class));
-        assertEquals(LifecycleState.DISCONNECTED, service.state());
-
+        Endpoint endpoint = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpointStates = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint.states()).thenReturn(endpointStates);
+        when(endpoint.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
+        List<Endpoint> endpoints = Arrays.asList(endpoint);
+        Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
+        Service service = new DummyService(hostname, bucket, password, port, environment, 1,
+            mock(SelectionStrategy.class), factory);
         service.connect().toBlockingObservable().single();
+        endpointStates.onNext(LifecycleState.CONNECTED);
         assertEquals(LifecycleState.CONNECTED, service.state());
     }
 
     @Test
     public void shouldConnectToThreeEndpoints() {
+        Endpoint endpoint1 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint1States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint1.states()).thenReturn(endpoint1States);
+        when(endpoint1.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
+        Endpoint endpoint2 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint2States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint2.states()).thenReturn(endpoint2States);
+        when(endpoint2.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
+        Endpoint endpoint3 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint3States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint3.states()).thenReturn(endpoint3States);
+        when(endpoint3.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
 
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
+        Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
+        Service service = new DummyService(hostname, bucket, password, port, environment, 3,
+            mock(SelectionStrategy.class), factory);
+        service.connect().toBlockingObservable().single();
+        endpoint1States.onNext(LifecycleState.CONNECTED);
+        endpoint2States.onNext(LifecycleState.CONNECTED);
+        endpoint3States.onNext(LifecycleState.CONNECTED);
+        assertEquals(LifecycleState.CONNECTED, service.state());
     }
 
     @Test
     public void shouldBeDegradedIfNotAllEndpointsConnected() {
+        Endpoint endpoint1 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint1States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint1.states()).thenReturn(endpoint1States);
+        when(endpoint1.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
+        Endpoint endpoint2 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint2States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint2.states()).thenReturn(endpoint2States);
+        when(endpoint2.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
+        Endpoint endpoint3 = mock(Endpoint.class);
+        BehaviorSubject<LifecycleState> endpoint3States = BehaviorSubject.create(LifecycleState.DISCONNECTED);
+        when(endpoint3.states()).thenReturn(endpoint3States);
+        when(endpoint3.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
 
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
+        Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
+        Service service = new DummyService(hostname, bucket, password, port, environment, 3,
+            mock(SelectionStrategy.class), factory);
+        service.connect().toBlockingObservable().single();
+        endpoint1States.onNext(LifecycleState.CONNECTED);
+        endpoint2States.onNext(LifecycleState.CONNECTING);
+        endpoint3States.onNext(LifecycleState.CONNECTING);
+        assertEquals(LifecycleState.DEGRADED, service.state());
     }
 
     @Test
@@ -107,18 +172,30 @@ public class AbstractServiceTest {
 
     static class DummyService extends AbstractService {
 
-        DummyService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints, SelectionStrategy strategy) {
-            super(hostname, bucket, password, port, env, numEndpoints, strategy, null);
-        }
-
-        @Override
-        protected Endpoint newEndpoint(RingBuffer<ResponseEvent> responseBuffer) {
-            return mock(Endpoint.class);
+        DummyService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
+            SelectionStrategy strategy, EndpointFactory factory) {
+            super(hostname, bucket, password, port, env, numEndpoints, strategy, null, factory);
         }
 
         @Override
         public ServiceType type() {
             return ServiceType.BINARY;
         }
+
+        public static class DummyEndpointFactory implements EndpointFactory {
+
+            Iterator<Endpoint> endpoints;
+            public DummyEndpointFactory(Iterator<Endpoint> endpoints) {
+                this.endpoints = endpoints;
+            }
+
+            @Override
+            public Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+                RingBuffer<ResponseEvent> responseBuffer) {
+                return endpoints.next();
+            }
+
+        }
+
     }
 }

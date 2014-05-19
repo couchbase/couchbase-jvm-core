@@ -1,6 +1,28 @@
+/**
+ * Copyright (C) 2014 Couchbase, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
+ * IN THE SOFTWARE.
+ */
 package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.cluster.ResponseHandler;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
@@ -19,17 +41,25 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
 
+import javax.net.ssl.SSLEngine;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * The default implementation of a {@link Endpoint}.
+ *
+ * This implementation provides all the common functionality across endpoints, including connection management and
+ * writing data into the channel.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleState> implements Endpoint {
 
     /**
@@ -40,10 +70,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * A shared logging handler for all endpoints.
      */
-    private static final ChannelHandler LOGGING_HANDLER_INSTANCE = new DebugLoggingHandler(LogLevel.TRACE);
+    private static final ChannelHandler LOGGING_HANDLER_INSTANCE = new LoggingHandler(LogLevel.TRACE);
 
     /**
-     * Precreated not connected exception for performance reasons.
+     * Pre-created not connected exception for performance reasons.
      */
     private static final NotConnectedException NOT_CONNECTED_EXCEPTION = new NotConnectedException();
 
@@ -53,12 +83,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private final BootstrapAdapter bootstrap;
 
     /**
-     * The reconnect delay that increases with backoff.
+     * The name of the couchbase bucket (needed for bucket-level endpoints).
      */
-    private final AtomicLong reconnectDelay = new AtomicLong(0);
-
     private final String bucket;
+
+    /**
+     * The password of the couchbase bucket (needed for bucket-level endpoints).
+     */
     private final String password;
+
+    private final RingBuffer<ResponseEvent> responseBuffer;
+
+    /**
+     * Factory which handles {@link SSLEngine} creation.
+     */
     private SSLEngineFactory sslEngineFactory;
 
     /**
@@ -66,7 +104,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private volatile Channel channel;
 
+    /**
+     * True if there have been operations written, pending flush.
+     */
     private volatile boolean hasWritten;
+
+    /**
+     * Number of reconnects already done.
+     */
+    private volatile long reconnectAttempt;
 
     /**
      * Preset the stack trace for the static exceptions.
@@ -75,17 +121,40 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         NOT_CONNECTED_EXCEPTION.setStackTrace(new StackTraceElement[0]);
     }
 
-    protected AbstractEndpoint(String bucket, String password, BootstrapAdapter adapter) {
+    /**
+     * Constructor to which allows to pass in an artificial bootstrap adapter.
+     *
+     * This method should not be used outside of tests. Please use the
+     * {@link #AbstractEndpoint(String, String, String, int, Environment, RingBuffer)} constructor instead.
+     *
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     * @param adapter the bootstrap adapter.
+     */
+    protected AbstractEndpoint(final String bucket, final String password, final BootstrapAdapter adapter) {
         super(LifecycleState.DISCONNECTED);
         bootstrap = adapter;
         this.bucket = bucket;
         this.password = password;
+        this.responseBuffer = null;
     }
 
-    protected AbstractEndpoint(String hostname, String bucket, String password, int port, final Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+    /**
+     * Create a new {@link AbstractEndpoint}.
+     *
+     * @param hostname the hostname/ipaddr of the remote channel.
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     * @param port the port of the remote channel.
+     * @param environment the environment of the core.
+     * @param responseBuffer the response buffer for passing responses up the stack.
+     */
+    protected AbstractEndpoint(final String hostname, final String bucket, final String password, final int port,
+        final Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
+        this.responseBuffer = responseBuffer;
         if (environment.sslEnabled()) {
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
@@ -115,6 +184,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * Add custom endpoint handlers to the {@link ChannelPipeline}.
      *
+     * This method needs to be implemented by the actual endpoint implementations to add specific handlers to
+     * the pipeline depending on the endpoint type and intended behavior.
+     *
      * @param pipeline the pipeline where to add handlers.
      */
     protected abstract void customEndpointHandlers(ChannelPipeline pipeline);
@@ -137,7 +209,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 } else {
                     if (future.isSuccess()) {
                         channel = future.channel();
-                        LOGGER.debug("Successfully connected to Endpoint " + channel.remoteAddress());
+                        LOGGER.debug("Connected to " + AbstractEndpoint.this.getClass().getSimpleName()
+                            + " " + channel.remoteAddress());
+                        transitionState(LifecycleState.CONNECTED);
                     } else {
                         long delay = reconnectDelay();
                         LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: "
@@ -197,15 +271,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     hasWritten = false;
                 }
             } else {
-                channel.write(request).addListener(new GenericFutureListener<Future<Void>>() {
+                if (channel.isWritable()) {
+                   /*channel.write(request).addListener(new GenericFutureListener<Future<Void>>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
                         if (!future.isSuccess()) {
                             request.observable().onError(future.cause());
                         }
                     }
-                });
-                hasWritten = true;
+                });*/
+                    channel.write(request, channel.voidPromise());
+                    hasWritten = true;
+                } else {
+                    responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
+                }
             }
         } else {
             if (request instanceof SignalFlush) {
@@ -216,7 +295,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     }
 
     /**
-     * Helper method that is called inside from the event loop to notify the upper endpoint of a disconnect.
+     * Helper method that is called from inside the event loop to notify the upper {@link Endpoint} of a disconnect.
      *
      * Subsequent reconnect attempts are triggered from here.
      */
@@ -225,31 +304,30 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         connect();
     }
 
-    public void notifyChannelAuthSuccess() {
-        transitionState(LifecycleState.CONNECTED);
-        LOGGER.debug("Successfully authenticated to Endpoint " + channel.remoteAddress());
-    }
-
-    public void notifyChannelAuthFailure() {
-        transitionState(LifecycleState.DISCONNECTED);
-        throw new RuntimeException("Auth failure");
-    }
-
     /**
      * Returns the reconnect retry delay in Miliseconds.
-     *
-     * Currently, it uses linear backoff.
      *
      * @return the retry delay.
      */
     private long reconnectDelay() {
-        return reconnectDelay.getAndIncrement();
+        long delay = 1 << reconnectAttempt++;
+        return delay;
     }
 
+    /**
+     * The name of the bucket.
+     *
+     * @return the bucket name.
+     */
     protected String bucket() {
         return bucket;
     }
 
+    /**
+     * The password of the bucket.
+     *
+     * @return the bucket password.
+     */
     protected String password() {
         return password;
     }
