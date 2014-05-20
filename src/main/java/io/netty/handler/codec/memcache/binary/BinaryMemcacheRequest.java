@@ -34,10 +34,4 @@ public interface BinaryMemcacheRequest extends BinaryMemcacheMessage {
      */
     BinaryMemcacheRequest setReserved(short reserved);
 
-    @Override
-    BinaryMemcacheRequest retain();
-
-    @Override
-    BinaryMemcacheRequest retain(int increment);
-
 }
