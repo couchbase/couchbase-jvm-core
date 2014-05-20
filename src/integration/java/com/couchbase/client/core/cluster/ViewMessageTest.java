@@ -21,11 +21,13 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.message.cluster.DisconnectRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.util.TestProperties;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import rx.Observable;
 import rx.functions.Func1;
@@ -55,6 +57,11 @@ public class ViewMessageTest {
                 }
             }
         ).toBlockingObservable().single();
+    }
+
+    @AfterClass
+    public static void disconnect() throws InterruptedException {
+        cluster.send(new DisconnectRequest()).toBlockingObservable().first();
     }
 
     /*@Test

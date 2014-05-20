@@ -54,4 +54,8 @@ public interface ConfigurationProvider {
      * @return an observable with the configuration if success, and failures otherwise.
      */
     Observable<ClusterConfig> openBucket(String name, String password);
+
+    Observable<ClusterConfig> closeBucket(String name);
+
+    Observable<ClusterConfig> closeBuckets();
 }

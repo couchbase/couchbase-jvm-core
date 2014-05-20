@@ -26,6 +26,7 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import rx.Observable;
+import rx.functions.Func1;
 
 /**
  * The {@link CouchbaseEnvironment} wraps the underlying environment retrieval mechanisms and provides convenient
@@ -72,10 +73,12 @@ public class CouchbaseEnvironment implements Environment {
 
     @Override
     public Observable<Boolean> shutdown() {
-        // TODO: make me better chaned with other thing to shutdown and proper
-        // error handling.
-        ioPool.shutdownGracefully();
-        return Observable.from(true);
+        return Observable.from(ioPool.shutdownGracefully()).map(new Func1<Object, Boolean>() {
+            @Override
+            public Boolean call(Object o) {
+                return true;
+            }
+        });
     }
 
     @Override

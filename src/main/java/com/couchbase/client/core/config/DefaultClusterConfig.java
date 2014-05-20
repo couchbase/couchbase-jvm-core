@@ -55,6 +55,11 @@ public class DefaultClusterConfig implements ClusterConfig {
     }
 
     @Override
+    public void deleteBucketConfig(String bucketName) {
+        bucketConfigs.remove(bucketName);
+    }
+
+    @Override
     public boolean hasBucket(final String bucketName) {
         return bucketConfigs.containsKey(bucketName);
     }

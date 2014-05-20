@@ -30,6 +30,8 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.cluster.ClusterRequest;
+import com.couchbase.client.core.message.cluster.DisconnectRequest;
+import com.couchbase.client.core.message.cluster.DisconnectResponse;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
@@ -40,14 +42,16 @@ import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.message.internal.InternalRequest;
 import com.couchbase.client.core.message.internal.RemoveNodeRequest;
+import com.couchbase.client.core.message.internal.RemoveNodeResponse;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
+import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventTranslatorOneArg;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import rx.Observable;
-import rx.Observer;
+import rx.functions.Func1;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -91,6 +95,10 @@ public class CouchbaseCluster implements Cluster {
      */
     private final ConfigurationProvider configProvider;
 
+    private final Environment environment;
+
+    private volatile boolean sharedEnvironment = true;
+
     /**
      * Populate the static exceptions with stack trace elements.
      */
@@ -103,12 +111,14 @@ public class CouchbaseCluster implements Cluster {
      */
     public CouchbaseCluster() {
         this(new CouchbaseEnvironment());
+        sharedEnvironment = false;
     }
 
     /**
      * Creates a new {@link CouchbaseCluster}.
      */
     public CouchbaseCluster(Environment environment) {
+        this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
         Executor executor = Executors.newFixedThreadPool(2);
 
@@ -161,24 +171,31 @@ public class CouchbaseCluster implements Cluster {
             request.observable().onNext(new SeedNodesResponse(status));
             request.observable().onCompleted();
         } else if (request instanceof OpenBucketRequest) {
-            configProvider.openBucket(request.bucket(), request.password()).subscribe(
-                new Observer<ClusterConfig>() {
+            configProvider
+                .openBucket(request.bucket(), request.password())
+                .map(new Func1<ClusterConfig, OpenBucketResponse>() {
                     @Override
-                    public void onCompleted() {
-                        request.observable().onCompleted();
+                    public OpenBucketResponse call(ClusterConfig clusterConfig) {
+                        return new OpenBucketResponse(ResponseStatus.SUCCESS);
                     }
-
+                })
+                .subscribe(request.observable());
+        } else if (request instanceof DisconnectRequest) {
+            configProvider
+                .closeBuckets()
+                .flatMap(new Func1<ClusterConfig, Observable<Boolean>>() {
                     @Override
-                    public void onError(Throwable e) {
-                        request.observable().onError(e);
+                    public Observable<Boolean> call(ClusterConfig clusterConfig) {
+                        return sharedEnvironment ? Observable.just(true) : environment.shutdown();
                     }
-
+                })
+                .map(new Func1<Boolean, DisconnectResponse>() {
                     @Override
-                    public void onNext(ClusterConfig clusterConfig) {
-                        request.observable().onNext(new OpenBucketResponse(ResponseStatus.SUCCESS));
+                    public DisconnectResponse call(Boolean success) {
+                        return new DisconnectResponse(ResponseStatus.SUCCESS);
                     }
-                }
-            );
+                })
+                .subscribe(request.observable());
         }
     }
 
@@ -192,79 +209,49 @@ public class CouchbaseCluster implements Cluster {
      */
     private void handleInternalRequest(final CouchbaseRequest request) {
         if (request instanceof AddNodeRequest) {
-            requestHandler.addNode(((AddNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
-                @Override
-                public void onCompleted() {
-                    request.observable().onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    request.observable().onError(e);
-                }
-
-                @Override
-                public void onNext(LifecycleState lifecycleState) {
-                    // TODO: its a hack.
-                    request.observable().onNext(new AddNodeResponse(ResponseStatus.SUCCESS, ((AddNodeRequest) request).hostname()));
-                }
-            });
+            requestHandler
+                .addNode(((AddNodeRequest) request).hostname())
+                .map(new Func1<LifecycleState, AddNodeResponse>() {
+                    @Override
+                    public AddNodeResponse call(LifecycleState state) {
+                        return new AddNodeResponse(ResponseStatus.SUCCESS, ((AddNodeRequest) request).hostname());
+                    }
+                })
+                .subscribe(request.observable());
         } else if (request instanceof RemoveNodeRequest) {
-            requestHandler.removeNode(((RemoveNodeRequest) request).hostname()).subscribe(new Observer<LifecycleState>() {
-                @Override
-                public void onCompleted() {
-                    request.observable().onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    request.observable().onError(e);
-                }
-
-                @Override
-                public void onNext(LifecycleState lifecycleState) {
-                    // TODO: its a hack.
-                    request.observable().onNext(null);
-                }
-            });
+            requestHandler
+                .removeNode(((RemoveNodeRequest) request).hostname())
+                .map(new Func1<LifecycleState, RemoveNodeResponse>() {
+                    @Override
+                    public RemoveNodeResponse call(LifecycleState state) {
+                        return new RemoveNodeResponse(ResponseStatus.SUCCESS);
+                    }
+                })
+                .subscribe(request.observable());
         } else if (request instanceof AddServiceRequest) {
-            requestHandler.addService((AddServiceRequest) request).subscribe(new Observer<Service>() {
-                @Override
-                public void onCompleted() {
-                    request.observable().onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    request.observable().onError(e);
-                }
-
-                @Override
-                public void onNext(Service service) {
-
-                    request.observable().onNext(new AddServiceResponse(ResponseStatus.SUCCESS, ((AddServiceRequest) request).hostname()));
-                }
-            });
+            requestHandler
+                .addService((AddServiceRequest) request)
+                .map(new Func1<Service, AddServiceResponse>() {
+                    @Override
+                    public AddServiceResponse call(Service service) {
+                        return new AddServiceResponse(ResponseStatus.SUCCESS, ((AddServiceRequest) request).hostname());
+                    }
+                })
+                .subscribe(request.observable());
         } else if (request instanceof RemoveServiceRequest) {
-            requestHandler.removeService((RemoveServiceRequest) request).subscribe(new Observer<Service>() {
-                @Override
-                public void onCompleted() {
-                    request.observable().onCompleted();
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    request.observable().onError(e);
-                }
-
-                @Override
-                public void onNext(Service service) {
-                    // TODO: its a hack.
-                    request.observable().onNext(null);
-                }
-            });
+            requestHandler
+                .removeService((RemoveServiceRequest) request)
+                .map(new Func1<Service, RemoveServiceResponse>() {
+                    @Override
+                    public RemoveServiceResponse call(Service service) {
+                        return new RemoveServiceResponse(ResponseStatus.SUCCESS);
+                    }
+                })
+                .subscribe(request.observable());
         } else {
-            request.observable().onError(new IllegalArgumentException("Unknown request " + request));
+            request
+                .observable()
+                .onError(new IllegalArgumentException("Unknown request " + request));
         }
     }
 }

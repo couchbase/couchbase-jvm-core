@@ -24,12 +24,11 @@ import io.netty.handler.codec.memcache.DefaultLastMemcacheContent;
 import io.netty.handler.codec.memcache.DefaultMemcacheContent;
 import io.netty.handler.codec.memcache.LastMemcacheContent;
 import io.netty.handler.codec.memcache.MemcacheContent;
-import io.netty.handler.codec.memcache.MemcacheMessage;
 import io.netty.util.CharsetUtil;
 
 import java.util.List;
 
-import static io.netty.buffer.ByteBufUtil.*;
+import static io.netty.buffer.ByteBufUtil.readBytes;
 
 /**
  * Decoder for both {@link BinaryMemcacheRequest} and {@link BinaryMemcacheResponse}.
@@ -201,8 +200,10 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
 
-        if (currentMessage.getExtras() != null) {
-            currentMessage.getExtras().release();
+        if (currentMessage != null && currentMessage.getExtras() != null) {
+            if (currentMessage.getExtras().refCnt() > 0) {
+                currentMessage.getExtras().release();
+            }
         }
 
         resetDecoder();

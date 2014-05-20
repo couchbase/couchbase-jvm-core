@@ -287,6 +287,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private void reconfigure() {
         ClusterConfig config = configuration.get();
+        System.out.println(config.bucketConfigs());
         for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
             BucketConfig bucketConfig = bucket.getValue();
             reconfigureBucket(bucketConfig);
@@ -324,9 +325,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 }
             }).subscribe();
         }
-
-
-
     }
 
 }

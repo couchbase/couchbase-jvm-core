@@ -128,7 +128,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             new Func1<BucketConfig, ClusterConfig>() {
                 @Override
                 public ClusterConfig call(BucketConfig bucketConfig) {
-                    applyBucketConfig(bucket, bucketConfig);
+                    upsertBucketConfig(bucket, bucketConfig);
                     return currentConfig.get();
                 }
             }
@@ -137,11 +137,34 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         return bootstrapThroughCarrierPublication(bucket, password).map(new Func1<BucketConfig, ClusterConfig>() {
             @Override
             public ClusterConfig call(final BucketConfig bucketConfig) {
-                applyBucketConfig(bucket, bucketConfig);
+                upsertBucketConfig(bucket, bucketConfig);
                 return currentConfig.get();
             }
         });
         ///*.onExceptionResumeNext(httpFallback)/*
+    }
+
+    @Override
+    public Observable<ClusterConfig> closeBucket(String name) {
+        return Observable.from(name).map(new Func1<String, ClusterConfig>() {
+            @Override
+            public ClusterConfig call(String bucket) {
+                removeBucketConfig(bucket);
+                return currentConfig.get();
+            }
+        });
+    }
+
+    @Override
+    public Observable<ClusterConfig> closeBuckets() {
+        return Observable
+            .from(currentConfig.get().bucketConfigs().keySet())
+            .flatMap(new Func1<String, Observable<? extends ClusterConfig>>() {
+                @Override
+                public Observable<? extends ClusterConfig> call(String bucketName) {
+                    return closeBucket(bucketName);
+                }
+            }).last();
     }
 
     /**
@@ -206,9 +229,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param name the name of the bucket.
      * @param config the configuration of the bucket.
      */
-    private void applyBucketConfig(final String name, final BucketConfig config) {
+    private void upsertBucketConfig(final String name, final BucketConfig config) {
         ClusterConfig cluster = currentConfig.get();
         cluster.setBucketConfig(name, config);
+        currentConfig.set(cluster);
+        configObservable.onNext(currentConfig.get());
+    }
+
+    private void removeBucketConfig(final String name) {
+        ClusterConfig cluster = currentConfig.get();
+        cluster.deleteBucketConfig(name);
         currentConfig.set(cluster);
         configObservable.onNext(currentConfig.get());
     }
