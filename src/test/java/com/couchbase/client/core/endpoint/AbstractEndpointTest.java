@@ -27,6 +27,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.NotConnectedException;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -59,7 +60,7 @@ public class AbstractEndpointTest {
 
     private final String hostname = "127.0.0.1";
     private final Environment environment = new CouchbaseEnvironment();
-    private final EmbeddedChannel channel = new EmbeddedChannel();
+    private final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
 
     @Test
     public void shouldBeDisconnectedAfterCreation() {

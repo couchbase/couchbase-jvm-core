@@ -27,8 +27,8 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.lmax.disruptor.RingBuffer;
-import io.netty.channel.ChannelHandlerAppender;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.CombinedChannelDuplexHandler;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
@@ -42,7 +42,8 @@ import java.util.Queue;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GenericEndpointHandler extends ChannelHandlerAppender {
+public class GenericEndpointHandler extends CombinedChannelDuplexHandler<GenericEndpointHandler.EventResponseDecoder,
+    GenericEndpointHandler.EventRequestEncoder> {
 
     /**
      * Reference to the parent endpoint (to notify certain signals).
@@ -71,7 +72,7 @@ public class GenericEndpointHandler extends ChannelHandlerAppender {
      * @param responseBuffer the response buffer where to write response into.
      */
     public GenericEndpointHandler(final AbstractEndpoint endpoint, final RingBuffer<ResponseEvent> responseBuffer) {
-        add(new EventResponseDecoder(), new EventRequestEncoder());
+        init(new EventResponseDecoder(), new EventRequestEncoder());
         this.endpoint = endpoint;
         this.responseBuffer = responseBuffer;
     }

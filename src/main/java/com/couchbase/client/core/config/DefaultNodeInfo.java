@@ -49,7 +49,6 @@ public class DefaultNodeInfo implements NodeInfo {
         @JsonProperty("hostname") String hostname,
         @JsonProperty("ports") Map<String, Integer> ports) {
         this.viewUri = viewUri;
-        System.out.println(hostname);
         this.hostname = trimPort(hostname);
         this.directServices = parseDirectServices(ports);
         this.sslServices = parseSslServices(ports);
