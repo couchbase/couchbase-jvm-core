@@ -19,43 +19,34 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.config;
+package com.couchbase.client.core.endpoint.query;
 
-import com.couchbase.client.core.service.ServiceType;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
-import java.net.InetAddress;
-import java.util.Map;
+import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.endpoint.AbstractEndpoint;
+import com.couchbase.client.core.env.Environment;
+import com.lmax.disruptor.RingBuffer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 
 /**
+ * This endpoint defines the pipeline for query requests and responses (N1QL).
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonDeserialize(as = DefaultNodeInfo.class)
-public interface NodeInfo {
+public class QueryEndpoint extends AbstractEndpoint {
 
-    /**
-     *
-     * @return
-     */
-    String viewUri();
+    public QueryEndpoint(String hostname, String bucket, String password, int port, Environment environment,
+        RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, environment, responseBuffer);
+    }
 
-    /**
-     *
-     * @return
-     */
-    InetAddress hostname();
-
-    /**
-     *
-     * @return
-     */
-    Map<ServiceType, Integer> services();
-
-    Map<ServiceType, Integer> sslServices();
-
-
+    @Override
+    protected void customEndpointHandlers(final ChannelPipeline pipeline) {
+        pipeline
+            .addLast(new HttpClientCodec())
+            .addLast(new HttpObjectAggregator(Integer.MAX_VALUE))
+            .addLast(new QueryCodec());
+    }
 }

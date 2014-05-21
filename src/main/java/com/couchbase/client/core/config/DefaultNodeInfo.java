@@ -21,11 +21,14 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +41,7 @@ import java.util.Map;
 public class DefaultNodeInfo implements NodeInfo {
 
     private final String viewUri;
-    private final String hostname;
+    private final InetAddress hostname;
     private int configPort;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
@@ -49,7 +52,11 @@ public class DefaultNodeInfo implements NodeInfo {
         @JsonProperty("hostname") String hostname,
         @JsonProperty("ports") Map<String, Integer> ports) {
         this.viewUri = viewUri;
-        this.hostname = trimPort(hostname);
+        try {
+            this.hostname = InetAddress.getByName(trimPort(hostname));
+        } catch (UnknownHostException e) {
+            throw new CouchbaseException("Could not analyze hostname from config.", e);
+        }
         this.directServices = parseDirectServices(ports);
         this.sslServices = parseSslServices(ports);
     }
@@ -60,7 +67,7 @@ public class DefaultNodeInfo implements NodeInfo {
     }
 
     @Override
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 

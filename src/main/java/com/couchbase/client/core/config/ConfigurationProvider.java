@@ -23,6 +23,7 @@ package com.couchbase.client.core.config;
 
 import rx.Observable;
 
+import java.net.InetAddress;
 import java.util.List;
 
 public interface ConfigurationProvider {
@@ -43,7 +44,7 @@ public interface ConfigurationProvider {
      * @param hosts list of seed hosts.
      * @return true if host list updated, false otherwise.
      */
-    boolean seedHosts(List<String> hosts);
+    boolean seedHosts(List<InetAddress> hosts);
 
     /**
      * Start to fetch a config for the given bucket and also watch for changes, depending on the mechanism

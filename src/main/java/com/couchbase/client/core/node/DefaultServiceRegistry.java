@@ -24,15 +24,17 @@ package com.couchbase.client.core.node;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
+import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.service.BucketServiceMapping;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The default implementation of a {@link ServiceRegistry}.
@@ -49,7 +51,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
      */
     private final Map<String, Map<ServiceType, Service>> localServices;
 
-    private List<Service> serviceCache;
+    private AtomicReference<List<Service>> serviceCache;
 
     /**
      * Create a new {@link DefaultServiceRegistry} with custom containers.
@@ -63,21 +65,21 @@ public class DefaultServiceRegistry implements ServiceRegistry {
         final Map<String, Map<ServiceType, Service>> localServices) {
         this.globalServices = globalServices;
         this.localServices = localServices;
-        this.serviceCache = new ArrayList<Service>();
+        this.serviceCache = new AtomicReference<List<Service>>(new ArrayList<Service>());
     }
 
     /**
      * Create a new {@link DefaultServiceRegistry}.
      */
     public DefaultServiceRegistry() {
-        this(new HashMap<ServiceType, Service>(), new HashMap<String, Map<ServiceType, Service>>());
+        this(new ConcurrentHashMap<ServiceType, Service>(), new ConcurrentHashMap<String, Map<ServiceType, Service>>());
     }
 
     @Override
     public Service addService(final Service service, final String bucket) {
         if (service.mapping() == BucketServiceMapping.ONE_BY_ONE) {
             if (!localServices.containsKey(bucket)) {
-                localServices.put(bucket, new HashMap<ServiceType, Service>());
+                localServices.put(bucket, new ConcurrentHashMap<ServiceType, Service>());
             }
             if (!localServices.get(bucket).containsKey(service.type())) {
                 localServices.get(bucket).put(service.type(), service);
@@ -121,7 +123,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
 
     @Override
     public List<Service> services() {
-        return serviceCache;
+        return serviceCache.get();
     }
 
     private void recalculateServiceCache() {
@@ -134,7 +136,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
                 services.add(service);
             }
         }
-        serviceCache = services;
+        serviceCache.set(services);
     }
 
     @Override
@@ -162,6 +164,8 @@ public class DefaultServiceRegistry implements ServiceRegistry {
             return ServiceType.CONFIG;
         } else if (request instanceof ViewRequest) {
             return ServiceType.VIEW;
+        } else if (request instanceof QueryRequest) {
+            return ServiceType.QUERY;
         } else {
             throw new IllegalStateException("Unknown Request: " + request);
         }

@@ -22,6 +22,7 @@
 package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.cluster.ResponseHandler;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -91,7 +92,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         } else {
             Service service = serviceRegistry.locate(request);
             if (service == null) {
-                request.observable().onError(new IllegalStateException("Service not found for request: " + request));
+                responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
             } else {
                 service.send(request);
             }

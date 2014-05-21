@@ -37,6 +37,11 @@ public enum ServiceType {
     BINARY(BucketServiceMapping.ONE_BY_ONE),
 
     /**
+     * Query (N1QL) operations.
+     */
+    QUERY(BucketServiceMapping.ONE_FOR_ALL),
+
+    /**
      * UPR and TAP stream operations.
      */
     STREAM(BucketServiceMapping.ONE_BY_ONE),

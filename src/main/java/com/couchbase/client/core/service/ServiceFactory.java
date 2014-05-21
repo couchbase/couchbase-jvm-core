@@ -45,6 +45,8 @@ public class ServiceFactory {
                 return new ConfigService(hostname, bucket, password, port, env, responseBuffer);
             case STREAM:
                 return new StreamService(hostname, bucket, password, port, env, responseBuffer);
+            case QUERY:
+                return new QueryService(hostname, bucket, password, port, env, responseBuffer);
             default:
                 throw new IllegalArgumentException("Unknown Service Type: " + type);
         }

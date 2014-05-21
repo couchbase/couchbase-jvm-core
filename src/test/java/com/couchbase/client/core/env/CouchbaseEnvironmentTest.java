@@ -17,13 +17,13 @@ public class CouchbaseEnvironmentTest {
 
     @Test
     public void systemPropertiesShouldOverrideDefaults() {
-        System.setProperty("com.couchbase.client.core.io.poolSize", "2");
+        System.setProperty("com.couchbase.client.io.poolSize", "2");
         try {
             ConfigFactory.invalidateCaches();
             CouchbaseEnvironment env = new CouchbaseEnvironment();
             assertEquals(2, env.ioPoolSize());
         } finally {
-            System.clearProperty("com.couchbase.client.core.io.poolSize");
+            System.clearProperty("com.couchbase.client.io.poolSize");
         }
     }
 

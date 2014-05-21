@@ -21,9 +21,13 @@
  */
 package com.couchbase.client.core.message.cluster;
 
+import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,7 +51,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
     /**
      * The list of hostnames/IPs.
      */
-    private List<String> nodes;
+    private List<InetAddress> nodes;
 
     /**
      * Creates a {@link SeedNodesRequest} with the default hostname ("localhost").
@@ -75,7 +79,15 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
         if (nodes == null || nodes.isEmpty()) {
             throw new IllegalArgumentException("At least one hostname needs to be provided.");
         }
-        this.nodes = nodes;
+        List<InetAddress> parsedNodes = new ArrayList<InetAddress>();
+        for (String node : nodes) {
+            try {
+                parsedNodes.add(InetAddress.getByName(node));
+            } catch (UnknownHostException e) {
+                throw new CouchbaseException("Unknown host " + node + " in bootstrap list.", e);
+            }
+        }
+        this.nodes = parsedNodes;
     }
 
     /**
@@ -83,7 +95,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
      *
      * @return the list of hostnames.
      */
-    public List<String> nodes() {
+    public List<InetAddress> nodes() {
         return nodes;
     }
 }

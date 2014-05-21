@@ -98,7 +98,7 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         if (msg instanceof ViewQueryRequest) {
             request = handleViewQueryRequest((ViewQueryRequest) msg);
         } else {
-            throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
+            throw new IllegalArgumentException("Unknown Message to encode: " + msg);
         }
         out.add(request);
         queue.offer(msg.getClass());

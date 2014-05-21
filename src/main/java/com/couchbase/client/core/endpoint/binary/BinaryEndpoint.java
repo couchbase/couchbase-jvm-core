@@ -31,6 +31,9 @@ import io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator;
 
 /**
  * This endpoint defines the pipeline for binary requests and responses.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public class BinaryEndpoint extends AbstractEndpoint {
 

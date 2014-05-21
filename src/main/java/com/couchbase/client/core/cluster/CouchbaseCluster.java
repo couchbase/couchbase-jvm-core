@@ -53,7 +53,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import rx.Observable;
 import rx.functions.Func1;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -97,6 +97,10 @@ public class CouchbaseCluster implements Cluster {
 
     private final Environment environment;
 
+    private final Disruptor<RequestEvent> requestDisruptor;
+    private final Disruptor<ResponseEvent> responseDisruptor;
+    private final ExecutorService disruptorExecutor;
+
     private volatile boolean sharedEnvironment = true;
 
     /**
@@ -120,21 +124,21 @@ public class CouchbaseCluster implements Cluster {
     public CouchbaseCluster(Environment environment) {
         this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
-        Executor executor = Executors.newFixedThreadPool(2);
+        disruptorExecutor = Executors.newFixedThreadPool(2);
 
-        Disruptor<ResponseEvent> responseDisruptor = new Disruptor<ResponseEvent>(
+        responseDisruptor = new Disruptor<ResponseEvent>(
             new ResponseEventFactory(),
             environment.responseBufferSize(),
-            executor
+            disruptorExecutor
         );
         responseDisruptor.handleEventsWith(new ResponseHandler(this));
         responseDisruptor.start();
         RingBuffer<ResponseEvent> responseRingBuffer = responseDisruptor.getRingBuffer();
 
-        Disruptor<RequestEvent> requestDisruptor = new Disruptor<RequestEvent>(
+        requestDisruptor = new Disruptor<RequestEvent>(
             new RequestEventFactory(),
             environment.requestBufferSize(),
-            executor
+            disruptorExecutor
         );
         requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);
         requestDisruptor.handleEventsWith(requestHandler);
@@ -188,7 +192,15 @@ public class CouchbaseCluster implements Cluster {
                     public Observable<Boolean> call(ClusterConfig clusterConfig) {
                         return sharedEnvironment ? Observable.just(true) : environment.shutdown();
                     }
-                })
+                }).map(new Func1<Boolean, Boolean>() {
+                @Override
+                public Boolean call(Boolean success) {
+                    requestDisruptor.shutdown();
+                    responseDisruptor.shutdown();
+                    disruptorExecutor.shutdownNow();
+                    return success;
+                }
+            })
                 .map(new Func1<Boolean, DisconnectResponse>() {
                     @Override
                     public DisconnectResponse call(Boolean success) {

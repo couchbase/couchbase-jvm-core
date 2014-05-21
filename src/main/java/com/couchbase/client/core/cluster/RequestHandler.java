@@ -30,11 +30,13 @@ import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
+import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.BinaryLocator;
 import com.couchbase.client.core.node.locate.Locator;
+import com.couchbase.client.core.node.locate.QueryLocator;
 import com.couchbase.client.core.node.locate.ViewLocator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
@@ -76,6 +78,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * The node locator for the view service;
      */
     private final Locator VIEW_LOCATOR = new ViewLocator();
+
+    private final Locator QUERY_LOCATOR = new QueryLocator();
 
     /**
      * The read/write lock for the list of managed nodes.
@@ -274,6 +278,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             return BINARY_LOCATOR;
         } else if (request instanceof ViewRequest) {
             return VIEW_LOCATOR;
+        } else if (request instanceof QueryRequest) {
+            return QUERY_LOCATOR;
         } else {
             throw new IllegalArgumentException("Unknown Request Type: " + request);
         }
@@ -287,7 +293,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private void reconfigure() {
         ClusterConfig config = configuration.get();
-        System.out.println(config.bucketConfigs());
         for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
             BucketConfig bucketConfig = bucket.getValue();
             reconfigureBucket(bucketConfig);
@@ -301,11 +306,14 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private void reconfigureBucket(final BucketConfig config) {
         for (final NodeInfo nodeInfo : config.nodes()) {
-            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
+            addNode(nodeInfo.hostname().getHostName()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                 @Override
                 public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                     Map<ServiceType, Integer> services =
                         environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                    if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
+                        services.put(ServiceType.QUERY, environment.queryPort());
+                    }
                     return Observable.from(services);
                 }
             }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
@@ -314,7 +322,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
                     for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
                         requests.add(new AddServiceRequest(service.getKey(), config.name(), config.password(),
-                            service.getValue(), nodeInfo.hostname()));
+                            service.getValue(), nodeInfo.hostname().getHostName()));
                     }
                     return Observable.from(requests);
                 }
