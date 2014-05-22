@@ -27,6 +27,7 @@ import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
@@ -35,6 +36,7 @@ import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.BinaryLocator;
+import com.couchbase.client.core.node.locate.ConfigLocator;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.node.locate.QueryLocator;
 import com.couchbase.client.core.node.locate.ViewLocator;
@@ -80,6 +82,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     private final Locator VIEW_LOCATOR = new ViewLocator();
 
     private final Locator QUERY_LOCATOR = new QueryLocator();
+
+    private final Locator CONFIG_LOCATOR = new ConfigLocator();
 
     /**
      * The read/write lock for the list of managed nodes.
@@ -280,6 +284,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             return VIEW_LOCATOR;
         } else if (request instanceof QueryRequest) {
             return QUERY_LOCATOR;
+        } else if (request instanceof ConfigRequest) {
+            return CONFIG_LOCATOR;
         } else {
             throw new IllegalArgumentException("Unknown Request Type: " + request);
         }

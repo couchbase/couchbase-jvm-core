@@ -272,14 +272,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 }
             } else {
                 if (channel.isWritable()) {
-                   /*channel.write(request).addListener(new GenericFutureListener<Future<Void>>() {
-                    @Override
-                    public void operationComplete(Future<Void> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            request.observable().onError(future.cause());
-                        }
-                    }
-                });*/
                     channel.write(request, channel.voidPromise());
                     hasWritten = true;
                 } else {

@@ -33,4 +33,11 @@ public interface CouchbaseResponse extends CouchbaseMessage {
      */
     ResponseStatus status();
 
+    /**
+     * Creates a fresh {@link CouchbaseRequest} out of this response.
+     *
+     * This method needs to be implemented by every response that should be retried.
+     * @return a fresh request.
+     */
+    CouchbaseRequest toRequest();
 }

@@ -21,21 +21,16 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.loader.CarrierLoader;
+import com.couchbase.client.core.config.loader.HttpLoader;
 import com.couchbase.client.core.env.Environment;
-import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
-import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
-import com.couchbase.client.core.message.internal.AddNodeRequest;
-import com.couchbase.client.core.message.internal.AddNodeResponse;
-import com.couchbase.client.core.message.internal.AddServiceRequest;
-import com.couchbase.client.core.message.internal.AddServiceResponse;
-import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
@@ -75,14 +70,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private final AtomicReference<List<InetAddress>> seedHosts;
 
-    /**
-     * Jackson object mapper.
-     *
-     * TODO: maybe refactor me out.
-     */
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private final Environment environment;
+    private final CarrierLoader carrierLoader;
+    private final HttpLoader httpLoader;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Signals if the provider is bootstrapped and serving configs.
@@ -99,8 +89,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<List<InetAddress>>();
         bootstrapped = false;
-        this.environment = environment;
         currentConfig = new AtomicReference<ClusterConfig>(new DefaultClusterConfig());
+        carrierLoader = new CarrierLoader(cluster, environment, seedHosts);
+        httpLoader = new HttpLoader(cluster, environment, seedHosts);
     }
 
     @Override
@@ -125,24 +116,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.from(currentConfig.get());
         }
 
-       /* Observable<ClusterConfig> httpFallback = bootstrapThroughHttp(bucket, password).map(
-            new Func1<BucketConfig, ClusterConfig>() {
+        return carrierLoader
+            .loadConfig(bucket, password)
+            .onExceptionResumeNext(httpLoader.loadConfig(bucket, password))
+            .map(new Func1<BucketConfig, ClusterConfig>() {
                 @Override
                 public ClusterConfig call(BucketConfig bucketConfig) {
                     upsertBucketConfig(bucket, bucketConfig);
                     return currentConfig.get();
                 }
-            }
-        );*/
-
-        return bootstrapThroughCarrierPublication(bucket, password).map(new Func1<BucketConfig, ClusterConfig>() {
-            @Override
-            public ClusterConfig call(final BucketConfig bucketConfig) {
-                upsertBucketConfig(bucket, bucketConfig);
-                return currentConfig.get();
-            }
-        });
-        ///*.onExceptionResumeNext(httpFallback)/*
+            });
     }
 
     @Override
@@ -168,58 +151,15 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             }).last();
     }
 
-    /**
-     * Try to bootstrap from one of the given seed nodes through the carrier publication binary mechanism.
-     *
-     * @param bucket
-     * @param password
-     * @return
-     */
-    private Observable<BucketConfig> bootstrapThroughCarrierPublication(final String bucket, final String password) {
-        return Observable
-            .from(seedHosts.get(), Schedulers.computation())
-            .flatMap(new Func1<InetAddress, Observable<AddNodeResponse>>() {
-                @Override
-                public Observable<AddNodeResponse> call(InetAddress addr) {
-                    return cluster.send(new AddNodeRequest(addr.getHostName()));
-                }
-            }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
-                @Override
-                public Observable<AddServiceResponse> call(AddNodeResponse response) {
-                    int port = environment.sslEnabled()
-                        ? environment.bootstrapCarrierSslPort() : environment.bootstrapCarrierDirectPort();
-                    return cluster.send(new AddServiceRequest(ServiceType.BINARY, bucket, password, port, response.hostname()));
-                }
-            }).flatMap(new Func1<AddServiceResponse, Observable<GetBucketConfigResponse>>() {
-                @Override
-                public Observable<GetBucketConfigResponse> call(AddServiceResponse response) {
-                    GetBucketConfigRequest request = new GetBucketConfigRequest(bucket, response.hostname());
-                    return cluster.send(request);
-                }
-            }).map(new Func1<GetBucketConfigResponse, BucketConfig>() {
-                @Override
-                public BucketConfig call(GetBucketConfigResponse response) {
-                    try {
-                        String rawConfig = response.content().replace("$HOST", response.hostname());
-                        BucketConfig config =  objectMapper.readValue(rawConfig, BucketConfig.class);
-                        config.password(password);
-                        return config;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-    }
-
-    /**
-     * Try to bootstrap from the given seed nodes through HTTP.
-     *
-     * @param bucket
-     * @param password
-     * @return
-     */
-    private Observable<BucketConfig> bootstrapThroughHttp(final String bucket, final String password) {
-        return null;
+    @Override
+    public void proposeBucketConfig(String bucket, String rawConfig) {
+        try {
+            BucketConfig config = OBJECT_MAPPER.readValue(rawConfig, BucketConfig.class);
+            config.password(currentConfig.get().bucketConfig(bucket).password());
+            upsertBucketConfig(bucket, config);
+        } catch (Exception ex) {
+            throw new CouchbaseException("Could not parse configuration", ex);
+        }
     }
 
     /**

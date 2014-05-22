@@ -1,14 +1,14 @@
 package com.couchbase.client.core.message.binary;
 
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import io.netty.buffer.ByteBuf;
 
-public class ReplaceResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public class ReplaceResponse extends AbstractBinaryResponse {
 
     private final long cas;
 
-    public ReplaceResponse(ResponseStatus status, long cas) {
-        super(status);
+    public ReplaceResponse(ResponseStatus status, long cas, String bucket, ByteBuf content) {
+        super(status, bucket, content);
         this.cas = cas;
     }
 

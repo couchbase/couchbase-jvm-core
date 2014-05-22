@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.message.binary;
 
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Represents a response with a bucket configuration.
@@ -30,19 +30,13 @@ import com.couchbase.client.core.message.ResponseStatus;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetBucketConfigResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public class GetBucketConfigResponse extends AbstractBinaryResponse {
 
-    private final String content;
     private String hostname;
 
-    public GetBucketConfigResponse(final ResponseStatus status, final String content, final String hostname) {
-        super(status);
-        this.content = content;
+    public GetBucketConfigResponse(final ResponseStatus status, final String bucket, final ByteBuf content, final String hostname) {
+        super(status, bucket, content);
         this.hostname = hostname;
-    }
-
-    public String content() {
-        return content;
     }
 
     public String hostname() {

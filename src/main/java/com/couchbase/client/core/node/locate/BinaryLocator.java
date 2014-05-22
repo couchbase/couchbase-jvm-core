@@ -24,7 +24,13 @@ public class BinaryLocator implements Locator {
     @Override
     public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
         if (request instanceof GetBucketConfigRequest) {
-            return nodes.toArray(new Node[nodes.size()]);
+            GetBucketConfigRequest req = (GetBucketConfigRequest) request;
+            for (Node node : nodes) {
+                if (node.hostname().equals(req.hostname())) {
+                    return new Node[] { node };
+                }
+            }
+            throw new IllegalStateException("Node not found for request" + request);
         }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());

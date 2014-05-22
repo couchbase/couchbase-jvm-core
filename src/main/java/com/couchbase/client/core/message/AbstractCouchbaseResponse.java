@@ -47,4 +47,14 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
     public ResponseStatus status() {
         return status;
     }
+
+    /**
+     * Stub method implementation which needs to be overriden by all responses that support cloning.
+     *
+     * @return
+     */
+    @Override
+    public CouchbaseRequest toRequest() {
+        throw new ToRequestNotSupportedException();
+    }
 }

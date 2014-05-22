@@ -4,12 +4,12 @@ import com.couchbase.client.core.cluster.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.config.ConfigEndpoint;
 import com.couchbase.client.core.env.Environment;
-import com.couchbase.client.core.service.strategies.PartitionSelectionStrategy;
+import com.couchbase.client.core.service.strategies.RandomSelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
 public class ConfigService extends AbstractService {
 
-    private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
+    private static final SelectionStrategy strategy = new RandomSelectionStrategy();
     private static final EndpointFactory factory = new ConfigEndpointFactory();
 
     public ConfigService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {

@@ -45,7 +45,6 @@ import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
-import io.netty.util.CharsetUtil;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
@@ -64,6 +63,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * The Queue which holds the request types so that proper decoding can happen async.
      */
     private final Queue<Class<?>> queue;
+
+    private String bucket;
 
     /**
      * Creates a new {@link BinaryCodec} with the default dequeue.
@@ -84,6 +85,10 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     @Override
     protected void encode(final ChannelHandlerContext ctx, final BinaryRequest msg, final List<Object> out)
         throws Exception {
+        if (bucket == null) {
+            bucket = msg.bucket();
+        }
+
         BinaryMemcacheRequest request;
         if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
@@ -118,20 +123,21 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             in.add(
                 new GetBucketConfigResponse(
                     convertStatus(msg.getStatus()),
-                    msg.content().toString(CharsetUtil.UTF_8),
+                    bucket,
+                    msg.content().copy(),
                     addr.getHostName()
                 )
             );
         } else if (clazz.equals(GetRequest.class)) {
-            in.add(new GetResponse(status, cas, msg.content().copy()));
+            in.add(new GetResponse(status, cas, bucket, msg.content().copy()));
         } else if (clazz.equals(InsertRequest.class)) {
-            in.add(new InsertResponse(status, cas));
+            in.add(new InsertResponse(status, cas, bucket, msg.content().copy()));
         } else if (clazz.equals(UpsertRequest.class)) {
-            in.add(new UpsertResponse(status, cas));
+            in.add(new UpsertResponse(status, cas, bucket, msg.content().copy()));
         } else if (clazz.equals(ReplaceRequest.class)) {
-            in.add(new ReplaceResponse(status, cas));
+            in.add(new ReplaceResponse(status, cas, bucket, msg.content().copy()));
         } else if (clazz.equals(RemoveRequest.class)) {
-            in.add(new RemoveResponse(convertStatus(msg.getStatus())));
+            in.add(new RemoveResponse(convertStatus(msg.getStatus()), bucket, msg.content().copy()));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }

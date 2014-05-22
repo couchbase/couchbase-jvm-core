@@ -59,4 +59,6 @@ public interface ConfigurationProvider {
     Observable<ClusterConfig> closeBucket(String name);
 
     Observable<ClusterConfig> closeBuckets();
+
+    void proposeBucketConfig(String bucket, String config);
 }

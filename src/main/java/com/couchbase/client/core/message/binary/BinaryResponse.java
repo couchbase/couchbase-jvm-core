@@ -22,9 +22,19 @@
 package com.couchbase.client.core.message.binary;
 
 import com.couchbase.client.core.message.CouchbaseResponse;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Marker interface which signals a binary response.
  */
 public interface BinaryResponse extends CouchbaseResponse {
+
+    /**
+     * Contains the content of the response, potentially null or empty.
+     *
+     * @return the content.
+     */
+    ByteBuf content();
+
+    String bucket();
 }

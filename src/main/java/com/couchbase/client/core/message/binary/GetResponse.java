@@ -21,7 +21,6 @@
  */
 package com.couchbase.client.core.message.binary;
 
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
@@ -31,22 +30,17 @@ import io.netty.buffer.ByteBuf;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetResponse extends AbstractCouchbaseResponse implements BinaryResponse {
+public class GetResponse extends AbstractBinaryResponse {
 
-    private final ByteBuf content;
     private final long cas;
 
-    public GetResponse(final ResponseStatus status, final long cas, final ByteBuf content) {
-        super(status);
-        this.content = content;
+    public GetResponse(final ResponseStatus status, final long cas, final String bucket, final ByteBuf content) {
+        super(status, bucket, content);
         this.cas = cas;
-    }
-
-    public ByteBuf content() {
-        return content;
     }
 
     public long cas() {
         return cas;
     }
+
 }
