@@ -6,7 +6,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 public class SeedNodesResponse extends AbstractCouchbaseResponse {
 
     public SeedNodesResponse(ResponseStatus status) {
-        super(status);
+        super(status, null);
     }
 
 }

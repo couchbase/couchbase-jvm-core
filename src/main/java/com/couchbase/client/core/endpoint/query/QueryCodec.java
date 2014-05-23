@@ -103,11 +103,11 @@ public class QueryCodec extends MessageToMessageCodec<FullHttpResponse, QueryReq
             JsonNode root = mapper.readValue(msg.content().toString(CharsetUtil.UTF_8), JsonNode.class);
             if (root.has("resultset")) {
                 for(JsonNode result : root.path("resultset")) {
-                    out.add(new GenericQueryResponse(result.toString(), ResponseStatus.CHUNKED));
+                    out.add(new GenericQueryResponse(result.toString(), ResponseStatus.CHUNKED, null));
                 }
-                out.add(new GenericQueryResponse(null, ResponseStatus.SUCCESS)); // todo: fixme
+                out.add(new GenericQueryResponse(null, ResponseStatus.SUCCESS, null)); // todo: fixme
             } else if (root.has("error")) {
-                out.add(new GenericQueryResponse(root.get("error").toString(), ResponseStatus.FAILURE));
+                out.add(new GenericQueryResponse(root.get("error").toString(), ResponseStatus.FAILURE, null));
             } else {
                 throw new IllegalStateException("Dont know how to deal with that response.");
             }

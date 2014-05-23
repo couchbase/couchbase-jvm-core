@@ -34,13 +34,16 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
      */
     private final ResponseStatus status;
 
+    private final CouchbaseRequest request;
+
     /**
      * Sets the required properties for the response.
      *
      * @param status the status of the response.
      */
-    protected AbstractCouchbaseResponse(final ResponseStatus status) {
+    protected AbstractCouchbaseResponse(final ResponseStatus status, final CouchbaseRequest request) {
         this.status = status;
+        this.request = request;
     }
 
     @Override
@@ -54,7 +57,7 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
      * @return
      */
     @Override
-    public CouchbaseRequest toRequest() {
-        throw new ToRequestNotSupportedException();
+    public CouchbaseRequest request() {
+        return request;
     }
 }

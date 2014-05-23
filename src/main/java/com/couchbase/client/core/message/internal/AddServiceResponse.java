@@ -9,7 +9,7 @@ public class AddServiceResponse extends AbstractCouchbaseResponse implements Cou
     private final String hostname;
 
     public AddServiceResponse(final ResponseStatus status, final String hostname) {
-        super(status);
+        super(status, null);
         this.hostname = hostname;
     }
 

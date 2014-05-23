@@ -87,16 +87,9 @@ public class BinaryMessageTest {
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
         cluster.<UpsertResponse>send(upsert).toBlockingObservable().single();
 
-        while(true) {
-            for (int i = 0; i < 1024; i++) {
-                GetRequest request = new GetRequest(key + i, bucket);
-                try {
-                    cluster.<GetResponse>send(request).toBlockingObservable().single().content().toString(CharsetUtil.UTF_8);
-                } catch(Exception ex) {
-                    System.out.println(ex);
-                }
-            }
-        }
+        GetRequest request = new GetRequest(key, bucket);
+        assertEquals(content, cluster.<GetResponse>send(request).toBlockingObservable().single().content()
+            .toString(CharsetUtil.UTF_8));
     }
 
     @Test

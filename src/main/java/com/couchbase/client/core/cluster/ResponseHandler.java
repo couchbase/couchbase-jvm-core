@@ -6,7 +6,6 @@ import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.ToRequestNotSupportedException;
 import com.couchbase.client.core.message.binary.BinaryResponse;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorTwoArg;
@@ -85,14 +84,13 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         if (message instanceof CouchbaseRequest) {
             cluster.send((CouchbaseRequest) message);
         } else {
-            try {
-                cluster.send(((CouchbaseResponse) message).toRequest());
-            } catch (ToRequestNotSupportedException ex) {
-                System.out.println(message + " does not support cloning");
+            CouchbaseRequest request = ((CouchbaseResponse) message).request();
+            if (request != null) {
+                cluster.send(request);
+            } else {
                 event.getObservable().onError(new CouchbaseException("Operation failed because it does not " +
-                    "support cloning.", ex));
+                    "support cloning."));
             }
-
             if (message instanceof BinaryResponse) {
                 BinaryResponse response = (BinaryResponse) message;
                 if (response.content() != null && response.content().readableBytes() > 0) {

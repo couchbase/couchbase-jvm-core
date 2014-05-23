@@ -9,6 +9,6 @@ import com.couchbase.client.core.message.ResponseStatus;
 public class RemoveServiceResponse extends AbstractCouchbaseResponse {
 
     public RemoveServiceResponse(ResponseStatus status) {
-        super(status);
+        super(status, null);
     }
 }

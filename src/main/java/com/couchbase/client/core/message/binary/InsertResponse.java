@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.message.binary;
 
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
@@ -34,8 +35,8 @@ public class InsertResponse extends AbstractBinaryResponse {
 
     private long cas;
 
-    public InsertResponse(ResponseStatus status, long cas, String bucket, ByteBuf content) {
-        super(status, bucket, content);
+    public InsertResponse(ResponseStatus status, long cas, String bucket, ByteBuf content, CouchbaseRequest request) {
+        super(status, bucket, content, request);
         this.cas = cas;
     }
 

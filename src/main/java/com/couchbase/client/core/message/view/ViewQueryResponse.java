@@ -1,6 +1,7 @@
 package com.couchbase.client.core.message.view;
 
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -10,8 +11,8 @@ public class ViewQueryResponse extends AbstractCouchbaseResponse {
     private final ByteBuf content;
     private final int totalRows;
 
-    public ViewQueryResponse(ResponseStatus status, int totalRows, ByteBuf content) {
-        super(status);
+    public ViewQueryResponse(ResponseStatus status, int totalRows, ByteBuf content, CouchbaseRequest request) {
+        super(status, request);
         this.content = content;
         this.totalRows = totalRows;
     }

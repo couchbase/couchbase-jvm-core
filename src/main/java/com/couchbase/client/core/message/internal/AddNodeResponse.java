@@ -9,7 +9,7 @@ public class AddNodeResponse extends AbstractCouchbaseResponse implements Couchb
     private final String hostname;
 
     public AddNodeResponse(ResponseStatus status, String hostname) {
-        super(status);
+        super(status, null);
         this.hostname = hostname;
     }
 

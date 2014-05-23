@@ -1,6 +1,7 @@
 package com.couchbase.client.core.message.binary;
 
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
@@ -12,8 +13,8 @@ public abstract class AbstractBinaryResponse extends AbstractCouchbaseResponse i
     private final ByteBuf content;
     private final String bucket;
 
-    protected AbstractBinaryResponse(ResponseStatus status, String bucket, ByteBuf content) {
-        super(status);
+    protected AbstractBinaryResponse(ResponseStatus status, String bucket, ByteBuf content, CouchbaseRequest request) {
+        super(status, request);
         this.content = content;
         this.bucket = bucket;
     }

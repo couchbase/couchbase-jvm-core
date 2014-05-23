@@ -178,7 +178,7 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
                     ResponseStatus status = last ? ResponseStatus.SUCCESS : ResponseStatus.CHUNKED;
                     ByteBuf returnContent = currentChunk.readBytes(processor.marker());
                     if (processor.marker() > 0 || last) {
-                        in.add(new ViewQueryResponse(status, currentTotalRows, returnContent.copy()));
+                        in.add(new ViewQueryResponse(status, currentTotalRows, returnContent.copy(), null));
                         currentChunk.discardSomeReadBytes();
                     }
                     returnContent.release();

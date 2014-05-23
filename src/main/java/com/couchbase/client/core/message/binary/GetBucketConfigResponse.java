@@ -35,7 +35,7 @@ public class GetBucketConfigResponse extends AbstractBinaryResponse {
     private String hostname;
 
     public GetBucketConfigResponse(final ResponseStatus status, final String bucket, final ByteBuf content, final String hostname) {
-        super(status, bucket, content);
+        super(status, bucket, content, null);
         this.hostname = hostname;
     }
 

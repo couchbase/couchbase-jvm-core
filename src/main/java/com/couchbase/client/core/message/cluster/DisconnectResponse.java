@@ -33,6 +33,6 @@ import com.couchbase.client.core.message.ResponseStatus;
 public class DisconnectResponse extends AbstractCouchbaseResponse {
 
     public DisconnectResponse(ResponseStatus status) {
-        super(status);
+        super(status, null);
     }
 }

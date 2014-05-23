@@ -11,7 +11,7 @@ public class BucketConfigResponse extends AbstractCouchbaseResponse {
     private final String config;
 
     public BucketConfigResponse(String config, ResponseStatus status) {
-        super(status);
+        super(status, null);
         this.config = config;
     }
 

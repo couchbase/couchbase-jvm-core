@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.endpoint.binary;
 
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
@@ -62,7 +63,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     /**
      * The Queue which holds the request types so that proper decoding can happen async.
      */
-    private final Queue<Class<?>> queue;
+    private final Queue<BinaryRequest> queue;
 
     private String bucket;
 
@@ -70,7 +71,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * Creates a new {@link BinaryCodec} with the default dequeue.
      */
     public BinaryCodec() {
-        this(new ArrayDeque<Class<?>>());
+        this(new ArrayDeque<BinaryRequest>());
     }
 
     /**
@@ -78,7 +79,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      *
      * @param queue a custom queue to test encoding/decoding.
      */
-    public BinaryCodec(final Queue<Class<?>> queue) {
+    public BinaryCodec(final Queue<BinaryRequest> queue) {
         this.queue = queue;
     }
 
@@ -107,18 +108,23 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         }
 
         out.add(request);
-        queue.offer(msg.getClass());
+        queue.offer(msg);
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final FullBinaryMemcacheResponse msg,
                           final List<Object> in) throws Exception {
-        Class<?> clazz = queue.poll();
+        BinaryRequest current = queue.poll();
 
         ResponseStatus status = convertStatus(msg.getStatus());
+        CouchbaseRequest currentRequest = null;
+        if (status == ResponseStatus.RETRY) {
+            currentRequest = current;
+        }
+
         long cas = msg.getCAS();
-        if(clazz.equals(GetBucketConfigRequest.class)) {
+        if(current instanceof GetBucketConfigRequest) {
             InetSocketAddress addr = (InetSocketAddress) ctx.channel().remoteAddress();
             in.add(
                 new GetBucketConfigResponse(
@@ -128,16 +134,16 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
                     addr.getHostName()
                 )
             );
-        } else if (clazz.equals(GetRequest.class)) {
-            in.add(new GetResponse(status, cas, bucket, msg.content().copy()));
-        } else if (clazz.equals(InsertRequest.class)) {
-            in.add(new InsertResponse(status, cas, bucket, msg.content().copy()));
-        } else if (clazz.equals(UpsertRequest.class)) {
-            in.add(new UpsertResponse(status, cas, bucket, msg.content().copy()));
-        } else if (clazz.equals(ReplaceRequest.class)) {
-            in.add(new ReplaceResponse(status, cas, bucket, msg.content().copy()));
-        } else if (clazz.equals(RemoveRequest.class)) {
-            in.add(new RemoveResponse(convertStatus(msg.getStatus()), bucket, msg.content().copy()));
+        } else if (current instanceof GetRequest) {
+            in.add(new GetResponse(status, cas, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof InsertRequest) {
+            in.add(new InsertResponse(status, cas, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof UpsertRequest) {
+            in.add(new UpsertResponse(status, cas, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof ReplaceRequest) {
+            in.add(new ReplaceResponse(status, cas, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof RemoveRequest) {
+            in.add(new RemoveResponse(convertStatus(msg.getStatus()), bucket, msg.content().copy(), currentRequest));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
