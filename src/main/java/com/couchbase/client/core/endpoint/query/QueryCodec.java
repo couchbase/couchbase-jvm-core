@@ -91,6 +91,7 @@ public class QueryCodec extends MessageToMessageCodec<FullHttpResponse, QueryReq
         ByteBuf query = Unpooled.copiedBuffer(msg.query(), CharsetUtil.UTF_8);
         request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
         request.content().writeBytes(query);
+        query.release();
         return request;
     }
 
