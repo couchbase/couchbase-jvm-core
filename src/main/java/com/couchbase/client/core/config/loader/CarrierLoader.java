@@ -22,18 +22,16 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
 import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.net.InetAddress;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Loads a raw bucket configuration through the carrier mechanism (also commonly referred to as CCCP).
@@ -42,6 +40,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 1.0
  */
 public class CarrierLoader extends AbstractLoader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CarrierLoader.class);
 
     /**
      * Creates a new {@link CarrierLoader}.
@@ -54,12 +54,17 @@ public class CarrierLoader extends AbstractLoader {
     }
 
     @Override
-    protected int port(Environment env) {
-        return env.sslEnabled() ? env.bootstrapCarrierSslPort() : env.bootstrapCarrierDirectPort();
+    protected int port() {
+        return env().sslEnabled() ? env().bootstrapCarrierSslPort() : env().bootstrapCarrierDirectPort();
     }
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String password, final String hostname) {
+        System.out.println("carrier loader");
+        if (!env().bootstrapCarrierEnabled()) {
+            LOGGER.info("Carrier Bootstrap disabled, skipping.");
+            return Observable.error(new ConfigurationException("Carrier Bootstrap disabled through configuration."));
+        }
         return cluster()
             .<GetBucketConfigResponse>send(new GetBucketConfigRequest(bucket, hostname))
             .map(new Func1<GetBucketConfigResponse, String>() {
@@ -68,6 +73,8 @@ public class CarrierLoader extends AbstractLoader {
                     if (!response.status().isSuccess()) {
                         throw new IllegalStateException("Bucket config response did not return with success.");
                     }
+
+                    LOGGER.debug("Successfully loaded config through carrier.");
                     return replaceHostWildcard(response.content().toString(CharsetUtil.UTF_8), hostname);
                 }
             });

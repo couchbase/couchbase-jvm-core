@@ -234,7 +234,7 @@ public class AbstractLoaderTest {
         }
 
         @Override
-        protected int port(Environment env) {
+        protected int port() {
             return 1234;
         }
 

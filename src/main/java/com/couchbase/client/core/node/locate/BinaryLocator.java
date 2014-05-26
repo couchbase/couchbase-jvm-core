@@ -39,7 +39,7 @@ public class BinaryLocator implements Locator {
         } else if (bucket instanceof MemcacheBucketConfig) {
             return locateForMemcacheBucket((BinaryRequest) request, nodes, (MemcacheBucketConfig) bucket);
         } else {
-            throw new IllegalStateException("Unsupported Bucket Type: " + bucket);
+            throw new IllegalStateException("Unsupported Bucket Type: " + bucket + " for request " + request);
         }
     }
 

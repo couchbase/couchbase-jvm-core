@@ -22,6 +22,7 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -34,7 +35,6 @@ import rx.Observable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,7 +53,7 @@ public class HttpLoaderTest {
         Cluster cluster = mock(Cluster.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpDirectPort(), loader.port(environment));
+        assertEquals(environment.bootstrapHttpDirectPort(), loader.port());
     }
 
     @Test
@@ -64,7 +64,7 @@ public class HttpLoaderTest {
         Cluster cluster = mock(Cluster.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpSslPort(), loader.port(environment));
+        assertEquals(environment.bootstrapHttpSslPort(), loader.port());
     }
 
     @Test
@@ -119,6 +119,23 @@ public class HttpLoaderTest {
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
+        } catch(Exception ex) {
+            assertTrue(false);
+        }
+    }
+
+    @Test
+    public void shouldThrowIfDisabledThroughConfiguration() {
+        Environment environment = mock(Environment.class);
+        when(environment.bootstrapHttpEnabled()).thenReturn(false);
+        Cluster cluster = mock(Cluster.class);
+
+        HttpLoader loader = new HttpLoader(cluster, environment);
+        try {
+            loader.discoverConfig("bucket", "password", "hostname").toBlockingObservable().single();
+            assertTrue(false);
+        } catch(ConfigurationException ex) {
+            assertEquals("Http Bootstrap disabled through configuration.", ex.getMessage());
         } catch(Exception ex) {
             assertTrue(false);
         }

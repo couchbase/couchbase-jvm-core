@@ -22,6 +22,7 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -54,7 +55,7 @@ public class CarrierLoaderTest {
         Cluster cluster = mock(Cluster.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port(environment));
+        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port());
     }
 
     @Test
@@ -65,7 +66,7 @@ public class CarrierLoaderTest {
         Cluster cluster = mock(Cluster.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierSslPort(), loader.port(environment));
+        assertEquals(environment.bootstrapCarrierSslPort(), loader.port());
     }
 
     @Test
@@ -99,6 +100,23 @@ public class CarrierLoaderTest {
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
+        } catch(Exception ex) {
+            assertTrue(false);
+        }
+    }
+
+    @Test
+    public void shouldThrowIfDisabledThroughConfiguration() {
+        Environment environment = mock(Environment.class);
+        when(environment.bootstrapCarrierEnabled()).thenReturn(false);
+        Cluster cluster = mock(Cluster.class);
+
+        CarrierLoader loader = new CarrierLoader(cluster, environment);
+        try {
+            loader.discoverConfig("bucket", "password", "hostname").toBlockingObservable().single();
+            assertTrue(false);
+        } catch(ConfigurationException ex) {
+            assertEquals("Carrier Bootstrap disabled through configuration.", ex.getMessage());
         } catch(Exception ex) {
             assertTrue(false);
         }

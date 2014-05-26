@@ -48,7 +48,7 @@ import java.util.Set;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public abstract class AbstractLoader {
+public abstract class AbstractLoader implements Loader {
 
     /**
      * Jackson object mapper for JSON parsing.
@@ -87,13 +87,11 @@ public abstract class AbstractLoader {
      * Port to use for the {@link ServiceType}.
      *
      * This method needs to be implemented by the actual loader and defines the port which should be used to
-     * connect the service to. In practice, the actual port may depend on the environment which gets passed
-     * into the scope (i.e. if SSL is used or not).
+     * connect the service to. In practice, the actual port may depend on the environment (i.e. if SSL is used or not).
      *
-     * @param env the environment.
      * @return the port for the service to enable.
      */
-    protected abstract int port(Environment env);
+    protected abstract int port();
 
     /**
      * Run the {@link BucketConfig} discovery process.
@@ -133,7 +131,7 @@ public abstract class AbstractLoader {
                         return Observable.error(new IllegalStateException("Could not add node for config loading."));
                     }
                     return cluster.send(
-                            new AddServiceRequest(type, bucket, password, port(environment), response.hostname())
+                            new AddServiceRequest(type, bucket, password, port(), response.hostname())
                     );
                 }
             }).flatMap(new Func1<AddServiceResponse, Observable<String>>() {
@@ -166,6 +164,15 @@ public abstract class AbstractLoader {
      */
     protected Cluster cluster() {
         return cluster;
+    }
+
+    /**
+     * Returns the {@link Environment} for child implementations.
+     *
+     * @return the environment.
+     */
+    protected Environment env() {
+        return environment;
     }
 
     /**

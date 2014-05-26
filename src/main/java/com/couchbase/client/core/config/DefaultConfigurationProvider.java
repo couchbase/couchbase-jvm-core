@@ -25,6 +25,7 @@ import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.loader.CarrierLoader;
 import com.couchbase.client.core.config.loader.HttpLoader;
+import com.couchbase.client.core.config.loader.Loader;
 import com.couchbase.client.core.env.Environment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -34,6 +35,8 @@ import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -70,8 +73,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private final AtomicReference<Set<InetAddress>> seedHosts;
 
-    private final CarrierLoader carrierLoader;
-    private final HttpLoader httpLoader;
+    private final List<Loader> loaderChain;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -79,19 +82,50 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private volatile boolean bootstrapped;
 
+    private final Environment env;
+
+    /**
+     * Create a new {@link DefaultConfigurationProvider}.
+     *
+     * When this constructor is used, the default loader chain is populated (first carrier is tried and the http
+     * loader is registered as a fallback).
+     *
+     * @param cluster the cluster reference.
+     * @param environment the environment.
+     */
+    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment) {
+        this(
+            cluster,
+            environment,
+            Arrays.asList((Loader) new CarrierLoader(cluster, environment), new HttpLoader(cluster, environment))
+        );
+    }
+
     /**
      * Create a new {@link DefaultConfigurationProvider}.
      *
      * @param cluster the cluster reference.
+     * @param environment the environment.
+     * @param loaderChain the configuration loaders which will be tried in sequence.
      */
-    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment) {
+    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment,
+        final List<Loader> loaderChain) {
+        if (cluster == null) {
+            throw new IllegalArgumentException("A cluster reference needs to be provided");
+        }
+        if (loaderChain == null || loaderChain.isEmpty()) {
+            throw new IllegalArgumentException("At least one config loader needs to be provided");
+        }
         this.cluster = cluster;
+        this.loaderChain = loaderChain;
+
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<Set<InetAddress>>();
         bootstrapped = false;
         currentConfig = new AtomicReference<ClusterConfig>(new DefaultClusterConfig());
-        carrierLoader = new CarrierLoader(cluster, environment);
-        httpLoader = new HttpLoader(cluster, environment);
+
+
+        env = environment;
     }
 
     @Override
@@ -116,14 +150,25 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.from(currentConfig.get());
         }
 
-        return carrierLoader
-            .loadConfig(seedHosts.get(), bucket, password)
-            .onExceptionResumeNext(httpLoader.loadConfig(seedHosts.get(), bucket, password))
+
+        Observable<BucketConfig> observable = loaderChain.get(0).loadConfig(seedHosts.get(), bucket, password);
+        for (int i = 1; i < loaderChain.size(); i++) {
+            Observable<BucketConfig> nested = loaderChain.get(i).loadConfig(seedHosts.get(), bucket, password);
+            observable = observable.onErrorResumeNext(nested);
+        }
+
+        return
+            observable
             .map(new Func1<BucketConfig, ClusterConfig>() {
                 @Override
                 public ClusterConfig call(BucketConfig bucketConfig) {
                     upsertBucketConfig(bucket, bucketConfig);
                     return currentConfig.get();
+                }
+            }).onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
+                @Override
+                public Observable<ClusterConfig> call(Throwable throwable) {
+                    return Observable.error(new ConfigurationException("Could not open bucket.", throwable));
                 }
             });
     }

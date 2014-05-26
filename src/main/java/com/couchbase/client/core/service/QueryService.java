@@ -13,7 +13,7 @@ public class QueryService extends AbstractService {
     private static final EndpointFactory factory = new QueryEndpointFactory();
 
     public QueryService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.viewServiceEndpoints(), strategy, responseBuffer, factory);
+        super(hostname, bucket, password, port, env, env.queryServiceEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override

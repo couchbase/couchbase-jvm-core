@@ -22,19 +22,16 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.Environment;
-import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.TerseBucketConfigRequest;
 import com.couchbase.client.core.message.config.VerboseBucketConfigRequest;
 import com.couchbase.client.core.service.ServiceType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.net.InetAddress;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Loads a raw bucket configuration through the Couchbase Server HTTP config interface.
@@ -43,6 +40,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 1.0
  */
 public class HttpLoader extends AbstractLoader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpLoader.class);
 
     /**
      * Creates a new {@link HttpLoader}.
@@ -55,20 +54,29 @@ public class HttpLoader extends AbstractLoader {
     }
 
     @Override
-    protected int port(Environment env) {
-        return env.sslEnabled() ? env.bootstrapHttpSslPort() : env.bootstrapHttpDirectPort();
+    protected int port() {
+        return env().sslEnabled() ? env().bootstrapHttpSslPort() : env().bootstrapHttpDirectPort();
     }
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String password, final String hostname) {
+        System.out.println("http loader");
+        if (!env().bootstrapHttpEnabled()) {
+            LOGGER.info("HTTP Bootstrap disabled, skipping.");
+            return Observable.error(new ConfigurationException("Http Bootstrap disabled through configuration."));
+        }
+
         return cluster()
             .<BucketConfigResponse>send(new TerseBucketConfigRequest(hostname, bucket, password))
             .flatMap(new Func1<BucketConfigResponse, Observable<BucketConfigResponse>>() {
                 @Override
                 public Observable<BucketConfigResponse> call(BucketConfigResponse response) {
                     if (response.status().isSuccess()) {
+                        LOGGER.debug("Successfully got config from terse bucket remote.");
                         return Observable.just(response);
                     }
+
+                    LOGGER.debug("Terse bucket config failed, falling back to verbose.");
                     return cluster().send(new VerboseBucketConfigRequest(hostname, bucket, password));
                 }
             }).map(new Func1<BucketConfigResponse, String>() {
@@ -77,6 +85,8 @@ public class HttpLoader extends AbstractLoader {
                     if (!response.status().isSuccess()) {
                         throw new IllegalStateException("Bucket config response did not return with success.");
                     }
+
+                    LOGGER.debug("Successfully loaded config through HTTP.");
                     return replaceHostWildcard(response.config(), hostname);
                 }
             });

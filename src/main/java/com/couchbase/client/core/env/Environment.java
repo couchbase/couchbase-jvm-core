@@ -55,6 +55,9 @@ public interface Environment {
     boolean queryEnabled();
     int queryPort();
 
+    boolean bootstrapHttpEnabled();
+    boolean bootstrapCarrierEnabled();
+
     /**
      * The port to use when bootstrapping through HTTP without SSL.
      *
@@ -138,4 +141,12 @@ public interface Environment {
      * @return amount of endpoints per service.
      */
     int viewServiceEndpoints();
+
+
+    /**
+     * The number of query service endpoints.
+     *
+     * @return amount of endpoints per service.
+     */
+    int queryServiceEndpoints();
 }

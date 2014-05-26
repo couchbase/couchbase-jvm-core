@@ -10,7 +10,11 @@ import com.couchbase.client.core.message.binary.BinaryResponse;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorTwoArg;
 import io.netty.util.CharsetUtil;
+import rx.functions.Action0;
+import rx.schedulers.Schedulers;
 import rx.subjects.Subject;
+
+import java.util.concurrent.TimeUnit;
 
 public class ResponseHandler implements EventHandler<ResponseEvent> {
 
@@ -72,21 +76,19 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
             }
         } else if (message instanceof CouchbaseRequest) {
             retry(event);
-            cluster.send((CouchbaseRequest) message);
         } else {
             throw new IllegalStateException("Got message type I do not understand: " + message);
         }
     }
 
     private void retry(final ResponseEvent event) {
-        CouchbaseMessage message = event.getMessage();
-
+        final CouchbaseMessage message = event.getMessage();
         if (message instanceof CouchbaseRequest) {
-            cluster.send((CouchbaseRequest) message);
+            scheduleForRetry((CouchbaseRequest) message);
         } else {
             CouchbaseRequest request = ((CouchbaseResponse) message).request();
             if (request != null) {
-                cluster.send(request);
+                scheduleForRetry(request);
             } else {
                 event.getObservable().onError(new CouchbaseException("Operation failed because it does not " +
                     "support cloning."));
@@ -99,5 +101,14 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                 }
             }
         }
+    }
+
+    private void scheduleForRetry(final CouchbaseRequest request) {
+        Schedulers.computation().createWorker().schedule(new Action0() {
+            @Override
+            public void call() {
+                cluster.send(request);
+            }
+        }, 10, TimeUnit.MILLISECONDS);
     }
 }
