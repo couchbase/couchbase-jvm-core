@@ -42,11 +42,6 @@ public enum ServiceType {
     QUERY(BucketServiceMapping.ONE_FOR_ALL),
 
     /**
-     * UPR and TAP stream operations.
-     */
-    STREAM(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
      * 8091 config operations.
      */
     CONFIG(BucketServiceMapping.ONE_FOR_ALL);

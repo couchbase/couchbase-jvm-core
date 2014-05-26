@@ -11,9 +11,10 @@ public class ConfigService extends AbstractService {
 
     private static final SelectionStrategy strategy = new RandomSelectionStrategy();
     private static final EndpointFactory factory = new ConfigEndpointFactory();
+    private static final int INITIAL_ENDPOINTS = 1;
 
     public ConfigService(String hostname, String bucket, String password, int port, Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.configServiceEndpoints(), strategy, responseBuffer, factory);
+        super(hostname, bucket, password, port, env, INITIAL_ENDPOINTS, strategy, responseBuffer, factory);
     }
 
     @Override

@@ -24,9 +24,8 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
-import com.couchbase.client.core.message.config.TerseBucketConfigRequest;
-import com.couchbase.client.core.message.config.VerboseBucketConfigRequest;
 import com.couchbase.client.core.service.ServiceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +41,9 @@ import rx.functions.Func1;
 public class HttpLoader extends AbstractLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpLoader.class);
+
+    private static final String TERSE_PATH = "/pools/default/b/";
+    private static final String VERBOSE_PATH = "/pools/default/buckets/";
 
     /**
      * Creates a new {@link HttpLoader}.
@@ -60,14 +62,13 @@ public class HttpLoader extends AbstractLoader {
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String password, final String hostname) {
-        System.out.println("http loader");
         if (!env().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap disabled, skipping.");
             return Observable.error(new ConfigurationException("Http Bootstrap disabled through configuration."));
         }
 
         return cluster()
-            .<BucketConfigResponse>send(new TerseBucketConfigRequest(hostname, bucket, password))
+            .<BucketConfigResponse>send(new BucketConfigRequest(TERSE_PATH, hostname, bucket, password))
             .flatMap(new Func1<BucketConfigResponse, Observable<BucketConfigResponse>>() {
                 @Override
                 public Observable<BucketConfigResponse> call(BucketConfigResponse response) {
@@ -77,7 +78,7 @@ public class HttpLoader extends AbstractLoader {
                     }
 
                     LOGGER.debug("Terse bucket config failed, falling back to verbose.");
-                    return cluster().send(new VerboseBucketConfigRequest(hostname, bucket, password));
+                    return cluster().send(new BucketConfigRequest(VERBOSE_PATH, hostname, bucket, password));
                 }
             }).map(new Func1<BucketConfigResponse, String>() {
                 @Override

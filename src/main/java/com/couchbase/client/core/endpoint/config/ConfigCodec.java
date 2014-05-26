@@ -1,10 +1,9 @@
 package com.couchbase.client.core.endpoint.config;
 
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
-import com.couchbase.client.core.message.config.TerseBucketConfigRequest;
-import com.couchbase.client.core.message.config.VerboseBucketConfigRequest;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -44,10 +43,8 @@ public class ConfigCodec extends MessageToMessageCodec<FullHttpResponse, ConfigR
     @Override
     protected void encode(ChannelHandlerContext ctx, ConfigRequest msg, List<Object> out) throws Exception {
         HttpRequest request;
-        if (msg instanceof TerseBucketConfigRequest) {
-            request = handleTerseBucketConfigRequest(ctx, (TerseBucketConfigRequest) msg);
-        } else if (msg instanceof VerboseBucketConfigRequest) {
-            request = handleVerboseBucketConfigRequest(ctx, (VerboseBucketConfigRequest) msg);
+        if (msg instanceof BucketConfigRequest) {
+            request = handleBucketConfigRequest(ctx, (BucketConfigRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown Message to encode: " + msg);
         }
@@ -55,20 +52,14 @@ public class ConfigCodec extends MessageToMessageCodec<FullHttpResponse, ConfigR
         queue.offer(msg.getClass());
     }
 
-    private HttpRequest handleVerboseBucketConfigRequest(ChannelHandlerContext ctx, VerboseBucketConfigRequest msg) {
-        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, msg.path());
-    }
-
-    private HttpRequest handleTerseBucketConfigRequest(ChannelHandlerContext ctx, TerseBucketConfigRequest msg) {
+    private HttpRequest handleBucketConfigRequest(ChannelHandlerContext ctx, BucketConfigRequest msg) {
         return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, msg.path());
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, FullHttpResponse msg, List<Object> out) throws Exception {
         Class<?> request = queue.poll();
-        if (request.equals(VerboseBucketConfigRequest.class)) {
-            out.add(new BucketConfigResponse(msg.content().toString(CharsetUtil.UTF_8), ResponseStatus.SUCCESS));
-        } else if (request.equals(TerseBucketConfigRequest.class)) {
+        if (request.equals(BucketConfigRequest.class)) {
             out.add(new BucketConfigResponse(msg.content().toString(CharsetUtil.UTF_8), ResponseStatus.SUCCESS));
         }
     }

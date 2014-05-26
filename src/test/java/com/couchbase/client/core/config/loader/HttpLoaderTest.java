@@ -27,9 +27,8 @@ import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
-import com.couchbase.client.core.message.config.TerseBucketConfigRequest;
-import com.couchbase.client.core.message.config.VerboseBucketConfigRequest;
 import org.junit.Test;
 import rx.Observable;
 
@@ -74,7 +73,7 @@ public class HttpLoaderTest {
         Observable<CouchbaseResponse> response = Observable.from(
             (CouchbaseResponse) new BucketConfigResponse("myconfig", ResponseStatus.SUCCESS)
         );
-        when(cluster.send(isA(TerseBucketConfigRequest.class))).thenReturn(response);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(response);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");
@@ -91,8 +90,8 @@ public class HttpLoaderTest {
         Observable<CouchbaseResponse> verboseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse("verboseConfig", ResponseStatus.SUCCESS)
         );
-        when(cluster.send(isA(TerseBucketConfigRequest.class))).thenReturn(terseResponse);
-        when(cluster.send(isA(VerboseBucketConfigRequest.class))).thenReturn(verboseResponse);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");
@@ -109,8 +108,8 @@ public class HttpLoaderTest {
         Observable<CouchbaseResponse> verboseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
-        when(cluster.send(isA(TerseBucketConfigRequest.class))).thenReturn(terseResponse);
-        when(cluster.send(isA(VerboseBucketConfigRequest.class))).thenReturn(verboseResponse);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");

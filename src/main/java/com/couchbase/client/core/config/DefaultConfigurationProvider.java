@@ -82,8 +82,6 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private volatile boolean bootstrapped;
 
-    private final Environment env;
-
     /**
      * Create a new {@link DefaultConfigurationProvider}.
      *
@@ -123,9 +121,6 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         seedHosts = new AtomicReference<Set<InetAddress>>();
         bootstrapped = false;
         currentConfig = new AtomicReference<ClusterConfig>(new DefaultClusterConfig());
-
-
-        env = environment;
     }
 
     @Override
@@ -149,7 +144,6 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         if (currentConfig.get() != null && currentConfig.get().hasBucket(bucket)) {
             return Observable.from(currentConfig.get());
         }
-
 
         Observable<BucketConfig> observable = loaderChain.get(0).loadConfig(seedHosts.get(), bucket, password);
         for (int i = 1; i < loaderChain.size(); i++) {

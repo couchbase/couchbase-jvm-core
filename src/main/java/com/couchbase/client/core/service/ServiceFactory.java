@@ -43,8 +43,6 @@ public class ServiceFactory {
                 return new ViewService(hostname, bucket, password, port, env, responseBuffer);
             case CONFIG:
                 return new ConfigService(hostname, bucket, password, port, env, responseBuffer);
-            case STREAM:
-                return new StreamService(hostname, bucket, password, port, env, responseBuffer);
             case QUERY:
                 return new QueryService(hostname, bucket, password, port, env, responseBuffer);
             default:

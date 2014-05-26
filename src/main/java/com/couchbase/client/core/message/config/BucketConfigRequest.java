@@ -2,15 +2,17 @@ package com.couchbase.client.core.message.config;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
-public class TerseBucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
+public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 
     private static final String PATH = "/pools/default/b/";
 
     private final String hostname;
+    private final String path;
 
-    public TerseBucketConfigRequest(String hostname, String bucket, String password) {
+    public BucketConfigRequest(String path, String hostname, String bucket, String password) {
         super(bucket, password);
         this.hostname = hostname;
+        this.path = path;
     }
 
     public String hostname() {
@@ -18,6 +20,6 @@ public class TerseBucketConfigRequest extends AbstractCouchbaseRequest implement
     }
 
     public String path() {
-        return PATH + bucket();
+        return path + bucket();
     }
 }

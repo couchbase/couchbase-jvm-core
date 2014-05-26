@@ -162,21 +162,13 @@ public class DefaultServiceRegistryTest {
         Service service1 = mock(Service.class);
         when(service1.type()).thenReturn(ServiceType.BINARY);
         when(service1.mapping()).thenReturn(ServiceType.BINARY.mapping());
-        Service service2 = mock(Service.class);
-        when(service2.type()).thenReturn(ServiceType.STREAM);
-        when(service2.mapping()).thenReturn(ServiceType.STREAM.mapping());
 
         registry.addService(service1, "bucket");
-        registry.addService(service2, "bucket");
 
-        assertEquals(1, local.size());
-        assertEquals(2, local.get("bucket").size());
-
-        registry.removeService(service1, "bucket");
         assertEquals(1, local.size());
         assertEquals(1, local.get("bucket").size());
 
-        registry.removeService(service2, "bucket");
+        registry.removeService(service1, "bucket");
         assertEquals(0, local.size());
     }
 
