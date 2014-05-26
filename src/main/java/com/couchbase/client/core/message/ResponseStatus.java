@@ -39,6 +39,13 @@ public enum ResponseStatus {
      * The underlying response is ok, but more chunks to follow. A chunk is followed by SUCCESS or failure
      * messages.
      */
-    CHUNKED
+    CHUNKED;
+
+    /**
+     * Check if the current {@link ResponseStatus} is success.
+     */
+    public boolean isSuccess() {
+        return this == ResponseStatus.SUCCESS;
+    }
 
 }
