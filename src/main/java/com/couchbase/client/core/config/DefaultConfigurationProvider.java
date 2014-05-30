@@ -41,7 +41,38 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * The default implementation of a {@link ConfigurationProvider}.
+ * **The default implementation of a {@link ConfigurationProvider}.**
+ *
+ * The {@link ConfigurationProvider} is the central orchestrator for configuration management. Observers can subscribe
+ * bucket and cluster configurations from this component. Behind the scenes, it facilitates configuration loaders and
+ * configuration refreshers that grab initial configurations and keep them refreshed respectively. The structure
+ * looks like this:
+ *
+ * ![Configuration Provider Architecture](architecture.png)
+ *
+ * @startuml architecture.png
+ *
+ * [ConfigurationProvider] --> [Config from REST]
+ * [ConfigurationProvider] --> [Config from Carrier]
+ *
+ * package "Config from REST" {
+ *   [HttpLoader]
+ *   [HttpRefresher]
+ * }
+ *
+ * [HttpLoader] --> 8091
+ * [HttpRefresher] --> 8091
+ *
+ * package "Config from Carrier" {
+ *     [CarrierLoader]
+ *     [CarrierRefresher]
+ * }
+ *
+ * [CarrierLoader] --> 11210
+ * [CarrierRefresher] --> 11210
+ *
+ *
+ * @enduml
  *
  * @author Michael Nitschinger
  * @since 1.0

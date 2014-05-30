@@ -19,59 +19,67 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
-package com.couchbase.client.core.state;
+package com.couchbase.client.core.lang;
 
 /**
- * **Represents common lifecycle states of components.**
+ * A container for two values.
  *
- * The {@link LifecycleState}s are usually combined with the {@link AbstractStateMachine} to build up a state-machine
- * like, observable component that can be subscribed from external components.
+ * Use the corresponding {@link Tuple#create(Object, Object)} method to instantiate this tuple.
  *
- * ![State Transitions](transitions.png)
- *
- * @startuml transitions.png
- *
- * [*] --> Disconnected
- * Disconnected --> Connecting
- * Connecting --> Disconnected
- * Connecting --> Connected
- * Connecting --> Degraded
- * Connected --> Disconnecting
- * Connected --> Degraded
- * Degraded --> Connected
- * Disconnecting -> Disconnected
- *
- * @enduml
+ * @param <T1> the type of the first value.
+ * @param <T2> the type of the second value.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public enum LifecycleState {
+public final class Tuple2<T1, T2> {
 
     /**
-     * The component is currently disconnected.
+     * The first value.
      */
-    DISCONNECTED,
+    private final T1 value1;
 
     /**
-     * The component is currently connecting or reconnecting.
+     * The second value.
      */
-    CONNECTING,
+    private final T2 value2;
 
     /**
-     * The component is connected without degradation.
+     * Create a new {@link Tuple2}.
+     *
+     * @param value1 the first value.
+     * @param value2 the second value.
      */
-    CONNECTED,
+    Tuple2(final T1 value1, final T2 value2) {
+        this.value1 = value1;
+        this.value2 = value2;
+    }
 
     /**
-     * The component is disconnecting.
+     * Get the first value.
+     *
+     * @return the first value.
      */
-    DISCONNECTING,
+    public T1 value1() {
+        return value1;
+    }
 
     /**
-     * The component is connected, but with service degradation.
+     * Get the second value.
+     *
+     * @return the second value.
      */
-    DEGRADED
+    public T2 value2() {
+        return value2;
+    }
+
+    /**
+     * Create a new {@link Tuple2} where the two values are swapped.
+     *
+     * @return the swapped values in a new tuple.
+     */
+    public Tuple2<T2, T1> swap() {
+        return new Tuple2<T2, T1>(value2, value1);
+    }
 
 }
