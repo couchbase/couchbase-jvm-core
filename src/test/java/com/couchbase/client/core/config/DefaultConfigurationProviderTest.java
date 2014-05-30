@@ -23,14 +23,18 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.loader.Loader;
+import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.lang.Tuple;
+import com.couchbase.client.core.lang.Tuple2;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.subjects.AsyncSubject;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -59,9 +63,16 @@ public class DefaultConfigurationProviderTest {
         Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(mock(BucketConfig.class)));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
 
-        ConfigurationProvider provider = new DefaultConfigurationProvider(cluster, environment, Arrays.asList(loader));
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            environment,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, mock(Refresher.class));
+            }}
+        );
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlockingObservable().first();
@@ -78,13 +89,20 @@ public class DefaultConfigurationProviderTest {
         Loader successLoader = mock(Loader.class);
         Loader errorLoader = mock(Loader.class);
         when(successLoader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(mock(BucketConfig.class)));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
         AsyncSubject<BucketConfig> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn((Observable) errorSubject);
         errorSubject.onError(new IllegalStateException());
 
-        ConfigurationProvider provider = new DefaultConfigurationProvider(cluster, environment,
-            Arrays.asList(errorLoader, successLoader));
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            environment,
+            Arrays.asList(errorLoader, successLoader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, mock(Refresher.class));
+                put(LoaderType.HTTP, mock(Refresher.class));
+            }}
+        );
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlockingObservable().first();
@@ -98,9 +116,16 @@ public class DefaultConfigurationProviderTest {
         Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(mock(BucketConfig.class)));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
 
-        ConfigurationProvider provider = new DefaultConfigurationProvider(cluster, environment, Arrays.asList(loader));
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            environment,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, mock(Refresher.class));
+            }}
+        );
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicReference<ClusterConfig> configReference = new AtomicReference<ClusterConfig>();
         provider.configs().subscribe(new Action1<ClusterConfig>() {
@@ -124,11 +149,17 @@ public class DefaultConfigurationProviderTest {
         Cluster cluster = mock(Cluster.class);
         Environment environment = new CouchbaseEnvironment();
         Loader errorLoader = mock(Loader.class);
-        AsyncSubject<BucketConfig> errorSubject = AsyncSubject.create();
+        AsyncSubject<Tuple2<LoaderType, BucketConfig>> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn(errorSubject);
         errorSubject.onError(new IllegalStateException());
-        ConfigurationProvider provider = new DefaultConfigurationProvider(cluster, environment,
-            Arrays.asList(errorLoader));
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            environment,
+            Arrays.asList(errorLoader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, mock(Refresher.class));
+            }}
+        );
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         try {

@@ -19,53 +19,49 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.util;
+package com.couchbase.client.core.config.refresher;
+
+import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ConfigurationProvider;
+import rx.Observable;
 
 /**
- * Helper class to centralize test properties that can be modified through system properties.
+ * A {@link Refresher} keeps bucket configs up to date.
+ *
+ * The refresher is the companion behavior to the loader. The loader does the initial loading and the refresher does
+ * its best to keep the {@link ConfigurationProvider} informed with an up-to-date configuration for a bucket.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class TestProperties {
-
-    private static String seedNode;
-    private static String bucket;
-    private static String password;
+public interface Refresher {
 
     /**
-     * Initialize static the properties.
-     */
-    static {
-        seedNode = System.getProperty("seedNode", "192.168.56.101");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
-    }
-
-    /**
-     * The seed node to bootstrap from.
+     * Returns the {@link Observable} which will push out new configuration updates.
      *
-     * @return the seed node.
+     * @return the config observable.
      */
-    public static String seedNode() {
-        return seedNode;
-    }
+    Observable<BucketConfig> configs();
 
     /**
-     * The bucket to work against.
+     * Registers a bucket to be watched for new configurations.
      *
-     * @return the name of the bucket.
+     * @return true if it succeeded, a failing {@link Observable} otherwise with the cause.
      */
-    public static String bucket() {
-        return bucket;
-    }
+    Observable<Boolean> registerBucket(String name, String password);
 
     /**
-     * The password of the bucket.
+     * De-registers a bucket from watching.
      *
-     * @return the password of the bucket.
+     * @return true if succeeded, a failing {@link Observable} otherwise with the cause.
      */
-    public static String password() {
-        return password;
-    }
+    Observable<Boolean> deregisterBucket(String name);
+
+    /**
+     * Shuts down all open registration streams.
+     *
+     * @return true if succeeded, a failing {@link Observable} otherwise with the cause.
+     */
+    Observable<Boolean> shutdown();
+
 }

@@ -21,16 +21,18 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.LoaderType;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.lang.Tuple;
+import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
@@ -51,11 +53,6 @@ import java.util.Set;
 public abstract class AbstractLoader implements Loader {
 
     /**
-     * Jackson object mapper for JSON parsing.
-     */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    /**
      * The reference to the cluster.
      */
     private final Cluster cluster;
@@ -66,19 +63,22 @@ public abstract class AbstractLoader implements Loader {
     private final Environment environment;
 
     /**
-     * The service type from the actual loader implementation.
+     * The service serviceType from the actual loader implementation.
      */
-    private final ServiceType type;
+    private final ServiceType serviceType;
+
+    private final LoaderType loaderType;
 
     /**
      * Create a new {@link AbstractLoader}.
      *
-     * @param type the service type.
+     * @param serviceType the service serviceType.
      * @param cluster the cluster reference.
      * @param environment the couchbase environment.
      */
-    protected AbstractLoader(final ServiceType type, final Cluster cluster, final Environment environment) {
-        this.type = type;
+    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final Cluster cluster, final Environment environment) {
+        this.loaderType = loaderType;
+        this.serviceType = serviceType;
         this.cluster = cluster;
         this.environment = environment;
     }
@@ -115,7 +115,7 @@ public abstract class AbstractLoader implements Loader {
      * @param password the password of the bucket.
      * @return a valid {@link BucketConfig}.
      */
-    public Observable<BucketConfig> loadConfig(final Set<InetAddress> seedNodes, final String bucket,
+    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes, final String bucket,
         final String password) {
         return Observable
             .from(seedNodes, Schedulers.computation())
@@ -131,7 +131,7 @@ public abstract class AbstractLoader implements Loader {
                         return Observable.error(new IllegalStateException("Could not add node for config loading."));
                     }
                     return cluster.send(
-                            new AddServiceRequest(type, bucket, password, port(), response.hostname())
+                            new AddServiceRequest(serviceType, bucket, password, port(), response.hostname())
                     );
                 }
             }).flatMap(new Func1<AddServiceResponse, Observable<String>>() {
@@ -143,16 +143,12 @@ public abstract class AbstractLoader implements Loader {
 
                     return discoverConfig(bucket, password, response.hostname());
                 }
-            }).map(new Func1<String, BucketConfig>() {
+            }).map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
                 @Override
-                public BucketConfig call(final String rawConfig) {
-                    try {
-                        BucketConfig config = OBJECT_MAPPER.readValue(rawConfig, BucketConfig.class);
-                        config.password(password);
-                        return config;
-                    } catch (Exception ex) {
-                        throw new CouchbaseException("Could not parse configuration", ex);
-                    }
+                public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {
+                    BucketConfig config = BucketConfigParser.parse(rawConfig);
+                    config.password(password);
+                    return Tuple.create(loaderType, config);
                 }
             });
     }

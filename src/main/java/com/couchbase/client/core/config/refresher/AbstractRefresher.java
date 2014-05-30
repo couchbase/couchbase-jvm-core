@@ -1,0 +1,90 @@
+/**
+ * Copyright (C) 2014 Couchbase, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
+ * IN THE SOFTWARE.
+ */
+package com.couchbase.client.core.config.refresher;
+
+import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rx.Observable;
+import rx.subjects.PublishSubject;
+
+/**
+ * Common implementation for all refreshers.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
+public abstract  class AbstractRefresher implements Refresher {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Refresher.class);
+
+    /**
+     * The config stream where the provider subscribes to.
+     */
+    private final PublishSubject<BucketConfig> configStream;
+
+    /**
+     * Cluster reference so that implementations can call requests.
+     */
+    private final Cluster cluster;
+
+    /**
+     * Creates a new {@link AbstractRefresher}.
+     *
+     * @param cluster the cluster reference.
+     */
+    protected AbstractRefresher(final Cluster cluster) {
+        this.configStream = PublishSubject.create();
+        this.cluster = cluster;
+    }
+
+    @Override
+    public Observable<BucketConfig> configs() {
+        return configStream;
+    }
+
+    /**
+     * Push a {@link BucketConfig} into the config stream.
+     *
+     * @param config the config to push.
+     */
+    protected void pushConfig(final String config) {
+        try {
+            configStream.onNext(BucketConfigParser.parse(config));
+        } catch (CouchbaseException e) {
+            LOGGER.warn("Exception while pushing new configuration - ignoring.", e);
+        }
+    }
+
+    /**
+     * Returns the cluster reference.
+     *
+     * @return the cluster reference.
+     */
+    protected Cluster cluster() {
+        return cluster;
+    }
+
+}

@@ -19,53 +19,35 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.util;
+package com.couchbase.client.core.config.refresher;
+
+import com.couchbase.client.core.cluster.Cluster;
+import rx.Observable;
 
 /**
- * Helper class to centralize test properties that can be modified through system properties.
+ * Keeps the bucket config fresh through carrier configuration management.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class TestProperties {
+public class CarrierRefresher extends AbstractRefresher {
 
-    private static String seedNode;
-    private static String bucket;
-    private static String password;
-
-    /**
-     * Initialize static the properties.
-     */
-    static {
-        seedNode = System.getProperty("seedNode", "192.168.56.101");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
+    public CarrierRefresher(final Cluster cluster) {
+        super(cluster);
     }
 
-    /**
-     * The seed node to bootstrap from.
-     *
-     * @return the seed node.
-     */
-    public static String seedNode() {
-        return seedNode;
+    @Override
+    public Observable<Boolean> registerBucket(final String name, final String password) {
+        return null;
     }
 
-    /**
-     * The bucket to work against.
-     *
-     * @return the name of the bucket.
-     */
-    public static String bucket() {
-        return bucket;
+    @Override
+    public Observable<Boolean> deregisterBucket(final String name) {
+        return null;
     }
 
-    /**
-     * The password of the bucket.
-     *
-     * @return the password of the bucket.
-     */
-    public static String password() {
-        return password;
+    @Override
+    public Observable<Boolean> shutdown() {
+        return null;
     }
 }

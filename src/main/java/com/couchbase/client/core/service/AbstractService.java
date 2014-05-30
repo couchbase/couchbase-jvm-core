@@ -57,6 +57,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;
     private final RingBuffer<ResponseEvent> responseBuffer;
+    protected List<Observable<LifecycleState>> endpointStates;
 
     protected AbstractService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
         SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer, EndpointFactory factory) {
@@ -64,7 +65,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
 
         this.strategy = strategy;
         this.responseBuffer = responseBuffer;
-        List<Observable<LifecycleState>> endpointStates = new ArrayList<Observable<LifecycleState>>();
+        endpointStates = new ArrayList<Observable<LifecycleState>>();
         endpoints = new Endpoint[numEndpoints];
         for (int i = 0; i < numEndpoints; i++) {
             Endpoint endpoint = factory.create(hostname, bucket, password, port, env, responseBuffer);

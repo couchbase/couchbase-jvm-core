@@ -23,6 +23,7 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
@@ -52,7 +53,7 @@ public class HttpLoader extends AbstractLoader {
      * @param environment the environment to use.
      */
     public HttpLoader(Cluster cluster, Environment environment) {
-        super(ServiceType.CONFIG, cluster, environment);
+        super(LoaderType.HTTP, ServiceType.CONFIG, cluster, environment);
     }
 
     @Override

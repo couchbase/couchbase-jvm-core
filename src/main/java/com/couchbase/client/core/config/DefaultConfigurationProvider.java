@@ -21,22 +21,28 @@
  */
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.loader.CarrierLoader;
 import com.couchbase.client.core.config.loader.HttpLoader;
 import com.couchbase.client.core.config.loader.Loader;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
+import com.couchbase.client.core.config.refresher.CarrierRefresher;
+import com.couchbase.client.core.config.refresher.HttpRefresher;
+import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.Environment;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.couchbase.client.core.lang.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -105,8 +111,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     private final AtomicReference<Set<InetAddress>> seedHosts;
 
     private final List<Loader> loaderChain;
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final Map<LoaderType, Refresher> refreshers;
 
     /**
      * Signals if the provider is bootstrapped and serving configs.
@@ -126,7 +131,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         this(
             cluster,
             environment,
-            Arrays.asList((Loader) new CarrierLoader(cluster, environment), new HttpLoader(cluster, environment))
+            Arrays.asList((Loader) new CarrierLoader(cluster, environment), new HttpLoader(cluster, environment)),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, new CarrierRefresher(cluster));
+                put(LoaderType.HTTP, new HttpRefresher(cluster));
+            }}
         );
     }
 
@@ -138,7 +147,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param loaderChain the configuration loaders which will be tried in sequence.
      */
     public DefaultConfigurationProvider(final Cluster cluster, final Environment environment,
-        final List<Loader> loaderChain) {
+        final List<Loader> loaderChain, final Map<LoaderType, Refresher> refreshers) {
         if (cluster == null) {
             throw new IllegalArgumentException("A cluster reference needs to be provided");
         }
@@ -147,11 +156,24 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
         this.cluster = cluster;
         this.loaderChain = loaderChain;
+        this.refreshers = refreshers;
 
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<Set<InetAddress>>();
         bootstrapped = false;
         currentConfig = new AtomicReference<ClusterConfig>(new DefaultClusterConfig());
+
+        Observable.from(refreshers.values()).flatMap(new Func1<Refresher, Observable<BucketConfig>>() {
+            @Override
+            public Observable<BucketConfig> call(Refresher refresher) {
+                return refresher.configs();
+            }
+        }).subscribe(new Action1<BucketConfig>() {
+            @Override
+            public void call(BucketConfig bucketConfig) {
+                upsertBucketConfig(bucketConfig);
+            }
+        });
     }
 
     @Override
@@ -176,18 +198,26 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.from(currentConfig.get());
         }
 
-        Observable<BucketConfig> observable = loaderChain.get(0).loadConfig(seedHosts.get(), bucket, password);
+        Observable<Tuple2<LoaderType, BucketConfig>> observable = loaderChain.get(0).loadConfig(seedHosts.get(),
+            bucket, password);
         for (int i = 1; i < loaderChain.size(); i++) {
-            Observable<BucketConfig> nested = loaderChain.get(i).loadConfig(seedHosts.get(), bucket, password);
-            observable = observable.onErrorResumeNext(nested);
+            observable = observable.onErrorResumeNext(
+                loaderChain.get(i).loadConfig(seedHosts.get(), bucket, password)
+            );
         }
 
         return
             observable
-            .map(new Func1<BucketConfig, ClusterConfig>() {
+            .doOnNext(new Action1<Tuple2<LoaderType, BucketConfig>>() {
                 @Override
-                public ClusterConfig call(BucketConfig bucketConfig) {
-                    upsertBucketConfig(bucket, bucketConfig);
+                public void call(final Tuple2<LoaderType, BucketConfig> tuple) {
+                    registerBucketForRefresh(tuple.value1(), tuple.value2());
+                }
+            })
+            .map(new Func1<Tuple2<LoaderType, BucketConfig>, ClusterConfig>() {
+                @Override
+                public ClusterConfig call(final Tuple2<LoaderType, BucketConfig> tuple) {
+                    upsertBucketConfig(tuple.value2());
                     return currentConfig.get();
                 }
             }).onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
@@ -223,13 +253,25 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public void proposeBucketConfig(String bucket, String rawConfig) {
-        try {
-            BucketConfig config = OBJECT_MAPPER.readValue(rawConfig, BucketConfig.class);
-            config.password(currentConfig.get().bucketConfig(bucket).password());
-            upsertBucketConfig(bucket, config);
-        } catch (Exception ex) {
-            throw new CouchbaseException("Could not parse configuration", ex);
+        BucketConfig config = BucketConfigParser.parse(rawConfig);
+        config.password(currentConfig.get().bucketConfig(bucket).password());
+        upsertBucketConfig(config);
+    }
+
+    /**
+     * Helper method which registers (after a {@link #openBucket(String, String)} call) the bucket for config
+     * refreshes.
+     *
+     * @param loaderType the type of the lader used to determine the proper refresher.
+     * @param bucketConfig the config itself.
+     */
+    private void registerBucketForRefresh(final LoaderType loaderType, final BucketConfig bucketConfig) {
+        Refresher refresher = refreshers.get(loaderType);
+        if (refresher == null) {
+            throw new IllegalStateException("Could not find refresher for loader type: " + loaderType);
         }
+
+        refresher.registerBucket(bucketConfig.name(), bucketConfig.password()).subscribe();
     }
 
     /**
@@ -237,12 +279,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      *
      * This method also sends out an update to the subject afterwards, so that observers are notified.
      *
-     * @param name the name of the bucket.
      * @param config the configuration of the bucket.
      */
-    private void upsertBucketConfig(final String name, final BucketConfig config) {
+    private void upsertBucketConfig(final BucketConfig config) {
         ClusterConfig cluster = currentConfig.get();
-        cluster.setBucketConfig(name, config);
+        cluster.setBucketConfig(config.name(), config);
         currentConfig.set(cluster);
         configObservable.onNext(currentConfig.get());
     }

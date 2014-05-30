@@ -23,6 +23,7 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
@@ -50,7 +51,7 @@ public class CarrierLoader extends AbstractLoader {
      * @param environment the environment to use.
      */
     public CarrierLoader(Cluster cluster, Environment environment) {
-        super(ServiceType.BINARY, cluster, environment);
+        super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
     }
 
     @Override

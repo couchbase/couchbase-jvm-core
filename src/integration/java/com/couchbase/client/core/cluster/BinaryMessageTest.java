@@ -46,6 +46,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -64,6 +66,7 @@ public class BinaryMessageTest {
 
     @BeforeClass
     public static void connect() {
+        System.setProperty("com.couchbase.client.bootstrap.carrier.enabled", "false");
         cluster = new CouchbaseCluster();
         cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
                 new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
@@ -90,6 +93,12 @@ public class BinaryMessageTest {
         GetRequest request = new GetRequest(key, bucket);
         assertEquals(content, cluster.<GetResponse>send(request).toBlockingObservable().single().content()
             .toString(CharsetUtil.UTF_8));
+
+        try {
+            Thread.sleep(TimeUnit.MINUTES.toMillis(60));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

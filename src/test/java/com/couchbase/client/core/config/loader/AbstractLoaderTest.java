@@ -23,8 +23,10 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
@@ -38,14 +40,16 @@ import rx.Observable;
 import rx.Subscriber;
 
 import java.net.InetAddress;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,9 +77,9 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("localhost"));
 
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
-        BucketConfig loadedConfig = configObservable.toBlockingObservable().single();
+        BucketConfig loadedConfig = configObservable.toBlockingObservable().single().value2();
         assertEquals("default", loadedConfig.name());
         assertEquals(1, loadedConfig.nodes().size());
     }
@@ -96,9 +100,9 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("10.1.1.3"));
 
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
-        List<BucketConfig> loadedConfigs = configObservable.toList().toBlockingObservable().single();
+        List<Tuple2<LoaderType, BucketConfig>> loadedConfigs = configObservable.toList().toBlockingObservable().single();
         assertEquals(3, loadedConfigs.size());
     }
 
@@ -116,7 +120,7 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("localhost"));
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
             configObservable.toBlockingObservable().single();
@@ -144,12 +148,12 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("10.1.1.3"));
 
         InstrumentedLoader loader = new InstrumentedLoader(2, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         final CountDownLatch latch = new CountDownLatch(1);
         final AtomicInteger success = new AtomicInteger();
         final AtomicInteger failure = new AtomicInteger();
-        configObservable.subscribe(new Subscriber<BucketConfig>() {
+        configObservable.subscribe(new Subscriber<Tuple2<LoaderType, BucketConfig>>() {
             @Override
             public void onCompleted() {
             }
@@ -161,7 +165,7 @@ public class AbstractLoaderTest {
             }
 
             @Override
-            public void onNext(BucketConfig bucketConfigs) {
+            public void onNext(Tuple2<LoaderType, BucketConfig> bucketConfigs) {
                 success.incrementAndGet();
             }
         });
@@ -181,7 +185,7 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("localhost"));
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
             configObservable.toBlockingObservable().single();
@@ -207,7 +211,7 @@ public class AbstractLoaderTest {
         seedNodes.add(InetAddress.getByName("localhost"));
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
-        Observable<BucketConfig> configObservable = loader.loadConfig(seedNodes, "default", "password");
+        Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
             configObservable.toBlockingObservable().single();
@@ -228,7 +232,7 @@ public class AbstractLoaderTest {
         private volatile int failCounter = 0;
 
         InstrumentedLoader(int failAfter, String config, Cluster cluster, Environment environment) {
-            super(ServiceType.BINARY, cluster, environment);
+            super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
             this.config = config;
             this.failAfter = failAfter;
         }
