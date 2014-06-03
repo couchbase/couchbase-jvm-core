@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.node;
 
-import com.couchbase.client.core.cluster.ResponseEvent;
-import com.couchbase.client.core.cluster.ResponseHandler;
+import com.couchbase.client.core.ResponseEvent;
+import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -36,6 +36,7 @@ import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.net.InetAddress;
 import java.util.List;
 
 /**
@@ -55,7 +56,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     /**
      * The hostname or IP address of the node.
      */
-    private final String hostname;
+    private final InetAddress hostname;
 
     private final Environment environment;
 
@@ -69,12 +70,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      */
     private final ServiceRegistry serviceRegistry;
 
-    public CouchbaseNode(final String hostname, final Environment environment,
+    public CouchbaseNode(final InetAddress hostname, final Environment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
         this(hostname, new DefaultServiceRegistry(), environment, responseBuffer);
     }
 
-    CouchbaseNode(String hostname, ServiceRegistry registry, final Environment environment,
+    CouchbaseNode(InetAddress hostname, ServiceRegistry registry, final Environment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;
@@ -100,7 +101,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     }
 
     @Override
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 
@@ -123,19 +124,23 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> disconnect() {
-        return Observable.from(serviceRegistry.services()).flatMap(new Func1<Service, Observable<LifecycleState>>() {
-            @Override
-            public Observable<LifecycleState> call(final Service service) {
-                return service.disconnect();
-            }
-        }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
-            @Override
-            public LifecycleState call(final List<LifecycleState> serviceStates) {
-                LifecycleState nodeState = calculateStateFrom(serviceStates);
-                transitionState(nodeState);
-                return nodeState;
-            }
-        });
+        return Observable
+            .from(serviceRegistry.services())
+            .flatMap(new Func1<Service, Observable<LifecycleState>>() {
+                @Override
+                public Observable<LifecycleState> call(final Service service) {
+                    return service.disconnect();
+                }
+            })
+            .toList()
+            .map(new Func1<List<LifecycleState>, LifecycleState>() {
+                @Override
+                public LifecycleState call(final List<LifecycleState> serviceStates) {
+                    LifecycleState nodeState = calculateStateFrom(serviceStates);
+                    transitionState(nodeState);
+                    return nodeState;
+                }
+            });
     }
 
     @Override
@@ -146,7 +151,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         }
 
         final Service service = ServiceFactory.create(
-            request.hostname(),
+            request.hostname().getHostName(),
             request.bucket(),
             request.password(),
             request.port(),

@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.cluster.ResponseEvent;
-import com.couchbase.client.core.cluster.ResponseHandler;
+import com.couchbase.client.core.ResponseEvent;
+import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;

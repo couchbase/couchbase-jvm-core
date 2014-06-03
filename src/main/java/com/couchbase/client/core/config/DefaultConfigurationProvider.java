@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.loader.CarrierLoader;
 import com.couchbase.client.core.config.loader.HttpLoader;
 import com.couchbase.client.core.config.loader.Loader;
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
@@ -93,7 +94,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     /**
      * Reference to the cluster to issue config fetching commands.
      */
-    private final Cluster cluster;
+    private final ClusterFacade cluster;
 
     /**
      * The observable which will push out new config changes to interested parties.
@@ -127,7 +128,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param cluster the cluster reference.
      * @param environment the environment.
      */
-    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment) {
+    public DefaultConfigurationProvider(final ClusterFacade cluster, final Environment environment) {
         this(
             cluster,
             environment,
@@ -146,7 +147,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param environment the environment.
      * @param loaderChain the configuration loaders which will be tried in sequence.
      */
-    public DefaultConfigurationProvider(final Cluster cluster, final Environment environment,
+    public DefaultConfigurationProvider(final ClusterFacade cluster, final Environment environment,
         final List<Loader> loaderChain, final Map<LoaderType, Refresher> refreshers) {
         if (cluster == null) {
             throw new IllegalArgumentException("A cluster reference needs to be provided");
@@ -242,7 +243,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     @Override
     public Observable<ClusterConfig> closeBuckets() {
         return Observable
-            .from(currentConfig.get().bucketConfigs().keySet())
+            .from(currentConfig.get().bucketConfigs().keySet(), Schedulers.computation())
             .flatMap(new Func1<String, Observable<? extends ClusterConfig>>() {
                 @Override
                 public Observable<? extends ClusterConfig> call(String bucketName) {

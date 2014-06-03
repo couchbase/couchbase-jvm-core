@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.refresher;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import rx.Observable;
@@ -39,7 +39,7 @@ public class HttpRefresher extends AbstractRefresher {
     private static final String TERSE_PATH = "/pools/default/bs/";
     private static final String VERBOSE_PATH = "/pools/default/bucketsStreaming/";
 
-    public HttpRefresher(final Cluster cluster) {
+    public HttpRefresher(final ClusterFacade cluster) {
         super(cluster);
     }
 
@@ -56,13 +56,21 @@ public class HttpRefresher extends AbstractRefresher {
             )
             .map(new Func1<BucketStreamingResponse, Boolean>() {
                 @Override
-                public Boolean call(BucketStreamingResponse response) {
-                    response.configs().subscribe(new Action1<String>() {
-                        @Override
-                        public void call(final String rawConfig) {
-                            pushConfig(rawConfig);
-                        }
-                    });
+                public Boolean call(final BucketStreamingResponse response) {
+                    response
+                        .configs()
+                        .map(new Func1<String, String>() {
+                            @Override
+                            public String call(String s) {
+                                return s.replace("$HOST", response.host());
+                            }
+                        })
+                        .subscribe(new Action1<String>() {
+                            @Override
+                            public void call(final String rawConfig) {
+                                pushConfig(rawConfig);
+                            }
+                        });
                     return true;
                 }
             });

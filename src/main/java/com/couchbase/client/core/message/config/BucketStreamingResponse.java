@@ -13,13 +13,20 @@ import rx.Observable;
 public class BucketStreamingResponse extends AbstractCouchbaseResponse {
 
     private final Observable<String> configs;
+    private final String host;
 
-    public BucketStreamingResponse(Observable<String> configs, ResponseStatus status, CouchbaseRequest request) {
+    public BucketStreamingResponse(Observable<String> configs, String host, ResponseStatus status,
+        CouchbaseRequest request) {
         super(status, request);
         this.configs = configs;
+        this.host = host;
     }
 
     public Observable<String> configs() {
         return configs;
+    }
+
+    public String host() {
+        return host;
     }
 }

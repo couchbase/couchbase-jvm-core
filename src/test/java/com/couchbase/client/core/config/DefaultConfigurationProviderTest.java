@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.loader.Loader;
 import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
@@ -59,18 +59,24 @@ public class DefaultConfigurationProviderTest {
     @Test
     @SuppressWarnings("unchecked")
     public void shouldOpenBucket() {
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
+        BucketConfig bucketConfig = mock(BucketConfig.class);
+        when(bucketConfig.name()).thenReturn("bucket");
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
+
+        final Refresher refresher = mock(Refresher.class);
+        when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
+        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
             environment,
             Arrays.asList(loader),
             new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, mock(Refresher.class));
+                put(LoaderType.Carrier, refresher);
             }}
         );
 
@@ -83,24 +89,30 @@ public class DefaultConfigurationProviderTest {
     @Test
     @SuppressWarnings("unchecked")
     public void shouldDelegateLoadingToSecondProviderIfFirstFails() {
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
 
         Loader successLoader = mock(Loader.class);
         Loader errorLoader = mock(Loader.class);
+        BucketConfig bucketConfig = mock(BucketConfig.class);
+        when(bucketConfig.name()).thenReturn("bucket");
         when(successLoader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
         AsyncSubject<BucketConfig> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn((Observable) errorSubject);
         errorSubject.onError(new IllegalStateException());
+
+        final Refresher refresher = mock(Refresher.class);
+        when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
+        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
             environment,
             Arrays.asList(errorLoader, successLoader),
             new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, mock(Refresher.class));
-                put(LoaderType.HTTP, mock(Refresher.class));
+                put(LoaderType.Carrier, refresher);
+                put(LoaderType.HTTP, refresher);
             }}
         );
 
@@ -112,18 +124,25 @@ public class DefaultConfigurationProviderTest {
 
     @Test
     public void shouldEmitNewClusterConfig() throws Exception {
-        final Cluster cluster = mock(Cluster.class);
+        final ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
+        BucketConfig bucketConfig = mock(BucketConfig.class);
+        when(bucketConfig.name()).thenReturn("bucket");
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, mock(BucketConfig.class))));
+            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
+
+
+        final Refresher refresher = mock(Refresher.class);
+        when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
+        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
             environment,
             Arrays.asList(loader),
             new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, mock(Refresher.class));
+                put(LoaderType.Carrier, refresher);
             }}
         );
         final CountDownLatch latch = new CountDownLatch(1);
@@ -146,18 +165,23 @@ public class DefaultConfigurationProviderTest {
 
     @Test
     public void shouldFailOpeningBucketIfNoConfigLoaded() {
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
         Loader errorLoader = mock(Loader.class);
         AsyncSubject<Tuple2<LoaderType, BucketConfig>> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn(errorSubject);
         errorSubject.onError(new IllegalStateException());
+
+        final Refresher refresher = mock(Refresher.class);
+        when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
+        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
             environment,
             Arrays.asList(errorLoader),
             new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, mock(Refresher.class));
+                put(LoaderType.Carrier, refresher);
             }}
         );
 

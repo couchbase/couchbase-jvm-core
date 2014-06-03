@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
@@ -57,12 +57,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * The general implementation of a {@link Cluster}.
+ * The general implementation of a {@link ClusterFacade}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class CouchbaseCluster implements Cluster {
+public class CouchbaseCore implements ClusterFacade {
 
     /**
      * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
@@ -111,17 +111,17 @@ public class CouchbaseCluster implements Cluster {
     }
 
     /**
-     * Creates a new {@link CouchbaseCluster}.
+     * Creates a new {@link CouchbaseCore}.
      */
-    public CouchbaseCluster() {
+    public CouchbaseCore() {
         this(new CouchbaseEnvironment());
         sharedEnvironment = false;
     }
 
     /**
-     * Creates a new {@link CouchbaseCluster}.
+     * Creates a new {@link CouchbaseCore}.
      */
-    public CouchbaseCluster(Environment environment) {
+    public CouchbaseCore(Environment environment) {
         this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
         disruptorExecutor = Executors.newFixedThreadPool(2);

@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
@@ -29,8 +29,11 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
+
+import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,10 +49,17 @@ import static org.mockito.Mockito.when;
  */
 public class HttpLoaderTest {
 
+    private static InetAddress host;
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        host = InetAddress.getLocalHost();
+    }
+
     @Test
     public void shouldUseDirectPortIfNotSSL() {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         assertEquals(environment.bootstrapHttpDirectPort(), loader.port());
@@ -60,7 +70,7 @@ public class HttpLoaderTest {
         Environment environment = mock(Environment.class);
         when(environment.sslEnabled()).thenReturn(true);
         when(environment.bootstrapHttpSslPort()).thenReturn(12345);
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         assertEquals(environment.bootstrapHttpSslPort(), loader.port());
@@ -69,21 +79,21 @@ public class HttpLoaderTest {
     @Test
     public void shouldDiscoverConfigFromTerse() {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> response = Observable.from(
             (CouchbaseResponse) new BucketConfigResponse("myconfig", ResponseStatus.SUCCESS)
         );
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(response);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");
+        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
         assertEquals("myconfig", configObservable.toBlockingObservable().single());
     }
 
     @Test
     public void shouldDiscoverConfigFromVerboseAsFallback() {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> terseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
@@ -94,14 +104,14 @@ public class HttpLoaderTest {
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");
+        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
         assertEquals("verboseConfig", configObservable.toBlockingObservable().single());
     }
 
     @Test
     public void shouldThrowExceptionIfTerseAndVerboseCouldNotBeDiscovered() {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> terseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
@@ -112,7 +122,7 @@ public class HttpLoaderTest {
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", "localhost");
+        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
         try {
             configObservable.toBlockingObservable().single();
             assertTrue(false);
@@ -127,11 +137,11 @@ public class HttpLoaderTest {
     public void shouldThrowIfDisabledThroughConfiguration() {
         Environment environment = mock(Environment.class);
         when(environment.bootstrapHttpEnabled()).thenReturn(false);
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         try {
-            loader.discoverConfig("bucket", "password", "hostname").toBlockingObservable().single();
+            loader.discoverConfig("bucket", "password", host).toBlockingObservable().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
             assertEquals("Http Bootstrap disabled through configuration.", ex.getMessage());

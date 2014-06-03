@@ -2,20 +2,22 @@ package com.couchbase.client.core.message.config;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
+import java.net.InetAddress;
+
 public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 
     private static final String PATH = "/pools/default/b/";
 
-    private final String hostname;
+    private final InetAddress hostname;
     private final String path;
 
-    public BucketConfigRequest(String path, String hostname, String bucket, String password) {
+    public BucketConfigRequest(String path, InetAddress hostname, String bucket, String password) {
         super(bucket, password);
         this.hostname = hostname;
         this.path = path;
     }
 
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 

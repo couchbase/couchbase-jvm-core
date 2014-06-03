@@ -23,16 +23,18 @@ package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
+import java.net.InetAddress;
+
 public class RemoveNodeRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
-    private final String hostname;
+    private final InetAddress hostname;
 
-    public RemoveNodeRequest(final String hostname) {
+    public RemoveNodeRequest(final InetAddress hostname) {
         super(null, null);
         this.hostname = hostname;
     }
 
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 }

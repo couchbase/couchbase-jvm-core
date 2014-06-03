@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.service;
 
-import com.couchbase.client.core.cluster.ResponseEvent;
-import com.couchbase.client.core.cluster.ResponseHandler;
+import com.couchbase.client.core.ResponseEvent;
+import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -84,6 +84,8 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             public void call(LifecycleState state) {
                 if (state == LifecycleState.CONNECTED) {
                     LOGGER.debug("Connected to " + AbstractService.this.getClass().getSimpleName());
+                } else if (state == LifecycleState.DISCONNECTED) {
+                    LOGGER.debug("Disconnected from " + AbstractService.this.getClass().getSimpleName());
                 }
                 transitionState(state);
             }

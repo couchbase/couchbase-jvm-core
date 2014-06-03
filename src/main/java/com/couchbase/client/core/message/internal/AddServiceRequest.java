@@ -27,14 +27,16 @@ package com.couchbase.client.core.message.internal;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.service.ServiceType;
 
+import java.net.InetAddress;
+
 
 public class AddServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
     private final ServiceType type;
-    private final String hostname;
+    private final InetAddress hostname;
     private final int port;
 
-    public AddServiceRequest(ServiceType type, String bucket, String password, int port, String hostname) {
+    public AddServiceRequest(ServiceType type, String bucket, String password, int port, InetAddress hostname) {
         super(bucket, password);
         this.type = type;
         this.hostname = hostname;
@@ -45,7 +47,7 @@ public class AddServiceRequest extends AbstractCouchbaseRequest implements Inter
         return type;
     }
 
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 

@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.message.binary;
 
+import java.net.InetAddress;
+
 /**
  * Request which fetches a bucket configuration through carrier publication.
  *
@@ -35,7 +37,7 @@ public class GetBucketConfigRequest extends AbstractBinaryRequest {
     /**
      * The hostname from where the config should be loaded.
      */
-    private final String hostname;
+    private final InetAddress hostname;
 
     /**
      * Creates a new {@link GetBucketConfigRequest}.
@@ -43,7 +45,7 @@ public class GetBucketConfigRequest extends AbstractBinaryRequest {
      * @param bucket the name of the bucket.
      * @param hostname the hostname of the node.
      */
-    public GetBucketConfigRequest(final String bucket, final String hostname) {
+    public GetBucketConfigRequest(final String bucket, final InetAddress hostname) {
         super(null, bucket, null);
         this.hostname = hostname;
     }
@@ -53,7 +55,7 @@ public class GetBucketConfigRequest extends AbstractBinaryRequest {
      *
      * @return the hostname.
      */
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 }

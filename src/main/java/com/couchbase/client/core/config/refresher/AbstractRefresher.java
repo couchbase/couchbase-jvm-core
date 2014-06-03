@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.config.refresher;
 
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.CouchbaseException;
-import com.couchbase.client.core.cluster.Cluster;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import org.slf4j.Logger;
@@ -48,14 +48,14 @@ public abstract  class AbstractRefresher implements Refresher {
     /**
      * Cluster reference so that implementations can call requests.
      */
-    private final Cluster cluster;
+    private final ClusterFacade cluster;
 
     /**
      * Creates a new {@link AbstractRefresher}.
      *
      * @param cluster the cluster reference.
      */
-    protected AbstractRefresher(final Cluster cluster) {
+    protected AbstractRefresher(final ClusterFacade cluster) {
         this.configStream = PublishSubject.create();
         this.cluster = cluster;
     }
@@ -83,7 +83,7 @@ public abstract  class AbstractRefresher implements Refresher {
      *
      * @return the cluster reference.
      */
-    protected Cluster cluster() {
+    protected ClusterFacade cluster() {
         return cluster;
     }
 

@@ -19,6 +19,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
 import rx.subjects.PublishSubject;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
@@ -83,16 +84,16 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
         if (currentRequest instanceof BucketConfigRequest) {
             handleBucketConfigResponse(msg, out);
         } else if (currentRequest instanceof BucketStreamingRequest) {
-            handleBucketStreamingResponse(msg, out);
+            handleBucketStreamingResponse(ctx, msg, out);
         }
     }
 
-    private void handleBucketStreamingResponse(HttpObject msg, List<Object> out) {
+    private void handleBucketStreamingResponse(ChannelHandlerContext ctx, HttpObject msg, List<Object> out) {
         if (msg instanceof HttpResponse) {
             HttpResponse response = (HttpResponse) msg;
             if (response.getStatus().code() == 200) {
                 configStream = PublishSubject.create();
-                out.add(new BucketStreamingResponse(configStream, ResponseStatus.SUCCESS, null));
+                out.add(new BucketStreamingResponse(configStream, ((InetSocketAddress) ctx.channel().remoteAddress()).getHostName(), ResponseStatus.SUCCESS, null));
             }
         }
         if (msg instanceof HttpContent) {

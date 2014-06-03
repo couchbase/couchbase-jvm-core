@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
 

@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.cluster;
 
+import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.CouchbaseCore;
 import com.couchbase.client.core.message.cluster.DisconnectRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
@@ -44,11 +46,11 @@ public class ViewMessageTest {
     private static final String bucket = TestProperties.bucket();
     private static final String password = TestProperties.password();
 
-    private static Cluster cluster;
+    private static ClusterFacade cluster;
 
     @BeforeClass
     public static void connect() {
-        cluster = new CouchbaseCluster();
+        cluster = new CouchbaseCore();
         cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
             new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
                 @Override

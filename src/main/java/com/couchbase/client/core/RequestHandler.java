@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
@@ -49,6 +49,7 @@ import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -167,7 +168,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
-    public Observable<LifecycleState> addNode(final String hostname) {
+    public Observable<LifecycleState> addNode(final InetAddress hostname) {
         Node node = nodeBy(hostname);
         if (node != null) {
             return Observable.from(node.state());
@@ -181,7 +182,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#DISCONNECTED}).
      */
-    public Observable<LifecycleState> removeNode(final String hostname) {
+    public Observable<LifecycleState> removeNode(final InetAddress hostname) {
         return removeNode(nodeBy(hostname));
     }
 
@@ -254,7 +255,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the node or null if no hostname for that ip address.
      */
-    public Node nodeBy(final String hostname) {
+    public Node nodeBy(final InetAddress hostname) {
         if (hostname == null) {
             return null;
         }
@@ -299,9 +300,31 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private void reconfigure() {
         ClusterConfig config = configuration.get();
-        for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
-            BucketConfig bucketConfig = bucket.getValue();
-            reconfigureBucket(bucketConfig);
+
+        Set<InetAddress> configNodes = new HashSet<InetAddress>();
+        nodeLock.readLock().lock();
+        try {
+            for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
+                BucketConfig bucketConfig = bucket.getValue();
+                for (final NodeInfo node : bucketConfig.nodes()) {
+                    configNodes.add(node.hostname());
+                }
+                reconfigureBucket(bucketConfig);
+            }
+        } finally {
+            nodeLock.readLock().unlock();
+        }
+
+        nodeLock.writeLock().lock();
+        try {
+            for (Node node : nodes) {
+                if (!configNodes.contains(node.hostname())) {
+                    removeNode(node);
+                    node.disconnect().subscribe();
+                }
+            }
+        } finally {
+            nodeLock.writeLock().unlock();
         }
     }
 
@@ -312,7 +335,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private void reconfigureBucket(final BucketConfig config) {
         for (final NodeInfo nodeInfo : config.nodes()) {
-            addNode(nodeInfo.hostname().getHostName()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
+            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                 @Override
                 public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                     Map<ServiceType, Integer> services =
@@ -328,7 +351,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
                     for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
                         requests.add(new AddServiceRequest(service.getKey(), config.name(), config.password(),
-                            service.getValue(), nodeInfo.hostname().getHostName()));
+                            service.getValue(), nodeInfo.hostname()));
                     }
                     return Observable.from(requests);
                 }

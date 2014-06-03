@@ -19,21 +19,27 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
-import com.lmax.disruptor.EventFactory;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import rx.Observable;
 
 /**
- * A factory to preallocate {@link RequestEvent}s.
+ * Represents a Couchbase Cluster.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class RequestEventFactory implements EventFactory<RequestEvent> {
+public interface ClusterFacade {
 
-    @Override
-    public RequestEvent newInstance() {
-        return new RequestEvent();
-    }
-
+    /**
+     * Sends a {@link CouchbaseRequest} into the cluster and eventually returns a {@link CouchbaseResponse}.
+     *
+     * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
+     *
+     * @param request the request to send.
+     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
+     */
+    <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
 }

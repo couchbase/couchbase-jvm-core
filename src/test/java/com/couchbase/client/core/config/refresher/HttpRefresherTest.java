@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.refresher;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -51,7 +51,7 @@ public class HttpRefresherTest {
 
     @Test
     public void shouldPublishNewBucketConfiguration() throws Exception {
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
 
         Observable<String> configStream = Observable.from(
             Resources.read("stream1.json", this.getClass()),
@@ -59,7 +59,7 @@ public class HttpRefresherTest {
             Resources.read("stream3.json", this.getClass())
         );
         Observable<CouchbaseResponse> response = Observable.from((CouchbaseResponse)
-            new BucketStreamingResponse(configStream, ResponseStatus.SUCCESS, null)
+            new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(response);
 
@@ -81,7 +81,7 @@ public class HttpRefresherTest {
 
     @Test
     public void shouldFallbackToVerboseIfTerseFails() throws Exception {
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
 
         Observable<String> configStream = Observable.from(
             Resources.read("stream1.json", this.getClass()),
@@ -91,7 +91,7 @@ public class HttpRefresherTest {
 
         Observable<CouchbaseResponse> failingResponse = Observable.error(new Exception("failed"));
         Observable<CouchbaseResponse> successResponse = Observable.from((CouchbaseResponse)
-                new BucketStreamingResponse(configStream, ResponseStatus.SUCCESS, null)
+                new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(failingResponse);
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(successResponse);

@@ -1,4 +1,4 @@
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
 import com.lmax.disruptor.EventFactory;
 

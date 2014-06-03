@@ -19,27 +19,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import rx.Observable;
+import com.couchbase.client.core.CouchbaseException;
 
 /**
- * Represents a Couchbase Cluster.
+ * Identifies the need to back off on the supplier side when using a service, because the consumer is overloaded.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public interface Cluster {
-
-    /**
-     * Sends a {@link CouchbaseRequest} into the cluster and eventually returns a {@link CouchbaseResponse}.
-     *
-     * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
-     *
-     * @param request the request to send.
-     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
-     */
-    <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
+public class BackpressureException extends CouchbaseException {
 }

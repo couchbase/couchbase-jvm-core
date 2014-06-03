@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
@@ -55,7 +55,7 @@ public abstract class AbstractLoader implements Loader {
     /**
      * The reference to the cluster.
      */
-    private final Cluster cluster;
+    private final ClusterFacade cluster;
 
     /**
      * The couchbase environment.
@@ -76,7 +76,7 @@ public abstract class AbstractLoader implements Loader {
      * @param cluster the cluster reference.
      * @param environment the couchbase environment.
      */
-    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final Cluster cluster, final Environment environment) {
+    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final ClusterFacade cluster, final Environment environment) {
         this.loaderType = loaderType;
         this.serviceType = serviceType;
         this.cluster = cluster;
@@ -101,7 +101,7 @@ public abstract class AbstractLoader implements Loader {
      * @param hostname the hostname of the seed node list.
      * @return a raw config if discovered.
      */
-    protected abstract Observable<String> discoverConfig(String bucket, String password, String hostname);
+    protected abstract Observable<String> discoverConfig(String bucket, String password, InetAddress hostname);
 
     /**
      * Initiate the config loading process.
@@ -122,7 +122,7 @@ public abstract class AbstractLoader implements Loader {
             .flatMap(new Func1<InetAddress, Observable<AddNodeResponse>>() {
                 @Override
                 public Observable<AddNodeResponse> call(final InetAddress address) {
-                    return cluster.send(new AddNodeRequest(address.getHostName()));
+                    return cluster.send(new AddNodeRequest(address));
                 }
             }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
                 @Override
@@ -143,7 +143,9 @@ public abstract class AbstractLoader implements Loader {
 
                     return discoverConfig(bucket, password, response.hostname());
                 }
-            }).map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
+            })
+            .observeOn(Schedulers.computation())
+            .map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
                 @Override
                 public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {
                     BucketConfig config = BucketConfigParser.parse(rawConfig);
@@ -154,11 +156,11 @@ public abstract class AbstractLoader implements Loader {
     }
 
     /**
-     * Returns the {@link Cluster} for child implementations.
+     * Returns the {@link ClusterFacade} for child implementations.
      *
      * @return the cluster reference.
      */
-    protected Cluster cluster() {
+    protected ClusterFacade cluster() {
         return cluster;
     }
 
@@ -178,7 +180,7 @@ public abstract class AbstractLoader implements Loader {
      * @param hostname the hostname to replace it with.
      * @return a replaced configuration.
      */
-    protected String replaceHostWildcard(String input, String hostname) {
-        return input.replace("$HOST", hostname);
+    protected String replaceHostWildcard(String input, InetAddress hostname) {
+        return input.replace("$HOST", hostname.getHostName());
     }
 }

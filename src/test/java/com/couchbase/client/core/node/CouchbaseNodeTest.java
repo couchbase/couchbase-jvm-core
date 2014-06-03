@@ -30,9 +30,11 @@ import com.couchbase.client.core.service.ConfigService;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -49,15 +51,17 @@ public class CouchbaseNodeTest {
 
     private static final Environment environment = new CouchbaseEnvironment();
 
-    @Test
-    public void shouldReturnConfiguredHostname() {
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", environment, null);
-        assertEquals("127.0.0.1", node.hostname());
+
+    private static InetAddress host;
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        host = InetAddress.getLocalHost();
     }
 
     @Test
     public void shouldBeDisconnectedIfNoServicesRegisteredOnConnect() {
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, environment, null);
         assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlockingObservable().single());
     }
 
@@ -69,7 +73,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.CONNECTED, node.connect().toBlockingObservable().single());
     }
@@ -82,7 +86,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTING));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.DEGRADED, node.connect().toBlockingObservable().single());
     }
@@ -95,7 +99,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.connect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTING));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.CONNECTING, node.connect().toBlockingObservable().single());
     }
@@ -108,7 +112,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.connect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlockingObservable().single());
     }
@@ -121,7 +125,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTING));
         when(service2Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.DISCONNECTING, node.disconnect().toBlockingObservable().single());
     }
@@ -134,7 +138,7 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         when(service2Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         assertEquals(LifecycleState.DISCONNECTED, node.disconnect().toBlockingObservable().single());
     }
@@ -142,8 +146,8 @@ public class CouchbaseNodeTest {
     @Test
     public void shouldRegisterGlobalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
-        Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, 0, "127.0.0.1"))
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
+        Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, 0, host))
             .toBlockingObservable().single();
 
         verify(registryMock).addService(any(ConfigService.class), anyString());
@@ -153,8 +157,8 @@ public class CouchbaseNodeTest {
     @Test
     public void shouldRegisterLocalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
-        Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, "127.0.0.1"))
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
+        Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, host))
             .toBlockingObservable().single();
 
         verify(registryMock).addService(any(BinaryService.class), anyString());
@@ -166,9 +170,9 @@ public class CouchbaseNodeTest {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
         when(registryMock.serviceBy(ServiceType.CONFIG, null)).thenReturn(serviceMock);
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, null, "127.0.0.1"))
+        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, null, host))
             .toBlockingObservable().single();
         verify(registryMock).removeService(any(Service.class), anyString());
     }
@@ -178,9 +182,9 @@ public class CouchbaseNodeTest {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
         when(registryMock.serviceBy(ServiceType.BINARY, "bucket")).thenReturn(serviceMock);
-        CouchbaseNode node = new CouchbaseNode("127.0.0.1", registryMock, environment, null);
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, "bucket", "127.0.0.1"))
+        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, "bucket", host))
             .toBlockingObservable().single();
         verify(registryMock).removeService(any(Service.class), anyString());
     }

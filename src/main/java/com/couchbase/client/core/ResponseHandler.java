@@ -1,6 +1,5 @@
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -18,10 +17,10 @@ import java.util.concurrent.TimeUnit;
 
 public class ResponseHandler implements EventHandler<ResponseEvent> {
 
-    private final Cluster cluster;
+    private final ClusterFacade cluster;
     private final ConfigurationProvider configurationProvider;
 
-    public ResponseHandler(Cluster cluster, ConfigurationProvider provider) {
+    public ResponseHandler(ClusterFacade cluster, ConfigurationProvider provider) {
         this.cluster = cluster;
         this.configurationProvider = provider;
     }

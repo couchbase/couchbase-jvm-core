@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.Environment;
@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
+
+import java.net.InetAddress;
 
 /**
  * Loads a raw bucket configuration through the carrier mechanism (also commonly referred to as CCCP).
@@ -50,7 +52,7 @@ public class CarrierLoader extends AbstractLoader {
      * @param cluster the cluster reference.
      * @param environment the environment to use.
      */
-    public CarrierLoader(Cluster cluster, Environment environment) {
+    public CarrierLoader(ClusterFacade cluster, Environment environment) {
         super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
     }
 
@@ -60,7 +62,7 @@ public class CarrierLoader extends AbstractLoader {
     }
 
     @Override
-    protected Observable<String> discoverConfig(final String bucket, final String password, final String hostname) {
+    protected Observable<String> discoverConfig(final String bucket, final String password, final InetAddress hostname) {
         if (!env().bootstrapCarrierEnabled()) {
             LOGGER.info("Carrier Bootstrap disabled, skipping.");
             return Observable.error(new ConfigurationException("Carrier Bootstrap disabled through configuration."));

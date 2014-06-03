@@ -19,15 +19,21 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
+package com.couchbase.client.core;
 
-import com.couchbase.client.core.CouchbaseException;
+import com.lmax.disruptor.EventFactory;
 
 /**
- * Identifies the need to back off on the supplier side when using a service, because the consumer is overloaded.
+ * A factory to preallocate {@link RequestEvent}s.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class BackpressureException extends CouchbaseException {
+public class RequestEventFactory implements EventFactory<RequestEvent> {
+
+    @Override
+    public RequestEvent newInstance() {
+        return new RequestEvent();
+    }
+
 }

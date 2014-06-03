@@ -8,6 +8,7 @@ import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.node.Node;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -22,16 +23,16 @@ import static org.mockito.Mockito.when;
 public class BinaryLocatorTest {
 
     @Test
-    public void shouldLocateGetRequestForCouchbaseBucket() {
+    public void shouldLocateGetRequestForCouchbaseBucket() throws Exception {
         Locator locator = new BinaryLocator();
 
         GetRequest getRequestMock = mock(GetRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
         Set<Node> nodes = new HashSet<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn("192.168.56.101");
+        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn("192.168.56.102");
+        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
         CouchbaseBucketConfig bucketMock = mock(CouchbaseBucketConfig.class);
         when(getRequestMock.bucket()).thenReturn("bucket");

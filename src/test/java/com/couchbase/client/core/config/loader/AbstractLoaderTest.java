@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
@@ -35,6 +35,7 @@ import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
@@ -63,15 +64,22 @@ public class AbstractLoaderTest {
 
     private final String localhostConfig = Resources.read("localhost.json", this.getClass());
 
+    private static InetAddress host;
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        host = InetAddress.getLocalHost();
+    }
+
     @Test
     public void shouldLoadConfigForOneSeedNode() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
         );
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("localhost"));
@@ -87,12 +95,12 @@ public class AbstractLoaderTest {
     @Test
     public void shouldLoadConfigsFromMoreSeedNodes() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
         );
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("10.1.1.1"));
@@ -109,12 +117,12 @@ public class AbstractLoaderTest {
     @Test
     public void shouldFailIfNoConfigCouldBeLoaded() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
         );
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("localhost"));
@@ -135,12 +143,12 @@ public class AbstractLoaderTest {
     @Test
     public void shouldIgnoreFailingConfigOnManySeedNodes() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
         );
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("10.1.1.1"));
@@ -177,9 +185,9 @@ public class AbstractLoaderTest {
     @Test
     public void shouldFailIfNodeCouldNotBeAdded() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.FAILURE, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.FAILURE, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("localhost"));
@@ -200,12 +208,12 @@ public class AbstractLoaderTest {
     @Test
     public void shouldFailIfServiceCouldNotBeAdded() throws Exception {
         Environment environment = new CouchbaseEnvironment();
-        Cluster cluster = mock(Cluster.class);
+        ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, "localhost"))
+                Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
         );
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
-                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.FAILURE, "localhost"))
+                Observable.from((CouchbaseResponse) new AddServiceResponse(ResponseStatus.FAILURE, host))
         );
         Set<InetAddress> seedNodes = new HashSet<InetAddress>();
         seedNodes.add(InetAddress.getByName("localhost"));
@@ -231,7 +239,7 @@ public class AbstractLoaderTest {
         private final int failAfter;
         private volatile int failCounter = 0;
 
-        InstrumentedLoader(int failAfter, String config, Cluster cluster, Environment environment) {
+        InstrumentedLoader(int failAfter, String config, ClusterFacade cluster, Environment environment) {
             super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
             this.config = config;
             this.failAfter = failAfter;
@@ -243,7 +251,7 @@ public class AbstractLoaderTest {
         }
 
         @Override
-        protected Observable<String> discoverConfig(String bucket, String password, String hostname) {
+        protected Observable<String> discoverConfig(String bucket, String password, InetAddress hostname) {
             IllegalStateException ex = new IllegalStateException("Bucket config response did not return with success.");
             if (failCounter++ >= failAfter) {
                 return Observable.error(ex);

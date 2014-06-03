@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.loader;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.Environment;
@@ -32,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
+
+import java.net.InetAddress;
 
 /**
  * Loads a raw bucket configuration through the Couchbase Server HTTP config interface.
@@ -52,7 +54,7 @@ public class HttpLoader extends AbstractLoader {
      * @param cluster the cluster reference.
      * @param environment the environment to use.
      */
-    public HttpLoader(Cluster cluster, Environment environment) {
+    public HttpLoader(ClusterFacade cluster, Environment environment) {
         super(LoaderType.HTTP, ServiceType.CONFIG, cluster, environment);
     }
 
@@ -62,7 +64,7 @@ public class HttpLoader extends AbstractLoader {
     }
 
     @Override
-    protected Observable<String> discoverConfig(final String bucket, final String password, final String hostname) {
+    protected Observable<String> discoverConfig(final String bucket, final String password, final InetAddress hostname) {
         if (!env().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap disabled, skipping.");
             return Observable.error(new ConfigurationException("Http Bootstrap disabled through configuration."));

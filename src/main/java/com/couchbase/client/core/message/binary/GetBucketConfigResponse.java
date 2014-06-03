@@ -24,6 +24,8 @@ package com.couchbase.client.core.message.binary;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
+import java.net.InetAddress;
+
 /**
  * Represents a response with a bucket configuration.
  *
@@ -32,14 +34,14 @@ import io.netty.buffer.ByteBuf;
  */
 public class GetBucketConfigResponse extends AbstractBinaryResponse {
 
-    private String hostname;
+    private InetAddress hostname;
 
-    public GetBucketConfigResponse(final ResponseStatus status, final String bucket, final ByteBuf content, final String hostname) {
+    public GetBucketConfigResponse(final ResponseStatus status, final String bucket, final ByteBuf content, final InetAddress hostname) {
         super(status, bucket, content, null);
         this.hostname = hostname;
     }
 
-    public String hostname() {
+    public InetAddress hostname() {
         return hostname;
     }
 }

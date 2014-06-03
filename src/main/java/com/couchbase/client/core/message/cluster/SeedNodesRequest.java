@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.message.cluster;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
 import java.net.InetAddress;
@@ -29,7 +29,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * **Set up the bootstrap nodes for a {@link Cluster}.**
+ * **Set up the bootstrap nodes for a {@link ClusterFacade}.**
  *
  * For stability reasons, it is advised to always provide more than one seed node (but not necessarily all nodes from
  * the cluster) so that the cluster can correctly bootstrap the bucket, even if one of the hosts in the list is

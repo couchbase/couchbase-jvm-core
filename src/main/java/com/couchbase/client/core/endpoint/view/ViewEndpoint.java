@@ -1,6 +1,6 @@
 package com.couchbase.client.core.endpoint.view;
 
-import com.couchbase.client.core.cluster.ResponseEvent;
+import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.Environment;
 import com.lmax.disruptor.RingBuffer;

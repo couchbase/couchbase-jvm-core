@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.config.refresher;
 
-import com.couchbase.client.core.cluster.Cluster;
+import com.couchbase.client.core.ClusterFacade;
 import rx.Observable;
 
 /**
@@ -32,7 +32,7 @@ import rx.Observable;
  */
 public class CarrierRefresher extends AbstractRefresher {
 
-    public CarrierRefresher(final Cluster cluster) {
+    public CarrierRefresher(final ClusterFacade cluster) {
         super(cluster);
     }
 

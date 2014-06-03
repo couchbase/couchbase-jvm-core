@@ -30,6 +30,8 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import rx.Observable;
 
+import java.net.InetAddress;
+
 /**
  * Represents a Couchbase Node.
  *
@@ -53,7 +55,7 @@ public interface Node extends Stateful<LifecycleState> {
      *
      * @return the hostname.
      */
-    String hostname();
+    InetAddress hostname();
 
     /**
      * Connects all currently enabled {@link Service}s.
