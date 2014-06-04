@@ -75,7 +75,7 @@ public class AbstractEndpointTest {
         Endpoint endpoint = new DummyEndpoint(bootstrap);
 
         Observable<LifecycleState> observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
     }
 
     @Test
@@ -100,8 +100,8 @@ public class AbstractEndpointTest {
         Observable<LifecycleState> attempt2 = endpoint.connect();
         latch.countDown();
 
-        assertEquals(LifecycleState.CONNECTED, attempt1.toBlockingObservable().single());
-        assertEquals(LifecycleState.CONNECTING, attempt2.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, attempt1.toBlocking().single());
+        assertEquals(LifecycleState.CONNECTING, attempt2.toBlocking().single());
         verify(bootstrap, times(1)).connect();
     }
 
@@ -112,9 +112,9 @@ public class AbstractEndpointTest {
         Endpoint endpoint = new DummyEndpoint(bootstrap);
 
         Observable<LifecycleState> observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
         observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
         verify(bootstrap, times(1)).connect();
     }
 
@@ -125,10 +125,10 @@ public class AbstractEndpointTest {
         Endpoint endpoint = new DummyEndpoint(bootstrap);
 
         Observable<LifecycleState> observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
 
         observable = endpoint.disconnect();
-        assertEquals(LifecycleState.DISCONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, observable.toBlocking().single());
     }
 
     @Test
@@ -153,8 +153,8 @@ public class AbstractEndpointTest {
         Observable<LifecycleState> disconnect = endpoint.disconnect();
         latch.countDown();
 
-        assertEquals(LifecycleState.DISCONNECTED, connect.toBlockingObservable().single());
-        assertEquals(LifecycleState.DISCONNECTED, disconnect.toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, connect.toBlocking().single());
+        assertEquals(LifecycleState.DISCONNECTED, disconnect.toBlocking().single());
     }
 
     @Test
@@ -181,7 +181,7 @@ public class AbstractEndpointTest {
         Endpoint endpoint = new DummyEndpoint(bootstrap);
 
         Observable<LifecycleState> observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
 
         CouchbaseRequest mockRequest = mock(CouchbaseRequest.class);
         endpoint.send(mockRequest);
@@ -200,7 +200,7 @@ public class AbstractEndpointTest {
         Subject<CouchbaseResponse, CouchbaseResponse> subject = AsyncSubject.create();
         when(mockRequest.observable()).thenReturn(subject);
         endpoint.send(mockRequest);
-        mockRequest.observable().toBlockingObservable().single();
+        mockRequest.observable().toBlocking().single();
     }
 
     @Test
@@ -218,10 +218,10 @@ public class AbstractEndpointTest {
         });
 
         Observable<LifecycleState> observable = endpoint.connect();
-        assertEquals(LifecycleState.CONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
 
         observable = endpoint.disconnect();
-        assertEquals(LifecycleState.DISCONNECTED, observable.toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, observable.toBlocking().single());
 
         assertEquals(LifecycleState.DISCONNECTED, states.get(0));
         assertEquals(LifecycleState.CONNECTING, states.get(1));

@@ -69,7 +69,7 @@ public class AbstractServiceTest {
         Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
         Service service = new DummyService(hostname, bucket, password, port, environment, 0,
             mock(SelectionStrategy.class), factory);
-        service.connect().toBlockingObservable().single();
+        service.connect().toBlocking().single();
         assertEquals(LifecycleState.DISCONNECTED, service.state());
     }
 
@@ -83,7 +83,7 @@ public class AbstractServiceTest {
         Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
         Service service = new DummyService(hostname, bucket, password, port, environment, 1,
             mock(SelectionStrategy.class), factory);
-        service.connect().toBlockingObservable().single();
+        service.connect().toBlocking().single();
         endpointStates.onNext(LifecycleState.CONNECTED);
         assertEquals(LifecycleState.CONNECTED, service.state());
     }
@@ -107,7 +107,7 @@ public class AbstractServiceTest {
         Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
         Service service = new DummyService(hostname, bucket, password, port, environment, 3,
             mock(SelectionStrategy.class), factory);
-        service.connect().toBlockingObservable().single();
+        service.connect().toBlocking().single();
         endpoint1States.onNext(LifecycleState.CONNECTED);
         endpoint2States.onNext(LifecycleState.CONNECTED);
         endpoint3States.onNext(LifecycleState.CONNECTED);
@@ -133,7 +133,7 @@ public class AbstractServiceTest {
         Service.EndpointFactory factory = new DummyService.DummyEndpointFactory(endpoints.iterator());
         Service service = new DummyService(hostname, bucket, password, port, environment, 3,
             mock(SelectionStrategy.class), factory);
-        service.connect().toBlockingObservable().single();
+        service.connect().toBlocking().single();
         endpoint1States.onNext(LifecycleState.CONNECTED);
         endpoint2States.onNext(LifecycleState.CONNECTING);
         endpoint3States.onNext(LifecycleState.CONNECTING);

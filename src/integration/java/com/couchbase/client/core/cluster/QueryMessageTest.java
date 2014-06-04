@@ -41,12 +41,12 @@ public class QueryMessageTest {
                     return cluster.send(new OpenBucketRequest(bucket, password));
                 }
             }
-        ).toBlockingObservable().single();
+        ).toBlocking().single();
     }
 
     @AfterClass
     public static void disconnect() throws InterruptedException {
-        cluster.send(new DisconnectRequest()).toBlockingObservable().first();
+        cluster.send(new DisconnectRequest()).toBlocking().first();
     }
 
     @Test

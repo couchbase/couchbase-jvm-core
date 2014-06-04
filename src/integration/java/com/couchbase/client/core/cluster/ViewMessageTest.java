@@ -58,19 +58,19 @@ public class ViewMessageTest {
                     return cluster.send(new OpenBucketRequest(bucket, password));
                 }
             }
-        ).toBlockingObservable().single();
+        ).toBlocking().single();
     }
 
     @AfterClass
     public static void disconnect() throws InterruptedException {
-        cluster.send(new DisconnectRequest()).toBlockingObservable().first();
+        cluster.send(new DisconnectRequest()).toBlocking().first();
     }
 
     /*@Test
     public void shoudQueryNonExistentView() {
         ViewQueryResponse single = cluster
             .<ViewQueryResponse>send(new ViewQueryRequest("design", "view", false, bucket, password))
-            .toBlockingObservable()
+            .toBlocking()
             .single();
 
         String expected = "{\"error\":\"not_found\",\"reason\":\"Design document _design/design not found\"}\n";
@@ -82,7 +82,7 @@ public class ViewMessageTest {
         List<ViewQueryResponse> responses = cluster
             .<ViewQueryResponse>send(new ViewQueryRequest("foo", "bar", false, bucket, password))
             .toList()
-            .toBlockingObservable()
+            .toBlocking()
             .single();
 
         System.out.println(responses);

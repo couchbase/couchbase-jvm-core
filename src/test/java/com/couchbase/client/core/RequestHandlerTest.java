@@ -60,7 +60,7 @@ public class RequestHandlerTest {
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
         when(nodeMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        handler.addNode(nodeMock).toBlockingObservable().single();
+        handler.addNode(nodeMock).toBlocking().single();
         assertEquals(1, nodes.size());
     }
 
@@ -72,9 +72,9 @@ public class RequestHandlerTest {
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
         when(nodeMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        handler.addNode(nodeMock).toBlockingObservable().single();
+        handler.addNode(nodeMock).toBlocking().single();
         assertEquals(1, nodes.size());
-        handler.addNode(nodeMock).toBlockingObservable().single();
+        handler.addNode(nodeMock).toBlocking().single();
         assertEquals(1, nodes.size());
     }
 
@@ -93,22 +93,22 @@ public class RequestHandlerTest {
         when(node3.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(node3.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
 
-        handler.addNode(node1).toBlockingObservable().single();
-        handler.addNode(node2).toBlockingObservable().single();
-        handler.addNode(node3).toBlockingObservable().single();
+        handler.addNode(node1).toBlocking().single();
+        handler.addNode(node2).toBlocking().single();
+        handler.addNode(node3).toBlocking().single();
 
         assertEquals(3, nodes.size());
-        handler.removeNode(node2).toBlockingObservable().single();
+        handler.removeNode(node2).toBlocking().single();
         assertEquals(2, nodes.size());
         assertTrue(nodes.contains(node1));
         assertTrue(nodes.contains(node3));
         assertFalse(nodes.contains(node2));
-        handler.removeNode(node1).toBlockingObservable().single();
+        handler.removeNode(node1).toBlocking().single();
         assertEquals(1, nodes.size());
         assertTrue(nodes.contains(node3));
         assertFalse(nodes.contains(node2));
         assertFalse(nodes.contains(node1));
-        handler.removeNode(node3).toBlockingObservable().single();
+        handler.removeNode(node3).toBlocking().single();
         assertEquals(0, nodes.size());
     }
 
@@ -120,10 +120,10 @@ public class RequestHandlerTest {
         Node node1 = mock(Node.class);
         when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(node1.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
-        handler.addNode(node1).toBlockingObservable().single();
+        handler.addNode(node1).toBlocking().single();
         assertEquals(1, nodes.size());
 
-        handler.removeNode(node1).toBlockingObservable().single();
+        handler.removeNode(node1).toBlocking().single();
         assertEquals(0, nodes.size());
     }
 
@@ -132,7 +132,7 @@ public class RequestHandlerTest {
         RequestHandler handler = new DummyLocatorClusterNodeHandler(environment);
         Node mockNode = mock(Node.class);
         when(mockNode.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        handler.addNode(mockNode).toBlockingObservable().single();
+        handler.addNode(mockNode).toBlocking().single();
 
         RequestEvent mockEvent = mock(RequestEvent.class);
         CouchbaseRequest mockRequest = mock(CouchbaseRequest.class);

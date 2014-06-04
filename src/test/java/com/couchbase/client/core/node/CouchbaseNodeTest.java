@@ -62,7 +62,7 @@ public class CouchbaseNodeTest {
     @Test
     public void shouldBeDisconnectedIfNoServicesRegisteredOnConnect() {
         CouchbaseNode node = new CouchbaseNode(host, environment, null);
-        assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlocking().single());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTED));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.CONNECTED, node.connect().toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTED, node.connect().toBlocking().single());
     }
 
     @Test
@@ -88,7 +88,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTING));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.DEGRADED, node.connect().toBlockingObservable().single());
+        assertEquals(LifecycleState.DEGRADED, node.connect().toBlocking().single());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.CONNECTING));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.CONNECTING, node.connect().toBlockingObservable().single());
+        assertEquals(LifecycleState.CONNECTING, node.connect().toBlocking().single());
     }
 
     @Test
@@ -114,7 +114,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.connect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, node.connect().toBlocking().single());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.DISCONNECTING, node.disconnect().toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTING, node.disconnect().toBlocking().single());
     }
 
     @Test
@@ -140,7 +140,7 @@ public class CouchbaseNodeTest {
         when(service2Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.DISCONNECTED, node.disconnect().toBlockingObservable().single());
+        assertEquals(LifecycleState.DISCONNECTED, node.disconnect().toBlocking().single());
     }
 
     @Test
@@ -148,7 +148,7 @@ public class CouchbaseNodeTest {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
         Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, 0, host))
-            .toBlockingObservable().single();
+            .toBlocking().single();
 
         verify(registryMock).addService(any(ConfigService.class), anyString());
         assertEquals(ServiceType.CONFIG, registered.type());
@@ -159,7 +159,7 @@ public class CouchbaseNodeTest {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
         Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, host))
-            .toBlockingObservable().single();
+            .toBlocking().single();
 
         verify(registryMock).addService(any(BinaryService.class), anyString());
         assertEquals(ServiceType.BINARY, registered.type());
@@ -173,7 +173,7 @@ public class CouchbaseNodeTest {
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, null, host))
-            .toBlockingObservable().single();
+            .toBlocking().single();
         verify(registryMock).removeService(any(Service.class), anyString());
     }
 
@@ -185,7 +185,7 @@ public class CouchbaseNodeTest {
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
         node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, "bucket", host))
-            .toBlockingObservable().single();
+            .toBlocking().single();
         verify(registryMock).removeService(any(Service.class), anyString());
     }
 }

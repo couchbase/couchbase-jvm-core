@@ -302,17 +302,12 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         ClusterConfig config = configuration.get();
 
         Set<InetAddress> configNodes = new HashSet<InetAddress>();
-        nodeLock.readLock().lock();
-        try {
-            for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
-                BucketConfig bucketConfig = bucket.getValue();
-                for (final NodeInfo node : bucketConfig.nodes()) {
-                    configNodes.add(node.hostname());
-                }
-                reconfigureBucket(bucketConfig);
+        for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
+            BucketConfig bucketConfig = bucket.getValue();
+            for (final NodeInfo node : bucketConfig.nodes()) {
+                configNodes.add(node.hostname());
             }
-        } finally {
-            nodeLock.readLock().unlock();
+            reconfigureBucket(bucketConfig);
         }
 
         nodeLock.writeLock().lock();

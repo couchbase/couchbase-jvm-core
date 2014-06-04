@@ -68,7 +68,7 @@ configurations {
 
 dependencies {
     compile group: 'io.netty', name: 'netty-all', version: '4.0.19.Final'
-    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.18.4'
+    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.19.0'
     compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
     compile group: 'com.typesafe', name: 'config', version: '1.2.0'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'

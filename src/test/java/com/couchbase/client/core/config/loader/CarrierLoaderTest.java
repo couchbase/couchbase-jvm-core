@@ -91,7 +91,7 @@ public class CarrierLoaderTest {
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
-        assertEquals("myconfig", configObservable.toBlockingObservable().single());
+        assertEquals("myconfig", configObservable.toBlocking().single());
     }
 
     @Test
@@ -106,7 +106,7 @@ public class CarrierLoaderTest {
         CarrierLoader loader = new CarrierLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
         try {
-            configObservable.toBlockingObservable().single();
+            configObservable.toBlocking().single();
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
@@ -123,7 +123,7 @@ public class CarrierLoaderTest {
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
         try {
-            loader.discoverConfig("bucket", "password", host).toBlockingObservable().single();
+            loader.discoverConfig("bucket", "password", host).toBlocking().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
             assertEquals("Carrier Bootstrap disabled through configuration.", ex.getMessage());

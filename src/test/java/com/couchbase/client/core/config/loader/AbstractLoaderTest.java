@@ -87,7 +87,7 @@ public class AbstractLoaderTest {
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
-        BucketConfig loadedConfig = configObservable.toBlockingObservable().single().value2();
+        BucketConfig loadedConfig = configObservable.toBlocking().single().value2();
         assertEquals("default", loadedConfig.name());
         assertEquals(1, loadedConfig.nodes().size());
     }
@@ -110,7 +110,7 @@ public class AbstractLoaderTest {
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
-        List<Tuple2<LoaderType, BucketConfig>> loadedConfigs = configObservable.toList().toBlockingObservable().single();
+        List<Tuple2<LoaderType, BucketConfig>> loadedConfigs = configObservable.toList().toBlocking().single();
         assertEquals(3, loadedConfigs.size());
     }
 
@@ -131,7 +131,7 @@ public class AbstractLoaderTest {
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
-            configObservable.toBlockingObservable().single();
+            configObservable.toBlocking().single();
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
@@ -196,7 +196,7 @@ public class AbstractLoaderTest {
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
-            configObservable.toBlockingObservable().single();
+            configObservable.toBlocking().single();
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Could not add node for config loading.", ex.getMessage());
@@ -222,7 +222,7 @@ public class AbstractLoaderTest {
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable = loader.loadConfig(seedNodes, "default", "password");
 
         try {
-            configObservable.toBlockingObservable().single();
+            configObservable.toBlocking().single();
             assertTrue(false);
         } catch(IllegalStateException ex) {
             assertEquals("Could not add service for config loading.", ex.getMessage());

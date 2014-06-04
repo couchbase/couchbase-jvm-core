@@ -47,6 +47,7 @@ import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -131,7 +132,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
                     convertStatus(msg.getStatus()),
                     bucket,
                     msg.content().copy(),
-                    addr.getHostName()
+                    InetAddress.getByName(addr.getHostName())
                 )
             );
         } else if (current instanceof GetRequest) {

@@ -81,7 +81,7 @@ public class DefaultConfigurationProviderTest {
         );
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
-        ClusterConfig config = configObservable.toBlockingObservable().first();
+        ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
         assertFalse(config.hasBucket("other"));
     }
@@ -117,7 +117,7 @@ public class DefaultConfigurationProviderTest {
         );
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
-        ClusterConfig config = configObservable.toBlockingObservable().first();
+        ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
         assertFalse(config.hasBucket("other"));
     }
@@ -156,7 +156,7 @@ public class DefaultConfigurationProviderTest {
         });
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
-        ClusterConfig config = configObservable.toBlockingObservable().first();
+        ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
         assertFalse(config.hasBucket("other"));
         assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -187,7 +187,7 @@ public class DefaultConfigurationProviderTest {
 
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         try {
-            configObservable.toBlockingObservable().single();
+            configObservable.toBlocking().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
             assertEquals("Could not open bucket.", ex.getMessage());

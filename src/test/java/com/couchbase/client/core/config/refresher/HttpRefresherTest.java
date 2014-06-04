@@ -75,7 +75,7 @@ public class HttpRefresherTest {
         });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
-        assertTrue(observable.toBlockingObservable().single());
+        assertTrue(observable.toBlocking().single());
         assertTrue(latch.await(3, TimeUnit.SECONDS));
     }
 
@@ -108,7 +108,7 @@ public class HttpRefresherTest {
         });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
-        assertTrue(observable.toBlockingObservable().single());
+        assertTrue(observable.toBlocking().single());
         assertTrue(latch.await(3, TimeUnit.SECONDS));
     }
 
