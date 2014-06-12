@@ -59,7 +59,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final RingBuffer<ResponseEvent> responseBuffer;
     protected List<Observable<LifecycleState>> endpointStates;
 
-    protected AbstractService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
+    protected AbstractService(final String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
         SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer, EndpointFactory factory) {
         super(LifecycleState.DISCONNECTED);
 
@@ -82,10 +82,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         }).subscribe(new Action1<LifecycleState>() {
             @Override
             public void call(LifecycleState state) {
+                if (state == state()) {
+                    return;
+                }
                 if (state == LifecycleState.CONNECTED) {
-                    LOGGER.debug("Connected to " + AbstractService.this.getClass().getSimpleName());
+                    LOGGER.debug("Connected ("+state()+") to " + AbstractService.this.getClass().getSimpleName() + " " + hostname);
                 } else if (state == LifecycleState.DISCONNECTED) {
-                    LOGGER.debug("Disconnected from " + AbstractService.this.getClass().getSimpleName());
+                    LOGGER.debug("Disconnected ("+state()+") from " + AbstractService.this.getClass().getSimpleName() + " " + hostname);
                 }
                 transitionState(state);
             }

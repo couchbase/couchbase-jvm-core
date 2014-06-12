@@ -19,53 +19,51 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.util;
+package com.couchbase.client.core.operators;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.functions.FuncN;
+import rx.internal.operators.OnSubscribeCombineLatest;
+
+import java.util.List;
 
 /**
- * Helper class to centralize test properties that can be modified through system properties.
+ * This operator works very much like {@link OnSubscribeCombineLatest}, but instead it honors the fact that
+ * the list of observables given on construction can be changed any time.
  *
+ * @param <T> the common base type of the source values.
+ * @param <R> the result type of the combinator function.
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class TestProperties {
-
-    private static String seedNode;
-    private static String bucket;
-    private static String password;
+public class OnSubscribeDynamicCombineLatest<T, R> implements Observable.OnSubscribe<R> {
 
     /**
-     * Initialize static the properties.
+     * Contains the source observables to combine.
      */
-    static {
-        seedNode = System.getProperty("seedNode", "127.0.0.1");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
-    }
+    final List<? extends Observable<? extends T>> sources;
 
     /**
-     * The seed node to bootstrap from.
+     * The combinator function.
+     */
+    final FuncN<? extends R> combinator;
+
+    /**
+     * Creates a new {@link OnSubscribeDynamicCombineLatest} operator.
      *
-     * @return the seed node.
+     * @param sources the source observables.
+     * @param combinator the combinator.
      */
-    public static String seedNode() {
-        return seedNode;
+    public OnSubscribeDynamicCombineLatest(final List<? extends Observable<? extends T>> sources,
+        final FuncN<? extends R> combinator) {
+        this.sources = sources;
+        this.combinator = combinator;
     }
 
-    /**
-     * The bucket to work against.
-     *
-     * @return the name of the bucket.
-     */
-    public static String bucket() {
-        return bucket;
+    @Override
+    public void call(final Subscriber<? super R> child) {
+        System.out.println(child);
     }
 
-    /**
-     * The password of the bucket.
-     *
-     * @return the password of the bucket.
-     */
-    public static String password() {
-        return password;
-    }
 }

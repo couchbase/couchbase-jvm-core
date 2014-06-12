@@ -249,7 +249,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    LOGGER.debug("Successfully disconnected from Endpoint " + channel.remoteAddress());
+                    LOGGER.debug("Disconnected from " + AbstractEndpoint.this.getClass().getSimpleName() + " "
+                        + channel.remoteAddress());
                 } else {
                     LOGGER.warn("Received an error during disconnect.", future.cause());
                 }
@@ -289,21 +290,27 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * Helper method that is called from inside the event loop to notify the upper {@link Endpoint} of a disconnect.
      *
+     * Note that the connect method is only called if the endpoint is currently connected, since otherwise this would
+     * try to connect to a socket which has already been removed on a failover/rebalance out.
+     *
      * Subsequent reconnect attempts are triggered from here.
      */
     public void notifyChannelInactive() {
-        transitionState(LifecycleState.DISCONNECTED);
-        connect();
+        if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
+            transitionState(LifecycleState.DISCONNECTED);
+            connect();
+        }
     }
 
     /**
-     * Returns the reconnect retry delay in Miliseconds.
+     * Returns the reconnect retry delay in  milliseconds.
+     *
+     * For now just use linear backoff.
      *
      * @return the retry delay.
      */
     private long reconnectDelay() {
-        long delay = 1 << reconnectAttempt++;
-        return delay;
+        return reconnectAttempt++;
     }
 
     /**

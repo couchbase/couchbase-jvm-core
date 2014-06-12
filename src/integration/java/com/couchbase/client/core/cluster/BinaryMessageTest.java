@@ -39,6 +39,7 @@ import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesResponse;
+import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.util.TestProperties;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -48,7 +49,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,9 +68,9 @@ public class BinaryMessageTest {
 
     private static ClusterFacade cluster;
 
+
     @BeforeClass
     public static void connect() {
-        System.setProperty("com.couchbase.client.bootstrap.carrier.enabled", "false");
         cluster = new CouchbaseCore();
         cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
                 new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
@@ -78,6 +80,8 @@ public class BinaryMessageTest {
                     }
                 }
         ).toBlocking().single();
+
+        cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
     }
 
     @AfterClass
@@ -96,10 +100,9 @@ public class BinaryMessageTest {
         assertEquals(content, cluster.<GetResponse>send(request).toBlocking().single().content()
             .toString(CharsetUtil.UTF_8));
 
-        try {
-            Thread.sleep(TimeUnit.DAYS.toMillis(1));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        List<GetRequest> keys = new ArrayList<GetRequest>(1024);
+        for (int i = 0; i < 1024; i++) {
+            keys.add(new GetRequest("key" + i, bucket));
         }
     }
 

@@ -6,6 +6,8 @@ import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
+import com.couchbase.client.core.message.config.FlushRequest;
+import com.couchbase.client.core.message.config.FlushResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -59,12 +61,18 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
             request = handleBucketConfigRequest(ctx, (BucketConfigRequest) msg);
         } else if (msg instanceof BucketStreamingRequest) {
             request = handleBucketStreamingRequest(ctx, (BucketStreamingRequest) msg);
+        } else if(msg instanceof FlushRequest) {
+            request = handleFlushRequest(ctx, (FlushRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown Message to encode: " + msg);
         }
 
         out.add(request);
         queue.offer(msg);
+    }
+
+    private HttpRequest handleFlushRequest(ChannelHandlerContext ctx, FlushRequest msg) {
+        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, msg.path());
     }
 
     private HttpRequest handleBucketStreamingRequest(ChannelHandlerContext ctx, BucketStreamingRequest msg) {
@@ -85,6 +93,19 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
             handleBucketConfigResponse(msg, out);
         } else if (currentRequest instanceof BucketStreamingRequest) {
             handleBucketStreamingResponse(ctx, msg, out);
+        } else if (currentRequest instanceof FlushRequest) {
+            handleFlushResponse(ctx, msg, out);
+        }
+    }
+
+
+    private void handleFlushResponse(ChannelHandlerContext ctx, HttpObject msg, List<Object> out) {
+        if (msg instanceof HttpResponse) {
+            int code = ((HttpResponse) msg).getStatus().code();
+            ResponseStatus status = code == 200 ? ResponseStatus.SUCCESS : ResponseStatus.FAILURE;
+            boolean done = code != 201;
+            out.add(new FlushResponse(done, status));
+            currentRequest = null;
         }
     }
 
@@ -116,4 +137,5 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
             }
         }
     }
+
 }

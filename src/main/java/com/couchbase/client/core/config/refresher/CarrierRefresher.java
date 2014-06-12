@@ -38,16 +38,16 @@ public class CarrierRefresher extends AbstractRefresher {
 
     @Override
     public Observable<Boolean> registerBucket(final String name, final String password) {
-        return null;
+        return Observable.just(true);
     }
 
     @Override
     public Observable<Boolean> deregisterBucket(final String name) {
-        return null;
+        return Observable.just(true);
     }
 
     @Override
     public Observable<Boolean> shutdown() {
-        return null;
+        return Observable.just(true);
     }
 }

@@ -51,13 +51,13 @@ import rx.functions.Func1;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The {@link RequestHandler} handles the overall concept of {@link Node}s and manages them concurrently.
@@ -87,11 +87,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     private final Locator CONFIG_LOCATOR = new ConfigLocator();
 
     /**
-     * The read/write lock for the list of managed nodes.
-     */
-    private final ReadWriteLock nodeLock = new ReentrantReadWriteLock();
-
-    /**
      * The list of currently managed nodes against the cluster.
      */
     private final Set<Node> nodes;
@@ -116,7 +111,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     public RequestHandler(Environment environment, Observable<ClusterConfig> configObservable,
         RingBuffer<ResponseEvent> responseBuffer) {
-        this(new HashSet<Node>(INITIAL_NODE_SIZE), environment, configObservable, responseBuffer);
+        this(Collections.newSetFromMap(new ConcurrentHashMap<Node, Boolean>(INITIAL_NODE_SIZE)), environment, configObservable, responseBuffer);
     }
 
     /**
@@ -144,7 +139,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     @Override
     public void onEvent(final RequestEvent event, long sequence, final boolean endOfBatch) throws Exception {
         final CouchbaseRequest request = event.getRequest();
-        nodeLock.readLock().lock();
 
         Node[] found = locator(request).locate(request, nodes, configuration.get());
         for (int i = 0; i < found.length; i++) {
@@ -156,7 +150,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             } catch(Exception ex) {
                 request.observable().onError(ex);
             } finally {
-                nodeLock.readLock().unlock();
                 event.setRequest(null);
             }
         }
@@ -213,24 +206,14 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * connected successfully.
      */
     Observable<LifecycleState> addNode(final Node node) {
-        try {
-            nodeLock.readLock().lock();
-            if (nodes.contains(node)) {
-                return Observable.from(node.state());
-            }
-        } finally {
-            nodeLock.readLock().unlock();
+        if (nodes.contains(node)) {
+            return Observable.from(node.state());
         }
 
         return node.connect().map(new Func1<LifecycleState, LifecycleState>() {
             @Override
             public LifecycleState call(LifecycleState lifecycleState) {
-                try {
-                    nodeLock.writeLock().lock();
-                    nodes.add(node);
-                } finally {
-                    nodeLock.writeLock().unlock();
-                }
+                nodes.add(node);
                 return lifecycleState;
             }
         });
@@ -243,9 +226,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * operations can be handled gracefully.
      */
     Observable<LifecycleState> removeNode(final Node node) {
-        nodeLock.writeLock().lock();
         nodes.remove(node);
-        nodeLock.writeLock().unlock();
         return node.disconnect();
     }
 
@@ -260,17 +241,12 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             return null;
         }
 
-        try {
-            nodeLock.readLock().lock();
-            for (Node node : nodes) {
-                if (node.hostname().equals(hostname)) {
-                    return node;
-                }
+        for (Node node : nodes) {
+            if (node.hostname().equals(hostname)) {
+                return node;
             }
-            return null;
-        } finally {
-            nodeLock.readLock().unlock();
         }
+        return null;
     }
 
     /**
@@ -310,16 +286,11 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             reconfigureBucket(bucketConfig);
         }
 
-        nodeLock.writeLock().lock();
-        try {
-            for (Node node : nodes) {
-                if (!configNodes.contains(node.hostname())) {
-                    removeNode(node);
-                    node.disconnect().subscribe();
-                }
+        for (Node node : nodes) {
+            if (!configNodes.contains(node.hostname())) {
+                removeNode(node);
+                node.disconnect().subscribe();
             }
-        } finally {
-            nodeLock.writeLock().unlock();
         }
     }
 

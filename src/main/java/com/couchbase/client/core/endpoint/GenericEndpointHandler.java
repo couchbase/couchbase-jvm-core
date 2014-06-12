@@ -91,6 +91,13 @@ public class GenericEndpointHandler extends CombinedChannelDuplexHandler<Generic
         ctx.fireChannelInactive();
     }
 
+    @Override
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
+        if (!ctx.channel().isWritable()) {
+            ctx.flush();
+        }
+        ctx.fireChannelWritabilityChanged();
+    }
 
     /**
      * The {@link EventRequestEncoder} stores the {@link CouchbaseRequest} and puts the payload into the pipeline.

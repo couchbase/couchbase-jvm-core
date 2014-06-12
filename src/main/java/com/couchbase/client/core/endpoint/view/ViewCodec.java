@@ -76,6 +76,8 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
      */
     private int currentTotalRows;
 
+    private int currentCode;
+
     /**
      * Creates a new {@link ViewCodec} with the default dequeue.
      */
@@ -88,7 +90,7 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
      *
      * @param queue a custom queue to test encoding/decoding.
      */
-    public ViewCodec(final Queue<Class<?>> queue) {
+    ViewCodec(final Queue<Class<?>> queue) {
         this.queue = queue;
     }
 
@@ -134,11 +136,27 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
             case INITIAL:
                 if (msg instanceof HttpResponse) {
                     HttpResponse response = (HttpResponse) msg;
-                    // Todo: error handling or retry based on the http response code.
-                    currentState = ParsingState.PREAMBLE;
+                    currentCode = response.getStatus().code();
+                    currentState = currentCode == 200 ? ParsingState.PREAMBLE : ParsingState.ERROR;
                     return;
                 } else {
                     throw new IllegalStateException("Only expecting HttpResponse in INITIAL");
+                }
+            case ERROR:
+                if (msg instanceof HttpContent) {
+                    HttpContent content = (HttpContent) msg;
+                    if (content.content().readableBytes() > 0) {
+                        currentChunk.writeBytes(content.content());
+                        content.content().clear();
+                    }
+
+                    if (msg instanceof LastHttpContent) {
+                        ResponseStatus status = currentCode == 404 ? ResponseStatus.NOT_EXISTS : ResponseStatus.FAILURE;
+                        in.add(new ViewQueryResponse(status, currentTotalRows, currentChunk.copy(), null));
+                        reset();
+
+                    }
+                    return;
                 }
             case PREAMBLE:
                 if (msg instanceof HttpContent) {
@@ -148,18 +166,21 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
                         content.content().clear();
                     }
 
-                    int pos = currentChunk.bytesBefore((byte) ',');
-                    if (pos > 0) {
-                        String[] rowsInfo = currentChunk.readBytes(pos+1).toString(CharsetUtil.UTF_8).split(":");
-                        currentTotalRows = Integer.parseInt(rowsInfo[1].substring(0, rowsInfo[1].length()-1));
-                    } else {
+                    int rowsStart = currentChunk.bytesBefore((byte) '[');
+                    if (rowsStart < 0) {
                         return;
                     }
-                    if (currentChunk.readableBytes() >= 8) {
-                        currentChunk.readerIndex(currentChunk.readerIndex() + 8);
+
+                    if (currentChunk.bytesBefore((byte) 't') >= 0) {
+                        ByteBuf slice = currentChunk.readBytes(rowsStart+1);
+                        String[] sliced = slice.toString(CharsetUtil.UTF_8).split(":");
+                        String[] parts = sliced[1].split(",");
+                        currentTotalRows = Integer.parseInt(parts[0]);
                     } else {
-                        return;
+                        currentChunk.readerIndex(currentChunk.readerIndex() + rowsStart+1);
                     }
+
+
                 } else {
                     throw new IllegalStateException("Only expecting HttpContent in PREAMBLE");
                 }
@@ -184,15 +205,20 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
                     returnContent.release();
 
                     if (last) {
-                        currentRequest = null;
-                        currentChunk.release();
-                        currentChunk = null;
-                        currentState = ParsingState.INITIAL;
+                        reset();
                     }
                 } else {
                     throw new IllegalStateException("Only expecting HttpContent in ROWS");
                 }
         }
+    }
+
+    private void reset() {
+        currentRequest = null;
+        currentChunk.release();
+        currentChunk = null;
+        currentState = ParsingState.INITIAL;
+        currentCode = 0;
     }
 
     static enum ParsingState {
@@ -209,7 +235,9 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         /**
          * Parses the individual view rows.
          */
-        ROWS
+        ROWS,
+
+        ERROR
     }
 
     /**
@@ -222,14 +250,19 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         private int depth = 0;
         private byte open = '{';
         private byte close = '}';
+        private byte stringMarker = '"';
+        private boolean inString = false;
 
         @Override
         public boolean process(byte value) throws Exception {
             counter++;
-            if (value == open) {
+            if (value == stringMarker) {
+                inString = !inString;
+            }
+            if (!inString && value == open) {
                 depth++;
             }
-            if (value == close) {
+            if (!inString && value == close) {
                 depth--;
                 if (depth == 0) {
                     marker = counter;
