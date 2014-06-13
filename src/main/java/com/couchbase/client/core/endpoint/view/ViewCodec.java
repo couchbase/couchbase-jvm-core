@@ -46,6 +46,9 @@ import java.util.Queue;
 /**
  * Code which handles encoding and decoding of requests/responses against the Couchbase View Engine.
  *
+ * It uses a JSON streaming parser approach which does not actually parse the contents but only extracts the pieces
+ * from the HTTP chunk that are needed.
+ *
  * @author Michael Nitschinger
  * @since 1.0
  */
@@ -76,6 +79,9 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
      */
     private int currentTotalRows;
 
+    /**
+     * The current HTTP response code.
+     */
     private int currentCode;
 
     /**
@@ -120,6 +126,12 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         }
     }
 
+    /**
+     * Handles the view query request.
+     *
+     * @param msg the actual message.
+     * @return a converted request to be sent over the wire.
+     */
     private HttpRequest handleViewQueryRequest(final ViewQueryRequest msg) {
         StringBuilder requestBuilder = new StringBuilder();
         requestBuilder.append("/").append(msg.bucket()).append("/_design/");
@@ -131,6 +143,13 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, requestBuilder.toString());
     }
 
+    /**
+     * Handles the streaming view query response.
+     *
+     * @param ctx the context.
+     * @param msg the incoming message.
+     * @param in the output object list.
+     */
     private void handleViewQueryResponse(ChannelHandlerContext ctx, HttpObject msg, List<Object> in) {
         switch (currentState) {
             case INITIAL:
@@ -179,8 +198,6 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
                     } else {
                         currentChunk.readerIndex(currentChunk.readerIndex() + rowsStart+1);
                     }
-
-
                 } else {
                     throw new IllegalStateException("Only expecting HttpContent in PREAMBLE");
                 }
@@ -213,6 +230,9 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         }
     }
 
+    /**
+     * Reset the response objects to a fresh state.
+     */
     private void reset() {
         currentRequest = null;
         currentChunk.release();
@@ -221,7 +241,11 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         currentCode = 0;
     }
 
+    /**
+     * All the possible parsing states for a streaming view response.
+     */
     static enum ParsingState {
+
         /**
          * Start of the incremental parsing process.
          */
@@ -237,6 +261,9 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
          */
         ROWS,
 
+        /**
+         * Parses an error state.
+         */
         ERROR
     }
 

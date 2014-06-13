@@ -206,32 +206,77 @@ public class ViewCodecTest {
     public void shouldSupportContentChunks() {
         queue.add(ViewQueryRequest.class);
 
+        String json = Resources.read("non-reduced-with-value.json", this.getClass());
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        HttpContent content1 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(0, 10), CharsetUtil.UTF_8));
+        HttpContent content2 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(11, 320), CharsetUtil.UTF_8));
+        HttpContent content3 = new DefaultLastHttpContent(Unpooled.copiedBuffer(json.substring(321, 662), CharsetUtil.UTF_8));
+        channel.writeInbound(response, content1, content2, content3);
+
+        ViewQueryResponse inbound1 = (ViewQueryResponse) channel.readInbound();
+        ViewQueryResponse inbound2 = (ViewQueryResponse) channel.readInbound();
+
+        assertEquals(ResponseStatus.CHUNKED, inbound1.status());
+        assertEquals(ResponseStatus.SUCCESS, inbound2.status());
+        assertEquals(632, inbound1.content().readableBytes() + inbound2.content().readableBytes());
+        assertTrue(inbound1.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+        assertTrue(inbound2.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+    }
+
+    @Test
+    public void shouldSupportContentChunksWitBraces() {
+        queue.add(ViewQueryRequest.class);
+
         String json = Resources.read("with-braces.json", this.getClass());
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-        HttpContent content1 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(0, 50), CharsetUtil.UTF_8));
-        HttpContent content2 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(51, 500), CharsetUtil.UTF_8));
-        HttpContent content3 = new DefaultLastHttpContent(Unpooled.copiedBuffer(json.substring(501, 1308), CharsetUtil.UTF_8));
-        channel.writeInbound(response, content1, content2, content3);
+        HttpContent content1 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(0, 10), CharsetUtil.UTF_8));
+        HttpContent content2 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(11, 320), CharsetUtil.UTF_8));
+        HttpContent content3 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(321, 662), CharsetUtil.UTF_8));
+        HttpContent content4 = new DefaultLastHttpContent(Unpooled.copiedBuffer(json.substring(663, 1308), CharsetUtil.UTF_8));
+        channel.writeInbound(response, content1, content2, content3, content4);
 
         ViewQueryResponse inbound1 = (ViewQueryResponse) channel.readInbound();
         ViewQueryResponse inbound2 = (ViewQueryResponse) channel.readInbound();
         ViewQueryResponse inbound3 = (ViewQueryResponse) channel.readInbound();
 
-        //System.out.println(inbound1);
+        assertEquals(ResponseStatus.CHUNKED, inbound1.status());
+        assertEquals(ResponseStatus.CHUNKED, inbound2.status());
+        assertEquals(ResponseStatus.SUCCESS, inbound3.status());
 
-        //System.out.println(inbound2);
+        String inbound1Content = inbound1.content().toString(CharsetUtil.UTF_8);
+        String inbound2Content = inbound2.content().toString(CharsetUtil.UTF_8);
+        String inbound3Content = inbound3.content().toString(CharsetUtil.UTF_8);
 
-        //System.out.println(inbound3);
+        assertEquals(1277, inbound1Content.length() + inbound2Content.length() + inbound3Content.length());
+        assertTrue(inbound1.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+        assertTrue(inbound2.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+        assertTrue(inbound3.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+    }
 
+    @Test
+    public void shouldSupportChunkSplitInString() {
+        queue.add(ViewQueryRequest.class);
 
+        String json = Resources.read("with-braces.json", this.getClass());
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        HttpContent content1 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(0, 65), CharsetUtil.UTF_8));
+        HttpContent content2 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(66, 391), CharsetUtil.UTF_8));
+        HttpContent content3 = new DefaultHttpContent(Unpooled.copiedBuffer(json.substring(392, 522), CharsetUtil.UTF_8));
+        HttpContent content4 = new DefaultLastHttpContent(Unpooled.copiedBuffer(json.substring(523, 1308), CharsetUtil.UTF_8));
+        channel.writeInbound(response, content1, content2, content3, content4);
 
-       /* ViewQueryResponse inbound = (ViewQueryResponse) channel.readInbound();
-        String inboundContent = inbound.content().toString(CharsetUtil.UTF_8);
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertEquals(96,inbound.totalRows());
-        assertEquals(1279, inboundContent.length());
-        assertTrue(json.contains(inboundContent));
-        assertTrue(inboundContent.endsWith("}"));*/
+        ViewQueryResponse inbound1 = (ViewQueryResponse) channel.readInbound();
+        ViewQueryResponse inbound2 = (ViewQueryResponse) channel.readInbound();
+
+        assertEquals(ResponseStatus.CHUNKED, inbound1.status());
+        assertEquals(ResponseStatus.SUCCESS, inbound2.status());
+
+        String inbound1Content = inbound1.content().toString(CharsetUtil.UTF_8);
+        String inbound2Content = inbound2.content().toString(CharsetUtil.UTF_8);
+
+        assertEquals(1280, inbound1Content.length() + inbound2Content.length());
+        assertTrue(inbound1.content().toString(CharsetUtil.UTF_8).endsWith("}"));
+        assertTrue(inbound2.content().toString(CharsetUtil.UTF_8).endsWith("}"));
     }
 
 }
