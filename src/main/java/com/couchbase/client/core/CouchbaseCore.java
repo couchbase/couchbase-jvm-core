@@ -179,8 +179,11 @@ public class CouchbaseCore implements ClusterFacade {
                 .openBucket(request.bucket(), request.password())
                 .map(new Func1<ClusterConfig, OpenBucketResponse>() {
                     @Override
-                    public OpenBucketResponse call(ClusterConfig clusterConfig) {
-                        return new OpenBucketResponse(ResponseStatus.SUCCESS);
+                    public OpenBucketResponse call(final ClusterConfig clusterConfig) {
+                        if (clusterConfig.hasBucket(request.bucket())) {
+                            return new OpenBucketResponse(ResponseStatus.SUCCESS);
+                        }
+                        throw new CouchbaseException("Could not open bucket.");
                     }
                 })
                 .subscribe(request.observable());

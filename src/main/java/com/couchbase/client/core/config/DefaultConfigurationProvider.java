@@ -223,7 +223,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 }
             }).onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
                 @Override
-                public Observable<ClusterConfig> call(Throwable throwable) {
+                public Observable<ClusterConfig> call(final Throwable throwable) {
                     return Observable.error(new ConfigurationException("Could not open bucket.", throwable));
                 }
             });
@@ -289,6 +289,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         configObservable.onNext(currentConfig.get());
     }
 
+    /**
+     * Remove a bucket config (closing it).
+     *
+     * @param name the name of the bucket.
+     */
     private void removeBucketConfig(final String name) {
         ClusterConfig cluster = currentConfig.get();
         cluster.deleteBucketConfig(name);

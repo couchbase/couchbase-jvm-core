@@ -21,18 +21,14 @@
  */
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.ClusterFacade;
-import com.couchbase.client.core.CouchbaseCore;
-import com.couchbase.client.core.message.cluster.DisconnectRequest;
-import com.couchbase.client.core.message.cluster.OpenBucketRequest;
-import com.couchbase.client.core.message.cluster.OpenBucketResponse;
-import com.couchbase.client.core.message.cluster.SeedNodesRequest;
-import com.couchbase.client.core.message.cluster.SeedNodesResponse;
-import com.couchbase.client.core.util.TestProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import rx.Observable;
-import rx.functions.Func1;
+import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.view.ViewQueryRequest;
+import com.couchbase.client.core.message.view.ViewQueryResponse;
+import com.couchbase.client.core.util.ClusterDependentTest;
+import io.netty.util.CharsetUtil;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Verifies basic functionality of view operations.
@@ -40,51 +36,18 @@ import rx.functions.Func1;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class ViewMessageTest {
+public class ViewMessageTest extends ClusterDependentTest {
 
-    private static final String seedNode = TestProperties.seedNode();
-    private static final String bucket = TestProperties.bucket();
-    private static final String password = TestProperties.password();
-
-    private static ClusterFacade cluster;
-
-    @BeforeClass
-    public static void connect() {
-        cluster = new CouchbaseCore();
-        cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
-            new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
-                @Override
-                public Observable<OpenBucketResponse> call(SeedNodesResponse response) {
-                    return cluster.send(new OpenBucketRequest(bucket, password));
-                }
-            }
-        ).toBlocking().single();
-    }
-
-    @AfterClass
-    public static void disconnect() throws InterruptedException {
-        cluster.send(new DisconnectRequest()).toBlocking().first();
-    }
-
-    /*@Test
-    public void shoudQueryNonExistentView() {
-        ViewQueryResponse single = cluster
-            .<ViewQueryResponse>send(new ViewQueryRequest("design", "view", false, bucket, password))
+    @Test
+    public void shouldQueryNonExistentView() {
+        ViewQueryResponse single = cluster()
+            .<ViewQueryResponse>send(new ViewQueryRequest("design", "view", false, bucket(), password()))
             .toBlocking()
             .single();
 
         String expected = "{\"error\":\"not_found\",\"reason\":\"Design document _design/design not found\"}\n";
+        assertEquals(ResponseStatus.NOT_EXISTS, single.status());
         assertEquals(expected, single.content().toString(CharsetUtil.UTF_8));
-    }*/
+    }
 
-    /*@Test
-    public void shouldQueryExistingView() {
-        List<ViewQueryResponse> responses = cluster
-            .<ViewQueryResponse>send(new ViewQueryRequest("foo", "bar", false, bucket, password))
-            .toList()
-            .toBlocking()
-            .single();
-
-        System.out.println(responses);
-    }*/
 }

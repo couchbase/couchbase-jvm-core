@@ -120,7 +120,7 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         }
 
         if (currentRequest.equals(ViewQueryRequest.class)) {
-            handleViewQueryResponse(ctx, msg, in);
+            handleViewQueryResponse(msg, in);
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
@@ -146,11 +146,10 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
     /**
      * Handles the streaming view query response.
      *
-     * @param ctx the context.
      * @param msg the incoming message.
      * @param in the output object list.
      */
-    private void handleViewQueryResponse(ChannelHandlerContext ctx, HttpObject msg, List<Object> in) {
+    private void handleViewQueryResponse(HttpObject msg, List<Object> in) {
         switch (currentState) {
             case INITIAL:
                 if (msg instanceof HttpResponse) {

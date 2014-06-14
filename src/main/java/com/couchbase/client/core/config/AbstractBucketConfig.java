@@ -1,5 +1,6 @@
 package com.couchbase.client.core.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractBucketConfig implements BucketConfig {
@@ -12,12 +13,20 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final List<NodeInfo> nodeInfo;
 
     protected AbstractBucketConfig(String name, BucketNodeLocator locator, String uri, String streamingUri,
-        List<NodeInfo> nodeInfo) {
+        List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
         this.name = name;
         this.locator = locator;
         this.uri = uri;
         this.streamingUri = streamingUri;
-        this.nodeInfo = nodeInfo;
+        if (portInfos == null) {
+            this.nodeInfo = nodeInfos;
+        } else {
+            List<NodeInfo> modified = new ArrayList<NodeInfo>();
+            for (int i = 0; i < nodeInfos.size(); i++) {
+                modified.add(new DefaultNodeInfo(nodeInfos.get(i).viewUri(), nodeInfos.get(i).hostname(), portInfos.get(i).ports(), portInfos.get(i).sslPorts()));
+            }
+            this.nodeInfo = modified;
+        }
     }
 
     @Override

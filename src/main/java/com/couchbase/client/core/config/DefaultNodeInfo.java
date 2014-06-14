@@ -58,7 +58,14 @@ public class DefaultNodeInfo implements NodeInfo {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
         this.directServices = parseDirectServices(ports);
-        this.sslServices = parseSslServices(ports);
+        this.sslServices = new HashMap<ServiceType, Integer>();
+    }
+
+    public DefaultNodeInfo(String viewUri, InetAddress hostname, Map<ServiceType, Integer> direct, Map<ServiceType, Integer> ssl) {
+        this.viewUri = viewUri;
+        this.hostname = hostname;
+        this.directServices = direct;
+        this.sslServices = ssl;
     }
 
     @Override
@@ -92,22 +99,6 @@ public class DefaultNodeInfo implements NodeInfo {
         }
         services.put(ServiceType.CONFIG, configPort);
         services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
-        return services;
-    }
-
-    private Map<ServiceType, Integer> parseSslServices(final Map<String, Integer> input) {
-        Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
-        for (Map.Entry<String, Integer> entry : input.entrySet()) {
-            String type = entry.getKey();
-            Integer port = entry.getValue();
-            if (type.equals("sslDirect")) {
-                services.put(ServiceType.BINARY, port);
-            } else if (type.equals("httpsCAPI")) {
-                services.put(ServiceType.VIEW, port);
-            } else if (type.equals("httpsMgmt")) {
-                services.put(ServiceType.CONFIG, port);
-            }
-        }
         return services;
     }
 

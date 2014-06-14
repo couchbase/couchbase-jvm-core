@@ -21,8 +21,6 @@
  */
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.ClusterFacade;
-import com.couchbase.client.core.CouchbaseCore;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.message.binary.GetResponse;
@@ -34,23 +32,12 @@ import com.couchbase.client.core.message.binary.ReplaceRequest;
 import com.couchbase.client.core.message.binary.ReplaceResponse;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
-import com.couchbase.client.core.message.cluster.DisconnectRequest;
-import com.couchbase.client.core.message.cluster.OpenBucketRequest;
-import com.couchbase.client.core.message.cluster.OpenBucketResponse;
-import com.couchbase.client.core.message.cluster.SeedNodesRequest;
-import com.couchbase.client.core.message.cluster.SeedNodesResponse;
-import com.couchbase.client.core.message.config.FlushRequest;
-import com.couchbase.client.core.util.TestProperties;
+import com.couchbase.client.core.util.ClusterDependentTest;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -60,74 +47,43 @@ import static org.junit.Assert.assertEquals;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class BinaryMessageTest {
-
-    private static final String seedNode = TestProperties.seedNode();
-    private static final String bucket = TestProperties.bucket();
-    private static final String password = TestProperties.password();
-
-    private static ClusterFacade cluster;
-
-
-    @BeforeClass
-    public static void connect() {
-        cluster = new CouchbaseCore();
-        cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
-                new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
-                    @Override
-                    public Observable<OpenBucketResponse> call(SeedNodesResponse response) {
-                        return cluster.send(new OpenBucketRequest(bucket, password));
-                    }
-                }
-        ).toBlocking().single();
-
-        cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
-    }
-
-    @AfterClass
-    public static void disconnect() throws InterruptedException {
-        cluster.send(new DisconnectRequest()).toBlocking().first();
-    }
+public class BinaryMessageTest extends ClusterDependentTest {
 
     @Test
     public void shouldUpsertAndGetDocument() {
         String key = "upsert-key";
         String content = "Hello World!";
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        cluster.<UpsertResponse>send(upsert).toBlocking().single();
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        cluster().<UpsertResponse>send(upsert).toBlocking().single();
 
-        GetRequest request = new GetRequest(key, bucket);
-        assertEquals(content, cluster.<GetResponse>send(request).toBlocking().single().content()
+        GetRequest request = new GetRequest(key, bucket());
+
+        assertEquals(content, cluster(). <GetResponse>send(request).toBlocking().single().content()
             .toString(CharsetUtil.UTF_8));
-
-        List<GetRequest> keys = new ArrayList<GetRequest>(1024);
-        for (int i = 0; i < 1024; i++) {
-            keys.add(new GetRequest("key" + i, bucket));
-        }
     }
 
     @Test
     public void shouldUpsertWithExpiration() throws Exception {
         String key = "upsert-key-vanish";
         String content = "Hello World!";
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), 1, 0, bucket);
-        cluster.<UpsertResponse>send(upsert).toBlocking().single();
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), 1, 0, bucket());
+        cluster().<UpsertResponse>send(upsert).toBlocking().single();
 
         Thread.sleep(2000);
 
-        GetRequest request = new GetRequest(key, bucket);
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<GetResponse>send(request).toBlocking().single().status());
+        GetRequest request = new GetRequest(key, bucket());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster().<GetResponse>send(request).toBlocking().single().status());
     }
 
     @Test
     public void shouldHandleDoubleInsert() {
         String key = "insert-key";
         String content = "Hello World!";
-        InsertRequest insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.SUCCESS, cluster.<InsertResponse>send(insert).toBlocking().single().status());
+        InsertRequest insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.SUCCESS, cluster().<InsertResponse>send(insert).toBlocking().single().status());
 
-        insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.EXISTS, cluster.<InsertResponse>send(insert).toBlocking().single().status());
+        insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.EXISTS, cluster().<InsertResponse>send(insert).toBlocking().single().status());
     }
 
     @Test
@@ -135,15 +91,15 @@ public class BinaryMessageTest {
         final String key = "replace-key";
         final String content = "replace content";
 
-        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<ReplaceResponse>send(insert).toBlocking().single().status());
+        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster().<ReplaceResponse>send(insert).toBlocking().single().status());
 
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket);
-        ReplaceResponse response = cluster.<UpsertResponse>send(upsert)
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
+        ReplaceResponse response = cluster().<UpsertResponse>send(upsert)
             .flatMap(new Func1<UpsertResponse, Observable<ReplaceResponse>>() {
                 @Override
                 public Observable<ReplaceResponse> call(UpsertResponse response) {
-                    return cluster.send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket));
+                    return cluster().send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket()));
                 }
             }
         ).toBlocking().single();
@@ -156,15 +112,15 @@ public class BinaryMessageTest {
         final String key = "replace-key-cas-fail";
         final String content = "replace content";
 
-        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<ReplaceResponse>send(insert).toBlocking().single().status());
+        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster().<ReplaceResponse>send(insert).toBlocking().single().status());
 
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket);
-        ReplaceResponse response = cluster.<UpsertResponse>send(upsert)
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
+        ReplaceResponse response = cluster().<UpsertResponse>send(upsert)
             .flatMap(new Func1<UpsertResponse, Observable<ReplaceResponse>>() {
                 @Override
                 public Observable<ReplaceResponse> call(UpsertResponse response) {
-                 return cluster.send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), 24234234L, bucket));
+                 return cluster().send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), 24234234L, bucket()));
                 }
             }).toBlocking().single();
 
@@ -176,15 +132,15 @@ public class BinaryMessageTest {
         final String key = "replace-key-cas-match";
         final String content = "replace content";
 
-        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<ReplaceResponse>send(insert).toBlocking().single().status());
+        ReplaceRequest insert = new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster().<ReplaceResponse>send(insert).toBlocking().single().status());
 
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket);
-        ReplaceResponse response = cluster.<UpsertResponse>send(upsert)
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
+        ReplaceResponse response = cluster().<UpsertResponse>send(upsert)
             .flatMap(new Func1<UpsertResponse, Observable<ReplaceResponse>>() {
                 @Override
                 public Observable<ReplaceResponse> call(UpsertResponse response) {
-                    return cluster.send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), response.cas(), bucket));
+                    return cluster().send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), response.cas(), bucket()));
                 }
             }).toBlocking().single();
 
@@ -195,27 +151,27 @@ public class BinaryMessageTest {
     public void shouldRemoveDocumentWithoutCAS() {
         String key = "remove-key";
         String content = "Hello World!";
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        assertEquals(ResponseStatus.SUCCESS, cluster.<UpsertResponse>send(upsert).toBlocking().single().status());
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        assertEquals(ResponseStatus.SUCCESS, cluster().<UpsertResponse>send(upsert).toBlocking().single().status());
 
-        RemoveRequest remove = new RemoveRequest(key, bucket);
-        assertEquals(ResponseStatus.SUCCESS, cluster.<RemoveResponse>send(remove).toBlocking().single().status());
-        GetRequest get = new GetRequest(key, bucket);
-        assertEquals(ResponseStatus.NOT_EXISTS, cluster.<GetResponse>send(get).toBlocking().single().status());
+        RemoveRequest remove = new RemoveRequest(key, bucket());
+        assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+        GetRequest get = new GetRequest(key, bucket());
+        assertEquals(ResponseStatus.NOT_EXISTS, cluster().<GetResponse>send(get).toBlocking().single().status());
     }
 
     @Test
     public void shouldRemoveDocumentWithCAS() {
         String key = "remove-key-cas";
         String content = "Hello World!";
-        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket);
-        UpsertResponse upsertResponse = cluster.<UpsertResponse>send(upsert).toBlocking().single();
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        UpsertResponse upsertResponse = cluster().<UpsertResponse>send(upsert).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, upsertResponse.status());
 
-        RemoveRequest remove = new RemoveRequest(key, 1233443, bucket);
-        assertEquals(ResponseStatus.EXISTS, cluster.<RemoveResponse>send(remove).toBlocking().single().status());
-        remove = new RemoveRequest(key, upsertResponse.cas(), bucket);
-        assertEquals(ResponseStatus.SUCCESS, cluster.<RemoveResponse>send(remove).toBlocking().single().status());
+        RemoveRequest remove = new RemoveRequest(key, 1233443, bucket());
+        assertEquals(ResponseStatus.EXISTS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+        remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
+        assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
     }
 
 }

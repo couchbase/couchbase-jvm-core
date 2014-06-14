@@ -24,8 +24,9 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         @JsonProperty("uri") String uri,
         @JsonProperty("streamingUri") String streamingUri,
         @JsonProperty("vBucketServerMap") PartitionInfo partitionInfo,
-        @JsonProperty("nodes") List<NodeInfo> nodeInfo) {
-        super(name, locator, uri, streamingUri, nodeInfo);
+        @JsonProperty("nodes") List<NodeInfo> nodeInfos,
+        @JsonProperty("nodesExt") List<PortInfo> portInfos) {
+        super(name, locator, uri, streamingUri, nodeInfos, portInfos);
         this.partitionInfo = partitionInfo;
     }
 
