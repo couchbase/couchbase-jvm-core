@@ -94,6 +94,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     private final RingBuffer<ResponseEvent> responseBuffer;
 
+    private final Environment env;
+
     /**
      * Factory which handles {@link SSLEngine} creation.
      */
@@ -137,6 +139,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.bucket = bucket;
         this.password = password;
         this.responseBuffer = null;
+        this.env = null;
     }
 
     /**
@@ -155,6 +158,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.bucket = bucket;
         this.password = password;
         this.responseBuffer = responseBuffer;
+        this.env = environment;
         if (environment.sslEnabled()) {
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
@@ -329,6 +333,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     protected String password() {
         return password;
+    }
+
+    protected Environment environment() {
+        return env;
     }
 
 }

@@ -29,7 +29,7 @@ public final class BinaryMemcacheResponseStatus {
     public static final short KEY_ENOENT = 0x01;
     public static final short KEY_EEXISTS = 0x02;
     public static final short E2BIG = 0x03;
-    public static final short EINVA = 0x04;
+    public static final short EINVAL = 0x04;
     public static final short NOT_STORED = 0x05;
     public static final short DELTA_BADVAL = 0x06;
     public static final short AUTH_ERROR = 0x20;

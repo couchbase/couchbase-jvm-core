@@ -211,6 +211,20 @@ public class CouchbaseEnvironment implements Environment {
         return endpoints;
     }
 
+    @Override
+    public boolean compressionEnabled() {
+        return getBoolean("compression.enabled");
+    }
+
+    @Override
+    public int compressionLowerLimit() {
+        int limit = getInt("compression.lowerLimit");
+        if (limit < 0) {
+            throw new EnvironmentException("The lower compression limit must be at least 0.");
+        }
+        return limit;
+    }
+
     protected int getInt(String path) {
         try {
             return config.getInt(namespace + '.' + path);

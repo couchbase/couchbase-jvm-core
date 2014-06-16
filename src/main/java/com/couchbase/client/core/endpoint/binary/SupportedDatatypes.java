@@ -19,53 +19,55 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.util;
+package com.couchbase.client.core.endpoint.binary;
 
 /**
- * Helper class to centralize test properties that can be modified through system properties.
+ * Contains the supported server datatypes.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class TestProperties {
-
-    private static String seedNode;
-    private static String bucket;
-    private static String password;
+public class SupportedDatatypes {
 
     /**
-     * Initialize static the properties.
+     * If JSON is supported.
      */
-    static {
-        seedNode = System.getProperty("seedNode", "192.168.56.105");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
+    private final boolean json;
+
+    /**
+     * If Compression is supported.
+     */
+    private final boolean compression;
+
+    public SupportedDatatypes(final boolean json, final boolean compression) {
+        this.json = json;
+        this.compression = compression;
     }
 
     /**
-     * The seed node to bootstrap from.
+     * If JSON Is supported.
      *
-     * @return the seed node.
+     * @return true if it is, false otherwise.
      */
-    public static String seedNode() {
-        return seedNode;
+    public boolean json() {
+        return json;
     }
 
     /**
-     * The bucket to work against.
+     * If compression is supported.
      *
-     * @return the name of the bucket.
+     * @return true if it is, false otherwise.
      */
-    public static String bucket() {
-        return bucket;
+    public boolean compression() {
+        return compression;
     }
 
-    /**
-     * The password of the bucket.
-     *
-     * @return the password of the bucket.
-     */
-    public static String password() {
-        return password;
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("SupportedDatatypes{");
+        sb.append("json=").append(json);
+        sb.append(", compression=").append(compression);
+        sb.append('}');
+        return sb.toString();
     }
 }

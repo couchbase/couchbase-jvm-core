@@ -67,21 +67,21 @@ configurations {
 }
 
 dependencies {
-    compile group: 'io.netty', name: 'netty-all', version: '4.0.19.Final'
+    compile group: 'io.netty', name: 'netty-all', version: '4.0.20.Final'
     compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.19.1'
     compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
     compile group: 'com.typesafe', name: 'config', version: '1.2.0'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.7'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.3.3'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.0'
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
-    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.13'
+    testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.2'
     testCompile group: 'org.mockito', name: 'mockito-all', version: '1.9.5'
 
     integrationCompile sourceSets.main.output
 
-    perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.5.6'
-    perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.5.6'
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.9'
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.9'
     perfCompile project
 
     markdownDoclet 'ch.raffael.pegdown-doclet:pegdown-doclet:1.1.1'

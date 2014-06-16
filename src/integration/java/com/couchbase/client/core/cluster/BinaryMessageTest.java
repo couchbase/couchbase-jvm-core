@@ -62,6 +62,7 @@ public class BinaryMessageTest extends ClusterDependentTest {
             .toString(CharsetUtil.UTF_8));
     }
 
+
     @Test
     public void shouldUpsertWithExpiration() throws Exception {
         String key = "upsert-key-vanish";

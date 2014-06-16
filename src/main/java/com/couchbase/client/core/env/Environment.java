@@ -135,4 +135,7 @@ public interface Environment {
      * @return amount of endpoints per service.
      */
     int queryServiceEndpoints();
+
+    boolean compressionEnabled();
+    int compressionLowerLimit();
 }

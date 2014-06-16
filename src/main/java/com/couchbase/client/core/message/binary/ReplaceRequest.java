@@ -25,6 +25,8 @@ public class ReplaceRequest extends AbstractBinaryRequest {
      */
     private final long cas;
 
+    private final boolean json;
+
     /**
      * Creates a new {@link ReplaceRequest}.
      *
@@ -33,7 +35,11 @@ public class ReplaceRequest extends AbstractBinaryRequest {
      * @param bucket the name of the bucket.
      */
     public ReplaceRequest(final String key, final ByteBuf content, final String bucket) {
-        this(key, content, 0, 0, 0, bucket);
+        this(key, content, 0, 0, 0, bucket, false);
+    }
+
+    public ReplaceRequest(final String key, final ByteBuf content, final String bucket, final boolean json) {
+        this(key, content, 0, 0, 0, bucket, json);
     }
 
     /**
@@ -45,7 +51,11 @@ public class ReplaceRequest extends AbstractBinaryRequest {
      * @param bucket the name of the bucket.
      */
     public ReplaceRequest(final String key, final ByteBuf content, final long cas, final String bucket) {
-        this(key, content, cas, 0, 0, bucket);
+        this(key, content, cas, 0, 0, bucket, false);
+    }
+
+    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final String bucket, final boolean json) {
+        this(key, content, cas, 0, 0, bucket, json);
     }
 
     /**
@@ -59,11 +69,16 @@ public class ReplaceRequest extends AbstractBinaryRequest {
      * @param bucket the the name of the bucket.
      */
     public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags, final String bucket) {
+        this(key, content, cas, exp, flags, bucket, false);
+    }
+
+    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags, final String bucket, final boolean json) {
         super(key, bucket, null);
         this.content = content;
         this.expiration = exp;
         this.flags = flags;
         this.cas = cas;
+        this.json = json;
     }
 
     /**
@@ -100,5 +115,9 @@ public class ReplaceRequest extends AbstractBinaryRequest {
      */
     public long cas() {
         return cas;
+    }
+
+    public boolean isJson() {
+        return json;
     }
 }
