@@ -27,16 +27,11 @@ import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.message.view.ViewRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.base64.Base64;
+import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 
 import java.util.ArrayDeque;
@@ -108,6 +103,11 @@ public class ViewCodec extends MessageToMessageCodec<HttpObject, ViewRequest> {
         } else {
             throw new IllegalArgumentException("Unknown Message to encode: " + msg);
         }
+
+        ByteBuf encoded = Base64.encode(Unpooled.copiedBuffer(msg.bucket() + ":" + msg.password(), CharsetUtil.UTF_8));
+        request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CharsetUtil.UTF_8));
+        encoded.release();
+
         out.add(request);
         queue.offer(msg.getClass());
     }
