@@ -39,6 +39,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -50,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 public class BinaryMessageTest extends ClusterDependentTest {
 
     @Test
-    public void shouldUpsertAndGetDocument() {
+    public void shouldUpsertAndGetDocument() throws Exception {
         String key = "upsert-key";
         String content = "Hello World!";
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
@@ -60,8 +62,22 @@ public class BinaryMessageTest extends ClusterDependentTest {
 
         assertEquals(content, cluster(). <GetResponse>send(request).toBlocking().single().content()
             .toString(CharsetUtil.UTF_8));
-    }
 
+      /*  while(true) {
+            for(int i=0; i < 64; i++) {
+                try {
+                    cluster().<GetResponse>send(new GetRequest("foo" + i, bucket()))
+                        .timeout(5, TimeUnit.SECONDS)
+                        .toBlocking().single();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }*/
+
+        Thread.sleep(TimeUnit.DAYS.toMillis(1));
+    }
 
     @Test
     public void shouldUpsertWithExpiration() throws Exception {

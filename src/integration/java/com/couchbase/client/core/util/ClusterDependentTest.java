@@ -38,7 +38,7 @@ public class ClusterDependentTest {
             }
         ).toBlocking().single();
 
-        cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
+        //cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
     }
 
     @AfterClass

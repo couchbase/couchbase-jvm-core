@@ -33,6 +33,7 @@ import com.couchbase.client.core.state.LifecycleState;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
+import rx.subjects.BehaviorSubject;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -125,9 +126,17 @@ public class CouchbaseNodeTest {
         when(registryMock.services()).thenReturn(Arrays.asList(service1Mock, service2Mock));
         when(service1Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTING));
         when(service2Mock.disconnect()).thenReturn(Observable.from(LifecycleState.DISCONNECTED));
+
+        BehaviorSubject<LifecycleState> states1 = BehaviorSubject.create();
+        BehaviorSubject<LifecycleState> states2 = BehaviorSubject.create();
+        when(service1Mock.states()).thenReturn(states1);
+        when(service2Mock.states()).thenReturn(states2);
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        assertEquals(LifecycleState.DISCONNECTING, node.disconnect().toBlocking().single());
+        Observable<LifecycleState> disconnect = node.disconnect();
+        states1.onNext(LifecycleState.DISCONNECTING);
+        states2.onNext(LifecycleState.DISCONNECTED);
+        assertEquals(LifecycleState.DISCONNECTING, disconnect.toBlocking().single());
     }
 
     @Test
@@ -182,9 +191,10 @@ public class CouchbaseNodeTest {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
         when(registryMock.serviceBy(ServiceType.BINARY, "bucket")).thenReturn(serviceMock);
+        when(serviceMock.states()).thenReturn(Observable.<LifecycleState>empty());
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
-        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, "bucket", host))
+        node.removeService(new RemoveServiceRequest(ServiceType.BINARY, "bucket", host))
             .toBlocking().single();
         verify(registryMock).removeService(any(Service.class), anyString());
     }

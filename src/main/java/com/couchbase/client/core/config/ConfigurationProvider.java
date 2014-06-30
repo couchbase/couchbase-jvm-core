@@ -62,4 +62,6 @@ public interface ConfigurationProvider {
     Observable<ClusterConfig> closeBuckets();
 
     void proposeBucketConfig(String bucket, String config);
+
+    void signalOutdated();
 }

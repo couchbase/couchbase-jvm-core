@@ -90,4 +90,18 @@ public interface BucketConfig {
      */
     List<NodeInfo> nodes();
 
+    /**
+     * If a config is marked as tainted.
+     *
+     * @return
+     */
+    boolean tainted();
+
+    /**
+     * Revision number (optional) for that configuration.
+     *
+     * @return
+     */
+    long rev();
+
 }

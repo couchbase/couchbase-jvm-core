@@ -24,6 +24,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'maven'
+apply plugin: 'checkstyle'
 
 group = 'com.couchbase.client'
 description = 'Official Couchbase JVM Core Library'
@@ -67,7 +68,7 @@ configurations {
 }
 
 dependencies {
-    compile group: 'io.netty', name: 'netty-all', version: '4.0.20.Final'
+    compile group: 'io.netty', name: 'netty-all', version: '4.0.21.Final'
     compile group: 'com.netflix.rxjava', name:'rxjava-core', version: '0.19.2'
     compile group: 'com.lmax', name: 'disruptor', version: '3.2.1'
     compile group: 'com.typesafe', name: 'config', version: '1.2.1'
@@ -80,8 +81,8 @@ dependencies {
 
     integrationCompile sourceSets.main.output
 
-    perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.9'
-    perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.9'
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-core', version: '0.9.1'
+    perfCompile group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '0.9.1'
     perfCompile project
 
     markdownDoclet 'ch.raffael.pegdown-doclet:pegdown-doclet:1.1.1'
@@ -162,6 +163,10 @@ install {
     repositories.mavenInstaller {
         customizePom(pom)
     }
+}
+
+checkstyle {
+    configFile = new File(rootDir, "checkstyle.xml")
 }
 
 def customizePom(def pom) {

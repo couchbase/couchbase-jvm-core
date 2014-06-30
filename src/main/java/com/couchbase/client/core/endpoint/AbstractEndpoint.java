@@ -25,6 +25,7 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
@@ -224,8 +225,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             observable.onError(future.cause());
                         } else {
                             long delay = reconnectDelay();
-                            LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: "
-                                    + future.channel().remoteAddress(), future.cause());
+                            LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: ",
+                                future.cause());
                             transitionState(LifecycleState.CONNECTING);
                             future.channel().eventLoop().schedule(new Runnable() {
                                 @Override
@@ -307,6 +308,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Subsequent reconnect attempts are triggered from here.
      */
     public void notifyChannelInactive() {
+        responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, SignalConfigReload.INSTANCE, null);
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
             connect();

@@ -66,6 +66,9 @@ public class BinaryLocator implements Locator {
         request.partition((short) partitionId);
 
         int nodeId = config.partitions().get(partitionId).master();
+        if (nodeId < 0) {
+            return new Node[] { };
+        }
         String hostname = config.partitionHosts().get(nodeId);
         for (Node node : nodes) {
             if (node.hostname().getHostName().equals(hostname)) {

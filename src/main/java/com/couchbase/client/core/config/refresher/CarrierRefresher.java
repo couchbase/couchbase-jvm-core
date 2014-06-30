@@ -22,7 +22,24 @@
 package com.couchbase.client.core.config.refresher;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
+import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
+import rx.Subscriber;
+import rx.Subscription;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Keeps the bucket config fresh through carrier configuration management.
@@ -32,22 +49,78 @@ import rx.Observable;
  */
 public class CarrierRefresher extends AbstractRefresher {
 
+    /**
+     * The logger used.
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(CarrierRefresher.class);
+
+    private final Map<String, Subscription> subscriptions;
+
     public CarrierRefresher(final ClusterFacade cluster) {
         super(cluster);
-    }
-
-    @Override
-    public Observable<Boolean> registerBucket(final String name, final String password) {
-        return Observable.just(true);
-    }
-
-    @Override
-    public Observable<Boolean> deregisterBucket(final String name) {
-        return Observable.just(true);
+        subscriptions = new ConcurrentHashMap<String, Subscription>();
     }
 
     @Override
     public Observable<Boolean> shutdown() {
         return Observable.just(true);
+    }
+
+    @Override
+    public void markTainted(final BucketConfig config) {
+        if (subscriptions.containsKey(config.name())) {
+            return;
+        }
+
+        LOGGER.debug("Config for bucket \"" + config.name() + "\" marked as tainted, starting polling.");
+        Observable.create(new Observable.OnSubscribe<Object>() {
+            @Override
+            public void call(final Subscriber<? super Object> subscriber) {
+                Subscription subscription = Schedulers.io().createWorker().schedulePeriodically(new Action0() {
+                    @Override
+                    public void call() {
+                        GetBucketConfigRequest req = new GetBucketConfigRequest(config.name(), config.nodes().get(0).hostname());
+                        cluster()
+                            .<GetBucketConfigResponse>send(req)
+                            .subscribe(new Action1<GetBucketConfigResponse>() {
+                                @Override
+                                public void call(GetBucketConfigResponse res) {
+                                    provider().proposeBucketConfig(res.bucket(), res.content().toString(CharsetUtil.UTF_8));
+                                }
+                            });
+                    }
+                }, 0, 1, TimeUnit.SECONDS);
+
+                subscriptions.put(config.name(), subscription);
+            }
+        }).subscribe();
+    }
+
+    @Override
+    public void markUntainted(final BucketConfig config) {
+        Subscription subscription = subscriptions.get(config.name());
+        if (subscription != null) {
+            LOGGER.debug("Config for bucket \"" + config.name() + "\" marked as untainted, stopping polling.");
+            subscription.unsubscribe();
+            subscriptions.remove(config.name());
+        }
+    }
+
+    @Override
+    public void refresh(final ClusterConfig config) {
+        Observable
+            .from(config.bucketConfigs().values())
+            .flatMap(new Func1<BucketConfig, Observable<GetBucketConfigResponse>>() {
+                @Override
+                public Observable<GetBucketConfigResponse> call(BucketConfig config) {
+                    GetBucketConfigRequest req = new GetBucketConfigRequest(config.name(), config.nodes().get(0).hostname());
+                    return cluster().send(req);
+                }
+            }).subscribe(new Action1<GetBucketConfigResponse>() {
+                @Override
+                public void call(GetBucketConfigResponse res) {
+                    provider().proposeBucketConfig(res.bucket(), res.content().toString(CharsetUtil.UTF_8));
+                }
+             });
     }
 }

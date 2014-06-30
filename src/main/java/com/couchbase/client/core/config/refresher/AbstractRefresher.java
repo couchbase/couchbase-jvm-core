@@ -24,11 +24,15 @@ package com.couchbase.client.core.config.refresher;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.PublishSubject;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Common implementation for all refreshers.
@@ -50,6 +54,10 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     private final ClusterFacade cluster;
 
+    private ConfigurationProvider provider;
+
+    private final Map<String, String> registrations;
+
     /**
      * Creates a new {@link AbstractRefresher}.
      *
@@ -58,6 +66,26 @@ public abstract  class AbstractRefresher implements Refresher {
     protected AbstractRefresher(final ClusterFacade cluster) {
         this.configStream = PublishSubject.create();
         this.cluster = cluster;
+        registrations = new ConcurrentHashMap<String, String>();
+    }
+
+    @Override
+    public Observable<Boolean> deregisterBucket(String name) {
+        if (registrations.containsKey(name)) {
+            registrations.remove(name);
+            return Observable.just(true);
+        }
+        return Observable.just(false);
+    }
+
+    @Override
+    public Observable<Boolean> registerBucket(String name, String password) {
+        if (registrations.containsKey(name)) {
+            return Observable.just(false);
+        }
+
+        registrations.put(name, password);
+        return Observable.just(true);
     }
 
     @Override
@@ -85,6 +113,19 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     protected ClusterFacade cluster() {
         return cluster;
+    }
+
+    protected ConfigurationProvider provider() {
+        return provider;
+    }
+
+    protected Map<String, String> registrations() {
+        return registrations;
+    }
+
+    @Override
+    public void provider(ConfigurationProvider provider) {
+        this.provider = provider;
     }
 
 }

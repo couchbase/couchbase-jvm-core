@@ -22,6 +22,7 @@
 package com.couchbase.client.core.config.refresher;
 
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import rx.Observable;
 
@@ -63,5 +64,26 @@ public interface Refresher {
      * @return true if succeeded, a failing {@link Observable} otherwise with the cause.
      */
     Observable<Boolean> shutdown();
+
+    /**
+     * Marks the given bucket as tainted.
+     *
+     * @param config
+     */
+    void markTainted(BucketConfig config);
+
+    /**
+     * Mark the given bucket as not tainted.
+     *
+     * @param config
+     */
+    void markUntainted(BucketConfig config);
+
+    /**
+     * If pull based, refresh configs for registered buckets.
+     */
+    void refresh(ClusterConfig config);
+
+    void provider(ConfigurationProvider provider);
 
 }

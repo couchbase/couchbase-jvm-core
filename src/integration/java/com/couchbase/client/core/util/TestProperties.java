@@ -37,8 +37,8 @@ public class TestProperties {
      * Initialize static the properties.
      */
     static {
-        seedNode = System.getProperty("seedNode", "127.0.0.1");
-        bucket = System.getProperty("bucket", "default");
+        seedNode = System.getProperty("seedNode", "192.168.56.101");
+        bucket = System.getProperty("bucket", "beer-sample");
         password = System.getProperty("password", "");
     }
 
