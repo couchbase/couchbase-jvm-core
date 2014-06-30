@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 public class RequestHandlerTest {
 
     private static final Environment environment = new CouchbaseEnvironment();
-    private static final Observable<ClusterConfig> configObservable = Observable.from(mock(ClusterConfig.class));
+    private static final Observable<ClusterConfig> configObservable = Observable.empty();
 
     @Test
     public void shouldAddNodes() {

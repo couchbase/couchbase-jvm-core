@@ -18,4 +18,12 @@ public class BucketConfigResponse extends AbstractCouchbaseResponse {
     public String config() {
         return config;
     }
+
+    @Override
+    public String toString() {
+        return "BucketConfigResponse{" +
+                "status=" + status() +
+                ", config='" + config + '\'' +
+                '}';
+    }
 }

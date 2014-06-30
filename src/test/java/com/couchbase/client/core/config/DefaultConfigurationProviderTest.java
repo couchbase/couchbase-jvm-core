@@ -29,10 +29,12 @@ import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import org.junit.Test;
+import org.mockito.internal.util.collections.Sets;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.subjects.AsyncSubject;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -58,7 +60,7 @@ public class DefaultConfigurationProviderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldOpenBucket() {
+    public void shouldOpenBucket() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
@@ -80,6 +82,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -88,7 +91,7 @@ public class DefaultConfigurationProviderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldDelegateLoadingToSecondProviderIfFirstFails() {
+    public void shouldDelegateLoadingToSecondProviderIfFirstFails() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
 
@@ -116,6 +119,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -155,6 +159,7 @@ public class DefaultConfigurationProviderTest {
             }
         });
 
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -164,7 +169,7 @@ public class DefaultConfigurationProviderTest {
     }
 
     @Test
-    public void shouldFailOpeningBucketIfNoConfigLoaded() {
+    public void shouldFailOpeningBucketIfNoConfigLoaded() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Environment environment = new CouchbaseEnvironment();
         Loader errorLoader = mock(Loader.class);
@@ -185,6 +190,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         try {
             configObservable.toBlocking().single();

@@ -131,7 +131,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             @Override
             public void call(final ClusterConfig config) {
                 configuration.set(config);
-                reconfigure();
+                reconfigure(config).subscribe();
             }
         });
     }
@@ -274,24 +274,45 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * This method is always called when a new configuration arrives and it will try to sync the actual node
      * and service setup with the one proposed by the configuration.
      */
-    private void reconfigure() {
-        ClusterConfig config = configuration.get();
+    public Observable<ClusterConfig> reconfigure(final ClusterConfig config) {
+        return Observable
+            .just(config)
+            .flatMap(new Func1<ClusterConfig, Observable<BucketConfig>>() {
+                @Override
+                public Observable<BucketConfig> call(final ClusterConfig clusterConfig) {
+                    return Observable.from(clusterConfig.bucketConfigs().values());
+                }
+            }).flatMap(new Func1<BucketConfig, Observable<Boolean>>() {
+                @Override
+                public Observable<Boolean> call(BucketConfig bucketConfig) {
+                    return reconfigureBucket(bucketConfig);
+                }
+            })
+            .last()
+            .doOnNext(new Action1<Boolean>() {
+                @Override
+                public void call(Boolean aBoolean) {
+                    Set<InetAddress> configNodes = new HashSet<InetAddress>();
+                    for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
+                        for (final NodeInfo node : bucket.getValue().nodes()) {
+                            configNodes.add(node.hostname());
+                        }
+                    }
 
-        Set<InetAddress> configNodes = new HashSet<InetAddress>();
-        for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
-            BucketConfig bucketConfig = bucket.getValue();
-            for (final NodeInfo node : bucketConfig.nodes()) {
-                configNodes.add(node.hostname());
-            }
-            reconfigureBucket(bucketConfig);
-        }
-
-        for (Node node : nodes) {
-            if (!configNodes.contains(node.hostname())) {
-                removeNode(node);
-                node.disconnect().subscribe();
-            }
-        }
+                    for (Node node : nodes) {
+                        if (!configNodes.contains(node.hostname())) {
+                            removeNode(node);
+                            node.disconnect().subscribe();
+                        }
+                    }
+                }
+            })
+            .map(new Func1<Boolean, ClusterConfig>() {
+                @Override
+                public ClusterConfig call(Boolean aBoolean) {
+                    return config;
+                }
+            });
     }
 
     /**
@@ -299,35 +320,45 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      *
      * @param config the config for this bucket.
      */
-    private void reconfigureBucket(final BucketConfig config) {
+    private Observable<Boolean> reconfigureBucket(final BucketConfig config) {
+        List<Observable<Boolean>> observables = new ArrayList<Observable<Boolean>>();
         for (final NodeInfo nodeInfo : config.nodes()) {
-            addNode(nodeInfo.hostname()).flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
-                @Override
-                public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
-                    Map<ServiceType, Integer> services =
-                        environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
-                    if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
-                        services.put(ServiceType.QUERY, environment.queryPort());
+            Observable<Boolean> obs = addNode(nodeInfo.hostname())
+                .flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
+                    @Override
+                    public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
+                        Map<ServiceType, Integer> services =
+                                environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                        if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
+                            services.put(ServiceType.QUERY, environment.queryPort());
+                        }
+                        return Observable.from(services);
                     }
-                    return Observable.from(services);
-                }
-            }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
-                @Override
-                public Observable<AddServiceRequest> call(final Map<ServiceType, Integer> services) {
-                    List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
-                    for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
-                        requests.add(new AddServiceRequest(service.getKey(), config.name(), config.password(),
-                            service.getValue(), nodeInfo.hostname()));
+                }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
+                    @Override
+                    public Observable<AddServiceRequest> call(final Map<ServiceType, Integer> services) {
+                        List<AddServiceRequest> requests = new ArrayList<AddServiceRequest>(services.size());
+                        for (Map.Entry<ServiceType, Integer> service : services.entrySet()) {
+                            requests.add(new AddServiceRequest(service.getKey(), config.name(), config.password(),
+                                    service.getValue(), nodeInfo.hostname()));
+                        }
+                        return Observable.from(requests);
                     }
-                    return Observable.from(requests);
-                }
-            }).flatMap(new Func1<AddServiceRequest, Observable<Service>>() {
-                @Override
-                public Observable<Service> call(AddServiceRequest request) {
-                    return addService(request);
-                }
-            }).subscribe();
+                }).flatMap(new Func1<AddServiceRequest, Observable<Service>>() {
+                    @Override
+                    public Observable<Service> call(AddServiceRequest request) {
+                        return addService(request);
+                    }
+                }).last().map(new Func1<Service, Boolean>() {
+                        @Override
+                        public Boolean call(Service service) {
+                            return true;
+                        }
+                    });
+            observables.add(obs);
         }
+
+        return Observable.merge(observables).last();
     }
 
 }

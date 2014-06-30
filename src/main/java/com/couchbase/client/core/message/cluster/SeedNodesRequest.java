@@ -22,6 +22,7 @@
 package com.couchbase.client.core.message.cluster;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
 import java.net.InetAddress;
@@ -75,17 +76,17 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
         super(null, null);
 
         if (nodes == null || nodes.isEmpty()) {
-            throw new IllegalArgumentException("Empty or null bootstrap list provided.");
+            throw new ConfigurationException("Empty or null bootstrap list provided.");
         }
         Set<InetAddress> parsedNodes = new HashSet<InetAddress>();
         for (String node : nodes) {
             if (node == null || node.isEmpty()) {
-                throw new IllegalArgumentException("Empty or null host in bootstrap list.");
+                throw new ConfigurationException("Empty or null host in bootstrap list.");
             }
             try {
                 parsedNodes.add(InetAddress.getByName(node));
             } catch (UnknownHostException e) {
-                throw new IllegalArgumentException("Unknown host " + node + " in bootstrap list.", e);
+                throw new ConfigurationException("Unknown host " + node + " in bootstrap list.", e);
             }
         }
         this.nodes = parsedNodes;

@@ -127,7 +127,7 @@ public class HttpLoaderTest {
             configObservable.toBlocking().single();
             assertTrue(false);
         } catch(IllegalStateException ex) {
-            assertEquals("Bucket config response did not return with success.", ex.getMessage());
+            assertEquals("Could not load bucket configuration: FAILURE(null)", ex.getMessage());
         } catch(Exception ex) {
             assertTrue(false);
         }

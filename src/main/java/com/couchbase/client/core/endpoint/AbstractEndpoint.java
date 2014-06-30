@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
+import sun.rmi.runtime.Log;
 
 import javax.net.ssl.SSLEngine;
 import java.util.concurrent.TimeUnit;
@@ -217,16 +218,22 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             + " " + channel.remoteAddress());
                         transitionState(LifecycleState.CONNECTED);
                     } else {
-                        long delay = reconnectDelay();
-                        LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: "
-                            + future.channel().remoteAddress(), future.cause());
-                        transitionState(LifecycleState.CONNECTING);
-                        future.channel().eventLoop().schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                connect();
-                            }
-                        }, delay, TimeUnit.MILLISECONDS);
+                        if(future.cause().getMessage() == "Auth Failure") {
+                            LOGGER.warn("Authentication failure against: " + future.channel().remoteAddress());
+                            transitionState(LifecycleState.DISCONNECTED);
+                            observable.onError(future.cause());
+                        } else {
+                            long delay = reconnectDelay();
+                            LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: "
+                                    + future.channel().remoteAddress(), future.cause());
+                            transitionState(LifecycleState.CONNECTING);
+                            future.channel().eventLoop().schedule(new Runnable() {
+                                @Override
+                                public void run() {
+                                    connect();
+                                }
+                            }, delay, TimeUnit.MILLISECONDS);
+                        }
                     }
                 }
                 observable.onNext(state());

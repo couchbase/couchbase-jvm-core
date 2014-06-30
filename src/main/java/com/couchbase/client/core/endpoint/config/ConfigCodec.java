@@ -8,16 +8,12 @@ import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.base64.Base64;
+import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 import rx.subjects.PublishSubject;
 
@@ -36,6 +32,7 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
     private ConfigRequest currentRequest;
     private StringBuilder currentConfig;
     private PublishSubject<String> configStream;
+    private int currentStatus;
 
     /**
      * Creates a new {@link ConfigCodec} with the default dequeue.
@@ -67,6 +64,11 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
             throw new IllegalArgumentException("Unknown Message to encode: " + msg);
         }
 
+
+        ByteBuf encoded = Base64.encode(Unpooled.copiedBuffer(msg.bucket() + ":" + msg.password(), CharsetUtil.UTF_8));
+        request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CharsetUtil.UTF_8));
+        encoded.release();
+
         out.add(request);
         queue.offer(msg);
     }
@@ -81,6 +83,7 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
 
     private HttpRequest handleBucketConfigRequest(ChannelHandlerContext ctx, BucketConfigRequest msg) {
         return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, msg.path());
+
     }
 
     @Override
@@ -127,11 +130,26 @@ public class ConfigCodec extends MessageToMessageCodec<HttpObject, ConfigRequest
     }
 
     private void handleBucketConfigResponse(final HttpObject msg, final List<Object> out) {
+        if (msg instanceof HttpResponse) {
+            HttpResponse res = (HttpResponse) msg;
+            currentStatus = res.getStatus().code();
+        }
         if (msg instanceof HttpContent) {
             currentConfig.append(((HttpContent) msg).content().toString(CharsetUtil.UTF_8));
 
             if (msg instanceof LastHttpContent) {
-                out.add(new BucketConfigResponse(currentConfig.toString(), ResponseStatus.SUCCESS));
+                switch(currentStatus) {
+                    case 200:
+                        out.add(new BucketConfigResponse(currentConfig.toString(), ResponseStatus.SUCCESS));
+                        break;
+                    case 401:
+                        out.add(new BucketConfigResponse("Unauthorized", ResponseStatus.FAILURE));
+                        break;
+                    case 404:
+                        out.add(new BucketConfigResponse(currentConfig.toString(), ResponseStatus.NOT_EXISTS));
+                        break;
+                }
+
                 currentConfig.setLength(0);
                 currentRequest = null;
             }

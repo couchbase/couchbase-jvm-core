@@ -199,6 +199,10 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.from(currentConfig.get());
         }
 
+        if (seedHosts.get() == null || seedHosts.get().isEmpty()) {
+            return Observable.error(new ConfigurationException("Seed node list not provided or empty."));
+        }
+
         Observable<Tuple2<LoaderType, BucketConfig>> observable = loaderChain.get(0).loadConfig(seedHosts.get(),
             bucket, password);
         for (int i = 1; i < loaderChain.size(); i++) {

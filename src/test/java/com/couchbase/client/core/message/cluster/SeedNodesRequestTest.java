@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.message.cluster;
 
+import com.couchbase.client.core.config.ConfigurationException;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -58,18 +59,18 @@ public class SeedNodesRequestTest {
         assertEquals(1, request.nodes().size());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ConfigurationException.class)
     public void shouldFailOnNullHostname() {
         List<String> nodes = null;
         new SeedNodesRequest(nodes);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ConfigurationException.class)
     public void shouldFailOnEmptyHostname() {
         new SeedNodesRequest(new ArrayList<String>());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ConfigurationException.class)
     public void shouldFailOnEmptyHostInVarargs() {
         new SeedNodesRequest("127.0.0.1", "");
     }
