@@ -20,8 +20,8 @@ public final class BucketConfigParser {
     /**
      * Parse a raw configuration into a {@link BucketConfig}.
      *
-     * @param input
-     * @return
+     * @param input the raw string input.
+     * @return the parsed bucket configuration.
      */
     public static BucketConfig parse(final String input) {
         try {

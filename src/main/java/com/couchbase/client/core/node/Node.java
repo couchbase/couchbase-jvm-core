@@ -46,7 +46,6 @@ public interface Node extends Stateful<LifecycleState> {
      * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
      *
      * @param request the request to send.
-     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
      */
     void send(CouchbaseRequest request);
 

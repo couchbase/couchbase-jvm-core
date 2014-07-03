@@ -58,7 +58,7 @@ public interface BucketConfig {
      * Setter to inject the password manually into the config.
      *
      * @param pasword
-     * @return
+     * @return the config for proper chaining.
      */
     BucketConfig password(String pasword);
 
@@ -93,14 +93,14 @@ public interface BucketConfig {
     /**
      * If a config is marked as tainted.
      *
-     * @return
+     * @return true if tainted.
      */
     boolean tainted();
 
     /**
      * Revision number (optional) for that configuration.
      *
-     * @return
+     * @return the rev number, might be 0.
      */
     long rev();
 

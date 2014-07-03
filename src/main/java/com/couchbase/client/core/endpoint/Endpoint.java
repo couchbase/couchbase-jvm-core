@@ -53,7 +53,6 @@ public interface Endpoint extends Stateful<LifecycleState> {
      * Sends a {@link CouchbaseRequest} into the endpoint and eventually returns a {@link CouchbaseResponse}.
      *
      * @param request the request to send.
-     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
      */
     void send(CouchbaseRequest request);
 

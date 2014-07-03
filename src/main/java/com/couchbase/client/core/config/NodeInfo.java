@@ -38,23 +38,31 @@ import java.util.Map;
 public interface NodeInfo {
 
     /**
+     * The view uri.
      *
-     * @return
+     * @return the view uri.
      */
     String viewUri();
 
     /**
+     * The inet address of the node.
      *
-     * @return
+     * @return the host address.
      */
     InetAddress hostname();
 
     /**
+     * The exposed non-ssl services.
      *
-     * @return
+     * @return a map containing all services with ports.
      */
     Map<ServiceType, Integer> services();
 
+    /**
+     * The exposed ssl services.
+     *
+     * @return a map containing all services with secured ports.
+     */
     Map<ServiceType, Integer> sslServices();
 
 

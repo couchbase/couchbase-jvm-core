@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
-import sun.rmi.runtime.Log;
 
 import javax.net.ssl.SSLEngine;
 import java.util.concurrent.TimeUnit;

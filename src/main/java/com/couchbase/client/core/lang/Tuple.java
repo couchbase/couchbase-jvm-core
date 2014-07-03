@@ -45,8 +45,6 @@ public final class Tuple {
      *
      * @param v1 the first value.
      * @param v2 the second value.
-     * @param <T1> the type of the first value.
-     * @param <T2> the type of the second value.
      * @return a tuple containing the values.
      */
     public static <T1, T2> Tuple2<T1, T2> create(final T1 v1, final T2 v2) {
@@ -59,9 +57,6 @@ public final class Tuple {
      * @param v1 the first value.
      * @param v2 the second value.
      * @param v3 the third value.
-     * @param <T1> the type of the first value.
-     * @param <T2> the type of the second value.
-     * @param <T3> the type of the third value.
      * @return a tuple containing the values.
      */
     public static <T1, T2, T3> Tuple3<T1, T2, T3> create(final T1 v1, final T2 v2, final T3 v3) {
@@ -75,10 +70,6 @@ public final class Tuple {
      * @param v2 the second value.
      * @param v3 the third value.
      * @param v4 the fourth value.
-     * @param <T1> the type of the first value.
-     * @param <T2> the type of the second value.
-     * @param <T3> the type of the third value.
-     * @param <T4> the type of the fourth value.
      * @return a tuple containing the values.
      */
     public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> create(final T1 v1, final T2 v2, final T3 v3, final T4 v4) {
@@ -93,11 +84,6 @@ public final class Tuple {
      * @param v3 the third value.
      * @param v4 the fourth value.
      * @param v5 the fifth value.
-     * @param <T1> the type of the first value.
-     * @param <T2> the type of the second value.
-     * @param <T3> the type of the third value.
-     * @param <T4> the type of the fourth value.
-     * @param <T5> the type of the fifth value.
      * @return a tuple containing the values.
      */
     public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> create(final T1 v1, final T2 v2, final T3 v3,

@@ -53,8 +53,6 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
 
     /**
      * Stub method implementation which needs to be overriden by all responses that support cloning.
-     *
-     * @return
      */
     @Override
     public CouchbaseRequest request() {
