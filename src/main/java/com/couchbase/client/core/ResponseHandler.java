@@ -91,7 +91,6 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
 
     private void retry(final ResponseEvent event) {
         final CouchbaseMessage message = event.getMessage();
-        System.err.println(message);
         if (message instanceof CouchbaseRequest) {
             scheduleForRetry((CouchbaseRequest) message);
         } else {

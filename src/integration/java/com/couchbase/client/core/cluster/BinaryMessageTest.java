@@ -39,8 +39,6 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -62,21 +60,6 @@ public class BinaryMessageTest extends ClusterDependentTest {
 
         assertEquals(content, cluster(). <GetResponse>send(request).toBlocking().single().content()
             .toString(CharsetUtil.UTF_8));
-
-      /*  while(true) {
-            for(int i=0; i < 64; i++) {
-                try {
-                    cluster().<GetResponse>send(new GetRequest("foo" + i, bucket()))
-                        .timeout(5, TimeUnit.SECONDS)
-                        .toBlocking().single();
-                } catch(Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }*/
-
-        Thread.sleep(TimeUnit.DAYS.toMillis(1));
     }
 
     @Test

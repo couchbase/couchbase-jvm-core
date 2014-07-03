@@ -26,6 +26,8 @@ import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -38,6 +40,8 @@ import rx.functions.Func1;
  */
 public class HttpRefresher extends AbstractRefresher {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpRefresher.class);
+
     private static final String TERSE_PATH = "/pools/default/bs/";
     private static final String VERBOSE_PATH = "/pools/default/bucketsStreaming/";
 
@@ -47,18 +51,18 @@ public class HttpRefresher extends AbstractRefresher {
 
     @Override
     public Observable<Boolean> registerBucket(final String name, final String password) {
+        LOGGER.debug("Registering bucket " + name + ".");
         return super.registerBucket(name, password).flatMap(new Func1<Boolean, Observable<BucketStreamingResponse>>() {
             @Override
             public Observable<BucketStreamingResponse> call(Boolean aBoolean) {
                 return cluster().send(new BucketStreamingRequest(TERSE_PATH, name, password));
             }
         }).onErrorResumeNext(new Func1<Throwable, Observable<BucketStreamingResponse>>() {
-                                                                                    @Override
-                                                                                    public Observable<BucketStreamingResponse> call(Throwable throwable) {
-                                                                                        return cluster().send(new BucketStreamingRequest(VERBOSE_PATH, name, password));
-                                                                                    }
-                                                                                }
-        )
+            @Override
+            public Observable<BucketStreamingResponse> call(Throwable throwable) {
+                return cluster().send(new BucketStreamingRequest(VERBOSE_PATH, name, password));
+            }
+        })
         .map(new Func1<BucketStreamingResponse, Boolean>() {
             @Override
             public Boolean call(final BucketStreamingResponse response) {
@@ -83,6 +87,7 @@ public class HttpRefresher extends AbstractRefresher {
 
     @Override
     public Observable<Boolean> deregisterBucket(final String name) {
+        LOGGER.debug("Deregistering bucket " + name + ".");
         return super.deregisterBucket(name);
     }
 

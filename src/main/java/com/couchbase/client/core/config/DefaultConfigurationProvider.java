@@ -308,7 +308,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
 
         cluster.setBucketConfig(config.name(), config);
-        //LOGGER.debug("Applying new configuration {}", config);
+        LOGGER.debug("Applying new configuration {}", config);
         currentConfig.set(cluster);
 
         boolean tainted = config.tainted();
