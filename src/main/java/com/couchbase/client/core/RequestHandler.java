@@ -130,8 +130,13 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         configObservable.subscribe(new Action1<ClusterConfig>() {
             @Override
             public void call(final ClusterConfig config) {
-                configuration.set(config);
-                reconfigure(config).subscribe();
+                try {
+                    configuration.set(config);
+                    reconfigure(config).subscribe();
+                } catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+
             }
         });
     }
@@ -286,6 +291,20 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * and service setup with the one proposed by the configuration.
      */
     public Observable<ClusterConfig> reconfigure(final ClusterConfig config) {
+        if (config.bucketConfigs().values().isEmpty()) {
+            return Observable.from(nodes).doOnNext(new Action1<Node>() {
+                @Override
+                public void call(Node node) {
+                    removeNode(node);
+                    node.disconnect().subscribe();
+                }
+            }).last().map(new Func1<Node, ClusterConfig>() {
+                @Override
+                public ClusterConfig call(Node node) {
+                    return config;
+                }
+            });
+        }
         return Observable
             .just(config)
             .flatMap(new Func1<ClusterConfig, Observable<BucketConfig>>() {

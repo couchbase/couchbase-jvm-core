@@ -175,14 +175,4 @@ public class BinaryMessageTest extends ClusterDependentTest {
         assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
     }
 
-    @Test
-    public void shouldHandleReplicaGet() {
-        String key = "upsert-key";
-        ReplicaGetRequest request = new ReplicaGetRequest(key, bucket(), (short) 3);
-        //GetRequest request = new GetRequest(key, bucket());
-
-        System.out.println(cluster(). <GetResponse>send(request).toBlocking().single().content()
-            .toString(CharsetUtil.UTF_8));
-    }
-
 }

@@ -7,6 +7,7 @@ import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesResponse;
+import com.couchbase.client.core.message.config.FlushRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import rx.Observable;
@@ -36,8 +37,7 @@ public class ClusterDependentTest {
                 }
             }
         ).toBlocking().single();
-
-        //cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
+        cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
     }
 
     @AfterClass
