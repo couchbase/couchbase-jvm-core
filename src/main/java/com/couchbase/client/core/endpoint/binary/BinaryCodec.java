@@ -35,6 +35,7 @@ import com.couchbase.client.core.message.binary.RemoveRequest;
 import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
 import com.couchbase.client.core.message.binary.ReplaceResponse;
+import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import io.netty.buffer.ByteBuf;
@@ -111,6 +112,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleGetBucketConfigRequest();
         } else if (msg instanceof GetRequest) {
             request = handleGetRequest((GetRequest) msg);
+        } else if (msg instanceof ReplicaGetRequest) {
+            request = handleReplicaGetRequest((ReplicaGetRequest) msg);
         } else if (msg instanceof UpsertRequest) {
             request = handleUpsertRequest((UpsertRequest) msg, ctx);
         } else if (msg instanceof InsertRequest) {
@@ -149,7 +152,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
                     InetAddress.getByName(addr.getHostName())
                 )
             );
-        } else if (current instanceof GetRequest) {
+        } else if (current instanceof GetRequest || current instanceof ReplicaGetRequest) {
             ByteBuf content = msg.content().copy();
             if (msg.getDataType() == 2 || msg.getDataType() == 3) {
                 ByteBuf compressed = ctx.alloc().buffer();
@@ -225,6 +228,17 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setReserved(request.partition());
         return msg;
     }
+
+    private BinaryMemcacheRequest handleReplicaGetRequest(final ReplicaGetRequest request) {
+        int length = request.key().length();
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
+        msg.setOpcode((byte) 0x83);
+        msg.setKeyLength((short) length);
+        msg.setTotalBodyLength((short) length);
+        msg.setReserved(request.partition());
+        return msg;
+    }
+
 
     /**
      * Creates the actual protocol level request for an incoming upsert request.

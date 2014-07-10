@@ -32,6 +32,8 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.cluster.ClusterRequest;
 import com.couchbase.client.core.message.cluster.DisconnectRequest;
 import com.couchbase.client.core.message.cluster.DisconnectResponse;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
@@ -217,6 +219,9 @@ public class CouchbaseCore implements ClusterFacade {
                     }
                 })
                 .subscribe(request.observable());
+        } else if (request instanceof GetClusterConfigRequest) {
+            request.observable().onNext(new GetClusterConfigResponse(configProvider.config(), ResponseStatus.SUCCESS));
+            request.observable().onCompleted();
         }
     }
 

@@ -141,19 +141,27 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         final CouchbaseRequest request = event.getRequest();
 
         Node[] found = locator(request).locate(request, nodes, configuration.get());
+
+        if (found == null) {
+            event.setRequest(null);
+            return;
+        }
         if (found.length == 0) {
             responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
+            event.setRequest(null);
         }
         for (int i = 0; i < found.length; i++) {
             try {
                 found[i].send(request);
-                if (endOfBatch) {
-                    found[i].send(SignalFlush.INSTANCE);
-                }
             } catch(Exception ex) {
                 request.observable().onError(ex);
             } finally {
                 event.setRequest(null);
+            }
+        }
+        if (endOfBatch) {
+            for (Node node : nodes) {
+                node.send(SignalFlush.INSTANCE);
             }
         }
     }

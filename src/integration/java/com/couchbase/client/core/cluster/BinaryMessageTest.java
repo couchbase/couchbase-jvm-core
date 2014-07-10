@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.binary.RemoveRequest;
 import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
 import com.couchbase.client.core.message.binary.ReplaceResponse;
+import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
@@ -172,6 +173,16 @@ public class BinaryMessageTest extends ClusterDependentTest {
         assertEquals(ResponseStatus.EXISTS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
         assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+    }
+
+    @Test
+    public void shouldHandleReplicaGet() {
+        String key = "upsert-key";
+        ReplicaGetRequest request = new ReplicaGetRequest(key, bucket(), (short) 3);
+        //GetRequest request = new GetRequest(key, bucket());
+
+        System.out.println(cluster(). <GetResponse>send(request).toBlocking().single().content()
+            .toString(CharsetUtil.UTF_8));
     }
 
 }

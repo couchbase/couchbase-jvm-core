@@ -1,12 +1,16 @@
 package com.couchbase.client.core.node.locate;
 
+import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.config.MemcacheBucketConfig;
+import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
 
 import java.io.UnsupportedEncodingException;
@@ -65,8 +69,17 @@ public class BinaryLocator implements Locator {
         int partitionId = (int) rv & config.partitions().size() - 1;
         request.partition((short) partitionId);
 
-        int nodeId = config.partitions().get(partitionId).master();
-        if (nodeId < 0) {
+
+        Partition partition = config.partitions().get(partitionId);
+        int nodeId = request instanceof ReplicaGetRequest
+            ? partition.replica(((ReplicaGetRequest) request).replica()-1) : partition.master();
+
+        if (nodeId == -2) {
+            request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + config.name()));
+            return null;
+        }
+        if (nodeId == -1) {
             return new Node[] { };
         }
         String hostname = config.partitionHosts().get(nodeId);
@@ -75,6 +88,7 @@ public class BinaryLocator implements Locator {
                 return new Node[] { node };
             }
         }
+
         throw new IllegalStateException("Node not found for request" + request);
     }
 

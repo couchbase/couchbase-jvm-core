@@ -19,6 +19,9 @@ public class DefaultPartition implements Partition {
 
     @Override
     public short replica(int num) {
+        if (num >= replicas.length) {
+            return -2;
+        }
         return replicas[num];
     }
 

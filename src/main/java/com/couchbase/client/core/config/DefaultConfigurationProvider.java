@@ -191,6 +191,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
+    public ClusterConfig config() {
+        return currentConfig.get();
+    }
+
+    @Override
     public boolean seedHosts(final Set<InetAddress> hosts) {
         if (bootstrapped) {
             LOGGER.debug("Seed hosts called with {}, but already bootstrapped.", hosts);

@@ -37,6 +37,13 @@ public interface ConfigurationProvider {
     Observable<ClusterConfig> configs();
 
     /**
+     * Returns the current config or null if not set.
+     *
+     * @return
+     */
+    ClusterConfig config();
+
+    /**
      * Set the initial seed hosts for bootstrap.
      *
      * This should only be done as long as the {@link ConfigurationProvider} is not bootstrapped, otherwise it
