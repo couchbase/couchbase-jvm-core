@@ -41,6 +41,7 @@ import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.compression.Snappy;
@@ -113,7 +114,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
         } else if (msg instanceof GetRequest) {
-            request = handleGetRequest((GetRequest) msg);
+            request = handleGetRequest((GetRequest) msg, ctx);
         } else if (msg instanceof ReplicaGetRequest) {
             request = handleReplicaGetRequest((ReplicaGetRequest) msg);
         } else if (msg instanceof UpsertRequest) {
@@ -225,13 +226,29 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      * @param request the incoming get request.
      * @return the built protocol request.
      */
-    private BinaryMemcacheRequest handleGetRequest(final GetRequest request) {
-        int length = request.key().length();
+    private BinaryMemcacheRequest handleGetRequest(final GetRequest request, final ChannelHandlerContext ctx) {
+        int keyLength = request.key().length();
         BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
-        msg.setOpcode(BinaryMemcacheOpcodes.GET);
-        msg.setKeyLength((short) length);
-        msg.setTotalBodyLength((short) length);
+
+        byte opcode;
+        ByteBuf extras;
+        if (request.lock()) {
+            opcode = (byte) 0x94;
+            extras = ctx.alloc().buffer().writeInt(request.expiry());
+        } else if (request.touch()) {
+            opcode = 0x1d;
+            extras = ctx.alloc().buffer().writeInt(request.expiry());
+        } else {
+            opcode = BinaryMemcacheOpcodes.GET;
+            extras = Unpooled.EMPTY_BUFFER;
+        }
+
+        msg.setOpcode(opcode);
+        msg.setKeyLength((short) keyLength);
+        msg.setTotalBodyLength((short) keyLength + extras.readableBytes());
         msg.setReserved(request.partition());
+        msg.setExtras(extras);
+        msg.setExtrasLength((byte) extras.readableBytes());
         return msg;
     }
 

@@ -29,14 +29,33 @@ package com.couchbase.client.core.message.binary;
  */
 public class GetRequest extends AbstractBinaryRequest {
 
-    /**
-     * Create a new {@link GetRequest}.
-     *
-     * @param key the key of the document.
-     * @param bucket the bucket of the document.
-     */
+    private final boolean lock;
+    private final boolean touch;
+    private final int expiry;
+
     public GetRequest(final String key, final String bucket) {
-        super(key, bucket, null);
+        this(key, bucket, false, false, 0);
     }
 
+    public GetRequest(final String key, final String bucket, final boolean lock, final boolean touch, final int expiry) {
+        super(key, bucket, null);
+        if (lock && touch) {
+            throw new IllegalArgumentException("Locking and touching in the same request is not supported");
+        }
+        this.lock = lock;
+        this.touch = touch;
+        this.expiry = expiry;
+    }
+
+    public boolean lock() {
+        return lock;
+    }
+
+    public boolean touch() {
+        return touch;
+    }
+
+    public int expiry() {
+        return expiry;
+    }
 }
