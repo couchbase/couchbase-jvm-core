@@ -25,6 +25,8 @@ import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.binary.CounterRequest;
+import com.couchbase.client.core.message.binary.CounterResponse;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.message.binary.GetRequest;
@@ -122,6 +124,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleReplaceRequest((ReplaceRequest) msg, ctx);
         } else if (msg instanceof RemoveRequest) {
             request = handleRemoveRequest((RemoveRequest) msg);
+        } else if (msg instanceof CounterRequest) {
+            request = handleCounterRequest((CounterRequest) msg, ctx);
         } else {
             throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
         }
@@ -178,6 +182,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             in.add(new ReplaceResponse(status, cas, bucket, msg.content().copy(), currentRequest));
         } else if (current instanceof RemoveRequest) {
             in.add(new RemoveResponse(convertStatus(msg.getStatus()), bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof CounterRequest) {
+            in.add(new CounterResponse(status, bucket, msg.content().getLong(0), msg.getCAS(), currentRequest));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
@@ -372,6 +378,21 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setKeyLength((short) request.key().length());
         msg.setTotalBodyLength((short) request.key().length());
         msg.setReserved(request.partition());
+        return msg;
+    }
+
+    private BinaryMemcacheRequest handleCounterRequest(final CounterRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf extras = ctx.alloc().buffer();
+        extras.writeLong(Math.abs(request.delta()));
+        extras.writeLong(request.initial());
+        extras.writeInt(request.expiry());
+
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key(), extras);
+        msg.setOpcode(request.delta() < 0 ? (byte) 0x06 : (byte) 0x05);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength((short) request.key().length() + extras.readableBytes());
+        msg.setExtrasLength((byte) extras.readableBytes());
+
         return msg;
     }
 

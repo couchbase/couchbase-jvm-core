@@ -22,6 +22,8 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.binary.CounterRequest;
+import com.couchbase.client.core.message.binary.CounterResponse;
 import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.message.binary.GetResponse;
 import com.couchbase.client.core.message.binary.InsertRequest;
@@ -30,7 +32,6 @@ import com.couchbase.client.core.message.binary.RemoveRequest;
 import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
 import com.couchbase.client.core.message.binary.ReplaceResponse;
-import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
@@ -41,6 +42,7 @@ import rx.Observable;
 import rx.functions.Func1;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Verifies basic functionality of binary operations.
@@ -173,6 +175,40 @@ public class BinaryMessageTest extends ClusterDependentTest {
         assertEquals(ResponseStatus.EXISTS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
         assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+    }
+
+    @Test
+    public void shouldIncrementFromCounter() {
+        String key = "counter-incr";
+
+        CounterResponse response1 = cluster().<CounterResponse>send(new CounterRequest(key, 0, 10, 0, bucket())).toBlocking().single();
+        assertEquals(0, response1.value());
+
+        CounterResponse response2 = cluster().<CounterResponse>send(new CounterRequest(key, 0, 10, 0, bucket())).toBlocking().single();
+        assertEquals(10, response2.value());
+
+        CounterResponse response3 = cluster().<CounterResponse>send(new CounterRequest(key, 0, 10, 0, bucket())).toBlocking().single();
+        assertEquals(20, response3.value());
+
+        assertTrue(response1.cas() != response2.cas());
+        assertTrue(response2.cas() != response3.cas());
+    }
+
+    @Test
+    public void shouldDecrementFromCounter() {
+        String key = "counter-decr";
+
+        CounterResponse response1 = cluster().<CounterResponse>send(new CounterRequest(key, 100, -10, 0, bucket())).toBlocking().single();
+        assertEquals(100, response1.value());
+
+        CounterResponse response2 = cluster().<CounterResponse>send(new CounterRequest(key, 100, -10, 0, bucket())).toBlocking().single();
+        assertEquals(90, response2.value());
+
+        CounterResponse response3 = cluster().<CounterResponse>send(new CounterRequest(key, 100, -10, 0, bucket())).toBlocking().single();
+        assertEquals(80, response3.value());
+
+        assertTrue(response1.cas() != response2.cas());
+        assertTrue(response2.cas() != response3.cas());
     }
 
 }

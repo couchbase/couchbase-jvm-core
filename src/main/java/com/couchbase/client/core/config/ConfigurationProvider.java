@@ -24,7 +24,6 @@ package com.couchbase.client.core.config;
 import rx.Observable;
 
 import java.net.InetAddress;
-import java.util.List;
 import java.util.Set;
 
 public interface ConfigurationProvider {
@@ -39,7 +38,7 @@ public interface ConfigurationProvider {
     /**
      * Returns the current config or null if not set.
      *
-     * @return
+     * @return returns the current cluster config.
      */
     ClusterConfig config();
 

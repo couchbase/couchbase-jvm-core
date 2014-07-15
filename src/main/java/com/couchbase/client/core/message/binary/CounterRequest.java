@@ -19,53 +19,40 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.util;
+package com.couchbase.client.core.message.binary;
 
 /**
- * Helper class to centralize test properties that can be modified through system properties.
+ * Request to handle increment/decrement of a counter.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class TestProperties {
+public class CounterRequest extends AbstractBinaryRequest {
 
-    private static String seedNode;
-    private static String bucket;
-    private static String password;
+    private final long initial;
+    private final long delta;
+    private final int expiry;
 
-    /**
-     * Initialize static the properties.
-     */
-    static {
-        seedNode = System.getProperty("seedNode", "127.0.0.1");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
+    public CounterRequest(String key, long initial, long delta, int expiry, String bucket) {
+        super(key, bucket, null);
+        if (initial < 0) {
+            throw new IllegalArgumentException("The initial needs to be >= 0");
+        }
+        this.initial = initial;
+        this.delta = delta;
+        this.expiry = expiry;
     }
 
-    /**
-     * The seed node to bootstrap from.
-     *
-     * @return the seed node.
-     */
-    public static String seedNode() {
-        return seedNode;
+    public long initial() {
+        return initial;
     }
 
-    /**
-     * The bucket to work against.
-     *
-     * @return the name of the bucket.
-     */
-    public static String bucket() {
-        return bucket;
+    public long delta() {
+        return delta;
     }
 
-    /**
-     * The password of the bucket.
-     *
-     * @return the password of the bucket.
-     */
-    public static String password() {
-        return password;
+    public int expiry() {
+        return expiry;
     }
+
 }
