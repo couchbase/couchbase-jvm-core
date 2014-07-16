@@ -1,3 +1,4 @@
+
 /**
  * Copyright (C) 2014 Couchbase, Inc.
  *
@@ -38,6 +39,10 @@ import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
 import com.couchbase.client.core.message.binary.ReplaceResponse;
 import com.couchbase.client.core.message.binary.ReplicaGetRequest;
+import com.couchbase.client.core.message.binary.TouchRequest;
+import com.couchbase.client.core.message.binary.TouchResponse;
+import com.couchbase.client.core.message.binary.UnlockRequest;
+import com.couchbase.client.core.message.binary.UnlockResponse;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
 import io.netty.buffer.ByteBuf;
@@ -77,7 +82,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     /**
      * The bucket used.
      */
-    private String bucket;
+    private final String bucket;
 
     /**
      * Default the datatypes to non-support.
@@ -89,8 +94,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     /**
      * Creates a new {@link BinaryCodec} with the default dequeue.
      */
-    public BinaryCodec(Environment env) {
-        this(env, new ArrayDeque<BinaryRequest>());
+    public BinaryCodec(String bucket, Environment env) {
+        this(bucket, env, new ArrayDeque<BinaryRequest>());
     }
 
     /**
@@ -98,18 +103,15 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
      *
      * @param queue a custom queue to test encoding/decoding.
      */
-    public BinaryCodec(Environment env, final Queue<BinaryRequest> queue) {
+    public BinaryCodec(String bucket, Environment env, final Queue<BinaryRequest> queue) {
         this.queue = queue;
         this.env = env;
+        this.bucket = bucket;
     }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx, final BinaryRequest msg, final List<Object> out)
         throws Exception {
-        if (bucket == null) {
-            bucket = msg.bucket();
-        }
-
         BinaryMemcacheRequest request;
         if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
@@ -127,6 +129,10 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleRemoveRequest((RemoveRequest) msg);
         } else if (msg instanceof CounterRequest) {
             request = handleCounterRequest((CounterRequest) msg, ctx);
+        } else if (msg instanceof TouchRequest) {
+            request = handleTouchRequest((TouchRequest) msg, ctx);
+        } else if (msg instanceof UnlockRequest) {
+            request = handleUnlockRequest((UnlockRequest) msg, ctx);
         } else {
             throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
         }
@@ -137,7 +143,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
 
     @Override
     protected void decode(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg,
-        final List<Object> in) throws Exception {
+                          final List<Object> in) throws Exception {
         BinaryRequest current = queue.poll();
 
         ResponseStatus status = convertStatus(msg.getStatus());
@@ -185,6 +191,10 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             in.add(new RemoveResponse(convertStatus(msg.getStatus()), bucket, msg.content().copy(), currentRequest));
         } else if (current instanceof CounterRequest) {
             in.add(new CounterResponse(status, bucket, msg.content().getLong(0), msg.getCAS(), currentRequest));
+        } else if (current instanceof UnlockRequest) {
+            in.add(new UnlockResponse(status, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof TouchRequest) {
+            in.add(new TouchResponse(status, bucket, msg.content().copy(), currentRequest));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
@@ -409,7 +419,7 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setKeyLength((short) request.key().length());
         msg.setTotalBodyLength((short) request.key().length() + extras.readableBytes());
         msg.setExtrasLength((byte) extras.readableBytes());
-
+        msg.setReserved(request.partition());
         return msg;
     }
 
@@ -421,6 +431,30 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
     private BinaryMemcacheRequest handleGetBucketConfigRequest() {
         BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest();
         msg.setOpcode((byte) 0xb5);
+        return msg;
+    }
+
+    private BinaryMemcacheRequest handleUnlockRequest(final UnlockRequest request, final ChannelHandlerContext ctx) {
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
+        msg.setOpcode((byte) 0x95);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength(request.key().length());
+        msg.setCAS(request.cas());
+        msg.setReserved(request.partition());
+        return msg;
+    }
+
+    private BinaryMemcacheRequest handleTouchRequest(final TouchRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf extras = ctx.alloc().buffer();
+        extras.writeInt(request.expiry());
+
+        BinaryMemcacheRequest msg = new DefaultBinaryMemcacheRequest(request.key());
+        msg.setExtras(extras);
+        msg.setOpcode((byte) 0x1c);
+        msg.setKeyLength((short) request.key().length());
+        msg.setTotalBodyLength(request.key().length() + extras.readableBytes());
+        msg.setExtrasLength((byte) extras.readableBytes());
+        msg.setReserved(request.partition());
         return msg;
     }
 

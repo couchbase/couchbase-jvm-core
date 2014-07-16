@@ -56,7 +56,7 @@ public class BinaryEndpoint extends AbstractEndpoint {
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
             .addLast(new BinarySaslClient(bucket(), password(), this))
             .addLast(new BinaryHelloClient())
-            .addLast(new BinaryCodec(environment()));
+            .addLast(new BinaryCodec(bucket(), environment()));
     }
 
 }
