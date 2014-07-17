@@ -1,6 +1,5 @@
 package com.couchbase.client.core.node.locate;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
@@ -10,6 +9,7 @@ import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.binary.ObserveRequest;
 import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
 
@@ -71,12 +71,25 @@ public class BinaryLocator implements Locator {
 
 
         Partition partition = config.partitions().get(partitionId);
-        int nodeId = request instanceof ReplicaGetRequest
-            ? partition.replica(((ReplicaGetRequest) request).replica()-1) : partition.master();
+
+        int nodeId;
+        if (request instanceof ReplicaGetRequest) {
+            nodeId = partition.replica(((ReplicaGetRequest) request).replica()-1);
+        } else if(request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0){
+            nodeId = partition.replica(((ObserveRequest) request).replica()-1);
+        } else {
+            nodeId = partition.master();
+        }
 
         if (nodeId == -2) {
-            request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + config.name()));
+            if (request instanceof ReplicaGetRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                    + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + config.name()));
+            } else if (request instanceof ObserveRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                    + ((ObserveRequest) request).replica() + " not configured for bucket " + config.name()));
+            }
+
             return null;
         }
         if (nodeId == -1) {

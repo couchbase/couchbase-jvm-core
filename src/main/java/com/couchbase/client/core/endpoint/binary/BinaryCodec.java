@@ -34,6 +34,8 @@ import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.message.binary.GetResponse;
 import com.couchbase.client.core.message.binary.InsertRequest;
 import com.couchbase.client.core.message.binary.InsertResponse;
+import com.couchbase.client.core.message.binary.ObserveRequest;
+import com.couchbase.client.core.message.binary.ObserveResponse;
 import com.couchbase.client.core.message.binary.RemoveRequest;
 import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
@@ -57,6 +59,7 @@ import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import io.netty.util.CharsetUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -133,6 +136,8 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             request = handleTouchRequest((TouchRequest) msg, ctx);
         } else if (msg instanceof UnlockRequest) {
             request = handleUnlockRequest((UnlockRequest) msg, ctx);
+        } else if (msg instanceof ObserveRequest) {
+            request = handleObserveRequest((ObserveRequest) msg, ctx);
         } else {
             throw new IllegalArgumentException("Unknown Messgae to encode: " + msg);
         }
@@ -195,6 +200,11 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
             in.add(new UnlockResponse(status, bucket, msg.content().copy(), currentRequest));
         } else if (current instanceof TouchRequest) {
             in.add(new TouchResponse(status, bucket, msg.content().copy(), currentRequest));
+        } else if (current instanceof ObserveRequest) {
+            ByteBuf content = msg.content();
+            short keyLength = content.getShort(2);
+            byte observed = content.getByte(keyLength + 4);
+            in.add(new ObserveResponse(status, observed, ((ObserveRequest) current).master(), bucket, msg.content().copy(), currentRequest));
         } else {
             throw new IllegalStateException("Got a response message for a request that was not sent." + msg);
         }
@@ -455,6 +465,19 @@ public class BinaryCodec extends MessageToMessageCodec<FullBinaryMemcacheRespons
         msg.setTotalBodyLength(request.key().length() + extras.readableBytes());
         msg.setExtrasLength((byte) extras.readableBytes());
         msg.setReserved(request.partition());
+        return msg;
+    }
+
+    private BinaryMemcacheRequest handleObserveRequest(final ObserveRequest request, final ChannelHandlerContext ctx) {
+        ByteBuf content = ctx.alloc().buffer();
+        content.writeShort(request.partition());
+        content.writeShort(request.key().length());
+        content.writeBytes(request.key().getBytes(CharsetUtil.UTF_8));
+
+        BinaryMemcacheRequest msg = new DefaultFullBinaryMemcacheRequest("", Unpooled.EMPTY_BUFFER, content);
+
+        msg.setOpcode((byte) 0x92);
+        msg.setTotalBodyLength(content.readableBytes());
         return msg;
     }
 
