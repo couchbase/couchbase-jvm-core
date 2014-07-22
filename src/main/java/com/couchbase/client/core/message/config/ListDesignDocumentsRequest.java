@@ -19,55 +19,20 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.endpoint.binary;
+package com.couchbase.client.core.message.config;
 
-/**
- * Contains the supported server datatypes.
- *
- * @author Michael Nitschinger
- * @since 1.0
- */
-public class SupportedDatatypes {
+import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 
-    /**
-     * If JSON is supported.
-     */
-    private final boolean json;
+public class ListDesignDocumentsRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 
-    /**
-     * If Compression is supported.
-     */
-    private final boolean compression;
+    private final String path;
 
-    public SupportedDatatypes(final boolean json, final boolean compression) {
-        this.json = json;
-        this.compression = compression;
+    public ListDesignDocumentsRequest(String bucket, String password) {
+        super(bucket, password);
+        this.path = "/pools/default/buckets/" + bucket + "/ddocs";
     }
 
-    /**
-     * If JSON Is supported.
-     *
-     * @return true if it is, false otherwise.
-     */
-    public boolean json() {
-        return json;
-    }
-
-    /**
-     * If compression is supported.
-     *
-     * @return true if it is, false otherwise.
-     */
-    public boolean compression() {
-        return compression;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("SupportedDatatypes{");
-        sb.append("json=").append(json);
-        sb.append(", compression=").append(compression);
-        sb.append('}');
-        return sb.toString();
+    public String path() {
+        return path;
     }
 }

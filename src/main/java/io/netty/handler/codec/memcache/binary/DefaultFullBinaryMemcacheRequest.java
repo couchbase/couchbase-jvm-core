@@ -44,7 +44,7 @@ public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheReque
      * @param content the content of the full request.
      */
     public DefaultFullBinaryMemcacheRequest(String key, ByteBuf extras,
-                                            ByteBuf content) {
+        ByteBuf content) {
         super(key, extras);
         if (content == null) {
             throw new NullPointerException("Supplied content is null.");

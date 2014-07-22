@@ -25,6 +25,7 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CouchbaseEnvironment;
 import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
 import org.junit.Test;

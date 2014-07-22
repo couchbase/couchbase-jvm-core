@@ -38,11 +38,15 @@ import com.couchbase.client.core.message.binary.UnlockRequest;
 import com.couchbase.client.core.message.binary.UnlockResponse;
 import com.couchbase.client.core.message.binary.UpsertRequest;
 import com.couchbase.client.core.message.binary.UpsertResponse;
+import com.couchbase.client.core.message.query.GenericQueryRequest;
+import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import static org.junit.Assert.assertEquals;
@@ -302,6 +306,23 @@ public class BinaryMessageTest extends ClusterDependentTest {
         request = new UpsertRequest(key, Unpooled.copiedBuffer("content", CharsetUtil.UTF_8), bucket());
         response = cluster().<UpsertResponse>send(request).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
+    }
+
+    @Test
+    public void shouldQuery() throws Exception {
+        cluster().<GenericQueryResponse>send(new GenericQueryRequest("SELECT * FROM beer-sample LIMI 4",
+            bucket(), password())).toBlocking().forEach(new Action1<GenericQueryResponse>() {
+            @Override
+            public void call(GenericQueryResponse genericQueryResponse) {
+                    genericQueryResponse.rows().toBlocking().forEach(new Action1<ByteBuf>() {
+                        @Override
+                        public void call(ByteBuf buf) {
+                            //System.err.println(buf.toString(CharsetUtil.UTF_8));
+                            //System.err.println("--===============--");
+                        }
+                    });
+            }
+        });
     }
 
 }

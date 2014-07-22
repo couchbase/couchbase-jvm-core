@@ -5,33 +5,24 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
+import rx.Observable;
 
 public class ViewQueryResponse extends AbstractCouchbaseResponse {
 
-    private final ByteBuf content;
-    private final int totalRows;
+    private final Observable<ByteBuf> rows;
+    private final Observable<ByteBuf> info;
 
-    public ViewQueryResponse(ResponseStatus status, int totalRows, ByteBuf content, CouchbaseRequest request) {
+
+    public ViewQueryResponse(Observable<ByteBuf> rows, Observable<ByteBuf> info, ResponseStatus status,
+        CouchbaseRequest request) {
         super(status, request);
-        this.content = content;
-        this.totalRows = totalRows;
+        this.rows = rows;
+        this.info = info;
     }
 
-    public ByteBuf content() {
-        return content;
+    public Observable<ByteBuf> rows() {
+        return rows;
     }
+    public Observable<ByteBuf> info() { return info; }
 
-    public int totalRows() {
-        return totalRows;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("ViewQueryResponse{");
-        sb.append("content=").append(content.toString(CharsetUtil.UTF_8));
-        sb.append(", totalRows=").append(totalRows);
-        sb.append(", status=").append(status());
-        sb.append('}');
-        return sb.toString();
-    }
 }

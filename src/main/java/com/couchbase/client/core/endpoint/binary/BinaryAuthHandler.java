@@ -21,7 +21,6 @@
  */
 package com.couchbase.client.core.endpoint.binary;
 
-import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -53,14 +52,14 @@ import java.net.SocketAddress;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class BinarySaslClient
+public class BinaryAuthHandler
     extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
     implements CallbackHandler, ChannelOutboundHandler {
 
     /**
      * The memcache opcode for the SASL mechs list.
      */
-    private static final byte SASL_LIST_MECHS_OPCODE = 0x20;
+    public static final byte SASL_LIST_MECHS_OPCODE = 0x20;
 
     /**
      * The memcache opcode for the SASL initial auth.
@@ -92,8 +91,6 @@ public class BinarySaslClient
      */
     private final String password;
 
-    private final AbstractEndpoint endpoint;
-
     /**
      * The handler context.
      */
@@ -115,15 +112,14 @@ public class BinarySaslClient
     private ChannelPromise originalPromise;
 
     /**
-     * Creates a new {@link BinarySaslClient}.
+     * Creates a new {@link BinaryAuthHandler}.
      *
      * @param username the name of the user/bucket.
      * @param password the password associated with the user/bucket.
      */
-    public BinarySaslClient(String username, String password, AbstractEndpoint endpoint) {
+    public BinaryAuthHandler(String username, String password) {
         this.username = username;
         this.password = password == null ? "" : password;
-        this.endpoint = endpoint;
     }
 
     /**
@@ -135,15 +131,6 @@ public class BinarySaslClient
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         this.ctx = ctx;
-        negotiate();
-    }
-
-    /**
-     * Helper method to kick off the negotiation process.
-     *
-     * The first request against the server asks for a list of supported mechanisms.
-     */
-    private void negotiate() {
         ctx.writeAndFlush(new DefaultBinaryMemcacheRequest().setOpcode(SASL_LIST_MECHS_OPCODE));
     }
 
@@ -162,7 +149,7 @@ public class BinarySaslClient
             } else if (callback instanceof PasswordCallback) {
                 ((PasswordCallback) callback).setPassword(password.toCharArray());
             } else {
-                throw new IllegalStateException("SASLClient requested unsupported callback: " + callback);
+                throw new AuthenticationException("SASLClient requested unsupported callback: " + callback);
             }
         }
     }
@@ -196,7 +183,7 @@ public class BinarySaslClient
         String remote = ctx.channel().remoteAddress().toString();
         String[] supportedMechanisms = msg.content().toString(CharsetUtil.UTF_8).split(" ");
         if (supportedMechanisms.length == 0) {
-            throw new IllegalStateException("Received empty SASL mechanisms list from server: " + remote);
+            throw new AuthenticationException("Received empty SASL mechanisms list from server: " + remote);
         }
 
         saslClient = Sasl.createSaslClient(supportedMechanisms, null, "couchbase", remote, null, this);
@@ -251,7 +238,7 @@ public class BinarySaslClient
 
             ctx.writeAndFlush(stepRequest);
         } else {
-            throw new IllegalStateException("SASL Challenge evaluation returned null.");
+            throw new AuthenticationException("SASL Challenge evaluation returned null.");
         }
     }
 
@@ -267,10 +254,10 @@ public class BinarySaslClient
                 ctx.pipeline().remove(this);
                 break;
             case SASL_AUTH_FAILURE:
-                originalPromise.setFailure(new IllegalStateException("Auth Failure"));
+                originalPromise.setFailure(new AuthenticationException("Authentication Failure"));
                 break;
             default:
-                originalPromise.setFailure(new IllegalStateException("Unhandled SASL auth status: " + msg.getStatus()));
+                originalPromise.setFailure(new AuthenticationException("Unhandled SASL auth status: " + msg.getStatus()));
         }
     }
 

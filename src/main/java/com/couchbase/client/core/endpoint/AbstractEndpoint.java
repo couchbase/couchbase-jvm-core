@@ -23,6 +23,7 @@ package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
+import com.couchbase.client.core.endpoint.binary.AuthenticationException;
 import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
@@ -37,6 +38,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -48,8 +50,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
+import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
+import java.net.InetAddress;
+import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -115,7 +121,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * Number of reconnects already done.
      */
-    private volatile long reconnectAttempt;
+    private volatile long reconnectAttempt = 1;
 
     /**
      * Preset the stack trace for the static exceptions.
@@ -181,7 +187,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         pipeline.addLast(LOGGING_HANDLER_INSTANCE);
                     }
                     customEndpointHandlers(pipeline);
-                    pipeline.addLast(new GenericEndpointHandler(AbstractEndpoint.this, responseBuffer));
                 }
             }));
     }
@@ -204,33 +209,52 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
         transitionState(LifecycleState.CONNECTING);
+        doConnect(observable);
+        return observable;
+    }
+
+    /**
+     * Helper method to perform the actual connect and reconnect.
+     *
+     * @param observable
+     */
+    protected void doConnect(final Subject<LifecycleState, LifecycleState> observable) {
         bootstrap.connect().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
                 if (state() == LifecycleState.DISCONNECTING || state() == LifecycleState.DISCONNECTED) {
-                    LOGGER.debug("Endpoint connect completed, but got instructed to disconnect in the meantime.");
+                    LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Endpoint connect completed, " +
+                        "but got instructed to disconnect in the meantime.");
                     transitionState(LifecycleState.DISCONNECTED);
                     channel = null;
                 } else {
                     if (future.isSuccess()) {
                         channel = future.channel();
-                        LOGGER.debug("Connected to " + AbstractEndpoint.this.getClass().getSimpleName()
-                            + " " + channel.remoteAddress());
+                        LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Connected Endpoint.");
                         transitionState(LifecycleState.CONNECTED);
                     } else {
-                        if(future.cause().getMessage() == "Auth Failure") {
-                            LOGGER.warn("Authentication failure against: " + future.channel().remoteAddress());
+                        if(future.cause() instanceof AuthenticationException) {
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                + "Authentication Failure.");
                             transitionState(LifecycleState.DISCONNECTED);
+                            observable.onError(future.cause());
+                        } else if (future.cause() instanceof ClosedChannelException) {
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                + "Generic Failure.");
+                            transitionState(LifecycleState.DISCONNECTED);
+                            transitionState(LifecycleState.DISCONNECTED);
+                            LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
                         } else {
                             long delay = reconnectDelay();
-                            LOGGER.warn("Could not connect to endpoint, retrying with delay " + delay + "ms: ",
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                    + "Could not connect to endpoint, retrying with delay " + delay + "ms: ",
                                 future.cause());
                             transitionState(LifecycleState.CONNECTING);
                             future.channel().eventLoop().schedule(new Runnable() {
                                 @Override
                                 public void run() {
-                                    connect();
+                                    doConnect(observable);
                                 }
                             }, delay, TimeUnit.MILLISECONDS);
                         }
@@ -240,8 +264,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 observable.onCompleted();
             }
         });
-        return observable;
     }
+
 
     @Override
     public Observable<LifecycleState> disconnect() {
@@ -260,10 +284,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
                 if (future.isSuccess()) {
-                    LOGGER.debug("Disconnected from " + AbstractEndpoint.this.getClass().getSimpleName() + " "
-                        + channel.remoteAddress());
+                    LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Disconnected Endpoint.");
                 } else {
-                    LOGGER.warn("Received an error during disconnect.", future.cause());
+                    LOGGER.warn(logIdent(channel, AbstractEndpoint.this) + "Received an error " +
+                        "during disconnect.", future.cause());
                 }
                 transitionState(LifecycleState.DISCONNECTED);
                 observable.onNext(state());
@@ -307,6 +331,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Subsequent reconnect attempts are triggered from here.
      */
     public void notifyChannelInactive() {
+        LOGGER.debug(logIdent(channel, this) + "Got notified from Channel as inactive.");
+
         responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, SignalConfigReload.INSTANCE, null);
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
@@ -322,7 +348,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @return the retry delay.
      */
     private long reconnectDelay() {
-        return reconnectAttempt++;
+        return 1 << (reconnectAttempt++);
     }
 
     /**
@@ -347,4 +373,19 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         return env;
     }
 
+    public RingBuffer<ResponseEvent> responseBuffer() {
+        return responseBuffer;
+    }
+
+    /**
+     * Simple log helper to give logs a common prefix.
+     *
+     * @param chan the address.
+     * @param endpoint the endpoint.
+     * @return a prefix string for logs.
+     */
+    protected static String logIdent(final Channel chan, final Endpoint endpoint) {
+        SocketAddress addr = chan != null ? chan.remoteAddress() : null;
+        return "["+addr+"][" + endpoint.getClass().getSimpleName()+"]: ";
+    }
 }

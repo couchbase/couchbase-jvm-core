@@ -1,0 +1,10 @@
+{
+    "error":
+    {
+        "caller": "standard:50",
+        "cause": "Parse Error - syntax error",
+        "code": 4100,
+        "key": "parse_error",
+        "message": "Parse Error"
+    }
+}

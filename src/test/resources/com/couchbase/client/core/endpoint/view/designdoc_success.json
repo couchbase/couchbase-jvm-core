@@ -1,0 +1,12 @@
+{
+    "language": "javascript",
+    "views": {
+        "brewery_beers": {
+            "map": "function(doc, meta) {\n  switch(doc.type) {\n  case \"brewery\":\n    emit([meta.id]);\n    break;\n  case \"beer\":\n    if (doc.brewery_id) {\n      emit([doc.brewery_id, meta.id]);\n    }\n    break;\n  }\n}\n"
+        },
+        "by_location": {
+            "map": "function (doc, meta) {\n  if (doc.country, doc.state, doc.city) {\n    emit([doc.country, doc.state, doc.city], 1);\n  } else if (doc.country, doc.state) {\n    emit([doc.country, doc.state], 1);\n  } else if (doc.country) {\n    emit([doc.country], 1);\n  }\n}",
+            "reduce": "_count"
+        }
+    }
+}

@@ -3,7 +3,7 @@ package com.couchbase.client.core.message.binary;
 
 import io.netty.buffer.ByteBuf;
 
-public class ReplaceRequest extends AbstractBinaryRequest {
+public class ReplaceRequest extends AbstractBinaryRequest implements BinaryStoreRequest {
 
     /**
      * The content of the document.

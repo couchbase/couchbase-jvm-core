@@ -21,16 +21,22 @@
  */
 package com.couchbase.client.core.message.config;
 
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.ResponseStatus;
+import io.netty.buffer.ByteBuf;
 
-/**
- * Common marker interface for all {@link ConfigRequest}s.
- *
- * @author Michael Nitschinger
- * @since 1.0
- */
-public interface ConfigRequest extends CouchbaseRequest {
+public class ListDesignDocumentResponse extends AbstractCouchbaseResponse {
 
-    String path();
+    private final String content;
+
+    public ListDesignDocumentResponse(String content, ResponseStatus status, CouchbaseRequest request) {
+        super(status, request);
+        this.content = content;
+    }
+
+    public String content() {
+        return content;
+    }
 
 }

@@ -58,4 +58,10 @@ public class GetBucketConfigRequest extends AbstractBinaryRequest {
     public InetAddress hostname() {
         return hostname;
     }
+
+    @Override
+    public short partition() {
+        return DEFAULT_PARTITION;
+    }
+
 }

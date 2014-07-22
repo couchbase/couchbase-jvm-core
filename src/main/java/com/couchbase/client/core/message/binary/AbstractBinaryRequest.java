@@ -31,6 +31,8 @@ import com.couchbase.client.core.message.AbstractCouchbaseRequest;
  */
 public abstract class AbstractBinaryRequest extends AbstractCouchbaseRequest implements BinaryRequest {
 
+    protected static short DEFAULT_PARTITION = -1;
+
     /**
      * The key of the document, should be null if not tied to any.
      */
@@ -39,7 +41,7 @@ public abstract class AbstractBinaryRequest extends AbstractCouchbaseRequest imp
     /**
      * The partition (vbucket) of the document.
      */
-    private short partition = -1;
+    private short partition = DEFAULT_PARTITION;
 
     /**
      * Creates a new {@link AbstractBinaryRequest}.

@@ -40,7 +40,10 @@ public class GetRequest extends AbstractBinaryRequest {
     public GetRequest(final String key, final String bucket, final boolean lock, final boolean touch, final int expiry) {
         super(key, bucket, null);
         if (lock && touch) {
-            throw new IllegalArgumentException("Locking and touching in the same request is not supported");
+            throw new IllegalArgumentException("Locking and touching in the same request is not supported.");
+        }
+        if (!lock && !touch && expiry > 0) {
+            throw new IllegalArgumentException("Expiry/Lock time cannot be set for a regular get request.");
         }
         this.lock = lock;
         this.touch = touch;

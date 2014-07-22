@@ -19,18 +19,29 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.config;
+package com.couchbase.client.core.service.strategies;
 
+import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.message.CouchbaseRequest;
 
 /**
- * Common marker interface for all {@link ConfigRequest}s.
+ * Interface which defines a generic selection strategy to select a {@link Endpoint}.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public interface ConfigRequest extends CouchbaseRequest {
+public interface SelectionStrategy {
 
-    String path();
+    /**
+     * Selects an {@link Endpoint} for the given {@link CouchbaseRequest}.
+     *
+     * If null is returned, it means that no endpoint could be selected and it is up to the calling party
+     * to decide what to do next.
+     *
+     * @param request the input request.
+     * @param endpoints all the available endpoints.
+     * @return the selected endpoint.
+     */
+    Endpoint select(CouchbaseRequest request, Endpoint[] endpoints);
 
 }

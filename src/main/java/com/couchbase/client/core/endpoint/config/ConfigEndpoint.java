@@ -17,6 +17,6 @@ public class ConfigEndpoint extends AbstractEndpoint {
     protected void customEndpointHandlers(ChannelPipeline pipeline) {
         pipeline
             .addLast(new HttpClientCodec())
-            .addLast(new ConfigCodec());
+            .addLast(new ConfigHandler(this, responseBuffer()));
     }
 }

@@ -26,7 +26,7 @@ public class ViewEndpoint extends AbstractEndpoint {
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {
         pipeline
             .addLast(new HttpClientCodec())
-            .addLast(new ViewCodec());
+            .addLast(new ViewHandler(this, responseBuffer()));
     }
 
 }

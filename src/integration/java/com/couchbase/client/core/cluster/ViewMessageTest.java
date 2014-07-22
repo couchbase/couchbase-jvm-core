@@ -22,6 +22,8 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
+import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
 import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
@@ -41,13 +43,22 @@ public class ViewMessageTest extends ClusterDependentTest {
     @Test
     public void shouldQueryNonExistentView() {
         ViewQueryResponse single = cluster()
-            .<ViewQueryResponse>send(new ViewQueryRequest("design", "view", false, bucket(), password()))
+            .<ViewQueryResponse>send(new ViewQueryRequest("beer", "brewery_beers", false, "debug=true", bucket(), password()))
             .toBlocking()
             .single();
 
         String expected = "{\"error\":\"not_found\",\"reason\":\"Design document _design/design not found\"}\n";
         assertEquals(ResponseStatus.NOT_EXISTS, single.status());
-        assertEquals(expected, single.content().toString(CharsetUtil.UTF_8));
+    }
+
+    @Test
+    public void shouldGetDesignDocument() {
+        GetDesignDocumentResponse res = cluster()
+            .<GetDesignDocumentResponse>send(new GetDesignDocumentRequest("beer", false, bucket(), password()))
+            .toBlocking()
+            .single();
+
+        System.err.println(res.content().toString(CharsetUtil.UTF_8));
     }
 
 }
