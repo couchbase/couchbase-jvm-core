@@ -53,13 +53,13 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
-import io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
-import io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 
 import java.util.Queue;
 

@@ -26,8 +26,8 @@ import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheClientCodec;
-import io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheClientCodec;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator;
 
 /**
  * This endpoint defines the pipeline for binary requests and responses.
