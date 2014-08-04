@@ -29,7 +29,7 @@ import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.config.refresher.CarrierRefresher;
 import com.couchbase.client.core.config.refresher.HttpRefresher;
 import com.couchbase.client.core.config.refresher.Refresher;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.lang.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +128,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param cluster the cluster reference.
      * @param environment the environment.
      */
-    public DefaultConfigurationProvider(final ClusterFacade cluster, final Environment environment) {
+    public DefaultConfigurationProvider(final ClusterFacade cluster, final CoreEnvironment environment) {
         this(
             cluster,
             environment,
@@ -147,7 +147,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @param environment the environment.
      * @param loaderChain the configuration loaders which will be tried in sequence.
      */
-    public DefaultConfigurationProvider(final ClusterFacade cluster, final Environment environment,
+    public DefaultConfigurationProvider(final ClusterFacade cluster, final CoreEnvironment environment,
         final List<Loader> loaderChain, final Map<LoaderType, Refresher> refreshers) {
         if (cluster == null) {
             throw new IllegalArgumentException("A cluster reference needs to be provided");

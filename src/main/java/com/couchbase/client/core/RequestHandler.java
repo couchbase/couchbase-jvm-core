@@ -24,7 +24,7 @@ package com.couchbase.client.core;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
@@ -94,7 +94,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * The shared couchbase environment.
      */
-    private final Environment environment;
+    private final CoreEnvironment environment;
 
     /**
      * Contains the current cluster configuration.
@@ -109,7 +109,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * Create a new {@link RequestHandler}.
      */
-    public RequestHandler(Environment environment, Observable<ClusterConfig> configObservable,
+    public RequestHandler(CoreEnvironment environment, Observable<ClusterConfig> configObservable,
         RingBuffer<ResponseEvent> responseBuffer) {
         this(Collections.newSetFromMap(new ConcurrentHashMap<Node, Boolean>(INITIAL_NODE_SIZE)), environment, configObservable, responseBuffer);
     }
@@ -120,7 +120,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    RequestHandler(Set<Node> nodes, Environment environment, Observable<ClusterConfig> configObservable,
+    RequestHandler(Set<Node> nodes, CoreEnvironment environment, Observable<ClusterConfig> configObservable,
         RingBuffer<ResponseEvent> responseBuffer) {
         this.nodes = nodes;
         this.environment = environment;
@@ -358,9 +358,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     @Override
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                         Map<ServiceType, Integer> services =
-                                environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
-                        if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
-                            services.put(ServiceType.QUERY, environment.queryPort());
+                                environment.properties().sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                        if (!services.containsKey(ServiceType.QUERY) && environment.properties().queryEnabled()) {
+                            services.put(ServiceType.QUERY, environment.properties().queryPort());
                         }
                         return Observable.from(services);
                     }

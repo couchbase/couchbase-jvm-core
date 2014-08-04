@@ -21,11 +21,9 @@
  */
 package com.couchbase.client.core;
 
-import com.couchbase.client.core.RequestEvent;
-import com.couchbase.client.core.RequestHandler;
 import com.couchbase.client.core.config.ClusterConfig;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.node.Node;
@@ -49,7 +47,7 @@ import static org.mockito.Mockito.when;
  */
 public class RequestHandlerTest {
 
-    private static final Environment environment = new CouchbaseEnvironment();
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private static final Observable<ClusterConfig> configObservable = Observable.empty();
 
     @Test
@@ -149,7 +147,7 @@ public class RequestHandlerTest {
 
         private Locator LOCATOR = new DummyLocator();
 
-        DummyLocatorClusterNodeHandler(Environment environment) {
+        DummyLocatorClusterNodeHandler(CoreEnvironment environment) {
             super(environment, configObservable, null);
         }
 

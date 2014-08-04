@@ -24,8 +24,8 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.LoaderType;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -62,6 +62,7 @@ import static org.mockito.Mockito.when;
  */
 public class AbstractLoaderTest {
 
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private final String localhostConfig = Resources.read("localhost.json", this.getClass());
 
     private static InetAddress host;
@@ -73,7 +74,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldLoadConfigForOneSeedNode() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -94,7 +94,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldLoadConfigsFromMoreSeedNodes() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -116,7 +115,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldFailIfNoConfigCouldBeLoaded() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -142,7 +140,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldIgnoreFailingConfigOnManySeedNodes() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -184,7 +181,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldFailIfNodeCouldNotBeAdded() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.FAILURE, host))
@@ -207,7 +203,6 @@ public class AbstractLoaderTest {
 
     @Test
     public void shouldFailIfServiceCouldNotBeAdded() throws Exception {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.from((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -239,7 +234,7 @@ public class AbstractLoaderTest {
         private final int failAfter;
         private volatile int failCounter = 0;
 
-        InstrumentedLoader(int failAfter, String config, ClusterFacade cluster, Environment environment) {
+        InstrumentedLoader(int failAfter, String config, ClusterFacade cluster, CoreEnvironment environment) {
             super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
             this.config = config;
             this.failAfter = failAfter;

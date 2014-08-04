@@ -23,8 +23,9 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.CoreProperties;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.when;
 public class HttpLoaderTest {
 
     private static InetAddress host;
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -58,27 +60,27 @@ public class HttpLoaderTest {
 
     @Test
     public void shouldUseDirectPortIfNotSSL() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpDirectPort(), loader.port());
+        assertEquals(environment.properties().bootstrapHttpDirectPort(), loader.port());
     }
 
     @Test
     public void shouldUseEncryptedPortIfSSL() {
-        Environment environment = mock(Environment.class);
-        when(environment.sslEnabled()).thenReturn(true);
-        when(environment.bootstrapHttpSslPort()).thenReturn(12345);
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        CoreProperties properties = mock(CoreProperties.class);
+        when(environment.properties()).thenReturn(properties);
+        when(properties.sslEnabled()).thenReturn(true);
+        when(properties.bootstrapHttpSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpSslPort(), loader.port());
+        assertEquals(environment.properties().bootstrapHttpSslPort(), loader.port());
     }
 
     @Test
     public void shouldDiscoverConfigFromTerse() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> response = Observable.from(
             (CouchbaseResponse) new BucketConfigResponse("myconfig", ResponseStatus.SUCCESS)
@@ -92,7 +94,6 @@ public class HttpLoaderTest {
 
     @Test
     public void shouldDiscoverConfigFromVerboseAsFallback() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> terseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
@@ -110,7 +111,6 @@ public class HttpLoaderTest {
 
     @Test
     public void shouldThrowExceptionIfTerseAndVerboseCouldNotBeDiscovered() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> terseResponse = Observable.from(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
@@ -135,8 +135,10 @@ public class HttpLoaderTest {
 
     @Test
     public void shouldThrowIfDisabledThroughConfiguration() {
-        Environment environment = mock(Environment.class);
-        when(environment.bootstrapHttpEnabled()).thenReturn(false);
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        CoreProperties properties = mock(CoreProperties.class);
+        when(environment.properties()).thenReturn(properties);
+        when(properties.bootstrapHttpEnabled()).thenReturn(false);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);

@@ -23,7 +23,7 @@ package com.couchbase.client.core.endpoint.binary;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.memcache.binary.BinaryMemcacheClientCodec;
@@ -43,7 +43,7 @@ public class BinaryEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public BinaryEndpoint(final String hostname, final String bucket, final String password, int port, final Environment env,
+    public BinaryEndpoint(final String hostname, final String bucket, final String password, int port, final CoreEnvironment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
         super(hostname, bucket, password, port, env, responseBuffer);
     }

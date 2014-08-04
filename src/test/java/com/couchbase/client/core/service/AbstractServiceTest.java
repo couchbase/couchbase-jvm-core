@@ -23,9 +23,9 @@ package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class AbstractServiceTest {
     private final String bucket = "default";
     private final String password = "";
     private final int port = 0;
-    private final Environment environment = new CouchbaseEnvironment();
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
 
     @Test
     public void shouldBeDisconnectAfterInit() {
@@ -173,7 +173,7 @@ public class AbstractServiceTest {
 
     static class DummyService extends AbstractService {
 
-        DummyService(String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
+        DummyService(String hostname, String bucket, String password, int port, CoreEnvironment env, int numEndpoints,
             SelectionStrategy strategy, EndpointFactory factory) {
             super(hostname, bucket, password, port, env, numEndpoints, strategy, null, factory);
         }
@@ -191,7 +191,7 @@ public class AbstractServiceTest {
             }
 
             @Override
-            public Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+            public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
                 RingBuffer<ResponseEvent> responseBuffer) {
                 return endpoints.next();
             }

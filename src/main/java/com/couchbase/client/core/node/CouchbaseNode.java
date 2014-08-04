@@ -23,7 +23,7 @@ package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
@@ -71,7 +71,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     /**
      * The environment to use.
      */
-    private final Environment environment;
+    private final CoreEnvironment environment;
 
     /**
      * The {@link ResponseEvent} {@link RingBuffer}.
@@ -85,12 +85,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     private final Map<Service, LifecycleState> serviceStates;
 
-    public CouchbaseNode(final InetAddress hostname, final Environment environment,
+    public CouchbaseNode(final InetAddress hostname, final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
         this(hostname, new DefaultServiceRegistry(), environment, responseBuffer);
     }
 
-    CouchbaseNode(final InetAddress hostname, ServiceRegistry registry, final Environment environment,
+    CouchbaseNode(final InetAddress hostname, ServiceRegistry registry, final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;

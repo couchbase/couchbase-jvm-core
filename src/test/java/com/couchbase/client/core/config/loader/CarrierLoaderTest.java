@@ -23,8 +23,9 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.CoreProperties;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
@@ -52,6 +53,7 @@ import static org.mockito.Mockito.when;
  */
 public class CarrierLoaderTest {
 
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private static InetAddress host;
 
     @BeforeClass
@@ -61,27 +63,27 @@ public class CarrierLoaderTest {
 
     @Test
     public void shouldUseDirectPortIfNotSSL() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port());
+        assertEquals(environment.properties().bootstrapCarrierDirectPort(), loader.port());
     }
 
     @Test
     public void shouldUseEncryptedPortIfSSL() {
-        Environment environment = mock(Environment.class);
-        when(environment.sslEnabled()).thenReturn(true);
-        when(environment.bootstrapCarrierSslPort()).thenReturn(12345);
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        CoreProperties properties = mock(CoreProperties.class);
+        when(environment.properties()).thenReturn(properties);
+        when(properties.sslEnabled()).thenReturn(true);
+        when(properties.bootstrapCarrierSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierSslPort(), loader.port());
+        assertEquals(environment.properties().bootstrapCarrierSslPort(), loader.port());
     }
 
     @Test
     public void shouldDiscoverConfig() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         ByteBuf content = Unpooled.copiedBuffer("myconfig", CharsetUtil.UTF_8);
         Observable<CouchbaseResponse> response = Observable.from(
@@ -96,7 +98,6 @@ public class CarrierLoaderTest {
 
     @Test
     public void shouldThrowExceptionIfNotDiscovered() {
-        Environment environment = new CouchbaseEnvironment();
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> response = Observable.from(
                 (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE, "bucket", null, host)
@@ -117,8 +118,10 @@ public class CarrierLoaderTest {
 
     @Test
     public void shouldThrowIfDisabledThroughConfiguration() {
-        Environment environment = mock(Environment.class);
-        when(environment.bootstrapCarrierEnabled()).thenReturn(false);
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        CoreProperties properties = mock(CoreProperties.class);
+        when(environment.properties()).thenReturn(properties);
+        when(properties.bootstrapHttpEnabled()).thenReturn(false);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);

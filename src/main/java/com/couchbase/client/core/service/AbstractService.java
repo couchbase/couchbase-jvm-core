@@ -24,7 +24,7 @@ package com.couchbase.client.core.service;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.Endpoint;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
@@ -60,7 +60,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     private final RingBuffer<ResponseEvent> responseBuffer;
     protected List<Observable<LifecycleState>> endpointStates;
 
-    protected AbstractService(final String hostname, String bucket, String password, int port, Environment env, int numEndpoints,
+    protected AbstractService(final String hostname, String bucket, String password, int port, CoreEnvironment env, int numEndpoints,
         SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer, EndpointFactory factory) {
         super(LifecycleState.DISCONNECTED);
 

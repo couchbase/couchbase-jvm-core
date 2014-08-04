@@ -24,8 +24,8 @@ package com.couchbase.client.core;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.DefaultConfigurationProvider;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -97,7 +97,7 @@ public class CouchbaseCore implements ClusterFacade {
      */
     private final ConfigurationProvider configProvider;
 
-    private final Environment environment;
+    private final CoreEnvironment environment;
 
     private final Disruptor<RequestEvent> requestDisruptor;
     private final Disruptor<ResponseEvent> responseDisruptor;
@@ -116,21 +116,21 @@ public class CouchbaseCore implements ClusterFacade {
      * Creates a new {@link CouchbaseCore}.
      */
     public CouchbaseCore() {
-        this(new CouchbaseEnvironment());
+        this(DefaultCoreEnvironment.create());
         sharedEnvironment = false;
     }
 
     /**
      * Creates a new {@link CouchbaseCore}.
      */
-    public CouchbaseCore(Environment environment) {
+    public CouchbaseCore(final CoreEnvironment environment) {
         this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
         disruptorExecutor = Executors.newFixedThreadPool(2);
 
         responseDisruptor = new Disruptor<ResponseEvent>(
             new ResponseEventFactory(),
-            environment.responseBufferSize(),
+            environment.properties().responseBufferSize(),
             disruptorExecutor
         );
         responseDisruptor.handleEventsWith(new ResponseHandler(this, configProvider));
@@ -139,7 +139,7 @@ public class CouchbaseCore implements ClusterFacade {
 
         requestDisruptor = new Disruptor<RequestEvent>(
             new RequestEventFactory(),
-            environment.requestBufferSize(),
+            environment.properties().requestBufferSize(),
             disruptorExecutor
         );
         requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);

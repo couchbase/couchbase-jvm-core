@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.node;
 
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.service.BinaryService;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
  */
 public class CouchbaseNodeTest {
 
-    private static final Environment environment = new CouchbaseEnvironment();
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
 
 
     private static InetAddress host;

@@ -23,7 +23,7 @@ package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.node.Node;
@@ -93,7 +93,7 @@ public interface Service extends Stateful<LifecycleState> {
          * @param responseBuffer the response buffer for messages.
          * @return a new {@link Endpoint}.
          */
-        Endpoint create(String hostname, String bucket, String password, int port, Environment env,
+        Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
             RingBuffer<ResponseEvent> responseBuffer);
 
     }

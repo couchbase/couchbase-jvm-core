@@ -2,7 +2,7 @@ package com.couchbase.client.core.endpoint.view;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpClientCodec;
@@ -18,7 +18,7 @@ public class ViewEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public ViewEndpoint(final String hostname, String bucket, String password, int port, final Environment env, final RingBuffer<ResponseEvent> responseBuffer) {
+    public ViewEndpoint(final String hostname, String bucket, String password, int port, final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
         super(hostname, bucket, password, port, env, responseBuffer);
     }
 

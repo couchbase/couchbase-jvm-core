@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -41,14 +41,14 @@ public class SSLEngineFactory {
     /**
      * The global environment which is shared.
      */
-    private final Environment env;
+    private final CoreEnvironment env;
 
     /**
      * Create a new engine factory.
      *
      * @param env the config environment.
      */
-    public SSLEngineFactory(Environment env) {
+    public SSLEngineFactory(CoreEnvironment env) {
         this.env = env;
     }
 
@@ -59,9 +59,9 @@ public class SSLEngineFactory {
      */
     public SSLEngine get() {
         try {
-            char[] password = env.sslKeystorePassword().isEmpty() ? null : env.sslKeystorePassword().toCharArray();
+            char[] password = env.properties().sslKeystorePassword().isEmpty() ? null : env.properties().sslKeystorePassword().toCharArray();
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            ks.load(new FileInputStream(env.sslKeystoreFile()), password);
+            ks.load(new FileInputStream(env.properties().sslKeystoreFile()), password);
 
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
             TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");

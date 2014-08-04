@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.state.LifecycleState;
@@ -31,7 +31,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
@@ -59,7 +58,7 @@ import static org.mockito.Mockito.when;
 public class AbstractEndpointTest {
 
     private final String hostname = "127.0.0.1";
-    private final Environment environment = new CouchbaseEnvironment();
+    private final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
 
     @Test
@@ -218,7 +217,7 @@ public class AbstractEndpointTest {
             super("default", null, adapter);
         }
 
-        DummyEndpoint(String hostname, Environment environment) {
+        DummyEndpoint(String hostname, CoreEnvironment environment) {
             super(hostname, "default", null, 0, environment, null);
         }
 

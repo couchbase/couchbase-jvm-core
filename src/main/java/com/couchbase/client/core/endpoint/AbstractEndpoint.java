@@ -24,7 +24,7 @@ package com.couchbase.client.core.endpoint;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.binary.AuthenticationException;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.internal.SignalFlush;
@@ -38,7 +38,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -53,7 +52,6 @@ import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
-import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +99,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     private final RingBuffer<ResponseEvent> responseBuffer;
 
-    private final Environment env;
+    private final CoreEnvironment env;
 
     /**
      * Factory which handles {@link SSLEngine} creation.
@@ -134,7 +132,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Constructor to which allows to pass in an artificial bootstrap adapter.
      *
      * This method should not be used outside of tests. Please use the
-     * {@link #AbstractEndpoint(String, String, String, int, Environment, RingBuffer)} constructor instead.
+     * {@link #AbstractEndpoint(String, String, String, int, CoreEnvironment, RingBuffer)} constructor instead.
      *
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
@@ -160,13 +158,13 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param responseBuffer the response buffer for passing responses up the stack.
      */
     protected AbstractEndpoint(final String hostname, final String bucket, final String password, final int port,
-        final Environment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+        final CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
         this.responseBuffer = responseBuffer;
         this.env = environment;
-        if (environment.sslEnabled()) {
+        if (environment.properties().sslEnabled()) {
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
 
@@ -180,7 +178,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
-                    if (environment.sslEnabled()) {
+                    if (environment.properties().sslEnabled()) {
                         pipeline.addLast(new SslHandler(sslEngineFactory.get()));
                     }
                     if (LOGGER.isTraceEnabled()) {
@@ -369,7 +367,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         return password;
     }
 
-    protected Environment environment() {
+    protected CoreEnvironment environment() {
         return env;
     }
 

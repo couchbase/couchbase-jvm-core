@@ -19,32 +19,32 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.endpoint.query;
+package com.couchbase.client.core.env;
 
-import com.couchbase.client.core.ResponseEvent;
-import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.env.CoreEnvironment;
-import com.lmax.disruptor.RingBuffer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.http.HttpClientCodec;
+import org.junit.Test;
 
-/**
- * This endpoint defines the pipeline for query requests and responses (N1QL).
- *
- * @author Michael Nitschinger
- * @since 1.0
- */
-public class QueryEndpoint extends AbstractEndpoint {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
-    public QueryEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
-        RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, environment, responseBuffer);
+public class DefaultCoreEnvironmentTest {
+
+    @Test
+    public void shouldInitAndShutdownCoreEnvironment() throws Exception {
+        CoreEnvironment env = DefaultCoreEnvironment.create();
+
+        assertNotNull(env.ioPool());
+        assertNotNull(env.properties());
+        assertNotNull(env.scheduler());
+
+        assertTrue(env.shutdown().toBlocking().single());
     }
 
-    @Override
-    protected void customEndpointHandlers(final ChannelPipeline pipeline) {
-        pipeline
-            .addLast(new HttpClientCodec())
-            .addLast(new QueryHandler(this, responseBuffer()));
+    @Test
+    public void shouldAcceptCustomProperties() throws Exception {
+        CoreProperties props = mock(CoreProperties.class);
+        CoreEnvironment env = DefaultCoreEnvironment.create(props);
+        assertEquals(props, env.properties());
     }
 }

@@ -24,8 +24,8 @@ package com.couchbase.client.core.config;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.loader.Loader;
 import com.couchbase.client.core.config.refresher.Refresher;
-import com.couchbase.client.core.env.CouchbaseEnvironment;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import org.junit.Test;
@@ -58,11 +58,12 @@ import static org.mockito.Mockito.when;
  */
 public class DefaultConfigurationProviderTest {
 
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+
     @Test
     @SuppressWarnings("unchecked")
     public void shouldOpenBucket() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
@@ -93,8 +94,6 @@ public class DefaultConfigurationProviderTest {
     @SuppressWarnings("unchecked")
     public void shouldDelegateLoadingToSecondProviderIfFirstFails() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Environment environment = new CouchbaseEnvironment();
-
         Loader successLoader = mock(Loader.class);
         Loader errorLoader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
@@ -129,7 +128,6 @@ public class DefaultConfigurationProviderTest {
     @Test
     public void shouldEmitNewClusterConfig() throws Exception {
         final ClusterFacade cluster = mock(ClusterFacade.class);
-        Environment environment = new CouchbaseEnvironment();
         Loader loader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
@@ -171,7 +169,6 @@ public class DefaultConfigurationProviderTest {
     @Test
     public void shouldFailOpeningBucketIfNoConfigLoaded() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Environment environment = new CouchbaseEnvironment();
         Loader errorLoader = mock(Loader.class);
         AsyncSubject<Tuple2<LoaderType, BucketConfig>> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn(errorSubject);

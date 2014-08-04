@@ -24,7 +24,7 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -54,18 +54,18 @@ public class HttpLoader extends AbstractLoader {
      * @param cluster the cluster reference.
      * @param environment the environment to use.
      */
-    public HttpLoader(ClusterFacade cluster, Environment environment) {
+    public HttpLoader(ClusterFacade cluster, CoreEnvironment environment) {
         super(LoaderType.HTTP, ServiceType.CONFIG, cluster, environment);
     }
 
     @Override
     protected int port() {
-        return env().sslEnabled() ? env().bootstrapHttpSslPort() : env().bootstrapHttpDirectPort();
+        return env().properties().sslEnabled() ? env().properties().bootstrapHttpSslPort() : env().properties().bootstrapHttpDirectPort();
     }
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String password, final InetAddress hostname) {
-        if (!env().bootstrapHttpEnabled()) {
+        if (!env().properties().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap manually disabled.");
             return Observable.error(new ConfigurationException("Http Bootstrap disabled through configuration."));
         }

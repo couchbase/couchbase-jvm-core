@@ -23,7 +23,7 @@
 package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.ResponseEvent;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 
 /**
@@ -34,7 +34,7 @@ public class ServiceFactory {
     private ServiceFactory() {
     }
 
-    public static Service create(String hostname, String bucket, String password, int port, Environment env, ServiceType type,
+    public static Service create(String hostname, String bucket, String password, int port, CoreEnvironment env, ServiceType type,
         final RingBuffer<ResponseEvent> responseBuffer) {
         switch(type) {
             case BINARY:

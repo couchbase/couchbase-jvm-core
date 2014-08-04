@@ -25,7 +25,7 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
@@ -60,7 +60,7 @@ public abstract class AbstractLoader implements Loader {
     /**
      * The couchbase environment.
      */
-    private final Environment environment;
+    private final CoreEnvironment environment;
 
     /**
      * The service serviceType from the actual loader implementation.
@@ -76,7 +76,7 @@ public abstract class AbstractLoader implements Loader {
      * @param cluster the cluster reference.
      * @param environment the couchbase environment.
      */
-    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final ClusterFacade cluster, final Environment environment) {
+    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final ClusterFacade cluster, final CoreEnvironment environment) {
         this.loaderType = loaderType;
         this.serviceType = serviceType;
         this.cluster = cluster;
@@ -165,11 +165,11 @@ public abstract class AbstractLoader implements Loader {
     }
 
     /**
-     * Returns the {@link Environment} for child implementations.
+     * Returns the {@link CoreEnvironment} for child implementations.
      *
      * @return the environment.
      */
-    protected Environment env() {
+    protected CoreEnvironment env() {
         return environment;
     }
 

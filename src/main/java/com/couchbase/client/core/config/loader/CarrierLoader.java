@@ -24,7 +24,7 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
-import com.couchbase.client.core.env.Environment;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -52,18 +52,18 @@ public class CarrierLoader extends AbstractLoader {
      * @param cluster the cluster reference.
      * @param environment the environment to use.
      */
-    public CarrierLoader(ClusterFacade cluster, Environment environment) {
+    public CarrierLoader(ClusterFacade cluster, CoreEnvironment environment) {
         super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
     }
 
     @Override
     protected int port() {
-        return env().sslEnabled() ? env().bootstrapCarrierSslPort() : env().bootstrapCarrierDirectPort();
+        return env().properties().sslEnabled() ? env().properties().bootstrapCarrierSslPort() : env().properties().bootstrapCarrierDirectPort();
     }
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String password, final InetAddress hostname) {
-        if (!env().bootstrapCarrierEnabled()) {
+        if (!env().properties().bootstrapCarrierEnabled()) {
             LOGGER.info("Carrier Bootstrap manually disabled.");
             return Observable.error(new ConfigurationException("Carrier Bootstrap disabled through configuration."));
         }

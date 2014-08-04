@@ -21,26 +21,13 @@
  */
 package com.couchbase.client.core.env;
 
-import io.netty.channel.EventLoopGroup;
-import rx.Observable;
-
 /**
- * A {@link Environment} provides all the core building blocks like environment settings and thread pools so that the
- * application can work with it properly.
+ * .
  *
- * This interface defines the contract. How properties are loaded is chosen by the implementation. See the
- * {@link CouchbaseEnvironment} class for the default implementation.
- *
- * Note that the {@link Environment} is stateful, so be sure to call {@link #shutdown()} properly.
+ * @author Michael Nitschinger
  */
-public interface Environment {
+public interface CoreProperties {
 
-    /**
-     * Shutdown the {@link Environment}.
-     *
-     * @return eventually the success/failure of the shutdown without errors.
-     */
-    Observable<Boolean> shutdown();
 
     /**
      * Identifies if SSL should be enabled.
@@ -93,12 +80,8 @@ public interface Environment {
      */
     int ioPoolSize();
 
-    /**
-     * Returns the IO pool for the underlying IO framework.
-     *
-     * @return the IO pool, shared across resources.
-     */
-    EventLoopGroup ioPool();
+    int computationPoolSize();
+
 
     /**
      * Returns the size of the request ringbuffer.
@@ -136,6 +119,4 @@ public interface Environment {
      */
     int queryServiceEndpoints();
 
-    boolean compressionEnabled();
-    int compressionLowerLimit();
 }
