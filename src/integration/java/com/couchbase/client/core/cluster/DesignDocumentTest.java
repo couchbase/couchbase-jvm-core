@@ -1,7 +1,7 @@
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.message.config.ListDesignDocumentResponse;
-import com.couchbase.client.core.message.config.ListDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
@@ -27,8 +27,8 @@ public class DesignDocumentTest extends ClusterDependentTest {
 
     @Test
     public void shouldListDesignDocuments() {
-        ListDesignDocumentsRequest req = new ListDesignDocumentsRequest(bucket(), password());
-        ListDesignDocumentResponse response = cluster().<ListDesignDocumentResponse>send(req).toBlocking().single();
+        GetDesignDocumentsRequest req = new GetDesignDocumentsRequest(bucket(), password());
+        GetDesignDocumentsResponse response = cluster().<GetDesignDocumentsResponse>send(req).toBlocking().single();
 
         assertTrue(response.status().isSuccess());
         assertNotNull(response.content());

@@ -21,18 +21,21 @@
  */
 package com.couchbase.client.core.message.config;
 
-import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.ResponseStatus;
 
-public class ListDesignDocumentsRequest extends AbstractCouchbaseRequest implements ConfigRequest {
+public class GetDesignDocumentsResponse extends AbstractCouchbaseResponse {
 
-    private final String path;
+    private final String content;
 
-    public ListDesignDocumentsRequest(String bucket, String password) {
-        super(bucket, password);
-        this.path = "/pools/default/buckets/" + bucket + "/ddocs";
+    public GetDesignDocumentsResponse(String content, ResponseStatus status, CouchbaseRequest request) {
+        super(status, request);
+        this.content = content;
     }
 
-    public String path() {
-        return path;
+    public String content() {
+        return content;
     }
+
 }

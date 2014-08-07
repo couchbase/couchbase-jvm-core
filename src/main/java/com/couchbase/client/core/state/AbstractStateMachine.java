@@ -21,8 +21,8 @@
  */
 package com.couchbase.client.core.state;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import rx.Observable;
 import rx.subjects.BehaviorSubject;
 
@@ -37,9 +37,9 @@ import rx.subjects.BehaviorSubject;
 public class AbstractStateMachine<S extends Enum> implements Stateful<S> {
 
     /**
-     * The logger which should be used.
+     * The logger used.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(Stateful.class);
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(Stateful.class);
 
     /**
      * The observable which emits all the subsequent state changes.

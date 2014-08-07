@@ -21,19 +21,22 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
 
 public class DefaultCoreEnvironment implements CoreEnvironment {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoreEnvironment.class);
+    /**
+     * The logger used.
+     */
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(CoreEnvironment.class);
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
 
@@ -42,7 +45,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final Scheduler coreScheduler;
     private volatile boolean shutdown;
 
-    DefaultCoreEnvironment(final CoreProperties properties) {
+    protected DefaultCoreEnvironment(final CoreProperties properties) {
         if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
             LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found, " +
                 "this can have severe impact on performance and stability. Reuse environments!");

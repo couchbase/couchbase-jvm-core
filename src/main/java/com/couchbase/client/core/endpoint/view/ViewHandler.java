@@ -28,12 +28,17 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
+import com.couchbase.client.core.message.view.RemoveDesignDocumentRequest;
+import com.couchbase.client.core.message.view.RemoveDesignDocumentResponse;
+import com.couchbase.client.core.message.view.UpsertDesignDocumentRequest;
+import com.couchbase.client.core.message.view.UpsertDesignDocumentResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
 import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.message.view.ViewRequest;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -121,6 +126,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
     protected HttpRequest encodeRequest(final ChannelHandlerContext ctx, final ViewRequest msg) throws Exception {
         StringBuilder path = new StringBuilder();
 
+        HttpMethod method = HttpMethod.GET;
+        ByteBuf content = null;
         if (msg instanceof ViewQueryRequest) {
             ViewQueryRequest queryMsg = (ViewQueryRequest) msg;
             path.append("/").append(msg.bucket()).append("/_design/");
@@ -133,12 +140,28 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             GetDesignDocumentRequest queryMsg = (GetDesignDocumentRequest) msg;
             path.append("/").append(msg.bucket()).append("/_design/");
             path.append(queryMsg.development() ? "dev_" + queryMsg.name() : queryMsg.name());
+        } else if (msg instanceof UpsertDesignDocumentRequest) {
+            method = HttpMethod.PUT;
+            UpsertDesignDocumentRequest queryMsg = (UpsertDesignDocumentRequest) msg;
+            path.append("/").append(msg.bucket()).append("/_design/");
+            path.append(queryMsg.development() ? "dev_" + queryMsg.name() : queryMsg.name());
+            content = Unpooled.copiedBuffer(queryMsg.body(), CHARSET);
+        } else if (msg instanceof RemoveDesignDocumentRequest) {
+            method = HttpMethod.DELETE;
+            RemoveDesignDocumentRequest queryMsg = (RemoveDesignDocumentRequest) msg;
+            path.append("/").append(msg.bucket()).append("/_design/");
+            path.append(queryMsg.development() ? "dev_" + queryMsg.name() : queryMsg.name());
         } else {
             throw new IllegalArgumentException("Unknown incoming ViewRequest type "
                 + msg.getClass());
         }
 
-        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path.toString());
+        if (content == null) {
+            content =  Unpooled.buffer(0);
+        }
+        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, path.toString(), content);
+        request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
+        request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
         addAuth(ctx, request, msg.bucket(), msg.password());
 
         return request;
@@ -179,6 +202,10 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         if (msg instanceof LastHttpContent) {
             if (request instanceof GetDesignDocumentRequest) {
                 response = handleGetDesignDocumentResponse((GetDesignDocumentRequest) request);
+            } else if (request instanceof UpsertDesignDocumentRequest) {
+                response = handleUpsertDesignDocumentResponse((UpsertDesignDocumentRequest) request);
+            } else if (request instanceof RemoveDesignDocumentRequest) {
+                response = handleRemoveDesignDocumentResponse((RemoveDesignDocumentRequest) request);
             }
         }
 
@@ -195,6 +222,16 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
         return new GetDesignDocumentResponse(request.name(), request.development(), responseContent.copy(), status,
             request);
+    }
+
+    private CouchbaseResponse handleUpsertDesignDocumentResponse(final UpsertDesignDocumentRequest request) {
+        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        return new UpsertDesignDocumentResponse(status, responseContent.copy(), request);
+    }
+
+    private CouchbaseResponse handleRemoveDesignDocumentResponse(final RemoveDesignDocumentRequest request) {
+        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        return new RemoveDesignDocumentResponse(status, responseContent.copy(), request);
     }
 
     /**

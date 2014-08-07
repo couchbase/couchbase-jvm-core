@@ -25,11 +25,11 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -43,7 +43,10 @@ import java.net.InetAddress;
  */
 public class HttpLoader extends AbstractLoader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpLoader.class);
+    /**
+     * The logger used.
+     */
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(HttpLoader.class);
 
     private static final String TERSE_PATH = "/pools/default/b/";
     private static final String VERBOSE_PATH = "/pools/default/buckets/";

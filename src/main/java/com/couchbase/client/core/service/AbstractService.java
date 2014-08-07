@@ -25,14 +25,14 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -51,9 +51,9 @@ import java.util.List;
 public abstract class AbstractService extends AbstractStateMachine<LifecycleState> implements Service {
 
     /**
-     * The logger to use for all services.
+     * The logger used.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(Service.class);
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(Service.class);
 
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;

@@ -24,6 +24,8 @@ package com.couchbase.client.core.endpoint;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -31,8 +33,6 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.CharsetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -55,9 +55,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     protected static final Charset CHARSET = CharsetUtil.UTF_8;
 
     /**
-     * The logger which should be used.
+     * The logger used.
      */
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractGenericHandler.class);
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(AbstractGenericHandler.class);
 
     /**
      * The response buffer to push response events into.

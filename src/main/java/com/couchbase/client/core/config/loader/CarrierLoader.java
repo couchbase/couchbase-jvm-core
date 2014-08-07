@@ -25,12 +25,12 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.InternalLogger;
+import com.couchbase.client.core.logging.InternalLoggerFactory;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
 import io.netty.util.CharsetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -44,7 +44,10 @@ import java.net.InetAddress;
  */
 public class CarrierLoader extends AbstractLoader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CarrierLoader.class);
+    /**
+     * The logger used.
+     */
+    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(CarrierLoader.class);
 
     /**
      * Creates a new {@link CarrierLoader}.

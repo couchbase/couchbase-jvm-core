@@ -82,8 +82,6 @@
  * * [Typesafe Config](https://github.com/typesafehub/config): A very versatile config library, with no dependencies
  *   on its own. It has a well-thought dependency management system and easily accessible syntax both across system
  *   properties and config files.
- * * [SLF4J](http://www.slf4j.org/): Traditional logging facade, making it possible for the user to plug in their
- *   favorite logging framework at will.
  * * [Jackson](https://github.com/FasterXML/jackson): One of the most versatile and fast JSON frameworks out there,
  *   widely used.
  *

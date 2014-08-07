@@ -44,7 +44,7 @@ public class DynamicCoreProperties implements CoreProperties {
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
 
-    DynamicCoreProperties(final Builder builder) {
+    protected DynamicCoreProperties(final Builder builder) {
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled());
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile());
         sslKeystorePassword = stringPropertyOr("sslKeystorePassword", builder.sslKeystorePassword());
@@ -205,7 +205,7 @@ public class DynamicCoreProperties implements CoreProperties {
         private int viewServiceEndpoints = DefaultCoreProperties.VIEW_ENDPOINTS;
         private int queryServiceEndpoints = DefaultCoreProperties.QUERY_ENDPOINTS;
 
-        Builder() {
+        protected Builder() {
 
         }
 

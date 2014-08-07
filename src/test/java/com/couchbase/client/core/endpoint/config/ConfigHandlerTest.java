@@ -32,8 +32,8 @@ import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
-import com.couchbase.client.core.message.config.ListDesignDocumentResponse;
-import com.couchbase.client.core.message.config.ListDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
@@ -244,12 +244,12 @@ public class ConfigHandlerTest {
         HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer("foo", CharsetUtil.UTF_8));
         HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer("bar", CharsetUtil.UTF_8));
 
-        ListDesignDocumentsRequest requestMock = mock(ListDesignDocumentsRequest.class);
+        GetDesignDocumentsRequest requestMock = mock(GetDesignDocumentsRequest.class);
         queue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
         latch.await(1, TimeUnit.SECONDS);
         assertEquals(1, firedEvents.size());
-        ListDesignDocumentResponse inbound = (ListDesignDocumentResponse) firedEvents.get(0);
+        GetDesignDocumentsResponse inbound = (GetDesignDocumentsResponse) firedEvents.get(0);
 
         assertEquals(ResponseStatus.SUCCESS, inbound.status());
         assertEquals("foobar", inbound.content());

@@ -33,8 +33,8 @@ import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
-import com.couchbase.client.core.message.config.ListDesignDocumentResponse;
-import com.couchbase.client.core.message.config.ListDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
+import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -116,7 +116,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             httpMethod = HttpMethod.GET;
         } else if(msg instanceof FlushRequest) {
             httpMethod = HttpMethod.POST;
-        } else if (msg instanceof ListDesignDocumentsRequest) {
+        } else if (msg instanceof GetDesignDocumentsRequest) {
             httpMethod = HttpMethod.GET;
         } else {
             throw new IllegalArgumentException("Unknown incoming ConfigRequest type "
@@ -195,8 +195,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
 
             if (request instanceof BucketConfigRequest) {
                 response = new BucketConfigResponse(body, status);
-            } else if (request instanceof ListDesignDocumentsRequest) {
-                response = new ListDesignDocumentResponse(body, status, request);
+            } else if (request instanceof GetDesignDocumentsRequest) {
+                response = new GetDesignDocumentsResponse(body, status, request);
             } else if (request instanceof FlushRequest) {
                 boolean done = responseHeader.getStatus().code() != 201;
                 response = new FlushResponse(done, body, status);
