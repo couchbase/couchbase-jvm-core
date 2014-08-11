@@ -26,6 +26,8 @@ import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.binary.AppendRequest;
+import com.couchbase.client.core.message.binary.AppendResponse;
 import com.couchbase.client.core.message.binary.BinaryRequest;
 import com.couchbase.client.core.message.binary.BinaryStoreRequest;
 import com.couchbase.client.core.message.binary.CounterRequest;
@@ -38,6 +40,8 @@ import com.couchbase.client.core.message.binary.InsertRequest;
 import com.couchbase.client.core.message.binary.InsertResponse;
 import com.couchbase.client.core.message.binary.ObserveRequest;
 import com.couchbase.client.core.message.binary.ObserveResponse;
+import com.couchbase.client.core.message.binary.PrependRequest;
+import com.couchbase.client.core.message.binary.PrependResponse;
 import com.couchbase.client.core.message.binary.RemoveRequest;
 import com.couchbase.client.core.message.binary.RemoveResponse;
 import com.couchbase.client.core.message.binary.ReplaceRequest;
@@ -87,6 +91,8 @@ public class BinaryHandler extends AbstractGenericHandler<FullBinaryMemcacheResp
     public static final byte OP_UNLOCK = (byte) 0x95;
     public static final byte OP_OBSERVE = (byte) 0x92;
     public static final byte OP_TOUCH = BinaryMemcacheOpcodes.TOUCH;
+    public static final byte OP_APPEND = BinaryMemcacheOpcodes.APPEND;
+    public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
 
     /**
      * Represents the "Not My VBucket" status response.
@@ -137,6 +143,10 @@ public class BinaryHandler extends AbstractGenericHandler<FullBinaryMemcacheResp
             request = handleObserveRequest(ctx, (ObserveRequest) msg);
         } else if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
+        } else if (msg instanceof AppendRequest) {
+            request = handleAppendRequest((AppendRequest) msg);
+        } else if (msg instanceof PrependRequest) {
+            request = handlePrependRequest((PrependRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
                 + msg.getClass());
@@ -352,6 +362,30 @@ public class BinaryHandler extends AbstractGenericHandler<FullBinaryMemcacheResp
         return request;
     }
 
+    private static BinaryMemcacheRequest handleAppendRequest(final AppendRequest msg) {
+        String key = msg.key();
+        short keyLength = (short) key.length();
+        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
+
+        request.setOpcode(OP_APPEND);
+        request.setKeyLength(keyLength);
+        request.setCAS(msg.cas());
+        request.setTotalBodyLength(keyLength + msg.content().readableBytes());
+        return request;
+    }
+
+    private static BinaryMemcacheRequest handlePrependRequest(final PrependRequest msg) {
+        String key = msg.key();
+        short keyLength = (short) key.length();
+        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
+
+        request.setOpcode(OP_PREPEND);
+        request.setKeyLength(keyLength);
+        request.setCAS(msg.cas());
+        request.setTotalBodyLength(keyLength + msg.content().readableBytes());
+        return request;
+    }
+
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -393,6 +427,10 @@ public class BinaryHandler extends AbstractGenericHandler<FullBinaryMemcacheResp
             byte observed = content.getByte(content.getShort(2) + 4);
             response = new ObserveResponse(status, observed, ((ObserveRequest) request).master(), bucket,
                 content, request);
+        } else if (request instanceof AppendRequest) {
+            response = new AppendResponse(status, cas, bucket, content, request);
+        } else if (request instanceof PrependRequest) {
+            response = new PrependResponse(status, cas, bucket, content, request);
         } else {
             throw new IllegalStateException("Unhandled request/response pair: " + request.getClass() + "/"
                 + msg.getClass());
