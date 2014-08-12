@@ -344,8 +344,12 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             }
         });
 
-        info.setByte(closingPointer, '}');
-        viewInfoObservable.onNext(info);
+        if (closingPointer > 0) {
+            info.setByte(closingPointer, '}');
+            viewInfoObservable.onNext(info);
+        } else {
+            viewInfoObservable.onNext(Unpooled.EMPTY_BUFFER);
+        }
         viewInfoObservable.onCompleted();
         viewParsingState = QUERY_STATE_ROWS;
     }
