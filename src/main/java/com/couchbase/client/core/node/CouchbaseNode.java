@@ -85,6 +85,8 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     private final Map<Service, LifecycleState> serviceStates;
 
+    private volatile boolean connected;
+
     public CouchbaseNode(final InetAddress hostname, final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
         this(hostname, new DefaultServiceRegistry(), environment, responseBuffer);
@@ -188,11 +190,17 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
                 }
 
                 if (newState == LifecycleState.CONNECTED) {
-                    LOGGER.info("Connected to Node " + hostname);
-                    LOGGER.debug("Connected ("+state()+") to Node " + hostname);
+                    if (!connected) {
+                        LOGGER.info("Connected to Node " + hostname.getHostName());
+                    }
+                    connected = true;
+                    LOGGER.debug("Connected (" + state() + ") to Node " + hostname);
                 } else if (newState == LifecycleState.DISCONNECTED) {
-                    LOGGER.info("Disconnected from Node " + hostname);
-                    LOGGER.debug("Disconnected ("+state()+") from Node " + hostname);
+                    if (connected) {
+                        LOGGER.info("Disconnected from Node " + hostname.getHostName());
+                    }
+                    connected = false;
+                    LOGGER.debug("Disconnected (" + state() + ") from Node " + hostname);
                 }
                 transitionState(newState);
             }
