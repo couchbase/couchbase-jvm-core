@@ -164,7 +164,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.password = password;
         this.responseBuffer = responseBuffer;
         this.env = environment;
-        if (environment.properties().sslEnabled()) {
+        if (environment.sslEnabled()) {
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
 
@@ -178,7 +178,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
-                    if (environment.properties().sslEnabled()) {
+                    if (environment.sslEnabled()) {
                         pipeline.addLast(new SslHandler(sslEngineFactory.get()));
                     }
                     if (LOGGER.isTraceEnabled()) {

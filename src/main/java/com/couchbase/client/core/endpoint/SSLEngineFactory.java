@@ -59,9 +59,9 @@ public class SSLEngineFactory {
      */
     public SSLEngine get() {
         try {
-            char[] password = env.properties().sslKeystorePassword().isEmpty() ? null : env.properties().sslKeystorePassword().toCharArray();
+            char[] password = env.sslKeystorePassword().isEmpty() ? null : env.sslKeystorePassword().toCharArray();
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            ks.load(new FileInputStream(env.properties().sslKeystoreFile()), password);
+            ks.load(new FileInputStream(env.sslKeystoreFile()), password);
 
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
             TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");

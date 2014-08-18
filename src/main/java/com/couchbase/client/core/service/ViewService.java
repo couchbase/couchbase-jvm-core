@@ -14,7 +14,7 @@ public class ViewService extends AbstractService {
     private static final EndpointFactory factory = new ViewEndpointFactory();
 
     public ViewService(String hostname, String bucket, String password, int port, CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.properties().viewServiceEndpoints(), strategy, responseBuffer, factory);
+        super(hostname, bucket, password, port, env, env.viewServiceEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override

@@ -33,18 +33,42 @@ public class DefaultCoreEnvironmentTest {
     @Test
     public void shouldInitAndShutdownCoreEnvironment() throws Exception {
         CoreEnvironment env = DefaultCoreEnvironment.create();
-
         assertNotNull(env.ioPool());
-        assertNotNull(env.properties());
         assertNotNull(env.scheduler());
 
+        assertEquals(DefaultCoreEnvironment.BINARY_ENDPOINTS, env.binaryServiceEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
     }
 
     @Test
-    public void shouldAcceptCustomProperties() throws Exception {
-        CoreProperties props = mock(CoreProperties.class);
-        CoreEnvironment env = DefaultCoreEnvironment.create(props);
-        assertEquals(props, env.properties());
+    public void shouldOverrideDefaults() throws Exception {
+        CoreEnvironment env = DefaultCoreEnvironment
+            .builder()
+            .binaryServiceEndpoints(3)
+            .build();
+        assertNotNull(env.ioPool());
+        assertNotNull(env.scheduler());
+
+        assertEquals(3, env.binaryServiceEndpoints());
+        assertTrue(env.shutdown().toBlocking().single());
     }
+
+    @Test
+    public void sysPropertyShouldTakePrecedence() throws Exception {
+
+        System.setProperty("com.couchbase.binaryServiceEndpoints", "10");
+
+        CoreEnvironment env = DefaultCoreEnvironment
+            .builder()
+            .binaryServiceEndpoints(3)
+            .build();
+        assertNotNull(env.ioPool());
+        assertNotNull(env.scheduler());
+
+        assertEquals(10, env.binaryServiceEndpoints());
+        assertTrue(env.shutdown().toBlocking().single());
+
+        System.clearProperty("com.couchbase.binaryServiceEndpoints");
+    }
+
 }

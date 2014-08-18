@@ -358,9 +358,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     @Override
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                         Map<ServiceType, Integer> services =
-                                environment.properties().sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
-                        if (!services.containsKey(ServiceType.QUERY) && environment.properties().queryEnabled()) {
-                            services.put(ServiceType.QUERY, environment.properties().queryPort());
+                                environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                        if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
+                            services.put(ServiceType.QUERY, environment.queryPort());
                         }
                         return Observable.from(services);
                     }

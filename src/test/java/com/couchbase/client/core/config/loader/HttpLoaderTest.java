@@ -24,7 +24,6 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.env.CoreProperties;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -63,20 +62,18 @@ public class HttpLoaderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.properties().bootstrapHttpDirectPort(), loader.port());
+        assertEquals(environment.bootstrapHttpDirectPort(), loader.port());
     }
 
     @Test
     public void shouldUseEncryptedPortIfSSL() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        CoreProperties properties = mock(CoreProperties.class);
-        when(environment.properties()).thenReturn(properties);
-        when(properties.sslEnabled()).thenReturn(true);
-        when(properties.bootstrapHttpSslPort()).thenReturn(12345);
+        when(environment.sslEnabled()).thenReturn(true);
+        when(environment.bootstrapHttpSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.properties().bootstrapHttpSslPort(), loader.port());
+        assertEquals(environment.bootstrapHttpSslPort(), loader.port());
     }
 
     @Test
@@ -136,9 +133,7 @@ public class HttpLoaderTest {
     @Test
     public void shouldThrowIfDisabledThroughConfiguration() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        CoreProperties properties = mock(CoreProperties.class);
-        when(environment.properties()).thenReturn(properties);
-        when(properties.bootstrapHttpEnabled()).thenReturn(false);
+        when(environment.bootstrapHttpEnabled()).thenReturn(false);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         HttpLoader loader = new HttpLoader(cluster, environment);

@@ -51,17 +51,100 @@ public interface CoreEnvironment {
     EventLoopGroup ioPool();
 
     /**
-     * Returns access to the configured environment properties.
-     *
-     * @return the configured properties.
-     */
-    CoreProperties properties();
-
-    /**
      * Returns the scheduler which should be used for all core actions that need to happen
      * asynchronously.
      *
      * @return
      */
     Scheduler scheduler();
+
+    /**
+     * Identifies if SSL should be enabled.
+     *
+     * @return true if SSL is enabled, false otherwise.
+     */
+    boolean sslEnabled();
+
+    String sslKeystoreFile();
+    String sslKeystorePassword();
+
+    boolean queryEnabled();
+    int queryPort();
+
+    boolean bootstrapHttpEnabled();
+    boolean bootstrapCarrierEnabled();
+
+    /**
+     * The port to use when bootstrapping through HTTP without SSL.
+     *
+     * @return the direct http port.
+     */
+    int bootstrapHttpDirectPort();
+
+    /**
+     * The port to use when bootstrapping through HTTP with SSL.
+     *
+     * @return the https port.
+     */
+    int bootstrapHttpSslPort();
+
+    /**
+     * The port to use when bootstrapping through carrier publication without SSL.
+     *
+     * @return the direct carrier publication port.
+     */
+    int bootstrapCarrierDirectPort();
+
+    /**
+     * The port to use when bootstrapping through carrier publication with SSL.
+     *
+     * @return the ssl carrier publication port.
+     */
+    int bootstrapCarrierSslPort();
+
+    /**
+     * Returns the configured IO pool size.
+     *
+     * @return the pool size (number of threads to use).
+     */
+    int ioPoolSize();
+
+    int computationPoolSize();
+
+
+    /**
+     * Returns the size of the request ringbuffer.
+     *
+     * @return the size of the ringbuffer.
+     */
+    int requestBufferSize();
+
+    /**
+     * Returns the size of the response ringbuffer.
+     *
+     * @return the size of the ringbuffer.
+     */
+    int responseBufferSize();
+
+    /**
+     * The number of binary service endpoints.
+     *
+     * @return amount of endpoints per service.
+     */
+    int binaryServiceEndpoints();
+
+    /**
+     * The number of view service endpoints.
+     *
+     * @return amount of endpoints per service.
+     */
+    int viewServiceEndpoints();
+
+
+    /**
+     * The number of query service endpoints.
+     *
+     * @return amount of endpoints per service.
+     */
+    int queryServiceEndpoints();
 }

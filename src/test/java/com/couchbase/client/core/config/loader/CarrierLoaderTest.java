@@ -24,7 +24,6 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.env.CoreProperties;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -66,20 +65,18 @@ public class CarrierLoaderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.properties().bootstrapCarrierDirectPort(), loader.port());
+        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port());
     }
 
     @Test
     public void shouldUseEncryptedPortIfSSL() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        CoreProperties properties = mock(CoreProperties.class);
-        when(environment.properties()).thenReturn(properties);
-        when(properties.sslEnabled()).thenReturn(true);
-        when(properties.bootstrapCarrierSslPort()).thenReturn(12345);
+        when(environment.sslEnabled()).thenReturn(true);
+        when(environment.bootstrapCarrierSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.properties().bootstrapCarrierSslPort(), loader.port());
+        assertEquals(environment.bootstrapCarrierSslPort(), loader.port());
     }
 
     @Test
@@ -119,9 +116,7 @@ public class CarrierLoaderTest {
     @Test
     public void shouldThrowIfDisabledThroughConfiguration() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        CoreProperties properties = mock(CoreProperties.class);
-        when(environment.properties()).thenReturn(properties);
-        when(properties.bootstrapHttpEnabled()).thenReturn(false);
+        when(environment.bootstrapHttpEnabled()).thenReturn(false);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
