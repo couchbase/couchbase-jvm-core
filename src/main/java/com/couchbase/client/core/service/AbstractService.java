@@ -25,8 +25,8 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
@@ -53,7 +53,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(Service.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Service.class);
 
     private final SelectionStrategy strategy;
     private final Endpoint[] endpoints;

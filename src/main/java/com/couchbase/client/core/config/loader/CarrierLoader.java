@@ -25,8 +25,8 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -47,7 +47,7 @@ public class CarrierLoader extends AbstractLoader {
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(CarrierLoader.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CarrierLoader.class);
 
     /**
      * Creates a new {@link CarrierLoader}.

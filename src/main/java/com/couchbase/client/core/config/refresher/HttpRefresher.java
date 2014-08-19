@@ -24,8 +24,8 @@ package com.couchbase.client.core.config.refresher;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import rx.Observable;
@@ -43,7 +43,7 @@ public class HttpRefresher extends AbstractRefresher {
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(HttpRefresher.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(HttpRefresher.class);
 
     private static final String TERSE_PATH = "/pools/default/bs/";
     private static final String VERBOSE_PATH = "/pools/default/bucketsStreaming/";

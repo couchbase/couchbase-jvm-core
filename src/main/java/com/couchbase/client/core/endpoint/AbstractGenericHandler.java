@@ -24,8 +24,8 @@ package com.couchbase.client.core.endpoint;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -57,7 +57,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(AbstractGenericHandler.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(AbstractGenericHandler.class);
 
     /**
      * The response buffer to push response events into.

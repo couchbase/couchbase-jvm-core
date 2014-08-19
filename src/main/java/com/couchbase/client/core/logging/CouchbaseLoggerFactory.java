@@ -38,38 +38,38 @@ package com.couchbase.client.core.logging;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
- * Creates an {@link InternalLogger} or changes the default factory
+ * Creates an {@link CouchbaseLogger} or changes the default factory
  * implementation.  This factory allows you to choose what logging framework
  * Netty should use.  The default factory is {@link Slf4JLoggerFactory}.  If SLF4J
  * is not available, {@link Log4JLoggerFactory} is used.  If Log4J is not available,
  * {@link JdkLoggerFactory} is used.  You can change it to your preferred
- * logging framework before other Netty classes are loaded:
+ * logging framework before other SDK classes are loaded:
  * <pre>
- * {@link InternalLoggerFactory}.setDefaultFactory(new {@link Log4JLoggerFactory}());
+ * {@link CouchbaseLoggerFactory}.setDefaultFactory(new {@link Log4JLoggerFactory}());
  * </pre>
  * Please note that the new default factory is effective only for the classes
  * which were loaded after the default factory is changed.  Therefore,
- * {@link #setDefaultFactory(InternalLoggerFactory)} should be called as early
+ * {@link #setDefaultFactory(CouchbaseLoggerFactory)} should be called as early
  * as possible and shouldn't be called more than once.
  */
-public abstract class InternalLoggerFactory {
+public abstract class CouchbaseLoggerFactory {
 
-    private static volatile InternalLoggerFactory defaultFactory =
-            newDefaultFactory(InternalLoggerFactory.class.getName());
+    private static volatile CouchbaseLoggerFactory defaultFactory =
+            newDefaultFactory(CouchbaseLoggerFactory.class.getName());
 
     static {
         // Initiate some time-consuming background jobs here,
         // because this class is often initialized at the earliest time.
         try {
-            Class.forName(ThreadLocalRandom.class.getName(), true, InternalLoggerFactory.class.getClassLoader());
+            Class.forName(ThreadLocalRandom.class.getName(), true, CouchbaseLoggerFactory.class.getClassLoader());
         } catch (Exception ignored) {
             // Should not fail, but it does not harm to fail.
         }
     }
 
     @SuppressWarnings("UnusedCatchParameter")
-    private static InternalLoggerFactory newDefaultFactory(String name) {
-        InternalLoggerFactory f;
+    private static CouchbaseLoggerFactory newDefaultFactory(String name) {
+        CouchbaseLoggerFactory f;
         try {
             f = new Slf4JLoggerFactory(true);
             f.newInstance(name).debug("Using SLF4J as the default logging framework");
@@ -89,36 +89,36 @@ public abstract class InternalLoggerFactory {
      * Returns the default factory.  The initial default factory is
      * {@link JdkLoggerFactory}.
      */
-    public static InternalLoggerFactory getDefaultFactory() {
+    public static CouchbaseLoggerFactory getDefaultFactory() {
         return defaultFactory;
     }
 
     /**
      * Changes the default factory.
      */
-    public static void setDefaultFactory(InternalLoggerFactory defaultFactory) {
+    public static void setDefaultFactory(CouchbaseLoggerFactory defaultFactory) {
         if (defaultFactory == null) {
             throw new NullPointerException("defaultFactory");
         }
-        InternalLoggerFactory.defaultFactory = defaultFactory;
+        CouchbaseLoggerFactory.defaultFactory = defaultFactory;
     }
 
     /**
      * Creates a new logger instance with the name of the specified class.
      */
-    public static InternalLogger getInstance(Class<?> clazz) {
+    public static CouchbaseLogger getInstance(Class<?> clazz) {
         return getInstance(clazz.getName());
     }
 
     /**
      * Creates a new logger instance with the specified name.
      */
-    public static InternalLogger getInstance(String name) {
+    public static CouchbaseLogger getInstance(String name) {
         return getDefaultFactory().newInstance(name);
     }
 
     /**
      * Creates a new logger instance with the specified name.
      */
-    protected abstract InternalLogger newInstance(String name);
+    protected abstract CouchbaseLogger newInstance(String name);
 }

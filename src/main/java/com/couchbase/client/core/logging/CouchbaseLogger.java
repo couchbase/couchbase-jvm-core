@@ -60,13 +60,13 @@
  */
 package com.couchbase.client.core.logging;
 /**
- * <em>Internal-use-only</em> logger used by Netty.  <strong>DO NOT</strong>
- * access this class outside of Netty.
+ * <em>Internal-use-only</em> logger used by the SDK.  <strong>DO NOT</strong>
+ * access this class outside of the SDK.
  */
-public interface InternalLogger {
+public interface CouchbaseLogger {
 
     /**
-     * Return the name of this {@link InternalLogger} instance.
+     * Return the name of this {@link CouchbaseLogger} instance.
      *
      * @return name of this logger instance
      */
@@ -437,14 +437,14 @@ public interface InternalLogger {
      * @return True if this Logger is enabled for the specified {@code level},
      *         false otherwise.
      */
-    boolean isEnabled(InternalLogLevel level);
+    boolean isEnabled(CouchbaseLogLevel level);
 
     /**
      * Log a message at the specified {@code level}.
      *
      * @param msg the message string to be logged
      */
-    void log(InternalLogLevel level, String msg);
+    void log(CouchbaseLogLevel level, String msg);
 
     /**
      * Log a message at the specified {@code level} according to the specified format
@@ -456,7 +456,7 @@ public interface InternalLogger {
      * @param format the format string
      * @param arg    the argument
      */
-    void log(InternalLogLevel level, String format, Object arg);
+    void log(CouchbaseLogLevel level, String format, Object arg);
 
     /**
      * Log a message at the specified {@code level} according to the specified format
@@ -469,7 +469,7 @@ public interface InternalLogger {
      * @param argA   the first argument
      * @param argB   the second argument
      */
-    void log(InternalLogLevel level, String format, Object argA, Object argB);
+    void log(CouchbaseLogLevel level, String format, Object argA, Object argB);
 
     /**
      * Log a message at the specified {@code level} according to the specified format
@@ -479,14 +479,14 @@ public interface InternalLogger {
      * is disabled for the specified {@code level}. However, this variant incurs the hidden
      * (and relatively small) cost of creating an {@code Object[]} before invoking the method,
      * even if this logger is disabled for the specified {@code level}. The variants taking
-     * {@link #log(InternalLogLevel, String, Object) one} and
-     * {@link #log(InternalLogLevel, String, Object, Object) two} arguments exist solely
+     * {@link #log(CouchbaseLogLevel, String, Object) one} and
+     * {@link #log(CouchbaseLogLevel, String, Object, Object) two} arguments exist solely
      * in order to avoid this hidden cost.</p>
      *
      * @param format    the format string
      * @param arguments a list of 3 or more arguments
      */
-    void log(InternalLogLevel level, String format, Object... arguments);
+    void log(CouchbaseLogLevel level, String format, Object... arguments);
 
     /**
      * Log an exception (throwable) at the specified {@code level} with an
@@ -495,12 +495,12 @@ public interface InternalLogger {
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
      */
-    void log(InternalLogLevel level, String msg, Throwable t);
+    void log(CouchbaseLogLevel level, String msg, Throwable t);
 
     /**
      * Log an exception (throwable) at the specified {@code level}.
      *
      * @param t   the exception (throwable) to log
      */
-    void log(InternalLogLevel level, Throwable t);
+    void log(CouchbaseLogLevel level, Throwable t);
 }

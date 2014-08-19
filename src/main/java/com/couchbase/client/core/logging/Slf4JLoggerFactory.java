@@ -47,7 +47,7 @@ import java.io.UnsupportedEncodingException;
  * Logger factory which creates a <a href="http://www.slf4j.org/">SLF4J</a>
  * logger.
  */
-public class Slf4JLoggerFactory extends InternalLoggerFactory {
+public class Slf4JLoggerFactory extends CouchbaseLoggerFactory {
 
     public Slf4JLoggerFactory() {
     }
@@ -83,7 +83,7 @@ public class Slf4JLoggerFactory extends InternalLoggerFactory {
     }
 
     @Override
-    public InternalLogger newInstance(String name) {
+    public CouchbaseLogger newInstance(String name) {
         return new Slf4JLogger(LoggerFactory.getLogger(name));
     }
 }

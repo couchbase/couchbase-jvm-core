@@ -31,8 +31,8 @@ import com.couchbase.client.core.config.refresher.HttpRefresher;
 import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.lang.Tuple2;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -89,7 +89,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(ConfigurationProvider.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ConfigurationProvider.class);
 
     /**
      * Reference to the cluster to issue config fetching commands.

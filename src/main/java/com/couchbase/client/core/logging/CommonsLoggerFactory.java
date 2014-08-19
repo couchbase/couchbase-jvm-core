@@ -46,12 +46,12 @@ import java.util.Map;
  * <a href="http://commons.apache.org/logging/">Apache Commons Logging</a>
  * logger.
  */
-public class CommonsLoggerFactory extends InternalLoggerFactory {
+public class CommonsLoggerFactory extends CouchbaseLoggerFactory {
 
-    Map<String, InternalLogger> loggerMap = new HashMap<String, InternalLogger>();
+    Map<String, CouchbaseLogger> loggerMap = new HashMap<String, CouchbaseLogger>();
 
     @Override
-    public InternalLogger newInstance(String name) {
+    public CouchbaseLogger newInstance(String name) {
         return new CommonsLogger(LogFactory.getLog(name), name);
     }
 }

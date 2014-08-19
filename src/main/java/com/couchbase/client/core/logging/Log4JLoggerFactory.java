@@ -42,10 +42,10 @@ import org.apache.log4j.Logger;
  * <a href="http://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a>
  * logger.
  */
-public class Log4JLoggerFactory extends InternalLoggerFactory {
+public class Log4JLoggerFactory extends CouchbaseLoggerFactory {
 
     @Override
-    public InternalLogger newInstance(String name) {
+    public CouchbaseLogger newInstance(String name) {
         return new Log4JLogger(Logger.getLogger(name));
     }
 }

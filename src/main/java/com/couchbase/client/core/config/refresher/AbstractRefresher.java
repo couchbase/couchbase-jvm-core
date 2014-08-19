@@ -26,8 +26,8 @@ import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
@@ -45,7 +45,7 @@ public abstract  class AbstractRefresher implements Refresher {
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(Refresher.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Refresher.class);
 
     /**
      * The config stream where the provider subscribes to.

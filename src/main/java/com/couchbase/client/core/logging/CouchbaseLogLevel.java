@@ -36,9 +36,9 @@
  */
 package com.couchbase.client.core.logging;
 /**
- * The log level that {@link InternalLogger} can log at.
+ * The log level that {@link CouchbaseLogger} can log at.
  */
-public enum InternalLogLevel {
+public enum CouchbaseLogLevel {
     /**
      * 'TRACE' log level.
      */

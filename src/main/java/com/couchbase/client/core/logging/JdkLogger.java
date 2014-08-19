@@ -67,7 +67,7 @@ import java.util.logging.Logger;
  * <a href="http://java.sun.com/javase/6/docs/technotes/guides/logging/index.html">java.util.logging</a>
  * logger.
  */
-class JdkLogger extends AbstractInternalLogger {
+class JdkLogger extends AbstractCouchbaseLogger {
 
     private static final long serialVersionUID = -1767272577989225979L;
 
@@ -627,7 +627,7 @@ class JdkLogger extends AbstractInternalLogger {
     }
 
     static final String SELF = JdkLogger.class.getName();
-    static final String SUPER = AbstractInternalLogger.class.getName();
+    static final String SUPER = AbstractCouchbaseLogger.class.getName();
 
     /**
      * Fill in caller data if possible.

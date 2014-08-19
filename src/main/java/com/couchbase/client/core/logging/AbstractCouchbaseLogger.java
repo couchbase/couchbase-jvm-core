@@ -42,11 +42,11 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 
 /**
- * A skeletal implementation of {@link InternalLogger}.  This class implements
- * all methods that have a {@link InternalLogLevel} parameter by default to call
+ * A skeletal implementation of {@link CouchbaseLogger}.  This class implements
+ * all methods that have a {@link CouchbaseLogLevel} parameter by default to call
  * specific logger methods such as {@link #info(String)} or {@link #isInfoEnabled()}.
  */
-public abstract class AbstractInternalLogger implements InternalLogger, Serializable {
+public abstract class AbstractCouchbaseLogger implements CouchbaseLogger, Serializable {
 
     private static final long serialVersionUID = -6382972526573193470L;
 
@@ -57,7 +57,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     /**
      * Creates a new instance.
      */
-    protected AbstractInternalLogger(String name) {
+    protected AbstractCouchbaseLogger(String name) {
         if (name == null) {
             throw new NullPointerException("name");
         }
@@ -70,7 +70,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public boolean isEnabled(InternalLogLevel level) {
+    public boolean isEnabled(CouchbaseLogLevel level) {
         switch (level) {
         case TRACE:
             return isTraceEnabled();
@@ -113,7 +113,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, String msg, Throwable cause) {
+    public void log(CouchbaseLogLevel level, String msg, Throwable cause) {
         switch (level) {
         case TRACE:
             trace(msg, cause);
@@ -136,7 +136,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, Throwable cause) {
+    public void log(CouchbaseLogLevel level, Throwable cause) {
         switch (level) {
             case TRACE:
                 trace(cause);
@@ -159,7 +159,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, String msg) {
+    public void log(CouchbaseLogLevel level, String msg) {
         switch (level) {
         case TRACE:
             trace(msg);
@@ -182,7 +182,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, String format, Object arg) {
+    public void log(CouchbaseLogLevel level, String format, Object arg) {
         switch (level) {
         case TRACE:
             trace(format, arg);
@@ -205,7 +205,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, String format, Object argA, Object argB) {
+    public void log(CouchbaseLogLevel level, String format, Object argA, Object argB) {
         switch (level) {
         case TRACE:
             trace(format, argA, argB);
@@ -228,7 +228,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     @Override
-    public void log(InternalLogLevel level, String format, Object... arguments) {
+    public void log(CouchbaseLogLevel level, String format, Object... arguments) {
         switch (level) {
         case TRACE:
             trace(format, arguments);
@@ -251,7 +251,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
     }
 
     protected Object readResolve() throws ObjectStreamException {
-        return InternalLoggerFactory.getInstance(name());
+        return CouchbaseLoggerFactory.getInstance(name());
     }
 
     @Override

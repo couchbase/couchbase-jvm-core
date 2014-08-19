@@ -25,8 +25,8 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.logging.InternalLogger;
-import com.couchbase.client.core.logging.InternalLoggerFactory;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -46,7 +46,7 @@ public class HttpLoader extends AbstractLoader {
     /**
      * The logger used.
      */
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(HttpLoader.class);
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(HttpLoader.class);
 
     private static final String TERSE_PATH = "/pools/default/b/";
     private static final String VERBOSE_PATH = "/pools/default/buckets/";

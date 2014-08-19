@@ -66,7 +66,7 @@ import org.apache.commons.logging.Log;
  * <a href="http://commons.apache.org/logging/">Apache Commons Logging</a>
  * logger.
  */
-class CommonsLogger extends AbstractInternalLogger {
+class CommonsLogger extends AbstractCouchbaseLogger {
 
     private static final long serialVersionUID = 8647838678388394885L;
 

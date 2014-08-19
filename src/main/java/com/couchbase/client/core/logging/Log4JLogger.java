@@ -66,7 +66,7 @@ import org.apache.log4j.Logger;
  * <a href="http://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a>
  * logger.
  */
-class Log4JLogger extends AbstractInternalLogger {
+class Log4JLogger extends AbstractCouchbaseLogger {
 
     private static final long serialVersionUID = 2851357342488183058L;
 
