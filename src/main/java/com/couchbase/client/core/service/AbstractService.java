@@ -120,7 +120,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     @Override
     public Observable<LifecycleState> connect() {
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
-            return Observable.from(state());
+            return Observable.just(state());
         }
 
         return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
@@ -139,7 +139,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     @Override
     public Observable<LifecycleState> disconnect() {
         if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
-            return Observable.from(state());
+            return Observable.just(state());
         }
 
         return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {

@@ -180,7 +180,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     public Observable<LifecycleState> addNode(final InetAddress hostname) {
         Node node = nodeBy(hostname);
         if (node != null) {
-            return Observable.from(node.state());
+            return Observable.just(node.state());
         }
         return addNode(new CouchbaseNode(hostname, environment, responseBuffer));
     }
@@ -223,7 +223,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     Observable<LifecycleState> addNode(final Node node) {
         if (nodes.contains(node)) {
-            return Observable.from(node.state());
+            return Observable.just(node.state());
         }
 
         return node.connect().map(new Func1<LifecycleState, LifecycleState>() {
@@ -362,7 +362,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                         if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
                             services.put(ServiceType.QUERY, environment.queryPort());
                         }
-                        return Observable.from(services);
+                        return Observable.just(services);
                     }
                 }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {
                     @Override

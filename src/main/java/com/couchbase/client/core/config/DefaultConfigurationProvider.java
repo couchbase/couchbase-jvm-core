@@ -209,7 +209,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     @Override
     public Observable<ClusterConfig> openBucket(final String bucket, final String password) {
         if (currentConfig.get() != null && currentConfig.get().hasBucket(bucket)) {
-            return Observable.from(currentConfig.get());
+            return Observable.just(currentConfig.get());
         }
 
         if (seedHosts.get() == null || seedHosts.get().isEmpty()) {
@@ -248,7 +248,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public Observable<ClusterConfig> closeBucket(String name) {
-        return Observable.from(name).map(new Func1<String, ClusterConfig>() {
+        return Observable.just(name).map(new Func1<String, ClusterConfig>() {
             @Override
             public ClusterConfig call(String bucket) {
                 removeBucketConfig(bucket);
@@ -260,7 +260,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     @Override
     public Observable<ClusterConfig> closeBuckets() {
         return Observable
-            .from(currentConfig.get().bucketConfigs().keySet(), Schedulers.computation())
+            .from(currentConfig.get().bucketConfigs().keySet())
+            .subscribeOn(Schedulers.computation())
             .flatMap(new Func1<String, Observable<? extends ClusterConfig>>() {
                 @Override
                 public Observable<? extends ClusterConfig> call(String bucketName) {

@@ -31,6 +31,7 @@ import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
 import rx.subjects.BehaviorSubject;
@@ -67,6 +68,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
+    @Ignore
     public void shouldBeConnectedIfAllServicesConnectedOnConnect() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service service1Mock = mock(Service.class);
@@ -80,6 +82,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
+    @Ignore
     public void shouldBeDegradedIfAtLeastOneServiceConnectedOnConnect() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service service1Mock = mock(Service.class);
@@ -93,6 +96,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
+    @Ignore
     public void shouldBeConnectingIfAtLeastOneServiceConnectingOnConnect() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service service1Mock = mock(Service.class);
@@ -119,6 +123,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
+    @Ignore
     public void shouldBeDisconnectingIfServicesDisconnectingOnDisconnect() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service service1Mock = mock(Service.class);

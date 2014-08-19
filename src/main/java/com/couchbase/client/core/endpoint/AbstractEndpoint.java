@@ -202,7 +202,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     @Override
     public Observable<LifecycleState> connect() {
         if (state() != LifecycleState.DISCONNECTED) {
-            return Observable.from(state());
+            return Observable.just(state());
         }
 
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
@@ -268,12 +268,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     @Override
     public Observable<LifecycleState> disconnect() {
         if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
-            return Observable.from(state());
+            return Observable.just(state());
         }
 
         if (state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
-            return Observable.from(state());
+            return Observable.just(state());
         }
 
         transitionState(LifecycleState.DISCONNECTING);

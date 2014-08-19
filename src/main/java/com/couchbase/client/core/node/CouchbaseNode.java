@@ -165,7 +165,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     public Observable<Service> addService(final AddServiceRequest request) {
         Service addedService = serviceRegistry.serviceBy(request.type(), request.bucket());
         if (addedService != null) {
-            return Observable.from(addedService);
+            return Observable.just(addedService);
         }
 
         final Service service = ServiceFactory.create(
@@ -219,7 +219,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
         serviceStates.remove(service);
-        return Observable.from(service);
+        return Observable.just(service);
     }
 
     /**
