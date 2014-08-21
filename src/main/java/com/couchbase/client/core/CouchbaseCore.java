@@ -172,7 +172,7 @@ public class CouchbaseCore implements ClusterFacade {
      */
     private void handleClusterRequest(final CouchbaseRequest request) {
         if (request instanceof SeedNodesRequest) {
-            boolean success = configProvider.seedHosts(((SeedNodesRequest) request).nodes());
+            boolean success = configProvider.seedHosts(((SeedNodesRequest) request).nodes(), true);
             ResponseStatus status = success ? ResponseStatus.SUCCESS : ResponseStatus.FAILURE;
             request.observable().onNext(new SeedNodesResponse(status));
             request.observable().onCompleted();

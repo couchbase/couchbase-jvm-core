@@ -28,6 +28,7 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;
 import rx.Observable;
@@ -83,7 +84,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
-        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")), true);
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -118,7 +119,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
-        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")), true);
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -157,7 +158,7 @@ public class DefaultConfigurationProviderTest {
             }
         });
 
-        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")), true);
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         ClusterConfig config = configObservable.toBlocking().first();
         assertTrue(config.hasBucket("bucket"));
@@ -188,7 +189,7 @@ public class DefaultConfigurationProviderTest {
             }}
         );
 
-        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")));
+        provider.seedHosts(Sets.newSet(InetAddress.getByName("localhost")), true);
         Observable<ClusterConfig> configObservable = provider.openBucket("bucket", "password");
         try {
             configObservable.toBlocking().single();
@@ -201,16 +202,19 @@ public class DefaultConfigurationProviderTest {
     }
 
     @Test
+    @Ignore
     public void shouldCloseBucket() {
 
     }
 
     @Test
+    @Ignore
     public void shouldCloseBuckets() {
 
     }
 
     @Test
+    @Ignore
     public void shouldAcceptProposedConfig() {
 
     }

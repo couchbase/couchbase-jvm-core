@@ -49,9 +49,10 @@ public interface ConfigurationProvider {
      * might be ignored.
      *
      * @param hosts list of seed hosts.
+     * @param shuffle shuffle seed host list.
      * @return true if host list updated, false otherwise.
      */
-    boolean seedHosts(Set<InetAddress> hosts);
+    boolean seedHosts(Set<InetAddress> hosts, boolean shuffle);
 
     /**
      * Start to fetch a config for the given bucket and also watch for changes, depending on the mechanism

@@ -40,8 +40,11 @@ import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -196,13 +199,19 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public boolean seedHosts(final Set<InetAddress> hosts) {
+    public boolean seedHosts(final Set<InetAddress> hosts, boolean shuffle) {
         if (bootstrapped) {
             LOGGER.debug("Seed hosts called with {}, but already bootstrapped.", hosts);
             return false;
         }
         LOGGER.debug("Setting seed hosts to {}", hosts);
-        this.seedHosts.set(hosts);
+        if (shuffle) {
+            List<InetAddress> hostsList = new ArrayList<InetAddress>(hosts);
+            Collections.shuffle(hostsList);
+            this.seedHosts.set(new HashSet<InetAddress>(hostsList));
+        } else {
+            this.seedHosts.set(hosts);
+        }
         return true;
     }
 
