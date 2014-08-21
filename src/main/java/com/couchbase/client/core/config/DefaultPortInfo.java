@@ -53,10 +53,6 @@ public class DefaultPortInfo implements PortInfo {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DefaultPortInfo{");
-        sb.append("ports=").append(ports);
-        sb.append(", sslPorts=").append(sslPorts);
-        sb.append('}');
-        return sb.toString();
+        return "DefaultPortInfo{" + "ports=" + ports + ", sslPorts=" + sslPorts + '}';
     }
 }

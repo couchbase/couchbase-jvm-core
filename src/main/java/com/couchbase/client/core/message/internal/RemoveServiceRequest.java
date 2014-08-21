@@ -29,9 +29,6 @@ import com.couchbase.client.core.service.ServiceType;
 
 import java.net.InetAddress;
 
-/**
- * Created by michael on 17/04/14.
- */
 public class RemoveServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
     private final ServiceType type;

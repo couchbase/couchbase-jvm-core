@@ -53,12 +53,12 @@ public class HttpRefresherTest {
     public void shouldPublishNewBucketConfiguration() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
-        Observable<String> configStream = Observable.from(
+        Observable<String> configStream = Observable.just(
             Resources.read("stream1.json", this.getClass()),
             Resources.read("stream2.json", this.getClass()),
             Resources.read("stream3.json", this.getClass())
         );
-        Observable<CouchbaseResponse> response = Observable.from((CouchbaseResponse)
+        Observable<CouchbaseResponse> response = Observable.just((CouchbaseResponse)
             new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(response);
@@ -83,14 +83,14 @@ public class HttpRefresherTest {
     public void shouldFallbackToVerboseIfTerseFails() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
-        Observable<String> configStream = Observable.from(
+        Observable<String> configStream = Observable.just(
             Resources.read("stream1.json", this.getClass()),
             Resources.read("stream2.json", this.getClass()),
             Resources.read("stream3.json", this.getClass())
         );
 
         Observable<CouchbaseResponse> failingResponse = Observable.error(new Exception("failed"));
-        Observable<CouchbaseResponse> successResponse = Observable.from((CouchbaseResponse)
+        Observable<CouchbaseResponse> successResponse = Observable.just((CouchbaseResponse)
                 new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(failingResponse);

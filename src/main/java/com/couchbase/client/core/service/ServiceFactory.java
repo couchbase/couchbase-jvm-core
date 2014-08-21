@@ -26,9 +26,6 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 
-/**
- * Created by michael on 17/04/14.
- */
 public class ServiceFactory {
 
     private ServiceFactory() {

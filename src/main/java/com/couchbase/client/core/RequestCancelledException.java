@@ -1,8 +1,5 @@
 package com.couchbase.client.core;
 
-/**
- * Created by michaelnitschinger on 28/07/14.
- */
 public class RequestCancelledException extends CouchbaseException {
 
     public RequestCancelledException() {

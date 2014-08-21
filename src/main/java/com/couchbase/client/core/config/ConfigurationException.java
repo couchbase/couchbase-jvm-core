@@ -2,9 +2,6 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.CouchbaseException;
 
-/**
- * Created by michael on 26/05/14.
- */
 public class ConfigurationException extends CouchbaseException {
 
     public ConfigurationException() {

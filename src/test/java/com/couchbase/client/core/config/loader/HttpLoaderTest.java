@@ -79,7 +79,7 @@ public class HttpLoaderTest {
     @Test
     public void shouldDiscoverConfigFromTerse() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Observable<CouchbaseResponse> response = Observable.from(
+        Observable<CouchbaseResponse> response = Observable.just(
             (CouchbaseResponse) new BucketConfigResponse("myconfig", ResponseStatus.SUCCESS)
         );
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(response);
@@ -92,10 +92,10 @@ public class HttpLoaderTest {
     @Test
     public void shouldDiscoverConfigFromVerboseAsFallback() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Observable<CouchbaseResponse> terseResponse = Observable.from(
+        Observable<CouchbaseResponse> terseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
-        Observable<CouchbaseResponse> verboseResponse = Observable.from(
+        Observable<CouchbaseResponse> verboseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse("verboseConfig", ResponseStatus.SUCCESS)
         );
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);
@@ -109,10 +109,10 @@ public class HttpLoaderTest {
     @Test
     public void shouldThrowExceptionIfTerseAndVerboseCouldNotBeDiscovered() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Observable<CouchbaseResponse> terseResponse = Observable.from(
+        Observable<CouchbaseResponse> terseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
-        Observable<CouchbaseResponse> verboseResponse = Observable.from(
+        Observable<CouchbaseResponse> verboseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);

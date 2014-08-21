@@ -5,9 +5,6 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
-/**
- * Created by michael on 22/05/14.
- */
 public abstract class AbstractBinaryResponse extends AbstractCouchbaseResponse implements BinaryResponse {
 
     private final ByteBuf content;

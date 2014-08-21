@@ -6,9 +6,6 @@ import com.couchbase.client.core.node.Node;
 
 import java.util.Set;
 
-/**
- * Created by michael on 21/05/14.
- */
 public class QueryLocator implements Locator {
 
     private long counter = 0;

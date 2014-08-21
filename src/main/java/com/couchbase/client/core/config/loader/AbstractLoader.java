@@ -118,7 +118,8 @@ public abstract class AbstractLoader implements Loader {
     public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes, final String bucket,
         final String password) {
         return Observable
-            .from(seedNodes, Schedulers.computation())
+            .from(seedNodes)
+            .subscribeOn(Schedulers.computation())
             .flatMap(new Func1<InetAddress, Observable<AddNodeResponse>>() {
                 @Override
                 public Observable<AddNodeResponse> call(final InetAddress address) {

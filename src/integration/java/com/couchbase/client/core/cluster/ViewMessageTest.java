@@ -46,8 +46,6 @@ public class ViewMessageTest extends ClusterDependentTest {
             .<ViewQueryResponse>send(new ViewQueryRequest("beer", "brewery_beers", false, "debug=true", bucket(), password()))
             .toBlocking()
             .single();
-
-        String expected = "{\"error\":\"not_found\",\"reason\":\"Design document _design/design not found\"}\n";
         assertEquals(ResponseStatus.NOT_EXISTS, single.status());
     }
 

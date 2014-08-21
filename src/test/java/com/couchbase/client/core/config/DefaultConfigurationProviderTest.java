@@ -68,7 +68,7 @@ public class DefaultConfigurationProviderTest {
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
+            .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
@@ -99,7 +99,7 @@ public class DefaultConfigurationProviderTest {
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
         when(successLoader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
+            .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
         AsyncSubject<BucketConfig> errorSubject = AsyncSubject.create();
         when(errorLoader.loadConfig(any(Set.class), anyString(), anyString())).thenReturn((Observable) errorSubject);
         errorSubject.onError(new IllegalStateException());
@@ -132,7 +132,7 @@ public class DefaultConfigurationProviderTest {
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
         when(loader.loadConfig(any(Set.class), anyString(), anyString()))
-            .thenReturn(Observable.from(Tuple.create(LoaderType.Carrier, bucketConfig)));
+            .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
 
 
         final Refresher refresher = mock(Refresher.class);
@@ -166,6 +166,7 @@ public class DefaultConfigurationProviderTest {
         assertEquals(configReference.get(), config);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void shouldFailOpeningBucketIfNoConfigLoaded() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);

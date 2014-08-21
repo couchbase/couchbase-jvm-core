@@ -1,8 +1,5 @@
 package com.couchbase.client.core;
 
-/**
- * Created by michaelnitschinger on 09/07/14.
- */
 public class ReplicaNotConfiguredException extends CouchbaseException {
 
     public ReplicaNotConfiguredException() {

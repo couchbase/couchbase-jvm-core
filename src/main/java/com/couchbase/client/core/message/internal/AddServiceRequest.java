@@ -57,11 +57,6 @@ public class AddServiceRequest extends AbstractCouchbaseRequest implements Inter
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AddServiceRequest{");
-        sb.append("type=").append(type);
-        sb.append(", hostname='").append(hostname).append('\'');
-        sb.append(", port=").append(port);
-        sb.append('}');
-        return sb.toString();
+        return "AddServiceRequest{" + "type=" + type + ", hostname='" + hostname + '\'' + ", port=" + port + '}';
     }
 }

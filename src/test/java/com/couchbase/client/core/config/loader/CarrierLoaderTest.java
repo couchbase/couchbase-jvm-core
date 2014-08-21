@@ -83,7 +83,7 @@ public class CarrierLoaderTest {
     public void shouldDiscoverConfig() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         ByteBuf content = Unpooled.copiedBuffer("myconfig", CharsetUtil.UTF_8);
-        Observable<CouchbaseResponse> response = Observable.from(
+        Observable<CouchbaseResponse> response = Observable.just(
                 (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.SUCCESS, "bucket", content, host)
         );
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
@@ -96,7 +96,7 @@ public class CarrierLoaderTest {
     @Test
     public void shouldThrowExceptionIfNotDiscovered() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-        Observable<CouchbaseResponse> response = Observable.from(
+        Observable<CouchbaseResponse> response = Observable.just(
                 (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE, "bucket", null, host)
         );
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);

@@ -21,9 +21,6 @@
  */
 package com.couchbase.client.core.message;
 
-/**
- * Created by michael on 14/04/14.
- */
 public interface CouchbaseResponse extends CouchbaseMessage {
 
     /**
