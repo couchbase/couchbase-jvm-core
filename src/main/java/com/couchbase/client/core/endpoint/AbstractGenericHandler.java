@@ -104,7 +104,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     }
 
     /**
-     * Encode the outgoing {@link REQUEST} and return it in {@link ENCODED} format.
+     * Encode the outgoing request and return it in encoded format.
      *
      * This method needs to be implemented by the child handler and is responsible for the actual conversion.
      *
@@ -116,7 +116,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     protected abstract ENCODED encodeRequest(ChannelHandlerContext ctx, REQUEST msg) throws Exception;
 
     /**
-     * Decodes the incoming {@link RESPONSE} and transforms it into a {@link CouchbaseResponse}.
+     * Decodes the incoming response and transforms it into a {@link CouchbaseResponse}.
      *
      * Note that the actual notification is handled by this generic handler, the implementing class only is concerned
      * about the conversion itself.

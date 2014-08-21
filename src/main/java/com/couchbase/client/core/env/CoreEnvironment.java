@@ -54,7 +54,7 @@ public interface CoreEnvironment {
      * Returns the scheduler which should be used for all core actions that need to happen
      * asynchronously.
      *
-     * @return
+     * @return the scheduler used for internal operations.
      */
     Scheduler scheduler();
 

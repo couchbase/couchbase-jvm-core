@@ -28,11 +28,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.net.InetAddress;
 import java.util.Map;
 
-/**
- *
- * @author Michael Nitschinger
- * @since 1.0
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(as = DefaultNodeInfo.class)
 public interface NodeInfo {
