@@ -104,9 +104,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         computationPoolSize = intPropertyOr("computationPoolSize", builder.computationPoolSize());
         responseBufferSize = intPropertyOr("responseBufferSize", builder.responseBufferSize());
         requestBufferSize = intPropertyOr("requestBufferSize", builder.requestBufferSize());
-        binaryServiceEndpoints = intPropertyOr("binaryServiceEndpoints", builder.binaryServiceEndpoints());
-        viewServiceEndpoints = intPropertyOr("viewServiceEndpoints", builder.viewServiceEndpoints());
-        queryServiceEndpoints = intPropertyOr("queryServiceEndpoints", builder.queryServiceEndpoints());
+        binaryServiceEndpoints = intPropertyOr("binaryEndpoints", builder.binaryEndpoints());
+        viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints());
+        queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints());
 
         this.ioPool = builder.ioPool() == null ? new NioEventLoopGroup(ioPoolSize()) : builder.ioPool();
         this.coreScheduler = builder.scheduler() == null ? new CoreScheduler(computationPoolSize()) : builder.scheduler();
@@ -260,17 +260,17 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public int binaryServiceEndpoints() {
+    public int binaryEndpoints() {
         return binaryServiceEndpoints;
     }
 
     @Override
-    public int viewServiceEndpoints() {
+    public int viewEndpoints() {
         return viewServiceEndpoints;
     }
 
     @Override
-    public int queryServiceEndpoints() {
+    public int queryEndpoints() {
         return queryServiceEndpoints;
     }
 
@@ -453,7 +453,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
-        public int binaryServiceEndpoints() {
+        public int binaryEndpoints() {
             return binaryServiceEndpoints;
         }
 
@@ -463,7 +463,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
-        public int viewServiceEndpoints() {
+        public int viewEndpoints() {
             return viewServiceEndpoints;
         }
 
@@ -473,7 +473,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
-        public int queryServiceEndpoints() {
+        public int queryEndpoints() {
             return queryServiceEndpoints;
         }
 

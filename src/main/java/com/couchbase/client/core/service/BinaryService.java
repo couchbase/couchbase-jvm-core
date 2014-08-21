@@ -15,7 +15,7 @@ public class BinaryService extends AbstractService {
 
     public BinaryService(String hostname, String bucket, String password, int port, CoreEnvironment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.binaryServiceEndpoints(), strategy, responseBuffer, factory);
+        super(hostname, bucket, password, port, env, env.binaryEndpoints(), strategy, responseBuffer, factory);
     }
 
     @Override

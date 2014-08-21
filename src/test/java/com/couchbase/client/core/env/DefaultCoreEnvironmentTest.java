@@ -26,7 +26,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class DefaultCoreEnvironmentTest {
 
@@ -36,7 +35,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(DefaultCoreEnvironment.BINARY_ENDPOINTS, env.binaryServiceEndpoints());
+        assertEquals(DefaultCoreEnvironment.BINARY_ENDPOINTS, env.binaryEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
     }
 
@@ -49,14 +48,14 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(3, env.binaryServiceEndpoints());
+        assertEquals(3, env.binaryEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
     }
 
     @Test
     public void sysPropertyShouldTakePrecedence() throws Exception {
 
-        System.setProperty("com.couchbase.binaryServiceEndpoints", "10");
+        System.setProperty("com.couchbase.binaryEndpoints", "10");
 
         CoreEnvironment env = DefaultCoreEnvironment
             .builder()
@@ -65,10 +64,10 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(10, env.binaryServiceEndpoints());
+        assertEquals(10, env.binaryEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
 
-        System.clearProperty("com.couchbase.binaryServiceEndpoints");
+        System.clearProperty("com.couchbase.binaryEndpoints");
     }
 
 }

@@ -131,14 +131,14 @@ public interface CoreEnvironment {
      *
      * @return amount of endpoints per service.
      */
-    int binaryServiceEndpoints();
+    int binaryEndpoints();
 
     /**
      * The number of view service endpoints.
      *
      * @return amount of endpoints per service.
      */
-    int viewServiceEndpoints();
+    int viewEndpoints();
 
 
     /**
@@ -146,5 +146,5 @@ public interface CoreEnvironment {
      *
      * @return amount of endpoints per service.
      */
-    int queryServiceEndpoints();
+    int queryEndpoints();
 }
