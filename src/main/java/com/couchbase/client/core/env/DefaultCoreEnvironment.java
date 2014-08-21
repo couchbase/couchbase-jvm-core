@@ -457,7 +457,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return binaryServiceEndpoints;
         }
 
-        public Builder binaryServiceEndpoints(final int binaryServiceEndpoints) {
+        public Builder binaryEndpoints(final int binaryServiceEndpoints) {
             this.binaryServiceEndpoints = binaryServiceEndpoints;
             return this;
         }
@@ -467,7 +467,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return viewServiceEndpoints;
         }
 
-        public Builder viewServiceEndpoints(final int viewServiceEndpoints) {
+        public Builder viewEndpoints(final int viewServiceEndpoints) {
             this.viewServiceEndpoints = viewServiceEndpoints;
             return this;
         }
@@ -477,7 +477,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return queryServiceEndpoints;
         }
 
-        public Builder queryServiceEndpoints(final int queryServiceEndpoints) {
+        public Builder queryEndpoints(final int queryServiceEndpoints) {
             this.queryServiceEndpoints = queryServiceEndpoints;
             return this;
         }
