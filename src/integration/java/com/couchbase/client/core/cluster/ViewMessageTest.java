@@ -22,12 +22,9 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
-import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
 import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
-import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -47,16 +44,6 @@ public class ViewMessageTest extends ClusterDependentTest {
             .toBlocking()
             .single();
         assertEquals(ResponseStatus.NOT_EXISTS, single.status());
-    }
-
-    @Test
-    public void shouldGetDesignDocument() {
-        GetDesignDocumentResponse res = cluster()
-            .<GetDesignDocumentResponse>send(new GetDesignDocumentRequest("beer", false, bucket(), password()))
-            .toBlocking()
-            .single();
-
-        System.err.println(res.content().toString(CharsetUtil.UTF_8));
     }
 
 }

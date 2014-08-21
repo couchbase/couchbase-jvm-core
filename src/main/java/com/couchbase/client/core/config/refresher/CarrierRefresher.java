@@ -37,6 +37,7 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -79,13 +80,15 @@ public class CarrierRefresher extends AbstractRefresher {
                 Subscription subscription = Schedulers.io().createWorker().schedulePeriodically(new Action0() {
                     @Override
                     public void call() {
-                        GetBucketConfigRequest req = new GetBucketConfigRequest(config.name(), config.nodes().get(0).hostname());
+                        final InetAddress hostname = config.nodes().get(0).hostname();
                         cluster()
-                            .<GetBucketConfigResponse>send(req)
+                            .<GetBucketConfigResponse>send(new GetBucketConfigRequest(config.name(), hostname))
                             .subscribe(new Action1<GetBucketConfigResponse>() {
                                 @Override
                                 public void call(GetBucketConfigResponse res) {
-                                    provider().proposeBucketConfig(res.bucket(), res.content().toString(CharsetUtil.UTF_8));
+                                    String rawConfig = res.content().toString(CharsetUtil.UTF_8).replace("$HOST",
+                                        hostname.getHostName());
+                                    provider().proposeBucketConfig(res.bucket(), rawConfig);
                                 }
                             });
                     }
@@ -110,17 +113,26 @@ public class CarrierRefresher extends AbstractRefresher {
     public void refresh(final ClusterConfig config) {
         Observable
             .from(config.bucketConfigs().values())
-            .flatMap(new Func1<BucketConfig, Observable<GetBucketConfigResponse>>() {
+            .subscribe(new Action1<BucketConfig>() {
                 @Override
-                public Observable<GetBucketConfigResponse> call(BucketConfig config) {
-                    GetBucketConfigRequest req = new GetBucketConfigRequest(config.name(), config.nodes().get(0).hostname());
-                    return cluster().send(req);
+                public void call(final BucketConfig config) {
+                    InetAddress hostname = config.nodes().get(0).hostname();
+
+                    cluster()
+                        .<GetBucketConfigResponse>send(new GetBucketConfigRequest(config.name(), hostname))
+                        .map(new Func1<GetBucketConfigResponse, String>() {
+                            @Override
+                            public String call(GetBucketConfigResponse response) {
+                                String raw = response.content().toString(CharsetUtil.UTF_8);
+                                return raw.replace("$HOST", response.hostname().getHostName());
+                            }
+                        }).subscribe(new Action1<String>() {
+                            @Override
+                            public void call(String rawConfig) {
+                                provider().proposeBucketConfig(config.name(), rawConfig);
+                            }
+                        });
                 }
-            }).subscribe(new Action1<GetBucketConfigResponse>() {
-                @Override
-                public void call(GetBucketConfigResponse res) {
-                    provider().proposeBucketConfig(res.bucket(), res.content().toString(CharsetUtil.UTF_8));
-                }
-             });
+            });
     }
 }
