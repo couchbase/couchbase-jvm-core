@@ -268,7 +268,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public Observable<ClusterConfig> closeBuckets() {
+    public Observable<Boolean> closeBuckets() {
+        if (currentConfig.get() == null || currentConfig.get().bucketConfigs().isEmpty()) {
+            return Observable.just(true);
+        }
+
         return Observable
             .from(currentConfig.get().bucketConfigs().keySet())
             .subscribeOn(environment.scheduler())
@@ -277,7 +281,14 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 public Observable<? extends ClusterConfig> call(String bucketName) {
                     return closeBucket(bucketName);
                 }
-            }).last();
+            })
+            .last()
+            .map(new Func1<ClusterConfig, Boolean>() {
+                @Override
+                public Boolean call(ClusterConfig clusterConfig) {
+                    return true;
+                }
+            });
     }
 
     @Override

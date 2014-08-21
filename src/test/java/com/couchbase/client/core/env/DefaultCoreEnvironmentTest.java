@@ -43,7 +43,7 @@ public class DefaultCoreEnvironmentTest {
     public void shouldOverrideDefaults() throws Exception {
         CoreEnvironment env = DefaultCoreEnvironment
             .builder()
-            .binaryServiceEndpoints(3)
+            .binaryEndpoints(3)
             .build();
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
@@ -59,7 +59,7 @@ public class DefaultCoreEnvironmentTest {
 
         CoreEnvironment env = DefaultCoreEnvironment
             .builder()
-            .binaryServiceEndpoints(3)
+            .binaryEndpoints(3)
             .build();
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());

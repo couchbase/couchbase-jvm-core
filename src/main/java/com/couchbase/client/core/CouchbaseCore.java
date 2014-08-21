@@ -198,9 +198,9 @@ public class CouchbaseCore implements ClusterFacade {
         } else if (request instanceof DisconnectRequest) {
             configProvider
                 .closeBuckets()
-                .flatMap(new Func1<ClusterConfig, Observable<Boolean>>() {
+                .flatMap(new Func1<Boolean, Observable<Boolean>>() {
                     @Override
-                    public Observable<Boolean> call(ClusterConfig clusterConfig) {
+                    public Observable<Boolean> call(Boolean done) {
                         return sharedEnvironment ? Observable.just(true) : environment.shutdown();
                     }
                 }).map(new Func1<Boolean, Boolean>() {
