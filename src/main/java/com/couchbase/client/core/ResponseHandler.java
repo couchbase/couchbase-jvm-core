@@ -22,6 +22,7 @@
 package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -34,7 +35,6 @@ import io.netty.util.CharsetUtil;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action0;
-import rx.schedulers.Schedulers;
 import rx.subjects.Subject;
 
 import java.util.concurrent.TimeUnit;
@@ -47,10 +47,10 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
     private final Scheduler.Worker worker;
 
 
-    public ResponseHandler(ClusterFacade cluster, ConfigurationProvider provider) {
+    public ResponseHandler(CoreEnvironment environment, ClusterFacade cluster, ConfigurationProvider provider) {
         this.cluster = cluster;
         this.configurationProvider = provider;
-        this.worker = Schedulers.computation().createWorker();
+        this.worker = environment.scheduler().createWorker();
     }
 
     /**

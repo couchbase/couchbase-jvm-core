@@ -35,7 +35,6 @@ import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import rx.Observable;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 import java.net.InetAddress;
 import java.util.Set;
@@ -119,7 +118,7 @@ public abstract class AbstractLoader implements Loader {
         final String password) {
         return Observable
             .from(seedNodes)
-            .subscribeOn(Schedulers.computation())
+            .subscribeOn(env().scheduler())
             .flatMap(new Func1<InetAddress, Observable<AddNodeResponse>>() {
                 @Override
                 public Observable<AddNodeResponse> call(final InetAddress address) {
@@ -145,7 +144,7 @@ public abstract class AbstractLoader implements Loader {
                     return discoverConfig(bucket, password, response.hostname());
                 }
             })
-            .observeOn(Schedulers.computation())
+            .observeOn(env().scheduler())
             .map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
                 @Override
                 public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {

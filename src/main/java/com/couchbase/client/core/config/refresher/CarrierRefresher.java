@@ -24,6 +24,7 @@ package com.couchbase.client.core.config.refresher;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
@@ -35,7 +36,6 @@ import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -56,10 +56,12 @@ public class CarrierRefresher extends AbstractRefresher {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CarrierRefresher.class);
 
     private final Map<String, Subscription> subscriptions;
+    private final CoreEnvironment environment;
 
-    public CarrierRefresher(final ClusterFacade cluster) {
+    public CarrierRefresher(final CoreEnvironment environment, final ClusterFacade cluster) {
         super(cluster);
         subscriptions = new ConcurrentHashMap<String, Subscription>();
+        this.environment = environment;
     }
 
     @Override
@@ -77,7 +79,7 @@ public class CarrierRefresher extends AbstractRefresher {
         Observable.create(new Observable.OnSubscribe<Object>() {
             @Override
             public void call(final Subscriber<? super Object> subscriber) {
-                Subscription subscription = Schedulers.io().createWorker().schedulePeriodically(new Action0() {
+                Subscription subscription = environment.scheduler().createWorker().schedulePeriodically(new Action0() {
                     @Override
                     public void call() {
                         final InetAddress hostname = config.nodes().get(0).hostname();

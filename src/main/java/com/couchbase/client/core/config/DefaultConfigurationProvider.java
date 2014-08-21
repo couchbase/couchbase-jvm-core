@@ -36,7 +36,6 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subjects.PublishSubject;
 
 import java.net.InetAddress;
@@ -116,6 +115,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     private final List<Loader> loaderChain;
     private final Map<LoaderType, Refresher> refreshers;
+    private final CoreEnvironment environment;
 
     /**
      * Signals if the provider is bootstrapped and serving configs.
@@ -137,7 +137,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             environment,
             Arrays.asList((Loader) new CarrierLoader(cluster, environment), new HttpLoader(cluster, environment)),
             new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, new CarrierRefresher(cluster));
+                put(LoaderType.Carrier, new CarrierRefresher(environment, cluster));
                 put(LoaderType.HTTP, new HttpRefresher(cluster));
             }}
         );
@@ -161,6 +161,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         this.cluster = cluster;
         this.loaderChain = loaderChain;
         this.refreshers = refreshers;
+        this.environment = environment;
 
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<Set<InetAddress>>();
@@ -270,7 +271,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     public Observable<ClusterConfig> closeBuckets() {
         return Observable
             .from(currentConfig.get().bucketConfigs().keySet())
-            .subscribeOn(Schedulers.computation())
+            .subscribeOn(environment.scheduler())
             .flatMap(new Func1<String, Observable<? extends ClusterConfig>>() {
                 @Override
                 public Observable<? extends ClusterConfig> call(String bucketName) {

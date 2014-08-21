@@ -133,7 +133,7 @@ public class CouchbaseCore implements ClusterFacade {
             environment.responseBufferSize(),
             disruptorExecutor
         );
-        responseDisruptor.handleEventsWith(new ResponseHandler(this, configProvider));
+        responseDisruptor.handleEventsWith(new ResponseHandler(environment, this, configProvider));
         responseDisruptor.start();
         RingBuffer<ResponseEvent> responseRingBuffer = responseDisruptor.getRingBuffer();
 
