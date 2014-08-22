@@ -25,6 +25,7 @@ import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
+import com.couchbase.client.core.message.config.ClusterConfigRequest;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.node.Node;
@@ -51,7 +52,15 @@ public class ConfigLocator implements Locator {
             InetAddress hostname = req.hostname();
             for (Node node : nodes) {
                 if (hostname == null || node.hostname().equals(hostname)) {
-                    return new Node[]{ node };
+                    return new Node[]{node};
+                }
+            }
+        } else if (request instanceof ClusterConfigRequest) {
+            int item = (int) counter % nodes.size();
+            int i = 0;
+            for (Node node : nodes) {
+                if (i++ == item) {
+                    return new Node[] { node };
                 }
             }
         } else if (request instanceof BucketStreamingRequest) {

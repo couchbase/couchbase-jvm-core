@@ -30,6 +30,8 @@ import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
+import com.couchbase.client.core.message.config.ClusterConfigRequest;
+import com.couchbase.client.core.message.config.ClusterConfigResponse;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
@@ -111,6 +113,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         HttpMethod httpMethod;
 
         if (msg instanceof BucketConfigRequest) {
+            httpMethod = HttpMethod.GET;
+        } else if (msg instanceof ClusterConfigRequest) {
             httpMethod = HttpMethod.GET;
         } else if (msg instanceof BucketStreamingRequest) {
             httpMethod = HttpMethod.GET;
@@ -195,6 +199,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
 
             if (request instanceof BucketConfigRequest) {
                 response = new BucketConfigResponse(body, status);
+            } else if (request instanceof ClusterConfigRequest) {
+                response = new ClusterConfigResponse(body, status);
             } else if (request instanceof GetDesignDocumentsRequest) {
                 response = new GetDesignDocumentsResponse(body, status, request);
             } else if (request instanceof FlushRequest) {
