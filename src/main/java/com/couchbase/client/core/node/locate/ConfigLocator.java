@@ -29,6 +29,7 @@ import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.node.Node;
 
+import java.net.InetAddress;
 import java.util.Set;
 
 public class ConfigLocator implements Locator {
@@ -47,9 +48,10 @@ public class ConfigLocator implements Locator {
             }
         } else if (request instanceof BucketConfigRequest) {
             BucketConfigRequest req = (BucketConfigRequest) request;
+            InetAddress hostname = req.hostname();
             for (Node node : nodes) {
-                if (node.hostname().equals(req.hostname())) {
-                    return new Node[]{node};
+                if (hostname == null || node.hostname().equals(hostname)) {
+                    return new Node[]{ node };
                 }
             }
         } else if (request instanceof BucketStreamingRequest) {
