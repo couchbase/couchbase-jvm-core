@@ -29,6 +29,8 @@ import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.CloseBucketRequest;
+import com.couchbase.client.core.message.cluster.CloseBucketResponse;
 import com.couchbase.client.core.message.cluster.ClusterRequest;
 import com.couchbase.client.core.message.cluster.DisconnectRequest;
 import com.couchbase.client.core.message.cluster.DisconnectResponse;
@@ -192,6 +194,25 @@ public class CouchbaseCore implements ClusterFacade {
                             return new OpenBucketResponse(ResponseStatus.SUCCESS);
                         }
                         throw new CouchbaseException("Could not open bucket.");
+                    }
+                })
+                .subscribe(request.observable());
+        } else if (request instanceof CloseBucketRequest) {
+            configProvider
+                .closeBucket(request.bucket())
+                .flatMap(new Func1<ClusterConfig, Observable<ClusterConfig>>() {
+                    @Override
+                    public Observable<ClusterConfig> call(ClusterConfig clusterConfig) {
+                        return requestHandler.reconfigure(clusterConfig);
+                    }
+                })
+                .map(new Func1<ClusterConfig, CloseBucketResponse>() {
+                    @Override
+                    public CloseBucketResponse call(ClusterConfig clusterConfig) {
+                        if (!clusterConfig.hasBucket(request.bucket())) {
+                            return new CloseBucketResponse(ResponseStatus.SUCCESS);
+                        }
+                        throw new CouchbaseException("Could not close bucket.");
                     }
                 })
                 .subscribe(request.observable());

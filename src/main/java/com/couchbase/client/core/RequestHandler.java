@@ -292,6 +292,10 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     public Observable<ClusterConfig> reconfigure(final ClusterConfig config) {
         if (config.bucketConfigs().values().isEmpty()) {
+            if (nodes.isEmpty()) {
+                return Observable.just(config);
+            }
+
             return Observable.from(nodes).doOnNext(new Action1<Node>() {
                 @Override
                 public void call(Node node) {
@@ -305,6 +309,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 }
             });
         }
+
         return Observable
             .just(config)
             .flatMap(new Func1<ClusterConfig, Observable<BucketConfig>>() {
