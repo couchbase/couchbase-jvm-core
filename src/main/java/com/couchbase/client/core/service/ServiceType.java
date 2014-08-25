@@ -23,6 +23,9 @@ package com.couchbase.client.core.service;
 
 /**
  * Represents the different {@link ServiceType}s and how they map onto buckets.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
  */
 public enum ServiceType {
 
@@ -32,7 +35,7 @@ public enum ServiceType {
     VIEW(BucketServiceMapping.ONE_FOR_ALL),
 
     /**
-     * Memcache type operations.
+     * Key/Value type operations.
      */
     BINARY(BucketServiceMapping.ONE_BY_ONE),
 
@@ -42,7 +45,7 @@ public enum ServiceType {
     QUERY(BucketServiceMapping.ONE_FOR_ALL),
 
     /**
-     * 8091 config operations.
+     * HTTP config operations.
      */
     CONFIG(BucketServiceMapping.ONE_FOR_ALL);
 

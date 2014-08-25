@@ -25,6 +25,8 @@ import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.state.LifecycleState;
 
+import java.util.Random;
+
 /**
  * Selects the {@link Endpoint} based on a random selection of connected {@link Endpoint}s.
  *
@@ -34,22 +36,30 @@ import com.couchbase.client.core.state.LifecycleState;
 public class RandomSelectionStrategy implements SelectionStrategy {
 
     /**
-     * Contains the next endpoint index.
+     * Random number generator, statically initialized and designed to be reused.
      */
-    private volatile short next;
+    private static final Random RANDOM = new Random();
+
+    /**
+     * The number of times to try to find a suitable endpoint before returning without success.
+     */
+    private static final int MAX_TRIES = 100;
 
     @Override
     public Endpoint select(final CouchbaseRequest request, final Endpoint[] endpoints) {
-        try {
-            for (Endpoint p : endpoints) {
-                Endpoint endpoint = endpoints[next++ % endpoints.length];
-                if (endpoint.isState(LifecycleState.CONNECTED)) {
-                    return endpoint;
-                }
-            }
-        } catch(Exception ex) {
+        int numEndpoints = endpoints.length;
+        if (numEndpoints == 0) {
             return null;
         }
+
+        for (int i = 0; i < MAX_TRIES; i++) {
+            int rand = RANDOM.nextInt(endpoints.length);
+            Endpoint endpoint = endpoints[rand];
+            if (endpoint.isState(LifecycleState.CONNECTED)) {
+                return endpoint;
+            }
+        }
+
         return null;
     }
 }

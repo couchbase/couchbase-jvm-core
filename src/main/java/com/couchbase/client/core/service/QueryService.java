@@ -29,24 +29,52 @@ import com.couchbase.client.core.service.strategies.RandomSelectionStrategy;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
+/**
+ * The {@link QueryService} is composed of and manages {@link QueryEndpoint}s.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public class QueryService extends AbstractService {
 
-    private static final SelectionStrategy strategy = new RandomSelectionStrategy();
-    private static final EndpointFactory factory = new QueryEndpointFactory();
+    /**
+     * The endpoint selection strategy.
+     */
+    private static final SelectionStrategy STRATEGY = new RandomSelectionStrategy();
 
-    public QueryService(String hostname, String bucket, String password, int port, CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.queryEndpoints(), strategy, responseBuffer, factory);
+    /**
+     * The endpoint factory.
+     */
+    private static final EndpointFactory FACTORY = new QueryEndpointFactory();
+
+    /**
+     * Creates a new {@link ViewService}.
+     *
+     * @param hostname the hostname of the service.
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     * @param port the port of the service.
+     * @param env the shared environment.
+     * @param responseBuffer the shared response buffer.
+     */
+    public QueryService(final String hostname, final String bucket, final String password, final int port,
+        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, env.viewEndpoints(), STRATEGY, responseBuffer, FACTORY);
     }
+
 
     @Override
     public ServiceType type() {
         return ServiceType.QUERY;
     }
 
+    /**
+     * The factory for {@link QueryEndpoint}s.
+     */
     static class QueryEndpointFactory implements EndpointFactory {
         @Override
-        public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
-            RingBuffer<ResponseEvent> responseBuffer) {
+        public Endpoint create(final String hostname, final String bucket, final String password, final int port,
+            final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
             return new QueryEndpoint(hostname, bucket, password, port, env, responseBuffer);
         }
     }

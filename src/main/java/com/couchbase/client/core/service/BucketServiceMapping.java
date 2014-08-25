@@ -21,15 +21,27 @@
  */
 package com.couchbase.client.core.service;
 
+/**
+ * Defines the relationship between a bucket and a service.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public enum BucketServiceMapping {
 
     /**
-     * The Service can handle all buckets at once.
+     * The service is able to handle all buckets at the same time.
+     *
+     * This is true for all services where their authentication mechanism
+     * is not bound to the connection, but rather to the request object itself.
      */
     ONE_FOR_ALL,
 
     /**
-     * Every bucket needs its own service.
+     * The service can only handle one bucket at a time.
+     *
+     * This is true for all services which have their authentication mechanism
+     * bound at connection time, allowing a service not to be reused across buckets.
      */
     ONE_BY_ONE
 

@@ -28,9 +28,11 @@ import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.state.LifecycleState;
 
 /**
- * Selects the {@link Endpoint} based on the partition information of the request.
+ * Selects the {@link Endpoint} based on the information enclosed in the {@link CouchbaseRequest}.
  *
- * This technique is used to provide key-based endpoint pinning for binary type operations.
+ * This strategy can be used to "pin" certain requests to specific endpoints based on the supplied information. The
+ * current implementation uses this technique to tie ID-based {@link BinaryRequest}s to the same endpoint to enforce
+ * at least some amount of ordering guarantees.
  *
  * @author Michael Nitschinger
  * @since 1.0
@@ -39,26 +41,46 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
 
     @Override
     public Endpoint select(final CouchbaseRequest request, final Endpoint[] endpoints) {
-        try {
-            if (request instanceof GetBucketConfigRequest) {
-                for (Endpoint endpoint : endpoints) {
-                    if (endpoint.state() == LifecycleState.CONNECTED) {
-                        return endpoint;
-                    }
-                }
-            } else if (request instanceof BinaryRequest) {
-                BinaryRequest binaryRequest = (BinaryRequest) request;
-                short partition = binaryRequest.partition();
-                int id = partition % endpoints.length;
-                Endpoint endpoint = endpoints[id];
-                if (endpoint != null && endpoint.state() == LifecycleState.CONNECTED) {
-                    return endpoint;
-                }
-            }
-        } catch(Exception ex) {
+        int numEndpoints = endpoints.length;
+        if (numEndpoints == 0) {
             return null;
         }
 
+        if (request instanceof BinaryRequest) {
+            if (request instanceof GetBucketConfigRequest) {
+                return selectFirstConnected(endpoints);
+            } else {
+                BinaryRequest binaryRequest = (BinaryRequest) request;
+                short partition = binaryRequest.partition();
+                if (partition > 0) {
+                    int id = partition % numEndpoints;
+                    Endpoint endpoint = endpoints[id];
+                    if (endpoint != null && endpoint.isState(LifecycleState.CONNECTED)) {
+                        return endpoint;
+                    }
+                } else {
+                    return selectFirstConnected(endpoints);
+                }
+            }
+        } else {
+            throw new IllegalStateException("The PartitionSelectionStrategy does not understand: " + request);
+        }
+
+        return null;
+    }
+
+    /**
+     * Helper method to select the first connected endpoint if no particular pinning is needed.
+     *
+     * @param endpoints the list of endpoints.
+     * @return the first connected or null if none found.
+     */
+    private static final Endpoint selectFirstConnected(final Endpoint[] endpoints) {
+        for (Endpoint endpoint : endpoints) {
+            if (endpoint.isState(LifecycleState.CONNECTED)) {
+                return endpoint;
+            }
+        }
         return null;
     }
 }

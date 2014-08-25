@@ -33,17 +33,19 @@ import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
+import io.netty.channel.Channel;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.FuncN;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * The common implementation for all {@link Service}s.
+ * The base implementation for all {@link Service}s.
  *
  * @author Michael Nitschinger
  * @since 1.0
@@ -55,13 +57,42 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Service.class);
 
+    /**
+     * The endpoint selection strategy in use.
+     */
     private final SelectionStrategy strategy;
+
+    /**
+     * All stored endpoints.
+     */
     private final Endpoint[] endpoints;
+
+    /**
+     * The shared response buffer.
+     */
     private final RingBuffer<ResponseEvent> responseBuffer;
+
+    /**
+     * The current list of endpoint states.
+     */
     protected List<Observable<LifecycleState>> endpointStates;
 
-    protected AbstractService(final String hostname, String bucket, String password, int port, CoreEnvironment env, int numEndpoints,
-        SelectionStrategy strategy, final RingBuffer<ResponseEvent> responseBuffer, EndpointFactory factory) {
+    /**
+     * Creates a new {@link AbstractService} and instantiates needed components and flows.
+     *
+     * @param hostname the hostname of the service.
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     * @param port the port of the service.
+     * @param env the shared environment.
+     * @param numEndpoints the number of endpoints to init.
+     * @param strategy the endpoint selection strategy used.
+     * @param responseBuffer the shared response buffer.
+     * @param factory the endpoint factory.
+     */
+    protected AbstractService(final String hostname, final String bucket, final String password, final int port,
+        final CoreEnvironment env, final int numEndpoints, final SelectionStrategy strategy,
+        final RingBuffer<ResponseEvent> responseBuffer, final EndpointFactory factory) {
         super(LifecycleState.DISCONNECTED);
 
         this.strategy = strategy;
@@ -87,9 +118,9 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                     return;
                 }
                 if (state == LifecycleState.CONNECTED) {
-                    LOGGER.debug("Connected ("+state()+") to " + AbstractService.this.getClass().getSimpleName() + " " + hostname);
+                    LOGGER.debug(logIdent(hostname, AbstractService.this) + "Connected Service.");
                 } else if (state == LifecycleState.DISCONNECTED) {
-                    LOGGER.debug("Disconnected ("+state()+") from " + AbstractService.this.getClass().getSimpleName() + " " + hostname);
+                    LOGGER.debug(logIdent(hostname, AbstractService.this) + "Disconnected Service.");
                 }
                 transitionState(state);
             }
@@ -104,11 +135,13 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
     @Override
     public void send(final CouchbaseRequest request) {
         if (request instanceof SignalFlush) {
-            for (int i = 0; i < endpoints.length; i++) {
+            int length = endpoints.length;
+            for (int i = 0; i < length; i++) {
                 endpoints[i].send(request);
             }
             return;
         }
+
         Endpoint endpoint = strategy.select(request, endpoints);
         if (endpoint == null) {
             responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
@@ -123,17 +156,21 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             return Observable.just(state());
         }
 
-        return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
-            @Override
-            public Observable<LifecycleState> call(final Endpoint endpoint) {
-                return endpoint.connect();
-            }
-        }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
-            @Override
-            public LifecycleState call(List<LifecycleState> endpointStates) {
-                return state();
-            }
-        });
+        return Observable
+            .from(endpoints)
+            .flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
+                @Override
+                public Observable<LifecycleState> call(final Endpoint endpoint) {
+                    return endpoint.connect();
+                }
+            })
+            .last()
+            .map(new Func1<LifecycleState, LifecycleState>() {
+                @Override
+                public LifecycleState call(final LifecycleState state) {
+                    return state();
+                }
+            });
     }
 
     @Override
@@ -142,23 +179,21 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
             return Observable.just(state());
         }
 
-        return Observable.from(endpoints).flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
-            @Override
-            public Observable<LifecycleState> call(Endpoint endpoint) {
-                return endpoint.disconnect();
-            }
-        }).toList().map(new Func1<List<LifecycleState>, LifecycleState>() {
-            @Override
-            public LifecycleState call(List<LifecycleState> endpointStates) {
-                for (LifecycleState endpointState : endpointStates) {
-                    if (endpointState != LifecycleState.DISCONNECTED) {
-                        LOGGER.warn(AbstractService.this.getClass().getSimpleName() + " did not disconnect cleanly " +
-                            "on shutdown.");
-                    }
+        return Observable
+            .from(endpoints)
+            .flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {
+                @Override
+                public Observable<LifecycleState> call(Endpoint endpoint) {
+                    return endpoint.disconnect();
                 }
-                return state();
-            }
-        });
+            })
+            .last()
+            .map(new Func1<LifecycleState, LifecycleState>() {
+                @Override
+                public LifecycleState call(final LifecycleState state) {
+                    return state();
+                }
+            });
     }
 
     /**
@@ -205,5 +240,16 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
         } else {
             return LifecycleState.DISCONNECTED;
         }
+    }
+
+    /**
+     * Simple log helper to give logs a common prefix.
+     *
+     * @param hostname the address.
+     * @param service the service.
+     * @return a prefix string for logs.
+     */
+    protected static String logIdent(final String hostname, final Service service) {
+        return "["+hostname+"][" + service.getClass().getSimpleName()+"]: ";
     }
 }

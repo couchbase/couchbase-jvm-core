@@ -29,14 +29,37 @@ import com.couchbase.client.core.service.strategies.PartitionSelectionStrategy;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
+/**
+ * The {@link BinaryService} is composed of and manages {@link BinaryEndpoint}s.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public class BinaryService extends AbstractService {
 
-    private static final SelectionStrategy strategy = new PartitionSelectionStrategy();
-    private static final EndpointFactory factory = new BinaryEndpointFactory();
+    /**
+     * The endpoint selection strategy.
+     */
+    private static final SelectionStrategy STRATEGY = new PartitionSelectionStrategy();
 
-    public BinaryService(String hostname, String bucket, String password, int port, CoreEnvironment env,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.binaryEndpoints(), strategy, responseBuffer, factory);
+    /**
+     * The endpoint factory.
+     */
+    private static final EndpointFactory FACTORY = new BinaryEndpointFactory();
+
+    /**
+     * Creates a new {@link BinaryService}.
+     *
+     * @param hostname the hostname of the service.
+     * @param bucket the name of the bucket.
+     * @param password the password of the bucket.
+     * @param port the port of the service.
+     * @param env the shared environment.
+     * @param responseBuffer the shared response buffer.
+     */
+    public BinaryService(final String hostname, final String bucket, final String password, final int port,
+        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, env.binaryEndpoints(), STRATEGY, responseBuffer, FACTORY);
     }
 
     @Override
@@ -44,6 +67,9 @@ public class BinaryService extends AbstractService {
         return ServiceType.BINARY;
     }
 
+    /**
+     * The factory for {@link BinaryEndpoint}s.
+     */
     static class BinaryEndpointFactory implements EndpointFactory {
         @Override
         public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
