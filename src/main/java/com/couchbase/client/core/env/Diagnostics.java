@@ -60,8 +60,6 @@ public class Diagnostics {
         if (OS_BEAN instanceof com.sun.management.OperatingSystemMXBean) {
             com.sun.management.OperatingSystemMXBean sunBean = (com.sun.management.OperatingSystemMXBean) OS_BEAN;
 
-            infos.put("sys.cpu.loadCurrent", sunBean.getSystemCpuLoad());
-            infos.put("proc.cpu.loadCurrent", sunBean.getProcessCpuLoad());
             infos.put("proc.cpu.time", sunBean.getProcessCpuTime());
             infos.put("mem.physical.total", sunBean.getTotalPhysicalMemorySize());
             infos.put("mem.physical.free", sunBean.getFreePhysicalMemorySize());
