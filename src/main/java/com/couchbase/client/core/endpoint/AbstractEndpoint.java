@@ -43,7 +43,11 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.oio.OioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
@@ -168,10 +172,16 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
 
+        Class<? extends Channel> channelClass = NioSocketChannel.class;
+        if (environment.ioPool() instanceof EpollEventLoopGroup) {
+            channelClass = EpollSocketChannel.class;
+        } else if (environment.ioPool() instanceof OioEventLoopGroup) {
+            channelClass = OioSocketChannel.class;
+        }
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(environment.ioPool())
-            .channel(NioSocketChannel.class)
+            .channel(channelClass)
             .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
             .option(ChannelOption.TCP_NODELAY, false)
             .handler(new ChannelInitializer<Channel>() {
