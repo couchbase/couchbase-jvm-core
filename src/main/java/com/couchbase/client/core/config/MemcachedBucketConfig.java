@@ -21,8 +21,16 @@
  */
 package com.couchbase.client.core.config;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import java.util.SortedMap;
+
 /**
- * A configuration representing a memcache bucket.
+ * A configuration representing a memcached bucket.
  */
-public interface MemcacheBucketConfig extends BucketConfig {
+@JsonDeserialize(as = DefaultMemcachedBucketConfig.class)
+public interface MemcachedBucketConfig extends BucketConfig {
+
+    SortedMap<Long, NodeInfo> ketamaNodes();
+
 }

@@ -149,6 +149,11 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     }
 
     @Override
+    public BucketType type() {
+        return BucketType.COUCHBASE;
+    }
+
+    @Override
     public String toString() {
         return "DefaultCouchbaseBucketConfig{" +
             "name='" + name() + '\'' +

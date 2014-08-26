@@ -25,7 +25,8 @@ import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
-import com.couchbase.client.core.config.MemcacheBucketConfig;
+import com.couchbase.client.core.config.MemcachedBucketConfig;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.binary.BinaryRequest;
@@ -33,9 +34,13 @@ import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
 import com.couchbase.client.core.message.binary.ObserveRequest;
 import com.couchbase.client.core.message.binary.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
+import io.netty.util.CharsetUtil;
 
 import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.zip.CRC32;
 
 /**
@@ -61,8 +66,8 @@ public class BinaryLocator implements Locator {
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
             return locateForCouchbaseBucket((BinaryRequest) request, nodes, (CouchbaseBucketConfig) bucket);
-        } else if (bucket instanceof MemcacheBucketConfig) {
-            return locateForMemcacheBucket((BinaryRequest) request, nodes, (MemcacheBucketConfig) bucket);
+        } else if (bucket instanceof MemcachedBucketConfig) {
+            return locateForMemcacheBucket((BinaryRequest) request, nodes, (MemcachedBucketConfig) bucket);
         } else {
             throw new IllegalStateException("Unsupported Bucket Type: " + bucket + " for request " + request);
         }
@@ -135,9 +140,42 @@ public class BinaryLocator implements Locator {
      * @return an observable with one or more nodes to send the request to.
      */
     private Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
-        final MemcacheBucketConfig config) {
-        // todo: ketama lookup
-        throw new UnsupportedOperationException("implement me");
+        final MemcachedBucketConfig config) {
+
+        long hash = ketamaHash(request.key());
+        if (!config.ketamaNodes().containsKey(hash)) {
+            SortedMap<Long, NodeInfo> tailMap = config.ketamaNodes().tailMap(hash);
+            if (tailMap.isEmpty()) {
+                hash = config.ketamaNodes().firstKey();
+            } else {
+                hash = tailMap.firstKey();
+            }
+        }
+
+        NodeInfo found = config.ketamaNodes().get(hash);
+        request.partition((short) 0);
+        for (Node node : nodes) {
+            if (node.hostname().equals(found.hostname())) {
+                return new Node[] { node };
+            }
+        }
+
+        throw new IllegalStateException("Node not found for request" + request);
+    }
+
+    private long ketamaHash(final String key) {
+        try {
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update(key.getBytes(CharsetUtil.UTF_8));
+            byte[] digest = md5.digest();
+            long rv = ((long) (digest[3] & 0xFF) << 24)
+                | ((long) (digest[2] & 0xFF) << 16)
+                | ((long) (digest[1] & 0xFF) << 8)
+                | (digest[0] & 0xFF);
+            return rv & 0xffffffffL;
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Could not encode ketama hash.", e);
+        }
     }
 
 }

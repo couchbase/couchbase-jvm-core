@@ -36,7 +36,7 @@ import java.util.List;
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = CouchbaseBucketConfig.class, name = "vbucket"),
-    @JsonSubTypes.Type(value = MemcacheBucketConfig.class, name = "ketama")
+    @JsonSubTypes.Type(value = MemcachedBucketConfig.class, name = "ketama")
 })
 public interface BucketConfig {
 
@@ -103,5 +103,12 @@ public interface BucketConfig {
      * @return the rev number, might be 0.
      */
     long rev();
+
+    /**
+     * The bucket type.
+     *
+     * @return the bucket type.
+     */
+    BucketType type();
 
 }
