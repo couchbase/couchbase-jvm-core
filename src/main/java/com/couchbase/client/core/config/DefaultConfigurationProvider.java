@@ -248,7 +248,14 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                     upsertBucketConfig(tuple.value2());
                     return currentConfig.get();
                 }
-            }).onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
+            })
+            .doOnNext(new Action1<ClusterConfig>() {
+                @Override
+                public void call(ClusterConfig clusterConfig) {
+                    LOGGER.info("Opened bucket " + bucket);
+                }
+            })
+            .onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
                 @Override
                 public Observable<ClusterConfig> call(final Throwable throwable) {
                     return Observable.error(new ConfigurationException("Could not open bucket.", throwable));
@@ -262,6 +269,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             @Override
             public ClusterConfig call(String bucket) {
                 removeBucketConfig(bucket);
+                LOGGER.info("Closed bucket " + bucket);
                 return currentConfig.get();
             }
         });

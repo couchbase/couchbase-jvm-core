@@ -26,6 +26,9 @@ import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.DefaultConfigurationProvider;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
+import com.couchbase.client.core.env.Diagnostics;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -67,6 +70,11 @@ import java.util.concurrent.Executors;
  * @since 1.0
  */
 public class CouchbaseCore implements ClusterFacade {
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CouchbaseCore.class);
 
     /**
      * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
@@ -126,6 +134,9 @@ public class CouchbaseCore implements ClusterFacade {
      * Creates a new {@link CouchbaseCore}.
      */
     public CouchbaseCore(final CoreEnvironment environment) {
+        LOGGER.info(environment.toString());
+        LOGGER.debug(Diagnostics.collectAndFormat());
+
         this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
         disruptorExecutor = Executors.newFixedThreadPool(2);
