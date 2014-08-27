@@ -25,6 +25,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import rx.Observable;
@@ -108,7 +109,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints());
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints());
 
-        this.ioPool = builder.ioPool() == null ? new NioEventLoopGroup(ioPoolSize()) : builder.ioPool();
+        this.ioPool = builder.ioPool() == null
+            ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
         this.coreScheduler = builder.scheduler() == null ? new CoreScheduler(computationPoolSize()) : builder.scheduler();
         this.shutdown = false;
     }

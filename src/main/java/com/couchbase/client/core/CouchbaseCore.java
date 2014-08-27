@@ -57,6 +57,7 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventTranslatorOneArg;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -139,7 +140,7 @@ public class CouchbaseCore implements ClusterFacade {
 
         this.environment = environment;
         configProvider = new DefaultConfigurationProvider(this, environment);
-        disruptorExecutor = Executors.newFixedThreadPool(2);
+        disruptorExecutor = Executors.newFixedThreadPool(2, new DefaultThreadFactory("cb-core", true));
 
         responseDisruptor = new Disruptor<ResponseEvent>(
             new ResponseEventFactory(),
