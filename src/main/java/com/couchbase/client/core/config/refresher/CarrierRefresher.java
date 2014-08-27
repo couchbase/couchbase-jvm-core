@@ -115,6 +115,12 @@ public class CarrierRefresher extends AbstractRefresher {
     public void refresh(final ClusterConfig config) {
         Observable
             .from(config.bucketConfigs().values())
+            .filter(new Func1<BucketConfig, Boolean>() {
+                @Override
+                public Boolean call(BucketConfig config) {
+                    return registrations().containsKey(config.name());
+                }
+            })
             .subscribe(new Action1<BucketConfig>() {
                 @Override
                 public void call(final BucketConfig config) {
@@ -129,11 +135,11 @@ public class CarrierRefresher extends AbstractRefresher {
                                 return raw.replace("$HOST", response.hostname().getHostName());
                             }
                         }).subscribe(new Action1<String>() {
-                            @Override
-                            public void call(String rawConfig) {
-                                provider().proposeBucketConfig(config.name(), rawConfig);
-                            }
-                        });
+                        @Override
+                        public void call(String rawConfig) {
+                            provider().proposeBucketConfig(config.name(), rawConfig);
+                        }
+                    });
                 }
             });
     }
