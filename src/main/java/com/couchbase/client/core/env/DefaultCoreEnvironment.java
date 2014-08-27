@@ -87,8 +87,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     protected DefaultCoreEnvironment(final Builder builder) {
         if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
-            LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found, " +
-                "this can have severe impact on performance and stability. Reuse environments!");
+            LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found (" + instanceCounter
+                + "), this can have severe impact on performance and stability. Reuse environments!");
         }
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled());
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile());
