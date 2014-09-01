@@ -56,7 +56,7 @@ repositories {
 
 ext {
     nettyVersion = '4.0.23.Final'
-    rxVersion = '0.20.2'
+    rxVersion = '1.0.0-rc.1'
     disruptorVersion = '3.3.0'
     jacksonVersion = '2.4.2'
 
@@ -82,7 +82,7 @@ configurations {
 
 dependencies {
     compile group: 'io.netty', name: 'netty-all', version: nettyVersion
-    compile group: 'com.netflix.rxjava', name:'rxjava-core', version: rxVersion
+    compile group: 'io.reactivex', name:'rxjava', version: rxVersion
     compile group: 'com.lmax', name: 'disruptor', version: disruptorVersion
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
 
@@ -90,7 +90,7 @@ dependencies {
     optional group: 'commons-logging', name: 'commons-logging', version: commonsVersion
     optional group: 'log4j', name: 'log4j', version: log4jVersion
 
-    shadow group: 'com.netflix.rxjava', name:'rxjava-core', version: rxVersion
+    shadow group: 'io.reactivex', name:'rxjava', version: rxVersion
 
     testCompile group: 'junit', name: 'junit', version: junitVersion
     testCompile group: 'org.mockito', name: 'mockito-all', version: mockitoVersion
@@ -155,7 +155,7 @@ shadowJar {
         exclude(dependency(group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion))
         exclude(dependency(group: 'commons-logging', name: 'commons-logging', version: commonsVersion))
         exclude(dependency(group: 'log4j', name: 'log4j', version: log4jVersion))
-        exclude(dependency(group: 'com.netflix.rxjava', name:'rxjava-core', version: rxVersion))
+        exclude(dependency(group: 'io.reactivex', name:'rxjava', version: rxVersion))
     }
 
     relocate 'io.netty', 'com.couchbase.client.deps.io.netty'
@@ -211,7 +211,7 @@ publishing  {
                 def root = asNode()
                 root.dependencies.'*'.findAll() {
                     it.scope*.value = 'compile'
-                    if (it.artifactId.text() != 'rxjava-core') {
+                    if (it.artifactId.text() != 'rxjava') {
                         it.appendNode('optional', 'true')
                     }
                 }
