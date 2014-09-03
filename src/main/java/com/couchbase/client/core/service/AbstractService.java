@@ -33,13 +33,11 @@ import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
-import io.netty.channel.Channel;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.FuncN;
 
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -164,7 +162,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                     return endpoint.connect();
                 }
             })
-            .last()
+            .lastOrDefault(LifecycleState.DISCONNECTED)
             .map(new Func1<LifecycleState, LifecycleState>() {
                 @Override
                 public LifecycleState call(final LifecycleState state) {
@@ -187,7 +185,7 @@ public abstract class AbstractService extends AbstractStateMachine<LifecycleStat
                     return endpoint.disconnect();
                 }
             })
-            .last()
+            .lastOrDefault(LifecycleState.DISCONNECTED)
             .map(new Func1<LifecycleState, LifecycleState>() {
                 @Override
                 public LifecycleState call(final LifecycleState state) {
