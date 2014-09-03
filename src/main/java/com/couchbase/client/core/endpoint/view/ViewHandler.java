@@ -283,6 +283,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         viewInfoObservable = null;
         viewRowObservable = null;
         viewParsingState = QUERY_STATE_INITIAL;
+        currentRequest(null);
     }
 
     /**

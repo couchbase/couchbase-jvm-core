@@ -369,6 +369,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         queryInfoObservable = null;
         queryRowObservable = null;
         queryParsingState = QUERY_STATE_INITIAL;
+        currentRequest(null);
     }
 
     /**

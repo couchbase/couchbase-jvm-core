@@ -141,9 +141,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             currentRequest = sentRequestQueue.poll();
         }
 
+        REQUEST current = currentRequest;
         CouchbaseResponse response = decodeResponse(ctx, msg);
+
         if (response != null) {
-            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, currentRequest.observable());
+            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, current.observable());
             if (response.status() != ResponseStatus.CHUNKED) {
                 currentRequest = null;
             }
