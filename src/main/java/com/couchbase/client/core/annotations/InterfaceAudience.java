@@ -19,31 +19,30 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core;
+package com.couchbase.client.core.annotations;
 
-import com.couchbase.client.core.annotations.InterfaceAudience;
-import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import rx.Observable;
+import java.lang.annotation.Documented;
 
 /**
- * Represents a Couchbase Cluster.
+ * Defines the intended audience for each entity.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public interface ClusterFacade {
+@InterfaceStability.Experimental
+@InterfaceAudience.Public
+public class InterfaceAudience {
 
     /**
-     * Sends a {@link CouchbaseRequest} into the cluster and eventually returns a {@link CouchbaseResponse}.
-     *
-     * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
-     *
-     * @param request the request to send.
-     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
+     * Intended to be only used within this library.
      */
-    @InterfaceStability.Committed
-    @InterfaceAudience.Public
-    <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
+    @Documented
+    public @interface Private {};
+
+    /**
+     * Intended to be used by any project or application that depends on this library.
+     */
+    @Documented
+    public @interface Public {};
+
 }

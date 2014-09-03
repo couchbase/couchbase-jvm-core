@@ -19,31 +19,40 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core;
+package com.couchbase.client.core.annotations;
 
-import com.couchbase.client.core.annotations.InterfaceAudience;
-import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import rx.Observable;
+import java.lang.annotation.Documented;
 
 /**
- * Represents a Couchbase Cluster.
+ * Defines the stability annotations for each public or private class.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public interface ClusterFacade {
+@InterfaceStability.Experimental
+@InterfaceAudience.Public
+public class InterfaceStability {
 
     /**
-     * Sends a {@link CouchbaseRequest} into the cluster and eventually returns a {@link CouchbaseResponse}.
-     *
-     * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
-     *
-     * @param request the request to send.
-     * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
+     * The annotated entity is considered experimental and no guarantees can be given in terms of
+     * compatibility and stability.
      */
-    @InterfaceStability.Committed
-    @InterfaceAudience.Public
-    <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
+    @Documented
+    public @interface Experimental {};
+
+    /**
+     * The annotated entity is considered stable, but compatibility can be broken at each minor release.
+     */
+    @Documented
+    public @interface Uncommitted {};
+
+    /**
+     * The annotated entity is considered committed and can only break compatibility at a major release.
+     *
+     * The entity is allowed to evolve every minor release while retaining compatibility.
+     */
+    @Documented
+    public @interface Committed {};
+
+
 }

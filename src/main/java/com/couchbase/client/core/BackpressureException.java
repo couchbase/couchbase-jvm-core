@@ -21,8 +21,6 @@
  */
 package com.couchbase.client.core;
 
-import com.couchbase.client.core.CouchbaseException;
-
 /**
  * Identifies the need to back off on the supplier side when using a service, because the consumer is overloaded.
  *
