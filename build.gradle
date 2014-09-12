@@ -54,6 +54,19 @@ repositories {
     jcenter()
 }
 
+def getVersionName() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--always', '--dirty'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (e) {
+        return "unknown"
+    }
+}
+
 ext {
     nettyVersion = '4.0.23.Final'
     rxVersion = '1.0.0-rc.2'
@@ -66,6 +79,8 @@ ext {
 
     junitVersion = '4.11'
     mockitoVersion = '1.9.5'
+
+    gitVersion = getVersionName()
 }
 
 sourceSets {
@@ -226,3 +241,12 @@ publishing  {
         }
     }
 }
+
+jar.manifest.mainAttributes(
+        'Implementation-Title': 'Couchbase Core IO',
+        'Implementation-Version': ext.gitVersion,
+        'Implementation-Vendor': 'Couchbase, Inc.',
+        'Specification-Title': 'couchbase.client.core',
+        'Specification-Version': version,
+        'Specification-Vendor': 'Couchbase, Inc.'
+)

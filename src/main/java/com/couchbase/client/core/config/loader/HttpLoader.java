@@ -70,7 +70,7 @@ public class HttpLoader extends AbstractLoader {
     protected Observable<String> discoverConfig(final String bucket, final String password, final InetAddress hostname) {
         if (!env().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap manually disabled.");
-            return Observable.error(new ConfigurationException("Http Bootstrap disabled through configuration."));
+            return Observable.error(new ConfigurationException("HTTP Bootstrap disabled through configuration."));
         }
 
         return cluster()

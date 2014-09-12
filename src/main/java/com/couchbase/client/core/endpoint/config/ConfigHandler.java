@@ -138,6 +138,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         }
 
         FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
+        request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
         if (msg instanceof InsertBucketRequest || msg instanceof UpdateBucketRequest) {
             request.headers().set(HttpHeaders.Names.ACCEPT, "*/*");
             request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/x-www-form-urlencoded");

@@ -73,6 +73,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int binaryServiceEndpoints;
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
+    private final String userAgent;
+    private final String packageNameAndVersion;
 
     /**
      * The logger used.
@@ -108,6 +110,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         binaryServiceEndpoints = intPropertyOr("binaryEndpoints", builder.binaryEndpoints());
         viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints());
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints());
+        packageNameAndVersion = stringPropertyOr("packageNameAndVersion", builder.packageNameAndVersion());
+        userAgent = stringPropertyOr("userAgent", builder.userAgent());
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -276,11 +280,23 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return queryServiceEndpoints;
     }
 
+    @Override
+    public String userAgent() {
+        return userAgent;
+    }
+
+    @Override
+    public String packageNameAndVersion() {
+        return packageNameAndVersion;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean sslEnabled = SSL_ENABLED;
         private String sslKeystoreFile = SSL_KEYSTORE_FILE;
         private String sslKeystorePassword = SSL_KEYSTORE_PASSWORD;
+        private String userAgent = null;
+        private String packageNameAndVersion = defaultPackageNameAndVersion();
         private boolean queryEnabled = QUERY_ENABLED;
         private int queryPort = QUERY_PORT;
         private boolean bootstrapHttpEnabled = BOOTSTRAP_HTTP_ENABLED;
@@ -302,7 +318,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         protected Builder() {
 
         }
-
 
         @Override
         public boolean sslEnabled() {
@@ -477,6 +492,37 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         @Override
         public int queryEndpoints() {
             return queryServiceEndpoints;
+        }
+
+        @Override
+        public String userAgent() {
+            if (userAgent == null) {
+                return String.format("%s (%s/%s %s; %s %s)", packageNameAndVersion,
+                        System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"),
+                        System.getProperty("java.vm.name"), System.getProperty("java.runtime.version"));
+            } else {
+                return userAgent;
+            }
+        }
+
+        public void userAgent(String userAgent) {
+            this.userAgent = userAgent;
+        }
+
+        @Override
+        public String packageNameAndVersion() {
+            return packageNameAndVersion;
+        }
+
+        public void packageNameAndVersion(String packageNameAndVersion) {
+            this.packageNameAndVersion = packageNameAndVersion;
+        }
+
+        private String defaultPackageNameAndVersion() {
+            String version = Package.getPackage("com.couchbase.client.core").getSpecificationVersion();
+            String gitVersion = Package.getPackage("com.couchbase.client.core").getImplementationVersion();
+            return String.format("couchbase-jvm-core/%s (git: %s)",
+                    version == null ? "unknown" : version, gitVersion == null ? "unknown" : gitVersion);
         }
 
         public Builder queryEndpoints(final int queryServiceEndpoints) {

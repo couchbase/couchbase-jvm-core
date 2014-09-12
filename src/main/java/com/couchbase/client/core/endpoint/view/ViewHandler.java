@@ -160,6 +160,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             content =  Unpooled.buffer(0);
         }
         FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, path.toString(), content);
+        request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
         request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
         addAuth(ctx, request, msg.bucket(), msg.password());

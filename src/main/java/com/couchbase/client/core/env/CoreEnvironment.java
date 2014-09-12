@@ -147,4 +147,18 @@ public interface CoreEnvironment {
      * @return amount of endpoints per service.
      */
     int queryEndpoints();
+
+    /**
+     * Library identification string, which can be used as User-Agent header in HTTP requests
+     *
+     * @return identification string
+     */
+    String userAgent();
+
+    /**
+     * Returns name and the version of the package. This method used to by @{link userAgent()}
+     *
+     * @return string containing package name and version
+     */
+    String packageNameAndVersion();
 }

@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -218,6 +219,15 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected REQUEST currentRequest() {
         return currentRequest;
+    }
+
+    /**
+     * Returns environment.
+     *
+     * @return the environment
+     */
+    protected CoreEnvironment env() {
+        return endpoint.environment();
     }
 
     /**

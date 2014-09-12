@@ -119,6 +119,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
 
         if (msg instanceof GenericQueryRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/query");
+            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
             ByteBuf query = ctx.alloc().buffer(((GenericQueryRequest) msg).query().length());
             query.writeBytes(((GenericQueryRequest) msg).query().getBytes(CHARSET));
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
