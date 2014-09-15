@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,8 @@ import java.util.List;
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
 
     private final PartitionInfo partitionInfo;
+    private final List<NodeInfo> partitionHosts;
+
     private final boolean tainted;
     private final long rev;
 
@@ -48,12 +52,41 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         super(name, BucketNodeLocator.fromConfig(locator), uri, streamingUri, nodeInfos, portInfos);
         this.partitionInfo = partitionInfo;
         this.tainted = !partitionInfo.forwardPartitions().isEmpty();
+        this.partitionHosts = buildPartitionHosts(nodeInfos, partitionInfo);
         this.rev = rev;
     }
 
+    /**
+     * Helper method to reference the partition hosts from the raw node list.
+     *
+     * @param nodeInfos the node infos.
+     * @param partitionInfo the partition info.
+     * @return a ordered reference list for the partition hosts.
+     */
+    private static List<NodeInfo> buildPartitionHosts(List<NodeInfo> nodeInfos, PartitionInfo partitionInfo) {
+        List<NodeInfo> partitionHosts = new ArrayList<NodeInfo>();
+        for (String rawHost : partitionInfo.partitionHosts()) {
+            InetAddress convertedHost = null;
+            try {
+                convertedHost = InetAddress.getByName(rawHost);
+            } catch (UnknownHostException e) {
+                throw new ConfigurationException("Could not resolve " + rawHost + "on config building.");
+            }
+            for (NodeInfo nodeInfo : nodeInfos) {
+                if (nodeInfo.hostname().equals(convertedHost)) {
+                    partitionHosts.add(nodeInfo);
+                }
+            }
+        }
+        if (partitionHosts.size() != partitionInfo.partitionHosts().size()) {
+            throw new ConfigurationException("Partition size is not equal after conversion, this is a bug.");
+        }
+        return partitionHosts;
+    }
+
     @Override
-    public List<String> partitionHosts() {
-        return partitionInfo.partitionHosts();
+    public List<NodeInfo> partitionHosts() {
+        return partitionHosts;
     }
 
     @Override

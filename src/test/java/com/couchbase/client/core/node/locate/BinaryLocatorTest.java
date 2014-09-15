@@ -23,7 +23,9 @@ package com.couchbase.client.core.node.locate;
 
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.config.DefaultNodeInfo;
 import com.couchbase.client.core.config.DefaultPartition;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.binary.GetRequest;
 import com.couchbase.client.core.node.Node;
@@ -31,6 +33,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -66,8 +69,8 @@ public class BinaryLocatorTest {
             (Partition) new DefaultPartition((short) 1, new short[] {0})
         ));
         when(bucketMock.partitionHosts()).thenReturn(Arrays.asList(
-           "192.168.56.101",
-            "192.168.56.102"
+            (NodeInfo) new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP),
+            new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP)
         ));
 
         Node[] foundNodes = locator.locate(getRequestMock, nodes, configMock);
