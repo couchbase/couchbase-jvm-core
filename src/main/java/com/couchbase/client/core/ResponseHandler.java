@@ -27,7 +27,7 @@ import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.binary.BinaryResponse;
+import com.couchbase.client.core.message.kv.BinaryResponse;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorTwoArg;

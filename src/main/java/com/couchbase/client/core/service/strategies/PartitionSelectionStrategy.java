@@ -23,8 +23,8 @@ package com.couchbase.client.core.service.strategies;
 
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.binary.BinaryRequest;
-import com.couchbase.client.core.message.binary.GetBucketConfigRequest;
+import com.couchbase.client.core.message.kv.BinaryRequest;
+import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.state.LifecycleState;
 
 /**

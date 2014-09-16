@@ -25,7 +25,7 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
-import com.couchbase.client.core.service.BinaryService;
+import com.couchbase.client.core.service.KeyValueService;
 import com.couchbase.client.core.service.ConfigService;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
@@ -175,7 +175,7 @@ public class CouchbaseNodeTest {
         Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, host))
             .toBlocking().single();
 
-        verify(registryMock).addService(any(BinaryService.class), anyString());
+        verify(registryMock).addService(any(KeyValueService.class), anyString());
         assertEquals(ServiceType.BINARY, registered.type());
     }
 

@@ -35,7 +35,7 @@ public class ServiceFactory {
         final RingBuffer<ResponseEvent> responseBuffer) {
         switch(type) {
             case BINARY:
-                return new BinaryService(hostname, bucket, password, port, env, responseBuffer);
+                return new KeyValueService(hostname, bucket, password, port, env, responseBuffer);
             case VIEW:
                 return new ViewService(hostname, bucket, password, port, env, responseBuffer);
             case CONFIG:

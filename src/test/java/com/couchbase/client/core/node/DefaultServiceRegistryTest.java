@@ -21,7 +21,7 @@
  */
 package com.couchbase.client.core.node;
 
-import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;

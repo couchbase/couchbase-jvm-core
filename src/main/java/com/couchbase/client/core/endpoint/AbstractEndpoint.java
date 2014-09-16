@@ -23,7 +23,7 @@ package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
-import com.couchbase.client.core.endpoint.binary.AuthenticationException;
+import com.couchbase.client.core.endpoint.kv.AuthenticationException;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;

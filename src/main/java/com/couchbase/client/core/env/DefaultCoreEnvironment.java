@@ -56,7 +56,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int RESPONSE_BUFFER_SIZE = 16384;
     public static final int IO_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     public static final int COMPUTATION_POOL_SIZE =  Runtime.getRuntime().availableProcessors();
-    public static final int BINARY_ENDPOINTS = 1;
+    public static final int KEYVALUE_ENDPOINTS = 1;
     public static final int VIEW_ENDPOINTS = 1;
     public static final int QUERY_ENDPOINTS = 1;
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
@@ -112,7 +112,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int computationPoolSize;
     private final int responseBufferSize;
     private final int requestBufferSize;
-    private final int binaryServiceEndpoints;
+    private final int kvServiceEndpoints;
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
     private final String userAgent;
@@ -145,7 +145,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         computationPoolSize = intPropertyOr("computationPoolSize", builder.computationPoolSize());
         responseBufferSize = intPropertyOr("responseBufferSize", builder.responseBufferSize());
         requestBufferSize = intPropertyOr("requestBufferSize", builder.requestBufferSize());
-        binaryServiceEndpoints = intPropertyOr("binaryEndpoints", builder.binaryEndpoints());
+        kvServiceEndpoints = intPropertyOr("kvEndpoints", builder.kvEndpoints());
         viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints());
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints());
         packageNameAndVersion = stringPropertyOr("packageNameAndVersion", builder.packageNameAndVersion());
@@ -312,8 +312,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public int binaryEndpoints() {
-        return binaryServiceEndpoints;
+    public int kvEndpoints() {
+        return kvServiceEndpoints;
     }
 
     @Override
@@ -355,7 +355,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int computationPoolSize = COMPUTATION_POOL_SIZE;
         private int responseBufferSize = RESPONSE_BUFFER_SIZE;
         private int requestBufferSize = REQUEST_BUFFER_SIZE;
-        private int binaryServiceEndpoints = BINARY_ENDPOINTS;
+        private int kvServiceEndpoints = KEYVALUE_ENDPOINTS;
         private int viewServiceEndpoints = VIEW_ENDPOINTS;
         private int queryServiceEndpoints = QUERY_ENDPOINTS;
         private EventLoopGroup ioPool;
@@ -516,12 +516,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
-        public int binaryEndpoints() {
-            return binaryServiceEndpoints;
+        public int kvEndpoints() {
+            return kvServiceEndpoints;
         }
 
-        public Builder binaryEndpoints(final int binaryServiceEndpoints) {
-            this.binaryServiceEndpoints = binaryServiceEndpoints;
+        public Builder kvEndpoints(final int kvServiceEndpoints) {
+            this.kvServiceEndpoints = kvServiceEndpoints;
             return this;
         }
 
@@ -613,7 +613,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", computationPoolSize=").append(computationPoolSize);
         sb.append(", responseBufferSize=").append(responseBufferSize);
         sb.append(", requestBufferSize=").append(requestBufferSize);
-        sb.append(", binaryServiceEndpoints=").append(binaryServiceEndpoints);
+        sb.append(", kvServiceEndpoints=").append(kvServiceEndpoints);
         sb.append(", viewServiceEndpoints=").append(viewServiceEndpoints);
         sb.append(", queryServiceEndpoints=").append(queryServiceEndpoints);
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());

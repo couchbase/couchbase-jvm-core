@@ -35,7 +35,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(DefaultCoreEnvironment.BINARY_ENDPOINTS, env.binaryEndpoints());
+        assertEquals(DefaultCoreEnvironment.KEYVALUE_ENDPOINTS, env.kvEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
     }
 
@@ -43,31 +43,31 @@ public class DefaultCoreEnvironmentTest {
     public void shouldOverrideDefaults() throws Exception {
         CoreEnvironment env = DefaultCoreEnvironment
             .builder()
-            .binaryEndpoints(3)
+            .kvEndpoints(3)
             .build();
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(3, env.binaryEndpoints());
+        assertEquals(3, env.kvEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
     }
 
     @Test
     public void sysPropertyShouldTakePrecedence() throws Exception {
 
-        System.setProperty("com.couchbase.binaryEndpoints", "10");
+        System.setProperty("com.couchbase.kvEndpoints", "10");
 
         CoreEnvironment env = DefaultCoreEnvironment
             .builder()
-            .binaryEndpoints(3)
+            .kvEndpoints(3)
             .build();
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
-        assertEquals(10, env.binaryEndpoints());
+        assertEquals(10, env.kvEndpoints());
         assertTrue(env.shutdown().toBlocking().single());
 
-        System.clearProperty("com.couchbase.binaryEndpoints");
+        System.clearProperty("com.couchbase.kvEndpoints");
     }
 
 }

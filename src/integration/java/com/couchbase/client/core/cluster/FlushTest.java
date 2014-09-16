@@ -22,10 +22,10 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.binary.GetRequest;
-import com.couchbase.client.core.message.binary.GetResponse;
-import com.couchbase.client.core.message.binary.UpsertRequest;
-import com.couchbase.client.core.message.binary.UpsertResponse;
+import com.couchbase.client.core.message.kv.GetRequest;
+import com.couchbase.client.core.message.kv.GetResponse;
+import com.couchbase.client.core.message.kv.UpsertRequest;
+import com.couchbase.client.core.message.kv.UpsertResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;

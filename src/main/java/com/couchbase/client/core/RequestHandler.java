@@ -26,7 +26,7 @@ import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.binary.BinaryRequest;
+import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
@@ -35,7 +35,7 @@ import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
-import com.couchbase.client.core.node.locate.BinaryLocator;
+import com.couchbase.client.core.node.locate.KeyValueLocator;
 import com.couchbase.client.core.node.locate.ConfigLocator;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.node.locate.QueryLocator;
@@ -75,7 +75,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * The node locator for the binary service.
      */
-    private final Locator BINARY_LOCATOR = new BinaryLocator();
+    private final Locator BINARY_LOCATOR = new KeyValueLocator();
 
     /**
      * The node locator for the view service;

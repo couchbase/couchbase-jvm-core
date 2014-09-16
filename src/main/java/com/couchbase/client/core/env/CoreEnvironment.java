@@ -127,11 +127,11 @@ public interface CoreEnvironment {
     int responseBufferSize();
 
     /**
-     * The number of binary service endpoints.
+     * The number of key/value service endpoints.
      *
      * @return amount of endpoints per service.
      */
-    int binaryEndpoints();
+    int kvEndpoints();
 
     /**
      * The number of view service endpoints.
