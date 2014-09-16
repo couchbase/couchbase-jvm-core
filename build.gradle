@@ -246,7 +246,7 @@ jar.manifest.mainAttributes(
         'Implementation-Title': 'Couchbase Core IO',
         'Implementation-Version': ext.gitVersion,
         'Implementation-Vendor': 'Couchbase, Inc.',
-        'Specification-Title': 'couchbase.client.core',
+        'Specification-Title': 'com.couchbase.client.core',
         'Specification-Version': version,
         'Specification-Vendor': 'Couchbase, Inc.'
 )

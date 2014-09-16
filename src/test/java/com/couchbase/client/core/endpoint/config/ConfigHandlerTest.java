@@ -23,6 +23,7 @@ package com.couchbase.client.core.endpoint.config;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
@@ -73,6 +74,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Verifies the functionality of the {@link ConfigHandler}.
@@ -110,7 +112,13 @@ public class ConfigHandlerTest {
         });
 
         queue = new ArrayDeque<ConfigRequest>();
-        handler = new ConfigHandler(mock(AbstractEndpoint.class), responseBuffer.start(), queue);
+
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
+        when(endpoint.environment()).thenReturn(environment);
+        when(environment.userAgent()).thenReturn("Couchbase Client Mock");
+
+        handler = new ConfigHandler(endpoint, responseBuffer.start(), queue);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -131,6 +139,7 @@ public class ConfigHandlerTest {
         assertEquals("/path/bucket", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Basic YnVja2V0OnBhc3N3b3Jk", outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
+        assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
     @Test
@@ -199,6 +208,7 @@ public class ConfigHandlerTest {
         assertEquals("/pools/default/buckets/bucket/controller/doFlush", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Basic YnVja2V0OnBhc3N3b3Jk", outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
+        assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
     @Test
@@ -268,6 +278,7 @@ public class ConfigHandlerTest {
         assertEquals("/path/bucket", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Basic YnVja2V0OnBhc3N3b3Jk", outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
+        assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
     @Test

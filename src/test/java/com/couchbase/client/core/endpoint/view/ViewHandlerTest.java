@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint.view;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.query.QueryHandler;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
@@ -111,8 +112,13 @@ public class ViewHandlerTest {
             }
         });
 
+        CoreEnvironment environment = mock(CoreEnvironment.class);
+        AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
+        when(endpoint.environment()).thenReturn(environment);
+        when(environment.userAgent()).thenReturn("Couchbase Client Mock");
+
         queue = new ArrayDeque<ViewRequest>();
-        handler = new ViewHandler(mock(AbstractEndpoint.class), responseBuffer.start(), queue);
+        handler = new ViewHandler(endpoint, responseBuffer.start(), queue);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -132,6 +138,7 @@ public class ViewHandlerTest {
         assertEquals(HttpVersion.HTTP_1_1, outbound.getProtocolVersion());
         assertEquals("/bucket/_design/dev_name", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
+        assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
     @Test
@@ -167,6 +174,7 @@ public class ViewHandlerTest {
         assertEquals(HttpVersion.HTTP_1_1, outbound.getProtocolVersion());
         assertEquals("/bucket/_design/dev_design/_view/view?query", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
+        assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
     @Test

@@ -141,7 +141,7 @@ public class HttpLoaderTest {
             loader.discoverConfig("bucket", "password", host).toBlocking().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
-            assertEquals("Http Bootstrap disabled through configuration.", ex.getMessage());
+            assertEquals("HTTP Bootstrap disabled through configuration.", ex.getMessage());
         } catch(Exception ex) {
             assertTrue(false);
         }

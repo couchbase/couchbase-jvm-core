@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import io.netty.channel.EventLoopGroup;
@@ -33,6 +34,12 @@ import rx.Scheduler;
 import rx.Subscriber;
 
 public class DefaultCoreEnvironment implements CoreEnvironment {
+
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CoreEnvironment.class);
 
     public static final boolean SSL_ENABLED = false;
     public static final String SSL_KEYSTORE_FILE = null;
@@ -52,8 +59,43 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int BINARY_ENDPOINTS = 1;
     public static final int VIEW_ENDPOINTS = 1;
     public static final int QUERY_ENDPOINTS = 1;
+    public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
+    public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
+
 
     private static final String NAMESPACE = "com.couchbase.";
+
+    /**
+     * Sets up the package version and user agent.
+     *
+     * Note that because the class loader loads classes on demand, one class from the package
+     * is loaded upfront.
+     */
+    static {
+        try {
+            Class<ClusterFacade> facadeClass = ClusterFacade.class;
+            if (facadeClass == null) {
+                throw new IllegalStateException("Could not locate ClusterFacade");
+            }
+
+            Package pkg = Package.getPackage("com.couchbase.client.core");
+            String version = pkg.getSpecificationVersion();
+            String gitVersion = pkg.getImplementationVersion();
+            PACKAGE_NAME_AND_VERSION = String.format("couchbase-jvm-core/%s (git: %s)",
+                version == null ? "unknown" : version, gitVersion == null ? "unknown" : gitVersion);
+
+            USER_AGENT = String.format("%s (%s/%s %s; %s %s)",
+                PACKAGE_NAME_AND_VERSION,
+                System.getProperty("os.name"),
+                System.getProperty("os.version"),
+                System.getProperty("os.arch"),
+                System.getProperty("java.vm.name"),
+                System.getProperty("java.runtime.version")
+            );
+        } catch (Exception ex) {
+            LOGGER.info("Could not set up user agent and packages, defaulting.", ex);
+        }
+    }
 
     private final boolean sslEnabled;
     private final String sslKeystoreFile;
@@ -76,10 +118,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final String userAgent;
     private final String packageNameAndVersion;
 
-    /**
-     * The logger used.
-     */
-    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CoreEnvironment.class);
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
 
@@ -127,7 +165,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return new Builder();
     }
 
-    private boolean booleanPropertyOr(String path, boolean def) {
+    protected boolean booleanPropertyOr(String path, boolean def) {
         String found = System.getProperty(NAMESPACE + path);
         if (found == null) {
             return def;
@@ -135,12 +173,20 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return Boolean.parseBoolean(found);
     }
 
-    private String stringPropertyOr(String path, String def) {
+    protected String stringPropertyOr(String path, String def) {
         String found = System.getProperty(NAMESPACE + path);
         return found == null ? def : found;
     }
 
-    private int intPropertyOr(String path, int def) {
+    protected int intPropertyOr(String path, int def) {
+        String found = System.getProperty(NAMESPACE + path);
+        if (found == null) {
+            return def;
+        }
+        return Integer.parseInt(found);
+    }
+
+    protected static long longPropertyOr(String path, long def) {
         String found = System.getProperty(NAMESPACE + path);
         if (found == null) {
             return def;
@@ -295,8 +341,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean sslEnabled = SSL_ENABLED;
         private String sslKeystoreFile = SSL_KEYSTORE_FILE;
         private String sslKeystorePassword = SSL_KEYSTORE_PASSWORD;
-        private String userAgent = null;
-        private String packageNameAndVersion = defaultPackageNameAndVersion();
+        private String userAgent = USER_AGENT;
+        private String packageNameAndVersion = PACKAGE_NAME_AND_VERSION;
         private boolean queryEnabled = QUERY_ENABLED;
         private int queryPort = QUERY_PORT;
         private boolean bootstrapHttpEnabled = BOOTSTRAP_HTTP_ENABLED;
@@ -494,19 +540,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return queryServiceEndpoints;
         }
 
-        @Override
-        public String userAgent() {
-            if (userAgent == null) {
-                return String.format("%s (%s/%s %s; %s %s)", packageNameAndVersion,
-                        System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"),
-                        System.getProperty("java.vm.name"), System.getProperty("java.runtime.version"));
-            } else {
-                return userAgent;
-            }
+        public Builder queryEndpoints(final int queryServiceEndpoints) {
+            this.queryServiceEndpoints = queryServiceEndpoints;
+            return this;
         }
 
-        public void userAgent(String userAgent) {
+        @Override
+        public String userAgent() {
+            return userAgent;
+        }
+
+        public Builder userAgent(final String userAgent) {
             this.userAgent = userAgent;
+            return this;
         }
 
         @Override
@@ -514,19 +560,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return packageNameAndVersion;
         }
 
-        public void packageNameAndVersion(String packageNameAndVersion) {
+        public Builder packageNameAndVersion(final String packageNameAndVersion) {
             this.packageNameAndVersion = packageNameAndVersion;
-        }
-
-        private String defaultPackageNameAndVersion() {
-            String version = Package.getPackage("com.couchbase.client.core").getSpecificationVersion();
-            String gitVersion = Package.getPackage("com.couchbase.client.core").getImplementationVersion();
-            return String.format("couchbase-jvm-core/%s (git: %s)",
-                    version == null ? "unknown" : version, gitVersion == null ? "unknown" : gitVersion);
-        }
-
-        public Builder queryEndpoints(final int queryServiceEndpoints) {
-            this.queryServiceEndpoints = queryServiceEndpoints;
             return this;
         }
 
@@ -583,6 +618,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", queryServiceEndpoints=").append(queryServiceEndpoints);
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());
         sb.append(", coreScheduler=").append(coreScheduler.getClass().getSimpleName());
+        sb.append(", packageNameAndVersion=").append(packageNameAndVersion);
         sb.append('}');
         return sb.toString();
     }
