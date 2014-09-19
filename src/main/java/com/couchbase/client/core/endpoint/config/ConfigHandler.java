@@ -163,8 +163,10 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      */
     private static void addAuth(final ChannelHandlerContext ctx, final HttpRequest request, final String user,
         final String password) {
-        ByteBuf raw = ctx.alloc().buffer(user.length() + password.length() + 1);
-        raw.writeBytes((user + ":" + password).getBytes(CHARSET));
+        final String pw = password == null ? "" : password;
+
+        ByteBuf raw = ctx.alloc().buffer(user.length() + pw.length() + 1);
+        raw.writeBytes((user + ":" + pw).getBytes(CHARSET));
         ByteBuf encoded = Base64.encode(raw);
         request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CHARSET));
         encoded.release();
