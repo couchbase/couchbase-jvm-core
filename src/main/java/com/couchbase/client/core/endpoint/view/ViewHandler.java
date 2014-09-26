@@ -25,11 +25,14 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
+import com.couchbase.client.core.lang.Tuple;
+import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.message.view.RemoveDesignDocumentRequest;
@@ -69,6 +72,8 @@ import java.util.Queue;
  * @since 1.0
  */
 public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest, ViewRequest> {
+
+    private static final int MAX_GET_LENGTH = 2048;
 
     private static final byte QUERY_STATE_INITIAL = 0;
     private static final byte QUERY_STATE_ROWS = 1;
@@ -122,6 +127,40 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         super(endpoint, responseBuffer, queue, isTransient);
     }
 
+    /**
+     * A utility method to split a GET-like query String into a {@link Tuple2} of Strings if size
+     * of the original gets above a threshold. If not, the original String is returned as value1
+     * of the tuple, and value2 is null. Otherwise, value1 is the original query string minus a "keys"
+     * parameter, and value2 is a json representation of the keys parameter.
+     *
+     * @param queryString the GET-like query string to process if length is above threshold.
+     * @param splitThreshold the size processing threshold.
+     * @return a {@link Tuple2} with keys parameter isolated in value2 as a JSON object.
+     */
+    protected Tuple2<String, String> extractKeysFromQueryString(String queryString, int splitThreshold) {
+        if (queryString.length() < splitThreshold) {
+            return Tuple.create(queryString, null);
+        }
+
+        //split
+        String[] params = queryString.split("&");
+        StringBuilder reworkedQueryParams = new StringBuilder();
+        StringBuilder keys = new StringBuilder(queryString.length());
+        for (String param : params) {
+            if (param.startsWith("keys=")) {
+                keys.append("{\"keys\":").append(param.substring(5)).append('}');
+            } else {
+                reworkedQueryParams.append(param).append('&');
+            }
+        }
+        //eliminate last & in reworkedQueryParams
+        if (reworkedQueryParams.length() > 0) {
+            reworkedQueryParams.deleteCharAt(reworkedQueryParams.length() - 1);
+        }
+
+        return Tuple.create(reworkedQueryParams.toString(), keys.toString());
+    }
+
     @Override
     protected HttpRequest encodeRequest(final ChannelHandlerContext ctx, final ViewRequest msg) throws Exception {
         if (msg instanceof KeepAliveRequest) {
@@ -146,8 +185,22 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
                 path.append("/_view/");
             }
             path.append(queryMsg.view());
+
             if (queryMsg.query() != null && !queryMsg.query().isEmpty()) {
-                path.append("?").append(queryMsg.query());
+                Tuple2<String, String> splitIfPostNeeded = extractKeysFromQueryString(
+                        queryMsg.query(), MAX_GET_LENGTH);
+                if (splitIfPostNeeded.value2() == null) {
+                    //the query is short enough for GET
+                    path.append("?").append(queryMsg.query());
+                } else {
+                    //switch to POST
+                    method = HttpMethod.POST;
+                    //parameter string is the reworked one
+                    path.append('?').append(splitIfPostNeeded.value1());
+                    //body is "keys" but in JSON
+                    content = ctx.alloc().buffer(splitIfPostNeeded.value2().length());
+                    content.writeBytes(splitIfPostNeeded.value2().getBytes(CHARSET));
+                }
             }
         } else if (msg instanceof GetDesignDocumentRequest) {
             GetDesignDocumentRequest queryMsg = (GetDesignDocumentRequest) msg;
