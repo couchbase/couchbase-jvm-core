@@ -21,10 +21,8 @@
  */
 package com.couchbase.client.core.endpoint.config;
 
-import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
@@ -35,9 +33,7 @@ import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.dsl.Disruptor;
+import com.couchbase.client.core.util.CollectingResponseEventSink;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -52,7 +48,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.Observable;
@@ -60,13 +55,10 @@ import rx.Subscriber;
 import rx.functions.Action1;
 
 import java.net.InetAddress;
+import java.nio.charset.Charset;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -84,47 +76,43 @@ import static org.mockito.Mockito.when;
  */
 public class ConfigHandlerTest {
 
-    private Queue<ConfigRequest> queue;
+    /**
+     * The default charset used for all interactions.
+     */
+    private static final Charset CHARSET = CharsetUtil.UTF_8;
+
+    /**
+     * The queue in which requests are pushed to only test decodes in isolation manually.
+     */
+    private Queue<ConfigRequest> requestQueue;
+
+    /**
+     * The channel in which the handler is tested.
+     */
     private EmbeddedChannel channel;
-    private Disruptor<ResponseEvent> responseBuffer;
-    private List<CouchbaseMessage> firedEvents;
-    private CountDownLatch latch;
+
+    /**
+     * The actual handler.
+     */
     private ConfigHandler handler;
+
+    /**
+     * Represents a custom event sink that collects all events pushed into it.
+     */
+    private CollectingResponseEventSink eventSink;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setup() {
-        responseBuffer = new Disruptor<ResponseEvent>(new EventFactory<ResponseEvent>() {
-            @Override
-            public ResponseEvent newInstance() {
-                return new ResponseEvent();
-            }
-        }, 1024, Executors.newCachedThreadPool());
-
-        firedEvents = Collections.synchronizedList(new ArrayList<CouchbaseMessage>());
-        latch = new CountDownLatch(1);
-        responseBuffer.handleEventsWith(new EventHandler<ResponseEvent>() {
-            @Override
-            public void onEvent(ResponseEvent event, long sequence, boolean endOfBatch) throws Exception {
-                firedEvents.add(event.getMessage());
-                latch.countDown();
-            }
-        });
-
-        queue = new ArrayDeque<ConfigRequest>();
-
         CoreEnvironment environment = mock(CoreEnvironment.class);
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
 
-        handler = new ConfigHandler(endpoint, responseBuffer.start(), queue);
+        eventSink = new CollectingResponseEventSink();
+        requestQueue = new ArrayDeque<ConfigRequest>();
+        handler = new ConfigHandler(endpoint, eventSink, requestQueue);
         channel = new EmbeddedChannel(handler);
-    }
-
-    @After
-    public void clear() {
-        responseBuffer.shutdown();
     }
 
     @Test
@@ -142,22 +130,24 @@ public class ConfigHandlerTest {
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 
+
     @Test
     public void shouldDecodeSuccessBucketConfigResponse() throws Exception {
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
-        HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer("foo", CharsetUtil.UTF_8));
-        HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer("bar", CharsetUtil.UTF_8));
+        HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer("foo", CHARSET));
+        HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer("bar", CHARSET));
 
         BucketConfigRequest requestMock = mock(BucketConfigRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketConfigResponse inbound = (BucketConfigResponse) firedEvents.get(0);
+        channel.readInbound();
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertEquals("foobar", inbound.config());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketConfigResponse event = (BucketConfigResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertEquals("foobar", event.config());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
@@ -167,15 +157,15 @@ public class ConfigHandlerTest {
         HttpContent responseChunk = LastHttpContent.EMPTY_LAST_CONTENT;
 
         BucketConfigRequest requestMock = mock(BucketConfigRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketConfigResponse inbound = (BucketConfigResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.FAILURE, inbound.status());
-        assertEquals("Unauthorized", inbound.config());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketConfigResponse event = (BucketConfigResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.FAILURE, event.status());
+        assertEquals("Unauthorized", event.config());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
@@ -185,15 +175,15 @@ public class ConfigHandlerTest {
         HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer("Not found.", CharsetUtil.UTF_8));
 
         BucketConfigRequest requestMock = mock(BucketConfigRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketConfigResponse inbound = (BucketConfigResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.NOT_EXISTS, inbound.status());
-        assertEquals("Not found.", inbound.config());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketConfigResponse event = (BucketConfigResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.NOT_EXISTS, event.status());
+        assertEquals("Not found.", event.config());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
@@ -218,15 +208,15 @@ public class ConfigHandlerTest {
         HttpContent responseChunk = LastHttpContent.EMPTY_LAST_CONTENT;
 
         FlushRequest requestMock = mock(FlushRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        FlushResponse inbound = (FlushResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertEquals("OK", inbound.content());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        FlushResponse event = (FlushResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertEquals("OK", event.content());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
@@ -237,33 +227,33 @@ public class ConfigHandlerTest {
         HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(content, CharsetUtil.UTF_8));
 
         FlushRequest requestMock = mock(FlushRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        FlushResponse inbound = (FlushResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.FAILURE, inbound.status());
-        assertEquals("{\"_\":\"Flush is disabled for the bucket\"}", inbound.content());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        FlushResponse event = (FlushResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.FAILURE, event.status());
+        assertEquals("{\"_\":\"Flush is disabled for the bucket\"}", event.content());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
-    public void shouldDecodeListDesignDocumentResponse() throws Exception {
+    public void shouldDecodeListDesignDocumentsResponse() throws Exception {
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
         HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer("foo", CharsetUtil.UTF_8));
         HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer("bar", CharsetUtil.UTF_8));
 
         GetDesignDocumentsRequest requestMock = mock(GetDesignDocumentsRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        GetDesignDocumentsResponse inbound = (GetDesignDocumentsResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertEquals("foobar", inbound.content());
-        assertTrue(queue.isEmpty());
+        assertEquals(1, eventSink.responseEvents().size());
+        GetDesignDocumentsResponse event = (GetDesignDocumentsResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertEquals("foobar", event.content());
+        assertTrue(requestQueue.isEmpty());
     }
 
     @Test
@@ -286,16 +276,16 @@ public class ConfigHandlerTest {
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertNotNull(inbound.configs());
-        assertNotNull(inbound.host());
-        assertEquals(0, queue.size());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertNotNull(event.configs());
+        assertNotNull(event.host());
+        assertEquals(0, requestQueue.size());
     }
 
     @Test
@@ -305,17 +295,17 @@ public class ConfigHandlerTest {
         HttpContent responseChunk2 = new DefaultHttpContent(Unpooled.copiedBuffer("\n\n\n\n", CharsetUtil.UTF_8));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertNotNull(inbound.configs());
-        assertNotNull(inbound.host());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
 
-        Observable<String> configs = inbound.configs();
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertNotNull(event.configs());
+        assertNotNull(event.host());
+
+        Observable<String> configs = event.configs();
         assertEquals("config", configs.toBlocking().first());
     }
 
@@ -326,17 +316,17 @@ public class ConfigHandlerTest {
         HttpContent responseChunk2 = new DefaultHttpContent(Unpooled.copiedBuffer("ig\n", CharsetUtil.UTF_8));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertNotNull(inbound.configs());
-        assertNotNull(inbound.host());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
 
-        Observable<String> configs = inbound.configs();
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertNotNull(event.configs());
+        assertNotNull(event.host());
+
+        Observable<String> configs = event.configs();
 
         final CountDownLatch latch = new CountDownLatch(2);
         configs.forEach(new Action1<String>() {
@@ -359,16 +349,16 @@ public class ConfigHandlerTest {
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(404, "Object Not Found"));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.NOT_EXISTS, inbound.status());
-        assertNull(inbound.configs());
-        assertNotNull(inbound.host());
-        assertEquals(0, queue.size());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
+
+        assertEquals(ResponseStatus.NOT_EXISTS, event.status());
+        assertNull(event.configs());
+        assertNotNull(event.host());
+        assertEquals(0, requestQueue.size());
     }
 
     @Test
@@ -378,17 +368,17 @@ public class ConfigHandlerTest {
         HttpContent responseChunk2 = new DefaultHttpContent(Unpooled.copiedBuffer("ig\n", CharsetUtil.UTF_8));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertNotNull(inbound.configs());
-        assertNotNull(inbound.host());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
 
-        Observable<String> configs = inbound.configs();
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertNotNull(event.configs());
+        assertNotNull(event.host());
+
+        Observable<String> configs = event.configs();
 
         final CountDownLatch latch = new CountDownLatch(3);
         configs.subscribe(new Subscriber<String>() {
@@ -423,17 +413,17 @@ public class ConfigHandlerTest {
         HttpContent responseChunk2 = new DefaultHttpContent(Unpooled.copiedBuffer("ig\n\n\n\n", CharsetUtil.UTF_8));
 
         BucketStreamingRequest requestMock = mock(BucketStreamingRequest.class);
-        queue.add(requestMock);
+        requestQueue.add(requestMock);
         channel.writeInbound(responseHeader, responseChunk1, responseChunk2);
-        latch.await(1, TimeUnit.SECONDS);
-        assertEquals(1, firedEvents.size());
-        BucketStreamingResponse inbound = (BucketStreamingResponse) firedEvents.get(0);
 
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-        assertNotNull(inbound.configs());
-        assertNotNull(inbound.host());
+        assertEquals(1, eventSink.responseEvents().size());
+        BucketStreamingResponse event = (BucketStreamingResponse) eventSink.responseEvents().get(0).getMessage();
 
-        Observable<String> configs = inbound.configs();
+        assertEquals(ResponseStatus.SUCCESS, event.status());
+        assertNotNull(event.configs());
+        assertNotNull(event.host());
+
+        Observable<String> configs = event.configs();
 
         final CountDownLatch latch = new CountDownLatch(1);
         configs.subscribe(new Subscriber<String>() {

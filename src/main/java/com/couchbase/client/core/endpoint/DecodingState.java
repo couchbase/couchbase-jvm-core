@@ -19,31 +19,32 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.cluster;
-
-import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.view.ViewQueryRequest;
-import com.couchbase.client.core.message.view.ViewQueryResponse;
-import com.couchbase.client.core.util.ClusterDependentTest;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+package com.couchbase.client.core.endpoint;
 
 /**
- * Verifies basic functionality of view operations.
+ * Describes the states of the decoding process.
+ *
+ * This is used internally by the handler implementations to signal their current decoding state. It has impact on
+ * which actions need to be performed in each state.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class ViewMessageTest extends ClusterDependentTest {
+public enum DecodingState {
 
-    @Test
-    public void shouldQueryNonExistentView() {
-        ViewQueryResponse single = cluster()
-            .<ViewQueryResponse>send(new ViewQueryRequest("designdoc", "foobar", false, "debug=true", bucket(), password()))
-            .toBlocking()
-            .single();
-        assertEquals(ResponseStatus.NOT_EXISTS, single.status());
-    }
+    /**
+     * Decoding is not currently taking place.
+     */
+    INITIAL,
+
+    /**
+     * Decoding has started and is currently taking place.
+     */
+    STARTED,
+
+    /**
+     * Decoding is finished.
+     */
+    FINISHED
 
 }

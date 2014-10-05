@@ -45,6 +45,7 @@ import com.couchbase.client.core.message.config.RemoveBucketRequest;
 import com.couchbase.client.core.message.config.RemoveBucketResponse;
 import com.couchbase.client.core.message.config.UpdateBucketRequest;
 import com.couchbase.client.core.message.config.UpdateBucketResponse;
+import com.lmax.disruptor.EventSink;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -94,17 +95,12 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
     private BehaviorSubject<String> streamingConfigObservable;
 
     /**
-     * Only needed to reset the request for a streaming config.
-     */
-    private ConfigRequest previousRequest = null;
-
-    /**
      * Creates a new {@link ConfigHandler} with the default queue for requests.
      *
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
-    public ConfigHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer) {
+    public ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer) {
         super(endpoint, responseBuffer);
     }
 
@@ -115,7 +111,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    ConfigHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<ConfigRequest> queue) {
+    ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<ConfigRequest> queue) {
         super(endpoint, responseBuffer, queue);
     }
 
@@ -195,10 +191,6 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
             if (streamingConfigObservable != null) {
-                if (currentRequest() == null) {
-                    currentRequest(previousRequest);
-                    previousRequest = null;
-                }
                 maybePushConfigChunk();
             }
         }
@@ -209,6 +201,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
                     streamingConfigObservable.onCompleted();
                     streamingConfigObservable = null;
                 }
+                finishedDecoding();
                 return null;
             }
 
@@ -234,6 +227,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
                 boolean done = responseHeader.getStatus().code() != 201;
                 response = new FlushResponse(done, body, status);
             }
+
+            finishedDecoding();
         }
 
         return response;
@@ -253,7 +248,6 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         if (status.isSuccess()) {
             streamingConfigObservable = BehaviorSubject.create();
         }
-        previousRequest = currentRequest();
         return new BucketStreamingResponse(streamingConfigObservable, host, status, currentRequest());
     }
 

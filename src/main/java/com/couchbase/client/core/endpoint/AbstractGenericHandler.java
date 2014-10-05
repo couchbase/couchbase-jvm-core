@@ -29,11 +29,11 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
-import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.EventSink;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.CharsetUtil;
+import rx.subjects.Subject;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -63,7 +63,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     /**
      * The response buffer to push response events into.
      */
-    private final RingBuffer<ResponseEvent> responseBuffer;
+    private final EventSink<ResponseEvent> responseBuffer;
 
     /**
      * The endpoint held as a reference.
@@ -80,13 +80,15 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     private REQUEST currentRequest;
 
+    private DecodingState currentDecodingState;
+
     /**
      * Creates a new {@link AbstractGenericHandler} with the default queue.
      *
      * @param endpoint the endpoint reference.
      * @param responseBuffer the response buffer.
      */
-    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final RingBuffer<ResponseEvent> responseBuffer) {
+    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer) {
         this(endpoint, responseBuffer, new ArrayDeque<REQUEST>());
     }
 
@@ -97,11 +99,12 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param responseBuffer the response buffer.
      * @param queue the queue.
      */
-    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final RingBuffer<ResponseEvent> responseBuffer,
+    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer,
         final Queue<REQUEST> queue) {
         this.endpoint = endpoint;
         this.responseBuffer = responseBuffer;
         this.sentRequestQueue = queue;
+        this.currentDecodingState = DecodingState.INITIAL;
     }
 
     /**
@@ -138,19 +141,45 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     @Override
     protected void decode(ChannelHandlerContext ctx, RESPONSE msg, List<Object> out) throws Exception {
-        if (currentRequest == null) {
+        if (currentDecodingState == DecodingState.INITIAL) {
             currentRequest = sentRequestQueue.poll();
-        }
-
-        REQUEST current = currentRequest;
-        CouchbaseResponse response = decodeResponse(ctx, msg);
-
-        if (response != null) {
-            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, current.observable());
-            if (response.status() != ResponseStatus.CHUNKED) {
-                currentRequest = null;
+            currentDecodingState = DecodingState.STARTED;
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace(logIdent(ctx, endpoint) + "Started decoding of " + currentRequest);
             }
         }
+
+        CouchbaseResponse response = decodeResponse(ctx, msg);
+        if (response != null) {
+            publishResponse(response, currentRequest.observable());
+        }
+
+        if (currentDecodingState == DecodingState.FINISHED) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace(logIdent(ctx, endpoint) + "Finished decoding of " + currentRequest);
+            }
+            currentRequest = null;
+            currentDecodingState = DecodingState.INITIAL;
+        }
+    }
+
+    /**
+     * Publishes a response with the attached observable.
+     *
+     * @param response the response to publish.
+     * @param observable pushing into the event sink.
+     */
+    protected void publishResponse(final CouchbaseResponse response,
+        final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, observable);
+    }
+
+    /**
+     * Notify that decoding is finished. This needs to be called by the child handlers in order to
+     * signal that operations are done.
+     */
+    protected void finishedDecoding() {
+        this.currentDecodingState = DecodingState.FINISHED;
     }
 
     @Override
@@ -232,18 +261,6 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected CoreEnvironment env() {
         return endpoint.environment();
-    }
-
-    /**
-     * Sets the current request.
-     *
-     * Note that this method should normally not be used, only if a certain state needs to be replied even if a message
-     * for it has already been transmitted (but more are expected).
-     *
-     * @param currentRequest the request to set.
-     */
-    protected void currentRequest(REQUEST currentRequest) {
-        this.currentRequest = currentRequest;
     }
 
     /**

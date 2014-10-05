@@ -97,11 +97,6 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
     private byte viewParsingState = QUERY_STATE_INITIAL;
 
     /**
-     * Only needed to reset the request for a streaming config.
-     */
-    private ViewRequest previousRequest = null;
-
-    /**
      * Creates a new {@link ViewHandler} with the default queue for requests.
      *
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
@@ -186,10 +181,6 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
 
-            if (currentRequest() == null) {
-                currentRequest(previousRequest);
-            }
-
             if (currentRequest() instanceof ViewQueryRequest) {
                 if (viewRowObservable == null) {
                     response = handleViewQueryResponse();
@@ -202,10 +193,13 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         if (msg instanceof LastHttpContent) {
             if (request instanceof GetDesignDocumentRequest) {
                 response = handleGetDesignDocumentResponse((GetDesignDocumentRequest) request);
+                finishedDecoding();
             } else if (request instanceof UpsertDesignDocumentRequest) {
                 response = handleUpsertDesignDocumentResponse((UpsertDesignDocumentRequest) request);
+                finishedDecoding();
             } else if (request instanceof RemoveDesignDocumentRequest) {
                 response = handleRemoveDesignDocumentResponse((RemoveDesignDocumentRequest) request);
+                finishedDecoding();
             }
         }
 
@@ -245,7 +239,6 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
         viewRowObservable = ReplaySubject.create();
         viewInfoObservable = ReplaySubject.create();
-        previousRequest = currentRequest();
         return new ViewQueryResponse(viewRowObservable, viewInfoObservable, status, currentRequest());
     }
 
@@ -280,10 +273,10 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * Clean up the query states after all rows have been consumed.
      */
     private void cleanupViewStates() {
+        finishedDecoding();
         viewInfoObservable = null;
         viewRowObservable = null;
         viewParsingState = QUERY_STATE_INITIAL;
-        currentRequest(null);
     }
 
     /**

@@ -88,11 +88,6 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private byte queryParsingState = QUERY_STATE_INITIAL;
 
     /**
-     * Only needed to reset the request for a streaming config.
-     */
-    private QueryRequest previousRequest = null;
-
-    /**
      * Creates a new {@link QueryHandler} with the default queue for requests.
      *
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
@@ -149,11 +144,6 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
 
-            if (currentRequest() == null) {
-                currentRequest(previousRequest);
-                previousRequest = null;
-            }
-
             if (currentRequest() instanceof GenericQueryRequest) {
                 if (queryRowObservable == null) {
                     response = handleGenericQueryResponse();
@@ -191,7 +181,6 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         }
         queryRowObservable = ReplaySubject.create();
         queryInfoObservable = ReplaySubject.create();
-        previousRequest = currentRequest();
         return new GenericQueryResponse(queryRowObservable, queryInfoObservable, status, currentRequest());
     }
 
@@ -367,10 +356,10 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * Clean up the query states after all rows have been consumed.
      */
     private void cleanupQueryStates() {
+        finishedDecoding();
         queryInfoObservable = null;
         queryRowObservable = null;
         queryParsingState = QUERY_STATE_INITIAL;
-        currentRequest(null);
     }
 
     /**
