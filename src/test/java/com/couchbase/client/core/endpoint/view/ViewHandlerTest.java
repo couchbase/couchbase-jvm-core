@@ -250,6 +250,8 @@ public class ViewHandlerTest {
         ViewQueryResponse inbound = (ViewQueryResponse) firedEvents.get(0);
 
         assertTrue(inbound.status().isSuccess());
+        assertEquals(200, inbound.responseCode());
+        assertEquals("OK", inbound.responsePhrase());
 
         final AtomicInteger calledRow = new AtomicInteger();
         inbound.rows().toBlocking().forEach(new Action1<ByteBuf>() {

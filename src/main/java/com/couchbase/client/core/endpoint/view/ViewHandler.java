@@ -236,10 +236,13 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @return the initial response.
      */
     private CouchbaseResponse handleViewQueryResponse() {
+        int code = responseHeader.getStatus().code();
+        String phrase = responseHeader.getStatus().reasonPhrase();
         ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+
         viewRowObservable = ReplaySubject.create();
         viewInfoObservable = ReplaySubject.create();
-        return new ViewQueryResponse(viewRowObservable, viewInfoObservable, status, currentRequest());
+        return new ViewQueryResponse(viewRowObservable, viewInfoObservable, code, phrase, status, currentRequest());
     }
 
     /**
