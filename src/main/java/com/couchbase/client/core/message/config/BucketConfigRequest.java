@@ -22,11 +22,10 @@
 package com.couchbase.client.core.message.config;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.message.BootstrapMessage;
 
 import java.net.InetAddress;
 
-public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest, BootstrapMessage {
+public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 
     private static final String PATH = "/pools/default/b/";
 

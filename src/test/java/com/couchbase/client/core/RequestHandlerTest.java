@@ -38,6 +38,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -127,7 +128,11 @@ public class RequestHandlerTest {
 
     @Test
     public void shouldRouteEventToNode() throws Exception {
-        RequestHandler handler = new DummyLocatorClusterNodeHandler(environment);
+        ClusterConfig mockClusterConfig = mock(ClusterConfig.class);
+        when(mockClusterConfig.hasBucket(anyString())).thenReturn(Boolean.TRUE);
+        Observable<ClusterConfig> mockConfigObservable = Observable.just(mockClusterConfig);
+
+        RequestHandler handler = new DummyLocatorClusterNodeHandler(environment, mockConfigObservable);
         Node mockNode = mock(Node.class);
         when(mockNode.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         handler.addNode(mockNode).toBlocking().single();
@@ -149,6 +154,11 @@ public class RequestHandlerTest {
 
         DummyLocatorClusterNodeHandler(CoreEnvironment environment) {
             super(environment, configObservable, null);
+        }
+
+        DummyLocatorClusterNodeHandler(CoreEnvironment environment,
+                Observable<ClusterConfig> specificConfigObservable) {
+            super(environment, specificConfigObservable, null);
         }
 
         @Override
