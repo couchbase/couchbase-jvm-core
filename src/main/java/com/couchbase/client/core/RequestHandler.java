@@ -25,6 +25,7 @@ import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.message.BootstrapMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
@@ -147,13 +148,14 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     public void onEvent(final RequestEvent event, long sequence, final boolean endOfBatch) throws Exception {
         final CouchbaseRequest request = event.getRequest();
 
-        //if we don't find the bucket in configuration, don't attempt to execute request
-        if (!(request instanceof GetBucketConfigRequest || request instanceof BucketConfigRequest)
-                && request.bucket() != null
-                && !configuration.get().hasBucket(request.bucket())) {
-            request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
-            event.setRequest(null);
-            return;
+        //prevent non-bootstrap requests to go through if bucket not part of config
+        if (!(request instanceof BootstrapMessage)) {
+            ClusterConfig config = configuration.get();
+            if (config == null || (request.bucket() != null  && !config.hasBucket(request.bucket()))) {
+                request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
+                event.setRequest(null);
+                return;
+            }
         }
 
         Node[] found = locator(request).locate(request, nodes, configuration.get());

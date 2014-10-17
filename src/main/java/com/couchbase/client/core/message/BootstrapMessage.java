@@ -19,31 +19,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.config;
+package com.couchbase.client.core.message;
 
-import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.message.BootstrapMessage;
-
-import java.net.InetAddress;
-
-public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest, BootstrapMessage {
-
-    private static final String PATH = "/pools/default/b/";
-
-    private final InetAddress hostname;
-    private final String path;
-
-    public BucketConfigRequest(String path, InetAddress hostname, String bucket, String password) {
-        super(bucket, password);
-        this.hostname = hostname;
-        this.path = path;
-    }
-
-    public InetAddress hostname() {
-        return hostname;
-    }
-
-    public String path() {
-        return path + bucket();
-    }
+/**
+ * Marker interface for messages that should be allowed to go through the
+ * RequestHandler, despite no bucket configuration available to check upon.
+ *
+ * @author Simon Baslé
+ * @since 1.0.1
+ */
+public interface BootstrapMessage {
 }

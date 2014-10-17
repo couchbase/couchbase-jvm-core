@@ -23,6 +23,8 @@ package com.couchbase.client.core.message.kv;
 
 import java.net.InetAddress;
 
+import com.couchbase.client.core.message.BootstrapMessage;
+
 /**
  * Request which fetches a bucket configuration through carrier publication.
  *
@@ -32,7 +34,7 @@ import java.net.InetAddress;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class GetBucketConfigRequest extends AbstractKeyValueRequest {
+public class GetBucketConfigRequest extends AbstractKeyValueRequest implements BootstrapMessage {
 
     /**
      * The hostname from where the config should be loaded.
