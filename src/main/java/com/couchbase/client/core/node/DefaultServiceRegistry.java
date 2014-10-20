@@ -115,7 +115,11 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     public Service locate(final CouchbaseRequest request) {
         ServiceType type = serviceTypeFor(request);
         if (type.mapping() == BucketServiceMapping.ONE_BY_ONE) {
-            return localServices.get(request.bucket()).get(type);
+            Map<ServiceType, Service> services = localServices.get(request.bucket());
+            if (services == null) {
+                return null;
+            }
+            return services.get(type);
         } else {
             return globalServices.get(type);
         }

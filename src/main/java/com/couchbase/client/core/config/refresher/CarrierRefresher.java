@@ -85,9 +85,19 @@ public class CarrierRefresher extends AbstractRefresher {
                         final InetAddress hostname = config.nodes().get(0).hostname();
                         cluster()
                             .<GetBucketConfigResponse>send(new GetBucketConfigRequest(config.name(), hostname))
-                            .subscribe(new Action1<GetBucketConfigResponse>() {
+                            .subscribe(new Subscriber<GetBucketConfigResponse>() {
                                 @Override
-                                public void call(GetBucketConfigResponse res) {
+                                public void onCompleted() {
+
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    LOGGER.debug("Error while loading tainted config, ignoring", e);
+                                }
+
+                                @Override
+                                public void onNext(GetBucketConfigResponse res) {
                                     String rawConfig = res.content().toString(CharsetUtil.UTF_8).replace("$HOST",
                                         hostname.getHostName());
                                     provider().proposeBucketConfig(res.bucket(), rawConfig);
@@ -134,12 +144,23 @@ public class CarrierRefresher extends AbstractRefresher {
                                 String raw = response.content().toString(CharsetUtil.UTF_8);
                                 return raw.replace("$HOST", response.hostname().getHostName());
                             }
-                        }).subscribe(new Action1<String>() {
-                        @Override
-                        public void call(String rawConfig) {
-                            provider().proposeBucketConfig(config.name(), rawConfig);
-                        }
-                    });
+                        })
+                        .subscribe(new Subscriber<String>() {
+                            @Override
+                            public void onCompleted() {
+
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                LOGGER.debug("Error while refreshing bucket config, ignoring.", e);
+                            }
+
+                            @Override
+                            public void onNext(String rawConfig) {
+                                provider().proposeBucketConfig(config.name(), rawConfig);
+                            }
+                        });
                 }
             });
     }
