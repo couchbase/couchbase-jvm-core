@@ -60,7 +60,8 @@ public class KeyValueLocator implements Locator {
                     return new Node[] { node };
                 }
             }
-            throw new IllegalStateException("Node not found for request" + request);
+
+            return new Node[] {};
         }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
