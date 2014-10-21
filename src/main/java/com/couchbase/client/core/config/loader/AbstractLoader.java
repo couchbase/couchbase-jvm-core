@@ -144,7 +144,6 @@ public abstract class AbstractLoader implements Loader {
                     return discoverConfig(bucket, password, response.hostname());
                 }
             })
-            .observeOn(env().scheduler())
             .map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
                 @Override
                 public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {
