@@ -417,7 +417,7 @@ public class KeyValueHandler extends AbstractGenericHandler<FullBinaryMemcacheRe
         } else if (request instanceof ReplaceRequest) {
             response = new ReplaceResponse(status, cas, bucket, content, request);
         } else if (request instanceof RemoveRequest) {
-            response = new RemoveResponse(status, bucket, content, request);
+            response = new RemoveResponse(status, cas, bucket, content, request);
         } else if (request instanceof CounterRequest) {
             response = new CounterResponse(status, bucket, msg.content().readLong(), cas, request);
         } else if (request instanceof UnlockRequest) {

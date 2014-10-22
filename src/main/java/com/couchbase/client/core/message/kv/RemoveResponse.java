@@ -25,9 +25,24 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
 
+/**
+ * Represents a response to a {@link RemoveRequest}.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0
+ */
 public class RemoveResponse extends AbstractKeyValueResponse {
 
-    public RemoveResponse(ResponseStatus status, String bucket, ByteBuf content, CouchbaseRequest request) {
+    private final long cas;
+
+    public RemoveResponse(final ResponseStatus status, final long cas, final String bucket, final ByteBuf content,
+        final CouchbaseRequest request) {
         super(status, bucket, content, request);
+        this.cas = cas;
     }
+
+    public long cas() {
+        return cas;
+    }
+
 }

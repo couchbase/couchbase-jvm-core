@@ -162,7 +162,10 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         assertEquals(ResponseStatus.SUCCESS, cluster().<UpsertResponse>send(upsert).toBlocking().single().status());
 
         RemoveRequest remove = new RemoveRequest(key, bucket());
-        assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+        RemoveResponse response = cluster().<RemoveResponse>send(remove).toBlocking().single();
+        assertEquals(ResponseStatus.SUCCESS, response.status());
+        assertTrue(response.cas() != 0);
+
         GetRequest get = new GetRequest(key, bucket());
         assertEquals(ResponseStatus.NOT_EXISTS, cluster().<GetResponse>send(get).toBlocking().single().status());
     }
@@ -178,7 +181,9 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         RemoveRequest remove = new RemoveRequest(key, 1233443, bucket());
         assertEquals(ResponseStatus.EXISTS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
-        assertEquals(ResponseStatus.SUCCESS, cluster().<RemoveResponse>send(remove).toBlocking().single().status());
+        RemoveResponse response = cluster().<RemoveResponse>send(remove).toBlocking().single();
+        assertEquals(ResponseStatus.SUCCESS, response.status());
+        assertTrue(response.cas() != 0);
     }
 
     @Test
