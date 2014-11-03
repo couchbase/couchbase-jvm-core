@@ -1,0 +1,7 @@
+<component name="CopyrightManager">
+  <settings default="Couchbase">
+    <module2copyright>
+      <element module="All" copyright="Couchbase" />
+    </module2copyright>
+  </settings>
+</component>
