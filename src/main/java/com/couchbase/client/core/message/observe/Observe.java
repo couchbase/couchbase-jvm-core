@@ -176,7 +176,7 @@ public class Observe {
     }
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
-                                           final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo) {
+        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo) {
 
         final ObserveResponse.ObserveStatus persistIdentifier;
         final ObserveResponse.ObserveStatus replicaIdentifier;
@@ -188,7 +188,8 @@ public class Observe {
             replicaIdentifier = ObserveResponse.ObserveStatus.NOT_FOUND_PERSISTED;
         }
 
-        Observable<ObserveResponse> observeResponses = sendObserveRequests(core, bucket, id, cas, persistTo, replicateTo);
+        Observable<ObserveResponse> observeResponses = sendObserveRequests(core, bucket, id, cas, persistTo,
+            replicateTo);
 
         return observeResponses
                 .toList()
@@ -242,8 +243,8 @@ public class Observe {
                 });
     }
 
-    private static Observable<ObserveResponse> sendObserveRequests(final ClusterFacade core, final String bucket, final String id, final long cas,
-                                                                   final PersistTo persistTo, final ReplicateTo replicateTo) {
+    private static Observable<ObserveResponse> sendObserveRequests(final ClusterFacade core, final String bucket,
+        final String id, final long cas, final PersistTo persistTo, final ReplicateTo replicateTo) {
         return Observable.defer(new Func0<Observable<ObserveResponse>>() {
             @Override
             public Observable<ObserveResponse> call() {
@@ -252,7 +253,8 @@ public class Observe {
                         .map(new Func1<GetClusterConfigResponse, Integer>() {
                             @Override
                             public Integer call(GetClusterConfigResponse response) {
-                                CouchbaseBucketConfig conf = (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
+                                CouchbaseBucketConfig conf =
+                                    (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
                                 return conf.numberOfReplicas();
                             }
                         })

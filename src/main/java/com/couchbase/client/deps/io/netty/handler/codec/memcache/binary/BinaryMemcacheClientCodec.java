@@ -35,7 +35,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * content, which defaults to 8192. This chunk size is the maximum, so if smaller chunks arrive they
  * will be passed up the pipeline and not queued up to the chunk size.
  */
-public final class BinaryMemcacheClientCodec extends CombinedChannelDuplexHandler<BinaryMemcacheClientCodec.Decoder, BinaryMemcacheClientCodec.Encoder> {
+public final class BinaryMemcacheClientCodec
+    extends CombinedChannelDuplexHandler<BinaryMemcacheClientCodec.Decoder, BinaryMemcacheClientCodec.Encoder> {
 
     private final boolean failOnMissingResponse;
     private final AtomicLong requestResponseCounter = new AtomicLong();
@@ -109,8 +110,8 @@ public final class BinaryMemcacheClientCodec extends CombinedChannelDuplexHandle
                 long missingResponses = requestResponseCounter.get();
                 if (missingResponses > 0) {
                     ctx.fireExceptionCaught(new PrematureChannelClosureException(
-                        "channel gone inactive with " + missingResponses +
-                            " missing response(s)"));
+                        "channel gone inactive with " + missingResponses
+                            + " missing response(s)"));
                 }
             }
         }

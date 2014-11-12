@@ -286,7 +286,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * Parse the initial view query state.
      */
     private void parseViewInitial() {
-        switch(responseHeader.getStatus().code()) {
+        switch (responseHeader.getStatus().code()) {
             case 200:
                 viewParsingState = QUERY_STATE_INFO;
                 break;
@@ -320,8 +320,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         int rowsStart = -1;
         for (int i = responseContent.readerIndex(); i < responseContent.writerIndex(); i++) {
             byte curr = responseContent.getByte(i);
-            byte f1 = responseContent.getByte(i+1);
-            byte f2 = responseContent.getByte(i+2);
+            byte f1 = responseContent.getByte(i + 1);
+            byte f2 = responseContent.getByte(i + 2);
 
             if (curr == '"' && f1 == 'r' && f2 == 'o') {
                 rowsStart = i;
@@ -357,7 +357,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @param last if the given content chunk is the last one.
      */
     private void parseViewRows(boolean last) {
-        while(true) {
+        while (true) {
             int openBracketPos = responseContent.bytesBefore((byte) '{');
             int closeBracketPos = -1;
             int openBrackets = 0;
@@ -422,7 +422,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      */
     private static ResponseStatus statusFromCode(int code) {
         ResponseStatus status;
-        switch(code) {
+        switch (code) {
             case 200:
             case 201:
                 status = ResponseStatus.SUCCESS;

@@ -61,8 +61,8 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.functions.Func1;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 /**
  * The general implementation of a {@link ClusterFacade}.
@@ -237,14 +237,14 @@ public class CouchbaseCore implements ClusterFacade {
                         return sharedEnvironment ? Observable.just(true) : environment.shutdown();
                     }
                 }).map(new Func1<Boolean, Boolean>() {
-                @Override
-                public Boolean call(Boolean success) {
-                    requestDisruptor.shutdown();
-                    responseDisruptor.shutdown();
-                    disruptorExecutor.shutdownNow();
-                    return success;
-                }
-            })
+                    @Override
+                    public Boolean call(Boolean success) {
+                        requestDisruptor.shutdown();
+                        responseDisruptor.shutdown();
+                        disruptorExecutor.shutdownNow();
+                        return success;
+                    }
+                })
                 .map(new Func1<Boolean, DisconnectResponse>() {
                     @Override
                     public DisconnectResponse call(Boolean success) {

@@ -58,6 +58,12 @@ public class CarrierRefresher extends AbstractRefresher {
     private final Map<String, Subscription> subscriptions;
     private final CoreEnvironment environment;
 
+    /**
+     * Creates a new {@link CarrierRefresher}.
+     *
+     * @param environment the environment to use.
+     * @param cluster the cluster reference.
+     */
     public CarrierRefresher(final CoreEnvironment environment, final ClusterFacade cluster) {
         super(cluster);
         subscriptions = new ConcurrentHashMap<String, Subscription>();

@@ -32,15 +32,15 @@ package com.couchbase.client.core.state;
  *
  * @startuml transitions.png
  *
- * [*] --> Disconnected
- * Disconnected --> Connecting
- * Connecting --> Disconnected
- * Connecting --> Connected
- * Connecting --> Degraded
- * Connected --> Disconnecting
- * Connected --> Degraded
- * Degraded --> Connected
- * Disconnecting -> Disconnected
+ *     [*] --> Disconnected
+ *     Disconnected --> Connecting
+ *     Connecting --> Disconnected
+ *     Connecting --> Connected
+ *     Connecting --> Degraded
+ *     Connected --> Disconnecting
+ *     Connected --> Degraded
+ *     Degraded --> Connected
+ *     Disconnecting -> Disconnected
  *
  * @enduml
  *

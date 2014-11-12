@@ -19,9 +19,9 @@ public class InsertBucketResponse extends AbstractCouchbaseResponse {
 
     @Override
     public String toString() {
-        return "InsertBucketResponse{" +
-            "status=" + status() +
-            ", config='" + config + '\'' +
-            '}';
+        return "InsertBucketResponse{"
+            + "status=" + status()
+            + ", config='" + config + '\''
+            + '}';
     }
 }

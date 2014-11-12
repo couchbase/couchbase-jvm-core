@@ -30,7 +30,8 @@ import io.netty.handler.codec.http.HttpClientCodec;
 
 public class ConfigEndpoint extends AbstractEndpoint {
 
-    public ConfigEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+    public ConfigEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
+        final RingBuffer<ResponseEvent> responseBuffer) {
         super(hostname, bucket, password, port, environment, responseBuffer);
     }
 

@@ -19,9 +19,9 @@ public class BucketsConfigResponse extends AbstractCouchbaseResponse {
 
     @Override
     public String toString() {
-        return "BucketsConfigResponse{" +
-            "status=" + status() +
-            ", config='" + config + '\'' +
-            '}';
+        return "BucketsConfigResponse{"
+            + "status=" + status()
+            + ", config='" + config + '\''
+            + '}';
     }
 }

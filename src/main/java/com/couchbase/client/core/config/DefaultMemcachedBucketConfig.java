@@ -18,6 +18,17 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
     private final long rev;
     private final TreeMap<Long, NodeInfo> ketamaNodes;
 
+    /**
+     * Creates a new {@link MemcachedBucketConfig}.
+     *
+     * @param rev the revision of the config.
+     * @param name the name of the bucket.
+     * @param locator the locator for this bucket.
+     * @param uri the URI for this bucket.
+     * @param streamingUri the streaming URI for this bucket.
+     * @param nodeInfos related node information.
+     * @param portInfos port info for the nodes, including services.
+     */
     @JsonCreator
     public DefaultMemcachedBucketConfig(
         @JsonProperty("rev") long rev,

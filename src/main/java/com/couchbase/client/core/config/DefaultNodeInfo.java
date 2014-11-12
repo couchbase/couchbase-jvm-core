@@ -46,6 +46,13 @@ public class DefaultNodeInfo implements NodeInfo {
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
 
+    /**
+     * Creates a new {@link DefaultNodeInfo} with no SSL services.
+     *
+     * @param viewUri the URI of the view service.
+     * @param hostname the hostname of the node.
+     * @param ports the port list of the node services.
+     */
     @JsonCreator
     public DefaultNodeInfo(
         @JsonProperty("couchApiBase") String viewUri,
@@ -61,7 +68,16 @@ public class DefaultNodeInfo implements NodeInfo {
         this.sslServices = new HashMap<ServiceType, Integer>();
     }
 
-    public DefaultNodeInfo(String viewUri, InetAddress hostname, Map<ServiceType, Integer> direct, Map<ServiceType, Integer> ssl) {
+    /**
+     * Creates a new {@link DefaultNodeInfo} with SSL services.
+     *
+     * @param viewUri the URI of the view service.
+     * @param hostname the hostname of the node.
+     * @param direct the port list of the direct node services.
+     * @param ssl the port list of the ssl node services.
+     */
+    public DefaultNodeInfo(String viewUri, InetAddress hostname, Map<ServiceType, Integer> direct,
+        Map<ServiceType, Integer> ssl) {
         this.viewUri = viewUri;
         this.hostname = hostname;
         this.directServices = direct;

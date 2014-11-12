@@ -31,9 +31,9 @@ public class ServiceFactory {
     private ServiceFactory() {
     }
 
-    public static Service create(String hostname, String bucket, String password, int port, CoreEnvironment env, ServiceType type,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        switch(type) {
+    public static Service create(String hostname, String bucket, String password, int port, CoreEnvironment env,
+        ServiceType type, final RingBuffer<ResponseEvent> responseBuffer) {
+        switch (type) {
             case BINARY:
                 return new KeyValueService(hostname, bucket, password, port, env, responseBuffer);
             case VIEW:

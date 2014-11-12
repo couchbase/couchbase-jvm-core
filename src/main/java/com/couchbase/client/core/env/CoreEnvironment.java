@@ -26,8 +26,8 @@ import rx.Observable;
 import rx.Scheduler;
 
 /**
- * A {@link CoreEnvironment} provides all the core building blocks like environment settings and thread pools so that the
- * application can work with it properly.
+ * A {@link CoreEnvironment} provides all the core building blocks like environment settings and thread pools so
+ * that the application can work with it properly.
  *
  * This interface defines the contract. How properties are loaded is chosen by the implementation. See the
  * {@link DefaultCoreEnvironment} class for the default implementation.
@@ -66,12 +66,15 @@ public interface CoreEnvironment {
     boolean sslEnabled();
 
     String sslKeystoreFile();
+
     String sslKeystorePassword();
 
     boolean queryEnabled();
+
     int queryPort();
 
     boolean bootstrapHttpEnabled();
+
     boolean bootstrapCarrierEnabled();
 
     /**
@@ -140,7 +143,6 @@ public interface CoreEnvironment {
      */
     int viewEndpoints();
 
-
     /**
      * The number of query service endpoints.
      *
@@ -149,14 +151,14 @@ public interface CoreEnvironment {
     int queryEndpoints();
 
     /**
-     * Library identification string, which can be used as User-Agent header in HTTP requests
+     * Library identification string, which can be used as User-Agent header in HTTP requests.
      *
      * @return identification string
      */
     String userAgent();
 
     /**
-     * Returns name and the version of the package. This method used to by @{link userAgent()}
+     * Returns name and the version of the package. This method used to by @{link userAgent()}.
      *
      * @return string containing package name and version
      */

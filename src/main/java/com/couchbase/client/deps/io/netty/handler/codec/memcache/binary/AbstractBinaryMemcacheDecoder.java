@@ -70,92 +70,99 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         switch (state) {
-            case READ_HEADER: try {
-                if (in.readableBytes() < 24) {
+            case READ_HEADER:
+                try {
+                    if (in.readableBytes() < 24) {
+                        return;
+                    }
+                    resetDecoder();
+
+                    currentMessage = decodeHeader(in);
+                    state = State.READ_EXTRAS;
+                } catch (Exception e) {
+                    out.add(invalidMessage(e));
                     return;
                 }
-                resetDecoder();
+                // falls through
+            case READ_EXTRAS:
+                try {
+                    byte extrasLength = currentMessage.getExtrasLength();
+                    if (extrasLength > 0) {
+                        if (in.readableBytes() < extrasLength) {
+                            return;
+                        }
 
-                currentMessage = decodeHeader(in);
-                state = State.READ_EXTRAS;
-            } catch (Exception e) {
-                out.add(invalidMessage(e));
-                return;
-            }
-            case READ_EXTRAS: try {
-                byte extrasLength = currentMessage.getExtrasLength();
-                if (extrasLength > 0) {
-                    if (in.readableBytes() < extrasLength) {
-                        return;
+                        currentMessage.setExtras(readBytes(ctx.alloc(), in, extrasLength));
                     }
 
-                    currentMessage.setExtras(readBytes(ctx.alloc(), in, extrasLength));
+                    state = State.READ_KEY;
+                } catch (Exception e) {
+                    out.add(invalidMessage(e));
+                    return;
                 }
+                // falls through
+            case READ_KEY:
+                try {
+                    short keyLength = currentMessage.getKeyLength();
+                    if (keyLength > 0) {
+                        if (in.readableBytes() < keyLength) {
+                            return;
+                        }
 
-                state = State.READ_KEY;
-            } catch (Exception e) {
-                out.add(invalidMessage(e));
-                return;
-            }
-            case READ_KEY: try {
-                short keyLength = currentMessage.getKeyLength();
-                if (keyLength > 0) {
-                    if (in.readableBytes() < keyLength) {
-                        return;
+                        currentMessage.setKey(in.toString(in.readerIndex(), keyLength, CharsetUtil.UTF_8));
+                        in.skipBytes(keyLength);
                     }
 
-                    currentMessage.setKey(in.toString(in.readerIndex(), keyLength, CharsetUtil.UTF_8));
-                    in.skipBytes(keyLength);
+                    out.add(currentMessage);
+                    state = State.READ_CONTENT;
+                } catch (Exception e) {
+                    out.add(invalidMessage(e));
+                    return;
                 }
+                // falls through
+            case READ_CONTENT:
+                try {
+                    int valueLength = currentMessage.getTotalBodyLength()
+                        - currentMessage.getKeyLength()
+                        - currentMessage.getExtrasLength();
+                    int toRead = in.readableBytes();
+                    if (valueLength > 0) {
+                        if (toRead == 0) {
+                            return;
+                        }
 
-                out.add(currentMessage);
-                state = State.READ_CONTENT;
-            } catch (Exception e) {
-                out.add(invalidMessage(e));
-                return;
-            }
-            case READ_CONTENT: try {
-                int valueLength = currentMessage.getTotalBodyLength()
-                    - currentMessage.getKeyLength()
-                    - currentMessage.getExtrasLength();
-                int toRead = in.readableBytes();
-                if (valueLength > 0) {
-                    if (toRead == 0) {
-                        return;
-                    }
+                        if (toRead > chunkSize) {
+                            toRead = chunkSize;
+                        }
 
-                    if (toRead > chunkSize) {
-                        toRead = chunkSize;
-                    }
+                        int remainingLength = valueLength - alreadyReadChunkSize;
+                        if (toRead > remainingLength) {
+                            toRead = remainingLength;
+                        }
 
-                    int remainingLength = valueLength - alreadyReadChunkSize;
-                    if (toRead > remainingLength) {
-                        toRead = remainingLength;
-                    }
+                        ByteBuf chunkBuffer = readBytes(ctx.alloc(), in, toRead);
 
-                    ByteBuf chunkBuffer = readBytes(ctx.alloc(), in, toRead);
+                        MemcacheContent chunk;
+                        if ((alreadyReadChunkSize += toRead) >= valueLength) {
+                            chunk = new DefaultLastMemcacheContent(chunkBuffer);
+                        } else {
+                            chunk = new DefaultMemcacheContent(chunkBuffer);
+                        }
 
-                    MemcacheContent chunk;
-                    if ((alreadyReadChunkSize += toRead) >= valueLength) {
-                        chunk = new DefaultLastMemcacheContent(chunkBuffer);
+                        out.add(chunk);
+                        if (alreadyReadChunkSize < valueLength) {
+                            return;
+                        }
                     } else {
-                        chunk = new DefaultMemcacheContent(chunkBuffer);
+                        out.add(LastMemcacheContent.EMPTY_LAST_CONTENT);
                     }
 
-                    out.add(chunk);
-                    if (alreadyReadChunkSize < valueLength) {
-                        return;
-                    }
-                } else {
-                    out.add(LastMemcacheContent.EMPTY_LAST_CONTENT);
+                    state = State.READ_HEADER;
+                    return;
+                } catch (Exception e) {
+                    out.add(invalidChunk(e));
+                    return;
                 }
-
-                state = State.READ_HEADER;
-                return;
-            } catch (Exception e) {
-                out.add(invalidChunk(e));
-                return;
-            }
             case BAD_MESSAGE:
                 in.skipBytes(actualReadableBytes());
                 return;
@@ -194,7 +201,7 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      * When the channel goes inactive, release all frames to prevent data leaks.
      *
      * @param ctx handler context
-     * @throws Exception
+     * @throws Exception if something goes wrong during channel inactive notification.
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {

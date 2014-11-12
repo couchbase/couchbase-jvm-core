@@ -241,7 +241,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      * @param header the received header.
      * @return a initialized {@link CouchbaseResponse}.
      */
-    private CouchbaseResponse handleBucketStreamingResponse(final ChannelHandlerContext ctx, final HttpResponse header) {
+    private CouchbaseResponse handleBucketStreamingResponse(final ChannelHandlerContext ctx,
+        final HttpResponse header) {
         SocketAddress addr = ctx.channel().remoteAddress();
         String host = addr instanceof InetSocketAddress ? ((InetSocketAddress) addr).getHostName() : addr.toString();
         ResponseStatus status = statusFromCode(header.getStatus().code());
@@ -274,7 +275,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      */
     private static ResponseStatus statusFromCode(int code) {
         ResponseStatus status;
-        switch(code) {
+        switch (code) {
             case 200:
             case 201:
             case 202:

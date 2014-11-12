@@ -46,7 +46,10 @@ public class ViewQueryResponse extends AbstractCouchbaseResponse {
     public Observable<ByteBuf> rows() {
         return rows;
     }
-    public Observable<ByteBuf> info() { return info; }
+
+    public Observable<ByteBuf> info() {
+        return info;
+    }
 
     public String responsePhrase() {
         return responsePhrase;

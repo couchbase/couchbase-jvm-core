@@ -235,7 +235,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         }
 
         LOGGER.debug(logIdent(ctx, endpoint) + "Cancelling " + sentRequestQueue.size() + " outstanding requests.");
-        while(!sentRequestQueue.isEmpty()) {
+        while (!sentRequestQueue.isEmpty()) {
             REQUEST req = sentRequestQueue.poll();
             try {
                 req.observable().onError(new RequestCancelledException("Request cancelled in-flight."));
@@ -271,7 +271,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @return a prefix string for logs.
      */
     protected static String logIdent(final ChannelHandlerContext ctx, final Endpoint endpoint) {
-        return "["+ctx.channel().remoteAddress()+"][" + endpoint.getClass().getSimpleName()+"]: ";
+        return "[" + ctx.channel().remoteAddress() + "][" + endpoint.getClass().getSimpleName() + "]: ";
     }
 
 }

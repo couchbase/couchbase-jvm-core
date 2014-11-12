@@ -46,7 +46,13 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
     private final ConfigurationProvider configurationProvider;
     private final Scheduler.Worker worker;
 
-
+    /**
+     * Creates a new {@link ResponseHandler}.
+     *
+     * @param environment the global environment.
+     * @param cluster the cluster reference.
+     * @param provider th configuration provider.
+     */
     public ResponseHandler(CoreEnvironment environment, ClusterFacade cluster, ConfigurationProvider provider) {
         this.cluster = cluster;
         this.configurationProvider = provider;
@@ -56,10 +62,12 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
     /**
      * Translates {@link CouchbaseRequest}s into {@link RequestEvent}s.
      */
-    public static final EventTranslatorTwoArg<ResponseEvent, CouchbaseMessage, Subject<CouchbaseResponse, CouchbaseResponse>> RESPONSE_TRANSLATOR =
+    public static final EventTranslatorTwoArg<ResponseEvent, CouchbaseMessage,
+        Subject<CouchbaseResponse, CouchbaseResponse>> RESPONSE_TRANSLATOR =
         new EventTranslatorTwoArg<ResponseEvent, CouchbaseMessage, Subject<CouchbaseResponse, CouchbaseResponse>>() {
             @Override
-            public void translateTo(ResponseEvent event, long sequence, CouchbaseMessage message, Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+            public void translateTo(ResponseEvent event, long sequence, CouchbaseMessage message,
+                Subject<CouchbaseResponse, CouchbaseResponse> observable) {
                 event.setMessage(message);
                 event.setObservable(observable);
             }
@@ -86,7 +94,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         } else if (message instanceof CouchbaseResponse) {
             CouchbaseResponse response = (CouchbaseResponse) message;
             ResponseStatus status = response.status();
-            switch(status) {
+            switch (status) {
                 case SUCCESS:
                 case EXISTS:
                 case NOT_EXISTS:
@@ -116,8 +124,8 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
             if (request != null) {
                 scheduleForRetry(request);
             } else {
-                event.getObservable().onError(new CouchbaseException("Operation failed because it does not " +
-                    "support cloning."));
+                event.getObservable().onError(new CouchbaseException("Operation failed because it does not "
+                    + "support cloning."));
             }
             if (message instanceof BinaryResponse) {
                 BinaryResponse response = (BinaryResponse) message;

@@ -39,8 +39,8 @@ import java.util.List;
 
 public class ConfigService extends AbstractService {
 
-    private static final SelectionStrategy strategy = new RandomSelectionStrategy();
-    private static final EndpointFactory factory = new ConfigEndpointFactory();
+    private static final SelectionStrategy STRATEGY = new RandomSelectionStrategy();
+    private static final EndpointFactory FACTORY = new ConfigEndpointFactory();
     private static final int INITIAL_ENDPOINTS = 1;
 
     private final String hostname;
@@ -57,7 +57,7 @@ public class ConfigService extends AbstractService {
 
     public ConfigService(String hostname, String bucket, String password, int port, CoreEnvironment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, INITIAL_ENDPOINTS, strategy, responseBuffer, factory);
+        super(hostname, bucket, password, port, env, INITIAL_ENDPOINTS, STRATEGY, responseBuffer, FACTORY);
         pinnedEndpoints = new ArrayList<Endpoint>();
         this.hostname = hostname;
         this.bucket = bucket;
@@ -75,7 +75,7 @@ public class ConfigService extends AbstractService {
     @Override
     public void send(final CouchbaseRequest request) {
         if (request instanceof BucketStreamingRequest) {
-            final Endpoint endpoint = factory.create(hostname, bucket, password, port, env, responseBuffer);
+            final Endpoint endpoint = FACTORY.create(hostname, bucket, password, port, env, responseBuffer);
             endpointStates.add(endpoint.states());
             endpoint
                 .connect()

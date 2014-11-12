@@ -75,7 +75,8 @@ public abstract class AbstractLoader implements Loader {
      * @param cluster the cluster reference.
      * @param environment the couchbase environment.
      */
-    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final ClusterFacade cluster, final CoreEnvironment environment) {
+    protected AbstractLoader(final LoaderType loaderType, final ServiceType serviceType, final ClusterFacade cluster,
+        final CoreEnvironment environment) {
         this.loaderType = loaderType;
         this.serviceType = serviceType;
         this.cluster = cluster;
@@ -114,8 +115,8 @@ public abstract class AbstractLoader implements Loader {
      * @param password the password of the bucket.
      * @return a valid {@link BucketConfig}.
      */
-    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes, final String bucket,
-        final String password) {
+    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes,
+        final String bucket, final String password) {
         return Observable
             .from(seedNodes)
             .subscribeOn(env().scheduler())

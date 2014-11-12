@@ -138,8 +138,8 @@ public class KeyValueAuthHandler
      * Callback handler needed for the {@link SaslClient} which supplies username and password.
      *
      * @param callbacks the possible callbacks.
-     * @throws IOException
-     * @throws UnsupportedCallbackException
+     * @throws IOException if something goes wrong during negotiation.
+     * @throws UnsupportedCallbackException if something goes wrong during negotiation.
      */
     @Override
     public void handle(final Callback[] callbacks) throws IOException, UnsupportedCallbackException {
@@ -159,7 +159,7 @@ public class KeyValueAuthHandler
      *
      * @param ctx the handler context.
      * @param msg the incoming message to investigate.
-     * @throws Exception
+     * @throws Exception if something goes wrong during negotiation.
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
@@ -177,7 +177,7 @@ public class KeyValueAuthHandler
      *
      * @param ctx the handler context.
      * @param msg the incoming message to investigate.
-     * @throws Exception
+     * @throws Exception if something goes wrong during negotiation.
      */
     private void handleListMechsResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         String remote = ctx.channel().remoteAddress().toString();
@@ -210,7 +210,7 @@ public class KeyValueAuthHandler
      *
      * @param ctx the handler context.
      * @param msg the incoming message to investigate.
-     * @throws Exception
+     * @throws Exception if something goes wrong during negotiation.
      */
     private void handleAuthResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (saslClient.isComplete()) {
@@ -257,7 +257,8 @@ public class KeyValueAuthHandler
                 originalPromise.setFailure(new AuthenticationException("Authentication Failure"));
                 break;
             default:
-                originalPromise.setFailure(new AuthenticationException("Unhandled SASL auth status: " + msg.getStatus()));
+                originalPromise.setFailure(new AuthenticationException("Unhandled SASL auth status: "
+                    + msg.getStatus()));
         }
     }
 
@@ -267,7 +268,8 @@ public class KeyValueAuthHandler
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
+        ChannelPromise promise) throws Exception {
         originalPromise = promise;
         ChannelPromise downPromise = ctx.newPromise();
         downPromise.addListener(new GenericFutureListener<Future<Void>>() {

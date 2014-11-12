@@ -61,25 +61,24 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @startuml architecture.png
  *
- * [ConfigurationProvider] --> [Config from REST]
- * [ConfigurationProvider] --> [Config from Carrier]
+ *     [ConfigurationProvider] --> [Config from REST]
+ *     [ConfigurationProvider] --> [Config from Carrier]
  *
- * package "Config from REST" {
- *   [HttpLoader]
- *   [HttpRefresher]
- * }
+ *     package "Config from REST" {
+ *         [HttpLoader]
+ *         [HttpRefresher]
+ *     }
  *
- * [HttpLoader] --> 8091
- * [HttpRefresher] --> 8091
+ *     [HttpLoader] --> 8091
+ *     [HttpRefresher] --> 8091
  *
- * package "Config from Carrier" {
- *     [CarrierLoader]
- *     [CarrierRefresher]
- * }
+ *     package "Config from Carrier" {
+ *         [CarrierLoader]
+ *         [CarrierRefresher]
+ *     }
  *
- * [CarrierLoader] --> 11210
- * [CarrierRefresher] --> 11210
- *
+ *     [CarrierLoader] --> 11210
+ *     [CarrierRefresher] --> 11210
  *
  * @enduml
  *
@@ -136,10 +135,12 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             cluster,
             environment,
             Arrays.asList((Loader) new CarrierLoader(cluster, environment), new HttpLoader(cluster, environment)),
-            new HashMap<LoaderType, Refresher>() {{
-                put(LoaderType.Carrier, new CarrierRefresher(environment, cluster));
-                put(LoaderType.HTTP, new HttpRefresher(cluster));
-            }}
+            new HashMap<LoaderType, Refresher>() {
+                {
+                    put(LoaderType.Carrier, new CarrierRefresher(environment, cluster));
+                    put(LoaderType.HTTP, new HttpRefresher(cluster));
+                }
+            }
         );
     }
 
@@ -339,7 +340,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      */
     private void upsertBucketConfig(final BucketConfig config) {
         ClusterConfig cluster = currentConfig.get();
-        if (config.rev() > 0 && cluster.bucketConfig(config.name()) != null && config.rev() <= cluster.bucketConfig(config.name()).rev()) {
+        if (config.rev() > 0 && cluster.bucketConfig(config.name()) != null
+            && config.rev() <= cluster.bucketConfig(config.name()).rev()) {
             return;
         }
 

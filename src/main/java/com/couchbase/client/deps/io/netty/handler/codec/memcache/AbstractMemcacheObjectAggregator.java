@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.deps.io.netty.handler.codec.memcache;
 
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -35,7 +36,7 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMe
  * {@link ChannelPipeline} p = ...;
  * ...
  * p.addLast("decoder", new {@link BinaryMemcacheRequestDecoder}());
- * p.addLast("aggregator", <b>new {@link com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheObjectAggregator}(1048576)
+ * p.addLast("aggregator", <b>new {@link BinaryMemcacheObjectAggregator}(1048576)
  * </b>);
  * ...
  * p.addLast("encoder", new {@link BinaryMemcacheResponseEncoder}());
@@ -88,8 +89,8 @@ public abstract class AbstractMemcacheObjectAggregator extends MessageToMessageD
     public final void setMaxCumulationBufferComponents(int maxCumulationBufferComponents) {
         if (maxCumulationBufferComponents < 2) {
             throw new IllegalArgumentException(
-                "maxCumulationBufferComponents: " + maxCumulationBufferComponents +
-                    " (expected: >= 2)");
+                "maxCumulationBufferComponents: " + maxCumulationBufferComponents
+                    + " (expected: >= 2)");
         }
 
         if (ctx == null) {

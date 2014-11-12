@@ -76,7 +76,8 @@ import java.util.Queue;
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class KeyValueHandler extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, BinaryRequest> {
+public class KeyValueHandler
+    extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, BinaryRequest> {
 
     public static final byte OP_GET_BUCKET_CONFIG = (byte) 0xb5;
     public static final byte OP_GET = BinaryMemcacheOpcodes.GET;
@@ -291,7 +292,8 @@ public class KeyValueHandler extends AbstractGenericHandler<FullBinaryMemcacheRe
      *
      * @return a ready {@link BinaryMemcacheRequest}.
      */
-    private static BinaryMemcacheRequest handleCounterRequest(final ChannelHandlerContext ctx, final CounterRequest msg) {
+    private static BinaryMemcacheRequest handleCounterRequest(final ChannelHandlerContext ctx,
+        final CounterRequest msg) {
         ByteBuf extras = ctx.alloc().buffer();
         extras.writeLong(Math.abs(msg.delta()));
         extras.writeLong(msg.initial());
@@ -350,7 +352,8 @@ public class KeyValueHandler extends AbstractGenericHandler<FullBinaryMemcacheRe
      *
      * @return a ready {@link BinaryMemcacheRequest}.
      */
-    private static BinaryMemcacheRequest handleObserveRequest(final ChannelHandlerContext ctx, final ObserveRequest msg) {
+    private static BinaryMemcacheRequest handleObserveRequest(final ChannelHandlerContext ctx,
+        final ObserveRequest msg) {
         String key = msg.key();
         ByteBuf content = ctx.alloc().buffer();
         content.writeShort(msg.partition());

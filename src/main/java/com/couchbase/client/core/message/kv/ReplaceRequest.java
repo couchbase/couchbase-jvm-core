@@ -75,7 +75,8 @@ public class ReplaceRequest extends AbstractKeyValueRequest implements BinarySto
         this(key, content, cas, 0, 0, bucket, false);
     }
 
-    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final String bucket, final boolean json) {
+    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final String bucket,
+        final boolean json) {
         this(key, content, cas, 0, 0, bucket, json);
     }
 
@@ -89,11 +90,13 @@ public class ReplaceRequest extends AbstractKeyValueRequest implements BinarySto
      * @param flags optional flags.
      * @param bucket the the name of the bucket.
      */
-    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags, final String bucket) {
+    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags,
+        final String bucket) {
         this(key, content, cas, exp, flags, bucket, false);
     }
 
-    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags, final String bucket, final boolean json) {
+    public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags,
+        final String bucket, final boolean json) {
         super(key, bucket, null);
         this.content = content;
         this.expiration = exp;

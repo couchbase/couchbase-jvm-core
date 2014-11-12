@@ -79,7 +79,7 @@ public class SSLEngineFactory {
             SSLEngine engine = ctx.createSSLEngine();
             engine.setUseClientMode(true);
             return engine;
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             throw new SSLException("Could not create SSLEngine.", ex);
         }
     }

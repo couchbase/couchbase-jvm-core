@@ -28,8 +28,14 @@ public enum BucketNodeLocator {
     VBUCKET,
     KETAMA;
 
+    /**
+     * Create a new {@link BucketNodeLocator} from a raw bucket type.
+     *
+     * @param text the raw bucket type.
+     * @return the proper enum.
+     */
     @JsonCreator
-    public static BucketNodeLocator fromConfig(String text) {
+    public static BucketNodeLocator fromConfig(final String text) {
         if (text == null) {
             return null;
         }

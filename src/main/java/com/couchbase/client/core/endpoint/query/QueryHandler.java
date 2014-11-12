@@ -233,7 +233,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
                 throw new IllegalStateException("Error parsing query response (in INITIAL): "
                     + content.toString(CHARSET));
             }
-            content.readerIndex(prefixBuf.bytesBefore((byte) ':')+1);
+            content.readerIndex(prefixBuf.bytesBefore((byte) ':') + 1);
         }
     }
 
@@ -241,7 +241,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * Parses the query rows from the content stream as long as there is data to be found.
      */
     private void parseQueryRows() {
-        while(true) {
+        while (true) {
             int openBracketPos = responseContent.bytesBefore((byte) '{');
             int nextColonPos = responseContent.bytesBefore((byte) ':');
             if (nextColonPos < openBracketPos) {
@@ -293,7 +293,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         int initColon = responseContent.bytesBefore((byte) ':');
         responseContent.readerIndex(initColon);
 
-        while(true) {
+        while (true) {
             int openBracketPos = responseContent.bytesBefore((byte) '{');
             int closeBracketPos = -1;
             int openBrackets = 0;
@@ -370,7 +370,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      */
     private static ResponseStatus statusFromCode(int code) {
         ResponseStatus status;
-        switch(code) {
+        switch (code) {
             case 200:
             case 201:
                 status = ResponseStatus.SUCCESS;

@@ -43,8 +43,8 @@ public class KeyValueEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
-    public KeyValueEndpoint(final String hostname, final String bucket, final String password, int port, final CoreEnvironment env,
-                            final RingBuffer<ResponseEvent> responseBuffer) {
+    public KeyValueEndpoint(final String hostname, final String bucket, final String password, int port,
+        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
         super(hostname, bucket, password, port, env, responseBuffer);
     }
 

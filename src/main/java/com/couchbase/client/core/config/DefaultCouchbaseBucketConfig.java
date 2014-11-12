@@ -39,6 +39,18 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     private final boolean tainted;
     private final long rev;
 
+    /**
+     * Creates a new {@link CouchbaseBucketConfig}.
+     *
+     * @param rev the revision of the config.
+     * @param name the name of the bucket.
+     * @param locator the locator for this bucket.
+     * @param uri the URI for this bucket.
+     * @param streamingUri the streaming URI for this bucket.
+     * @param partitionInfo partition info for this bucket.
+     * @param nodeInfos related node information.
+     * @param portInfos port info for the nodes, including services.
+     */
     @JsonCreator
     public DefaultCouchbaseBucketConfig(
         @JsonProperty("rev") long rev,
@@ -167,12 +179,12 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
 
         @Override
         public String toString() {
-            return "PartitionInfo{" +
-                "numberOfReplicas=" + numberOfReplicas +
-                ", partitionHosts=" + partitionHosts +
-                ", partitions=" + partitions +
-                ", forwardPartitions=" + forwardPartitions +
-                '}';
+            return "PartitionInfo{"
+                + "numberOfReplicas=" + numberOfReplicas
+                + ", partitionHosts=" + partitionHosts
+                + ", partitions=" + partitions
+                + ", forwardPartitions=" + forwardPartitions
+                + '}';
         }
     }
 
@@ -188,15 +200,14 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
 
     @Override
     public String toString() {
-        return "DefaultCouchbaseBucketConfig{" +
-            "name='" + name() + '\'' +
-            ", locator=" + locator() +
-            ", uri='" + uri() + '\'' +
-            ", streamingUri='" + streamingUri() + '\'' +
-            ", nodeInfo=" + nodes() +
-            ", partitionInfo=" + partitionInfo +
-            ", tainted=" + tainted +
-            ", rev=" + rev +
-            '}';
+        return "DefaultCouchbaseBucketConfig{"
+            + "name='" + name() + '\''
+            + ", locator=" + locator()
+            + ", uri='" + uri() + '\''
+            + ", streamingUri='" + streamingUri() + '\''
+            + ", nodeInfo=" + nodes()
+            + ", partitionInfo=" + partitionInfo
+            + ", tainted=" + tainted
+            + ", rev=" + rev + '}';
     }
 }

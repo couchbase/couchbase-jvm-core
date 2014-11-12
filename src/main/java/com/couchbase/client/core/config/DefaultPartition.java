@@ -28,6 +28,12 @@ public class DefaultPartition implements Partition {
     private final short master;
     private final short[] replicas;
 
+    /**
+     * Creates a new {@link DefaultPartition}.
+     *
+     * @param master the array index of the master
+     * @param replicas the array indexes of the replicas.
+     */
     public DefaultPartition(short master, short[] replicas) {
         this.master = master;
         this.replicas = replicas;
@@ -48,6 +54,6 @@ public class DefaultPartition implements Partition {
 
     @Override
     public String toString() {
-        return "[m: "+master+", r: "+Arrays.toString(replicas)+"]";
+        return "[m: " + master + ", r: " + Arrays.toString(replicas) + "]";
     }
 }

@@ -33,6 +33,11 @@ public class DefaultPortInfo implements PortInfo {
     private final Map<ServiceType, Integer> ports;
     private final Map<ServiceType, Integer> sslPorts;
 
+    /**
+     * Creates a new {@link DefaultPortInfo}.
+     *
+     * @param services the list of services mapping to ports.
+     */
     @JsonCreator
     public DefaultPortInfo(@JsonProperty("services") Map<String, Integer> services) {
         ports = new HashMap<ServiceType, Integer>();

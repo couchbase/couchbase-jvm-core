@@ -243,8 +243,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
                 if (state() == LifecycleState.DISCONNECTING || state() == LifecycleState.DISCONNECTED) {
-                    LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Endpoint connect completed, " +
-                        "but got instructed to disconnect in the meantime.");
+                    LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Endpoint connect completed, "
+                        + "but got instructed to disconnect in the meantime.");
                     transitionState(LifecycleState.DISCONNECTED);
                     channel = null;
                 } else {
@@ -253,7 +253,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Connected Endpoint.");
                         transitionState(LifecycleState.CONNECTED);
                     } else {
-                        if(future.cause() instanceof AuthenticationException) {
+                        if (future.cause() instanceof AuthenticationException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
                                 + "Authentication Failure.");
                             transitionState(LifecycleState.DISCONNECTED);
@@ -305,8 +305,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 if (future.isSuccess()) {
                     LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Disconnected Endpoint.");
                 } else {
-                    LOGGER.warn(logIdent(channel, AbstractEndpoint.this) + "Received an error " +
-                        "during disconnect.", future.cause());
+                    LOGGER.warn(logIdent(channel, AbstractEndpoint.this) + "Received an error "
+                        + "during disconnect.", future.cause());
                 }
                 transitionState(LifecycleState.DISCONNECTED);
                 observable.onNext(state());
@@ -417,6 +417,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     protected static String logIdent(final Channel chan, final Endpoint endpoint) {
         SocketAddress addr = chan != null ? chan.remoteAddress() : null;
-        return "["+addr+"][" + endpoint.getClass().getSimpleName()+"]: ";
+        return "[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ";
     }
 }

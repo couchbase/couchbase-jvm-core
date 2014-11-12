@@ -39,9 +39,9 @@ public class ClusterConfigResponse extends AbstractCouchbaseResponse {
 
     @Override
     public String toString() {
-        return "ClusterConfigResponse{" +
-            "status=" + status() +
-            ", config='" + config + '\'' +
-            '}';
+        return "ClusterConfigResponse{"
+            + "status=" + status()
+            + ", config='" + config + '\''
+            + '}';
     }
 }
