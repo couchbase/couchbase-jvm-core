@@ -33,7 +33,7 @@ public class QueryLocator implements Locator {
 
     @Override
     public Node[] locate(CouchbaseRequest request, Set<Node> nodes, ClusterConfig config) {
-        int item = (int) counter % nodes.size();
+        int item = (int) counter++ % nodes.size();
         int i = 0;
         for (Node node : nodes) {
             if (i++ == item) {
