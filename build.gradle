@@ -48,7 +48,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.0.3'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.1.2'
     }
 }
 
@@ -195,6 +195,7 @@ shadowJar {
 }
 
 def pomConfig = {
+    name 'Couchbase JVM Core IO'
     url 'http://couchbase.com'
     organization {
         name 'Couchbase, Inc.'
@@ -222,6 +223,16 @@ def pomConfig = {
             name 'Michael Nitschinger'
             email 'michael.nitschinger@couchbase.com'
         }
+        developer {
+            id 'simonbasle'
+            name 'Simon Baslé'
+            email 'simon@couchbase.com'
+        }
+        developer {
+            id 'avsej'
+            name 'Sergey Avseyev'
+            email 'sergey@couchbase.com'
+        }
     }
 }
 
@@ -246,6 +257,8 @@ publishing  {
                         it.appendNode('optional', 'true')
                     }
                 }
+                // For some weird reason description does not work in pomConfig, so doing it manually here.
+                root.appendNode('description', 'The official Couchbase JVM Core IO Library');
                 root.children().last() + pomConfig
             }
         }
