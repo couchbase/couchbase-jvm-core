@@ -6,6 +6,9 @@ classes
 .idea/dictionaries
 .idea/gradle.xml
 .idea/libraries
+.idea/pegdown-doclet.xml
+.idea/shelf
 .idea/tasks.xml
+.idea/vcs.xml
 .idea/workspace.xml
 target
