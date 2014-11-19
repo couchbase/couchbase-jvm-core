@@ -55,6 +55,7 @@ import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventTranslatorOneArg;
+import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -147,6 +148,22 @@ public class CouchbaseCore implements ClusterFacade {
             environment.responseBufferSize(),
             disruptorExecutor
         );
+        responseDisruptor.handleExceptionsWith(new ExceptionHandler() {
+            @Override
+            public void handleEventException(Throwable ex, long sequence, Object event) {
+                LOGGER.warn("Exception while Handling Response Events {}, {}", event, ex);
+            }
+
+            @Override
+            public void handleOnStartException(Throwable ex) {
+                LOGGER.warn("Exception while Starting Response RingBuffer {}", ex);
+            }
+
+            @Override
+            public void handleOnShutdownException(Throwable ex) {
+                LOGGER.info("Exception while shutting down Response RingBuffer {}", ex);
+            }
+        });
         responseDisruptor.handleEventsWith(new ResponseHandler(environment, this, configProvider));
         responseDisruptor.start();
         RingBuffer<ResponseEvent> responseRingBuffer = responseDisruptor.getRingBuffer();
@@ -157,6 +174,22 @@ public class CouchbaseCore implements ClusterFacade {
             disruptorExecutor
         );
         requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);
+        requestDisruptor.handleExceptionsWith(new ExceptionHandler() {
+            @Override
+            public void handleEventException(Throwable ex, long sequence, Object event) {
+                LOGGER.warn("Exception while Handling Request Events {}, {}", event, ex);
+            }
+
+            @Override
+            public void handleOnStartException(Throwable ex) {
+                LOGGER.warn("Exception while Starting Request RingBuffer {}", ex);
+            }
+
+            @Override
+            public void handleOnShutdownException(Throwable ex) {
+                LOGGER.info("Exception while shutting down Request RingBuffer {}", ex);
+            }
+        });
         requestDisruptor.handleEventsWith(requestHandler);
         requestDisruptor.start();
         requestRingBuffer = requestDisruptor.getRingBuffer();
