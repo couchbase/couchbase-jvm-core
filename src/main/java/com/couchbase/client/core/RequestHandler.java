@@ -25,6 +25,8 @@ import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.BootstrapMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
@@ -67,6 +69,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 1.0
  */
 public class RequestHandler implements EventHandler<RequestEvent> {
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(RequestHandler.class);
 
     /**
      * The initial number of nodes, will expand automatically if more are needed.
@@ -139,6 +146,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             @Override
             public void call(final ClusterConfig config) {
                 try {
+                    LOGGER.debug("Got notified of a new configuration arriving.");
                     configuration.set(config);
                     reconfigure(config).subscribe();
                 } catch (Exception ex) {
@@ -198,6 +206,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     public Observable<LifecycleState> addNode(final InetAddress hostname) {
         Node node = nodeBy(hostname);
         if (node != null) {
+            LOGGER.debug("Node {} already registered, skipping.", hostname);
             return Observable.just(node.state());
         }
         return addNode(new CouchbaseNode(hostname, environment, responseBuffer));
@@ -210,13 +219,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * connected successfully.
      */
     Observable<LifecycleState> addNode(final Node node) {
+        LOGGER.debug("Got instructed to add Node {}", node.hostname());
+
         if (nodes.contains(node)) {
+            LOGGER.debug("Node {} already registered, skipping.", node.hostname());
             return Observable.just(node.state());
         }
 
+        LOGGER.debug("Connecting Node " + node.hostname());
         return node.connect().map(new Func1<LifecycleState, LifecycleState>() {
             @Override
             public LifecycleState call(LifecycleState lifecycleState) {
+                LOGGER.debug("Connect finished, registering for use.");
                 nodes.add(node);
                 return lifecycleState;
             }
@@ -240,6 +254,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * operations can be handled gracefully.
      */
     Observable<LifecycleState> removeNode(final Node node) {
+        LOGGER.debug("Got instructed to remove Node {}", node.hostname());
         nodes.remove(node);
         return node.disconnect();
     }
@@ -251,6 +266,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @return an observable which contains the newly created service.
      */
     public Observable<Service> addService(final AddServiceRequest request) {
+        LOGGER.debug("Got instructed to add Service {}, to Node {}", request.type(), request.hostname());
         return nodeBy(request.hostname()).addService(request);
     }
 
@@ -261,6 +277,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @return an observable which contains the removed service.
      */
     public Observable<Service> removeService(final RemoveServiceRequest request) {
+        LOGGER.debug("Got instructed to remove Service {}, from Node {}", request.type(), request.hostname());
         return nodeBy(request.hostname()).removeService(request);
     }
 
@@ -309,7 +326,10 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * and service setup with the one proposed by the configuration.
      */
     public Observable<ClusterConfig> reconfigure(final ClusterConfig config) {
+        LOGGER.debug("Starting reconfiguration.");
+
         if (config.bucketConfigs().values().isEmpty()) {
+            LOGGER.debug("No node found in config, disconnecting all nodes.");
             if (nodes.isEmpty()) {
                 return Observable.just(config);
             }
@@ -352,6 +372,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                         }
                     }
 
+                    LOGGER.debug("Found nodes {} to be removed after reconfiguration.", nodes);
+
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {
                             removeNode(node);
@@ -374,6 +396,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param config the config for this bucket.
      */
     private Observable<Boolean> reconfigureBucket(final BucketConfig config) {
+        LOGGER.debug("Starting reconfiguration for bucket {}", config.name());
+
         List<Observable<Boolean>> observables = new ArrayList<Observable<Boolean>>();
         for (final NodeInfo nodeInfo : config.nodes()) {
             Observable<Boolean> obs = addNode(nodeInfo.hostname())

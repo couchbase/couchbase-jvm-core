@@ -125,11 +125,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> connect() {
+        LOGGER.debug(logIdent(hostname) + "Got instructed to connect.");
+
         return Observable
             .from(serviceRegistry.services())
             .flatMap(new Func1<Service, Observable<LifecycleState>>() {
                 @Override
                 public Observable<LifecycleState> call(final Service service) {
+                    LOGGER.debug(logIdent(hostname) + "Instructing Service " + service.type() + " to connect.");
                     return service.connect();
                 }
             })
@@ -144,11 +147,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> disconnect() {
+        LOGGER.debug(logIdent(hostname) + "Got instructed to disconnect.");
+
         return Observable
             .from(serviceRegistry.services())
             .flatMap(new Func1<Service, Observable<LifecycleState>>() {
                 @Override
                 public Observable<LifecycleState> call(final Service service) {
+                    LOGGER.debug(logIdent(hostname) + "Instructing Service " + service.type() + " to disconnect.");
                     return service.disconnect();
                 }
             })
@@ -163,8 +169,10 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> addService(final AddServiceRequest request) {
+        LOGGER.debug(logIdent(hostname) + "Adding Service " + request.type());
         Service addedService = serviceRegistry.serviceBy(request.type(), request.bucket());
         if (addedService != null) {
+            LOGGER.debug(logIdent(hostname) + "Service " + request.type() + " already added, skipping.");
             return Observable.just(addedService);
         }
 
@@ -205,6 +213,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
                 transitionState(newState);
             }
         });
+        LOGGER.debug(logIdent(hostname) + "Adding Service " + request.type() + " to registry and connecting it.");
         serviceRegistry.addService(service, request.bucket());
         return service.connect().map(new Func1<LifecycleState, Service>() {
             @Override
@@ -216,6 +225,8 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> removeService(final RemoveServiceRequest request) {
+        LOGGER.debug(logIdent(hostname) + "Removing Service " + request.type());
+
         Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
         serviceStates.remove(service);
@@ -274,5 +285,15 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
             + "hostname=" + hostname
             + ", services=" + serviceRegistry
             + '}';
+    }
+
+    /**
+     * Simple log helper to give logs a common prefix.
+     *
+     * @param hostname the address.
+     * @return a prefix string for logs.
+     */
+    protected static String logIdent(final InetAddress hostname) {
+        return "[" + hostname.getHostName() + "]: ";
     }
 }

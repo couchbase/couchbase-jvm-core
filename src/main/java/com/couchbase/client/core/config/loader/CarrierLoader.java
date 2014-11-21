@@ -71,6 +71,8 @@ public class CarrierLoader extends AbstractLoader {
             LOGGER.info("Carrier Bootstrap manually disabled.");
             return Observable.error(new ConfigurationException("Carrier Bootstrap disabled through configuration."));
         }
+        LOGGER.debug("Starting to discover config through Carrier Bootstrap");
+
         return cluster()
             .<GetBucketConfigResponse>send(new GetBucketConfigRequest(bucket, hostname))
             .map(new Func1<GetBucketConfigResponse, String>() {

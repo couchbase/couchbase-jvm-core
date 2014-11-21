@@ -74,6 +74,7 @@ public abstract  class AbstractRefresher implements Refresher {
 
     @Override
     public Observable<Boolean> deregisterBucket(String name) {
+        LOGGER.debug("Deregistering Bucket {} from refresh.", name);
         if (registrations.containsKey(name)) {
             registrations.remove(name);
             return Observable.just(true);
@@ -83,6 +84,7 @@ public abstract  class AbstractRefresher implements Refresher {
 
     @Override
     public Observable<Boolean> registerBucket(String name, String password) {
+        LOGGER.debug("Registering Bucket {} for refresh.", name);
         if (registrations.containsKey(name)) {
             return Observable.just(false);
         }

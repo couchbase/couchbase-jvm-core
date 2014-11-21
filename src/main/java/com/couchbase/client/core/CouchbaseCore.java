@@ -209,7 +209,7 @@ public class CouchbaseCore implements ClusterFacade {
             }
         }
 
-        return (Observable<R>) request.observable().subscribeOn(environment.scheduler());
+        return (Observable<R>) request.observable().observeOn(environment.scheduler());
     }
 
     /**

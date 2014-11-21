@@ -28,6 +28,8 @@ import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -50,6 +52,11 @@ import java.util.Set;
  * @since 1.0
  */
 public abstract class AbstractLoader implements Loader {
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Loader.class);
 
     /**
      * The reference to the cluster.
@@ -117,9 +124,9 @@ public abstract class AbstractLoader implements Loader {
      */
     public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes,
         final String bucket, final String password) {
+        LOGGER.debug("Loading Config for bucket {}", bucket);
         return Observable
             .from(seedNodes)
-            .subscribeOn(env().scheduler())
             .flatMap(new Func1<InetAddress, Observable<AddNodeResponse>>() {
                 @Override
                 public Observable<AddNodeResponse> call(final InetAddress address) {
@@ -131,6 +138,7 @@ public abstract class AbstractLoader implements Loader {
                     if (!response.status().isSuccess()) {
                         return Observable.error(new IllegalStateException("Could not add node for config loading."));
                     }
+                    LOGGER.debug("Successfully added Node {}", response.hostname());
                     return cluster.send(
                             new AddServiceRequest(serviceType, bucket, password, port(), response.hostname())
                     );
@@ -141,13 +149,14 @@ public abstract class AbstractLoader implements Loader {
                     if (!response.status().isSuccess()) {
                         return Observable.error(new IllegalStateException("Could not add service for config loading."));
                     }
-
+                    LOGGER.debug("Successfully enabled Service {} on Node {}", serviceType, response.hostname());
                     return discoverConfig(bucket, password, response.hostname());
                 }
             })
             .map(new Func1<String, Tuple2<LoaderType, BucketConfig>>() {
                 @Override
                 public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {
+                    LOGGER.debug("Got configuration from Service, attempting to parse.");
                     BucketConfig config = BucketConfigParser.parse(rawConfig);
                     config.password(password);
                     return Tuple.create(loaderType, config);
