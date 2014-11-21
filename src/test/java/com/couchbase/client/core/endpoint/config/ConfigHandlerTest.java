@@ -53,6 +53,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;
@@ -105,6 +106,7 @@ public class ConfigHandlerTest {
     @SuppressWarnings("unchecked")
     public void setup() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
+        when(environment.scheduler()).thenReturn(Schedulers.computation());
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");

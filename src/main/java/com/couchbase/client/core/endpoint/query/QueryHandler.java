@@ -42,8 +42,8 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import rx.Scheduler;
 import rx.subjects.ReplaySubject;
-
 import java.util.Queue;
 
 /**
@@ -179,9 +179,16 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         if (!success) {
             status = ResponseStatus.FAILURE;
         }
+
+        Scheduler scheduler = env().scheduler();
         queryRowObservable = ReplaySubject.create();
         queryInfoObservable = ReplaySubject.create();
-        return new GenericQueryResponse(queryRowObservable, queryInfoObservable, status, currentRequest());
+        return new GenericQueryResponse(
+            queryRowObservable.onBackpressureBuffer().observeOn(scheduler),
+            queryInfoObservable.onBackpressureBuffer().observeOn(scheduler),
+            status,
+            currentRequest()
+        );
     }
 
     /**

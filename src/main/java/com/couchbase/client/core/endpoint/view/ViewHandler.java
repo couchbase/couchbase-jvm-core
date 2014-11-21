@@ -51,8 +51,8 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import rx.Scheduler;
 import rx.subjects.ReplaySubject;
-
 import java.util.Queue;
 
 /**
@@ -239,10 +239,18 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         int code = responseHeader.getStatus().code();
         String phrase = responseHeader.getStatus().reasonPhrase();
         ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        Scheduler scheduler = env().scheduler();
 
         viewRowObservable = ReplaySubject.create();
         viewInfoObservable = ReplaySubject.create();
-        return new ViewQueryResponse(viewRowObservable, viewInfoObservable, code, phrase, status, currentRequest());
+        return new ViewQueryResponse(
+            viewRowObservable.onBackpressureBuffer().observeOn(scheduler),
+            viewInfoObservable.onBackpressureBuffer().observeOn(scheduler),
+            code,
+            phrase,
+            status,
+            currentRequest()
+        );
     }
 
     /**

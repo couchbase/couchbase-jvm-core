@@ -23,12 +23,8 @@ package com.couchbase.client.core.endpoint.view;
 
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.endpoint.query.QueryHandler;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
-import com.couchbase.client.core.message.query.GenericQueryRequest;
-import com.couchbase.client.core.message.query.GenericQueryResponse;
-import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
@@ -57,7 +53,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.functions.Action1;
-
+import rx.schedulers.Schedulers;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -113,6 +109,7 @@ public class ViewHandlerTest {
         });
 
         CoreEnvironment environment = mock(CoreEnvironment.class);
+        when(environment.scheduler()).thenReturn(Schedulers.computation());
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");

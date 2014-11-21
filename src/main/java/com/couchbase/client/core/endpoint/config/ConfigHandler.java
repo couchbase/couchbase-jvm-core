@@ -62,6 +62,7 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
+import rx.Observable;
 import rx.subjects.BehaviorSubject;
 
 import java.net.InetSocketAddress;
@@ -246,10 +247,18 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         SocketAddress addr = ctx.channel().remoteAddress();
         String host = addr instanceof InetSocketAddress ? ((InetSocketAddress) addr).getHostName() : addr.toString();
         ResponseStatus status = statusFromCode(header.getStatus().code());
+
+        Observable<String> scheduledObservable = null;
         if (status.isSuccess()) {
             streamingConfigObservable = BehaviorSubject.create();
+            scheduledObservable = streamingConfigObservable.onBackpressureBuffer().observeOn(env().scheduler());
         }
-        return new BucketStreamingResponse(streamingConfigObservable, host, status, currentRequest());
+        return new BucketStreamingResponse(
+            scheduledObservable,
+            host,
+            status,
+            currentRequest()
+        );
     }
 
     /**
