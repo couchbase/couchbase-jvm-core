@@ -38,7 +38,6 @@ import com.couchbase.client.core.message.kv.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 import io.netty.util.CharsetUtil;
-
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,10 +60,14 @@ public class KeyValueLocator implements Locator {
         if (request instanceof GetBucketConfigRequest) {
             for (Node node : nodes) {
                 if (node.isState(LifecycleState.CONNECTED)) {
+                    // If the hostnames are not equal, it is not the node where the service has
+                    // been enabled, so go look for the next one.
+                    if (!((GetBucketConfigRequest) request).hostname().equals(node.hostname())) {
+                        continue;
+                    }
                     return new Node[] { node };
                 }
             }
-
             return new Node[] {};
         }
 
