@@ -30,6 +30,10 @@ public class ObserveResponse extends AbstractKeyValueResponse {
 
     public static enum ObserveStatus {
         /**
+         * Observe status not known.
+         */
+        UNKNOWN((byte) 0xf0),
+        /**
          * Response indicating the key was uninitialized.
          */
         UNINITIALIZED((byte) 0xff),
@@ -74,11 +78,16 @@ public class ObserveResponse extends AbstractKeyValueResponse {
                     return ObserveStatus.NOT_FOUND_NOT_PERSISTED;
                 case (byte) 0xfe:
                     return ObserveStatus.MODIFIED;
+                case (byte) 0xf0:
+                    return ObserveStatus.UNKNOWN;
                 default:
                     return ObserveStatus.UNINITIALIZED;
             }
         }
 
+        public byte value() {
+            return value;
+        }
     }
 
 
