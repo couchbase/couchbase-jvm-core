@@ -326,7 +326,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      */
     private void parseViewInfo() {
         int rowsStart = -1;
-        for (int i = responseContent.readerIndex(); i < responseContent.writerIndex(); i++) {
+        for (int i = responseContent.readerIndex(); i < responseContent.writerIndex() - 2; i++) {
             byte curr = responseContent.getByte(i);
             byte f1 = responseContent.getByte(i + 1);
             byte f2 = responseContent.getByte(i + 2);
