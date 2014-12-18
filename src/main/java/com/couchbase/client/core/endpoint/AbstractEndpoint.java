@@ -56,7 +56,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
-
 import javax.net.ssl.SSLEngine;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -429,12 +428,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     /**
      * A generic future listener which logs unsuccessful writes.
+     *
+     * Note that {@link ClosedChannelException}s are ignored because they are handled
+     * gracefully by the {@link AbstractGenericHandler}.
      */
     static class WriteLogListener implements GenericFutureListener<Future<Void>> {
 
         @Override
         public void operationComplete(Future<Void> future) throws Exception {
-            if (!future.isSuccess()) {
+            if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
                 LOGGER.warn("Error during IO write phase.", future.cause());
             }
         }
