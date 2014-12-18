@@ -435,7 +435,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         @Override
         public void operationComplete(Future<Void> future) throws Exception {
             if (!future.isSuccess()) {
-                LOGGER.warn("Error during IO write phase.", future);
+                LOGGER.warn("Error during IO write phase.", future.cause());
             }
         }
 
