@@ -28,10 +28,11 @@ import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
+import com.couchbase.client.core.time.Delay;
 import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
-
+import rx.functions.Func2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,11 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0.1
  */
 public class Observe {
+
+    /**
+     * The default observe delay for backwards compatibility.
+     */
+    private static final Delay DEFAULT_DELAY = Delay.fixed(10, TimeUnit.MILLISECONDS);
 
     /**
      * Defines the possible disk persistence constraints to observe.
@@ -177,6 +183,12 @@ public class Observe {
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
         final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo) {
+        return call(core, bucket, id, cas, remove, persistTo, replicateTo, DEFAULT_DELAY);
+    }
+
+    public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
+        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final Delay delay) {
 
         final ObserveResponse.ObserveStatus persistIdentifier;
         final ObserveResponse.ObserveStatus replicaIdentifier;
@@ -193,8 +205,26 @@ public class Observe {
 
         return observeResponses
                 .toList()
-                .delay(10, TimeUnit.MILLISECONDS)
-                .repeat()
+                .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
+                    @Override
+                    public Observable<?> call(Observable<? extends Void> observable) {
+                        return observable.zipWith(
+                            Observable.range(1, Integer.MAX_VALUE),
+                            new Func2<Void, Integer, Integer>() {
+                                @Override
+                                public Integer call(Void aVoid, Integer attempt) {
+                                    return attempt;
+                                }
+                            }
+                        )
+                        .flatMap(new Func1<Integer, Observable<?>>() {
+                            @Override
+                            public Observable<?> call(Integer attempt) {
+                                return Observable.timer(delay.calculate(attempt), delay.unit());
+                            }
+                        });
+                    }
+                })
                 .skipWhile(new Func1<List<ObserveResponse>, Boolean>() {
                     @Override
                     public Boolean call(List<ObserveResponse> observeResponses) {

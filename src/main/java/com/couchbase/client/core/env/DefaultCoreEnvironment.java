@@ -24,6 +24,7 @@ package com.couchbase.client.core.env;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -34,6 +35,7 @@ import rx.Scheduler;
 import rx.Subscriber;
 
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class DefaultCoreEnvironment implements CoreEnvironment {
 
@@ -61,6 +63,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int KEYVALUE_ENDPOINTS = 1;
     public static final int VIEW_ENDPOINTS = 1;
     public static final int QUERY_ENDPOINTS = 1;
+    public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
+
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
 
@@ -126,6 +130,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int kvServiceEndpoints;
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
+    private final Delay observeIntervalDelay;
     private final String userAgent;
     private final String packageNameAndVersion;
 
@@ -162,6 +167,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints());
         packageNameAndVersion = stringPropertyOr("packageNameAndVersion", builder.packageNameAndVersion());
         userAgent = stringPropertyOr("userAgent", builder.userAgent());
+        observeIntervalDelay = builder.observeIntervalDelay();
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -354,6 +360,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return packageNameAndVersion;
     }
 
+    @Override
+    public Delay observeIntervalDelay() {
+        return observeIntervalDelay;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -377,6 +388,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int kvServiceEndpoints = KEYVALUE_ENDPOINTS;
         private int viewServiceEndpoints = VIEW_ENDPOINTS;
         private int queryServiceEndpoints = QUERY_ENDPOINTS;
+        private Delay observeIntervalDelay = OBSERVE_INTERVAL_DELAY;
         private EventLoopGroup ioPool;
         private Scheduler scheduler;
 
@@ -591,6 +603,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         public Builder packageNameAndVersion(final String packageNameAndVersion) {
             this.packageNameAndVersion = packageNameAndVersion;
+            return this;
+        }
+
+        @Override
+        public Delay observeIntervalDelay() {
+            return observeIntervalDelay;
+        }
+
+        public Builder observeIntervalDelay(final Delay observeIntervalDelay) {
+            this.observeIntervalDelay = observeIntervalDelay;
             return this;
         }
 
