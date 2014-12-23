@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.endpoint.query;
 
+import java.util.Queue;
+
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
@@ -44,7 +46,6 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import rx.Scheduler;
 import rx.subjects.ReplaySubject;
-import java.util.Queue;
 
 /**
  * The {@link QueryHandler} is responsible for encoding {@link QueryRequest}s into lower level
@@ -113,8 +114,12 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         FullHttpRequest request;
 
         if (msg instanceof GenericQueryRequest) {
+            GenericQueryRequest queryRequest = (GenericQueryRequest) msg;
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/query");
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            if (queryRequest.isJsonFormat()) {
+                request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
+            }
             ByteBuf query = ctx.alloc().buffer(((GenericQueryRequest) msg).query().length());
             query.writeBytes(((GenericQueryRequest) msg).query().getBytes(CHARSET));
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());

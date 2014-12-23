@@ -32,13 +32,48 @@ import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 public class GenericQueryRequest extends AbstractCouchbaseRequest implements QueryRequest {
 
     private final String query;
+    private final boolean jsonFormat;
 
-    public GenericQueryRequest(String query, String bucket, String password) {
+    private GenericQueryRequest(String query, boolean jsonFormat, String bucket, String password) {
         super(bucket, password);
         this.query = query;
+        this.jsonFormat = jsonFormat;
     }
 
     public String query() {
         return query;
+    }
+
+    public boolean isJsonFormat() {
+        return jsonFormat;
+    }
+
+    /**
+     * Creates a {@link GenericQueryRequest} and mark it as containing a single simple statement
+     * (e.g. "SELECT * FROM default").
+     *
+     * @param statement the N1QL query statement to perform.
+     * @param bucket the bucket on which to search.
+     * @param password the password for the target bucket.
+     * @return a {@link GenericQueryRequest} for this simple statement.
+     */
+    public static GenericQueryRequest simpleStatement(String statement, String bucket, String password) {
+        return new GenericQueryRequest(statement, false, bucket, password);
+    }
+
+    /**
+     * Create a {@link GenericQueryRequest} and mark it as containing a full N1QL query in Json form
+     * (including additional query parameters like named arguments, etc...).
+     *
+     * The simplest form of such a query is a single statement encapsulated in a json query object:
+     * <pre>{"statement":"SELECT * FROM default"}</pre>.
+     *
+     * @param jsonQuery the N1QL query in json form.
+     * @param bucket the bucket on which to perform the query.
+     * @param password the password for the target bucket.
+     * @return a {@link GenericQueryRequest} for this full query.
+     */
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password) {
+        return new GenericQueryRequest(jsonQuery, true, bucket, password);
     }
 }
