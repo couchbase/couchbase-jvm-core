@@ -19,48 +19,37 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+
+package com.couchbase.client.core.message.dcp;
+
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.message.CouchbaseRequest;
 
 /**
- * Represents the different {@link ServiceType}s and how they map onto buckets.
+ * Common interface for all DCP requests.
  *
- * @author Michael Nitschinger
- * @since 1.0
+ * Note that they can flow in both directions. For example, {@link ConnectionType#CONSUMER}
+ * connection, means that messages will flow from server to client.
+ *
+ * @author Sergey Avseyev
+ * @since 1.1.0
  */
-public enum ServiceType {
+@InterfaceStability.Experimental
+@InterfaceAudience.Private
+public interface DCPRequest extends CouchbaseRequest {
+    /**
+     * The partition (vBucket) to use for this request.
+     *
+     * @return the partition to use.
+     */
+    short partition();
 
     /**
-     * Views and Design Documents.
+     * Set the partition ID.
+     *
+     * @param id the id of the partition.
+     * @return the {@link DCPRequest} for proper chaining.
      */
-    VIEW(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * Key/Value type operations.
-     */
-    BINARY(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Query (N1QL) operations.
-     */
-    QUERY(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * HTTP config operations.
-     */
-    CONFIG(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE);
-
-    private final BucketServiceMapping mapping;
-
-    private ServiceType(BucketServiceMapping mapping) {
-        this.mapping = mapping;
-    }
-
-    public BucketServiceMapping mapping() {
-        return mapping;
-    }
+    DCPRequest partition(short id);
 }

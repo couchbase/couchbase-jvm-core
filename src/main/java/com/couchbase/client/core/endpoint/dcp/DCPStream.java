@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2014 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,48 +19,41 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+
+package com.couchbase.client.core.endpoint.dcp;
+
+import com.couchbase.client.core.message.dcp.DCPRequest;
+import rx.subjects.PublishSubject;
+import rx.subjects.ReplaySubject;
 
 /**
- * Represents the different {@link ServiceType}s and how they map onto buckets.
+ * Represents stream of incoming DCP messages.
  *
- * @author Michael Nitschinger
- * @since 1.0
+ * @author Sergey Avseyev
+ * @since 1.1.0
  */
-public enum ServiceType {
+public class DCPStream {
+    public final int id;
+    public final String bucket;
+    public final PublishSubject<DCPRequest> subject;
 
     /**
-     * Views and Design Documents.
+     * Creates new {@link DCPStream} instance.
+     *
+     * @param id stream identifier
+     * @param bucket name of the bucket
      */
-    VIEW(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * Key/Value type operations.
-     */
-    BINARY(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Query (N1QL) operations.
-     */
-    QUERY(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * HTTP config operations.
-     */
-    CONFIG(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE);
-
-    private final BucketServiceMapping mapping;
-
-    private ServiceType(BucketServiceMapping mapping) {
-        this.mapping = mapping;
+    public DCPStream(int id, String bucket) {
+        this.id = id;
+        this.bucket = bucket;
+        subject = PublishSubject.create();
     }
 
-    public BucketServiceMapping mapping() {
-        return mapping;
+    public PublishSubject<DCPRequest> subject() {
+        return subject;
+    }
+
+    public String bucket() {
+        return bucket;
     }
 }

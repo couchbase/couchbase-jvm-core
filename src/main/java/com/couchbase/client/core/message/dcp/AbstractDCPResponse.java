@@ -19,48 +19,30 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+
+package com.couchbase.client.core.message.dcp;
+
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.ResponseStatus;
 
 /**
- * Represents the different {@link ServiceType}s and how they map onto buckets.
+ * Default implementation of {@link DCPResponse}.
  *
- * @author Michael Nitschinger
- * @since 1.0
+ * @author Sergey Avseyev
+ * @since 1.1.0
  */
-public enum ServiceType {
-
+@InterfaceStability.Experimental
+@InterfaceAudience.Private
+public abstract class AbstractDCPResponse extends AbstractCouchbaseResponse implements DCPResponse {
     /**
-     * Views and Design Documents.
+     * Creates {@link AbstractDCPResponse}.
+     *
+     * @param status  the status of the response.
      */
-    VIEW(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * Key/Value type operations.
-     */
-    BINARY(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Query (N1QL) operations.
-     */
-    QUERY(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * HTTP config operations.
-     */
-    CONFIG(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE);
-
-    private final BucketServiceMapping mapping;
-
-    private ServiceType(BucketServiceMapping mapping) {
-        this.mapping = mapping;
-    }
-
-    public BucketServiceMapping mapping() {
-        return mapping;
+    public AbstractDCPResponse(ResponseStatus status, CouchbaseRequest request) {
+        super(status, request);
     }
 }

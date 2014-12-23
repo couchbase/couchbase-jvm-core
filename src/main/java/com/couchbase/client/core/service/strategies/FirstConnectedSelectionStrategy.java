@@ -19,48 +19,31 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+
+package com.couchbase.client.core.service.strategies;
+
+import com.couchbase.client.core.endpoint.Endpoint;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.state.LifecycleState;
 
 /**
- * Represents the different {@link ServiceType}s and how they map onto buckets.
+ * Simple strategy which selects first connected endpoint.
  *
- * @author Michael Nitschinger
- * @since 1.0
+ * @author Sergey Avseyev
+ * @since 1.1.0
  */
-public enum ServiceType {
-
-    /**
-     * Views and Design Documents.
-     */
-    VIEW(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * Key/Value type operations.
-     */
-    BINARY(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Query (N1QL) operations.
-     */
-    QUERY(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * HTTP config operations.
-     */
-    CONFIG(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE);
-
-    private final BucketServiceMapping mapping;
-
-    private ServiceType(BucketServiceMapping mapping) {
-        this.mapping = mapping;
-    }
-
-    public BucketServiceMapping mapping() {
-        return mapping;
+public class FirstConnectedSelectionStrategy implements SelectionStrategy {
+    @Override
+    public Endpoint select(CouchbaseRequest request, Endpoint[] endpoints) {
+        int numEndpoints = endpoints.length;
+        if (numEndpoints == 0) {
+            return null;
+        }
+        for (Endpoint endpoint : endpoints) {
+            if (endpoint.isState(LifecycleState.CONNECTED)) {
+                return endpoint;
+            }
+        }
+        return null;
     }
 }

@@ -59,6 +59,13 @@ public interface CoreEnvironment {
     Scheduler scheduler();
 
     /**
+     * Identifies if DCP should be enabled.
+     *
+     * @return true if DCP is enabled, false otherwise.
+     */
+    boolean dcpEnabled();
+
+    /**
      * Identifies if SSL should be enabled.
      *
      * @return true if SSL is enabled, false otherwise.

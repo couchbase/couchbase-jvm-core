@@ -130,7 +130,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param msg the incoming message.
      * @return a response or null if nothing should be returned.
      * @throws Exception as a generic error. It will be bubbled up to the user (wrapped in a CouchbaseException) in the
-     * onError of the request's Observable.
+     *   onError of the request's Observable.
      */
     protected abstract CouchbaseResponse decodeResponse(ChannelHandlerContext ctx, RESPONSE msg) throws Exception;
 
@@ -274,6 +274,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected REQUEST currentRequest() {
         return currentRequest;
+    }
+
+    /**
+     * Sets current request.
+     *
+     * FIXME this is temporary solution for {@link com.couchbase.client.core.endpoint.dcp.DCPHandler}
+     * @param request request to become the current one
+     */
+    protected void currentRequest(REQUEST request) {
+        currentRequest = request;
     }
 
     /**

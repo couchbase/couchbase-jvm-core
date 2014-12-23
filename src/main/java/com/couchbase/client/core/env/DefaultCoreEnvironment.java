@@ -42,6 +42,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CoreEnvironment.class);
 
+    public static final boolean DCP_ENABLED = false;
     public static final boolean SSL_ENABLED = false;
     public static final String SSL_KEYSTORE_FILE = null;
     public static final String SSL_KEYSTORE_PASSWORD = null;
@@ -106,6 +107,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
     }
 
+    private final boolean dcpEnabled;
     private final boolean sslEnabled;
     private final String sslKeystoreFile;
     private final String sslKeystorePassword;
@@ -139,6 +141,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found (" + instanceCounter
                 + "), this can have severe impact on performance and stability. Reuse environments!");
         }
+        dcpEnabled = booleanPropertyOr("dcpEnabled", builder.dcpEnabled());
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled());
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile());
         sslKeystorePassword = stringPropertyOr("sslKeystorePassword", builder.sslKeystorePassword());
@@ -252,6 +255,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public boolean dcpEnabled() {
+        return dcpEnabled;
+    }
+
+    @Override
     public String sslKeystoreFile() {
         return sslKeystoreFile;
     }
@@ -348,6 +356,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     public static class Builder implements CoreEnvironment {
 
+        private boolean dcpEnabled = DCP_ENABLED;
         private boolean sslEnabled = SSL_ENABLED;
         private String sslKeystoreFile = SSL_KEYSTORE_FILE;
         private String sslKeystorePassword = SSL_KEYSTORE_PASSWORD;
@@ -373,6 +382,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         protected Builder() {
 
+        }
+
+        @Override
+        public boolean dcpEnabled() {
+            return dcpEnabled;
+        }
+
+        public Builder dcpEnabled(final boolean dcpEnabled) {
+            this.dcpEnabled = dcpEnabled;
+            return this;
         }
 
         @Override
@@ -629,6 +648,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());
         sb.append(", coreScheduler=").append(coreScheduler.getClass().getSimpleName());
         sb.append(", packageNameAndVersion=").append(packageNameAndVersion);
+        sb.append(", dcpEnabled=").append(dcpEnabled);
         sb.append('}');
         return sb.toString();
     }
