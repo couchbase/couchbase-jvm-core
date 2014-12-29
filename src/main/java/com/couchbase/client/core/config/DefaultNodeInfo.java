@@ -114,7 +114,9 @@ public class DefaultNodeInfo implements NodeInfo {
             }
         }
         services.put(ServiceType.CONFIG, configPort);
-        services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
+        if (viewUri != null) {
+            services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
+        }
         return services;
     }
 
