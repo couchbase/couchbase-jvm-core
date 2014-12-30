@@ -124,4 +124,15 @@ public final class Tuple5<T1, T2, T3, T4, T5> {
         return value5;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Tuple5{");
+        sb.append("value1=").append(value1);
+        sb.append(", value2=").append(value2);
+        sb.append(", value3=").append(value3);
+        sb.append(", value4=").append(value4);
+        sb.append(", value5=").append(value5);
+        sb.append('}');
+        return sb.toString();
+    }
 }
