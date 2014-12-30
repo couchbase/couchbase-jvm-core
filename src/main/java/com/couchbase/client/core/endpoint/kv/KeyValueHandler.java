@@ -158,16 +158,6 @@ public class KeyValueHandler
             request.setReserved(msg.partition());
         }
 
-        if (request.getExtras() != null) {
-            request.getExtras().retain();
-        }
-
-        if (request instanceof FullBinaryMemcacheRequest) {
-            ByteBuf content = ((FullBinaryMemcacheRequest) request).content();
-            if (content != null) {
-                content.retain();
-            }
-        }
         return request;
     }
 
