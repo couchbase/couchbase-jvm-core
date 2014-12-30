@@ -1,5 +1,7 @@
 {
-    "resultset": [
+    "requestID": "1234test-7802-4fc2-acd6-dfcd1c05a288",
+    "clientContextID": "1234567890123456789012345678901234567890123456789012345678901234",
+    "results": [
         {
             "address": [
                 "563 Second Street"
@@ -73,18 +75,14 @@
             "updated": "2010-07-22 20:00:20"
         }
     ],
-    "info": [
-        {
-            "caller": "http_response:160",
-            "code": 100,
-            "key": "total_rows",
-            "message": "5"
-        },
-        {
-            "caller": "http_response:162",
-            "code": 101,
-            "key": "total_elapsed_time",
-            "message": "118.636318ms"
-        }
-    ]
+    "status": "success",
+    "metrics": {
+        "elapsedTime": "118.636318ms",
+        "executionTime": "108.213835ms",
+        "resultCount": 5,
+        "resultSize": 500,
+        "mutationCount": 0,
+        "errorCount": 0,
+        "warningCount": 0
+    }
 }

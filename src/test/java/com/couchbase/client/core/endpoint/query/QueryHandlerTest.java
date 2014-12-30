@@ -50,7 +50,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.CharsetUtil;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import rx.functions.Action1;
@@ -60,6 +59,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -73,6 +73,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +84,9 @@ import static org.mockito.Mockito.when;
  * @since 1.0
  */
 public class QueryHandlerTest {
+
+    private static final String FAKE_REQUESTID = "1234test-7802-4fc2-acd6-dfcd1c05a288";
+    private static final String FAKE_CLIENTID = "1234567890123456789012345678901234567890123456789012345678901234";
 
     private ObjectMapper mapper = new ObjectMapper();
     private Queue<QueryRequest> queue;
@@ -158,6 +162,49 @@ public class QueryHandlerTest {
         assertGenericQueryRequest(request, true);
     }
 
+    private void assertResponse(GenericQueryResponse inbound,
+            boolean expectedSuccess, ResponseStatus expectedStatus,
+            String expectedRequestId, String expectedClientId,
+            String expectedFinalStatus,
+            Action1<ByteBuf> assertRows,
+            Action1<ByteBuf> assertErrors,
+            Map<String, Object> metricsToCheck) {
+        assertEquals(expectedSuccess, inbound.status().isSuccess());
+        assertEquals(expectedStatus, inbound.status());
+        assertEquals(expectedRequestId, inbound.requestId());
+        assertEquals(expectedClientId, inbound.clientRequestId());
+
+        assertEquals(expectedFinalStatus, inbound.queryStatus().timeout(1, TimeUnit.SECONDS).toBlocking().single());
+
+        inbound.rows().timeout(5, TimeUnit.SECONDS).toBlocking()
+               .forEach(assertRows);
+
+        List<ByteBuf> metricList = inbound.info().timeout(1, TimeUnit.SECONDS).toList().toBlocking().single();
+        assertEquals(1, metricList.size());
+        String metricsJson = metricList.get(0).toString(CharsetUtil.UTF_8);
+        try {
+            Map metrics = mapper.readValue(metricsJson, Map.class);
+            assertEquals(7, metrics.size());
+
+            for (Map.Entry<String, Object> entry : metricsToCheck.entrySet()) {
+                assertNotNull(metrics.get(entry.getKey()));
+                assertEquals(entry.getKey(), entry.getValue(), metrics.get(entry.getKey()));
+            }
+        } catch (IOException e) {
+            fail();
+        }
+
+        inbound.errors().timeout(1, TimeUnit.SECONDS).toBlocking()
+               .forEach(assertErrors);
+    }
+
+    private static Map<String, Object> expectedMetricsCounts(int expectedErrors, int expectedResults) {
+        Map<String, Object> result = new HashMap<String, Object>(2);
+        result.put("errorCount", expectedErrors);
+        result.put("resultCount", expectedResults);
+        return result;
+    }
+
     @Test
     public void shouldDecodeErrorResponse() throws Exception {
         String response = Resources.read("parse_error.json", this.getClass());
@@ -171,31 +218,38 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertFalse(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.FAILURE, inbound.status());
-
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(5, found.size());
-                    assertEquals(new Integer(4100), found.get("code"));
-                    assertEquals("Parse Error", found.get("message"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
+        assertResponse(inbound, false, ResponseStatus.FAILURE, FAKE_REQUESTID, FAKE_CLIENTID, "fatal",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf byteBuf) {
+                        fail("no result expected");
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map error = mapper.readValue(response, Map.class);
+                            assertEquals(5, error.size());
+                            assertEquals(new Integer(4100), error.get("code"));
+                            assertEquals(Boolean.FALSE, error.get("temp"));
+                            assertEquals("Parse Error", error.get("msg"));
+                        } catch (IOException e) {
+                            fail();
+                        }
+                    }
+                },
+                expectedMetricsCounts(1, 0)
+        );
     }
 
     @Test
     public void shouldDecodeChunkedErrorResponse() throws Exception {
         String response = Resources.read("parse_error.json", this.getClass());
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
-        HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer(response.substring(0, 100), CharsetUtil.UTF_8));
-        HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer(response.substring(100), CharsetUtil.UTF_8));
+        HttpContent responseChunk1 = new DefaultHttpContent(Unpooled.copiedBuffer(response.substring(0, 223), CharsetUtil.UTF_8));
+        HttpContent responseChunk2 = new DefaultLastHttpContent(Unpooled.copiedBuffer(response.substring(223), CharsetUtil.UTF_8));
 
         GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
         queue.add(requestMock);
@@ -204,23 +258,30 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertFalse(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.FAILURE, inbound.status());
-
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(5, found.size());
-                    assertEquals(new Integer(4100), found.get("code"));
-                    assertEquals("Parse Error", found.get("message"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
+        assertResponse(inbound, false, ResponseStatus.FAILURE, FAKE_REQUESTID, FAKE_CLIENTID, "fatal",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf byteBuf) {
+                        fail("no result expected");
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map error = mapper.readValue(response, Map.class);
+                            assertEquals(5, error.size());
+                            assertEquals(new Integer(4100), error.get("code"));
+                            assertEquals(Boolean.FALSE, error.get("temp"));
+                            assertEquals("Parse Error", error.get("msg"));
+                        } catch (IOException e) {
+                            fail();
+                        }
+                    }
+                },
+                expectedMetricsCounts(1, 0)
+        );
     }
 
     @Test
@@ -236,28 +297,21 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertTrue(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-
-        final AtomicInteger invokeCounter = new AtomicInteger();
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                invokeCounter.incrementAndGet();
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(4, found.size());
-                    assertTrue(found.containsKey("code"));
-                    assertTrue(found.containsKey("key"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
-
-        assertEquals(2, invokeCounter.get());
-        assertTrue(inbound.rows().toList().toBlocking().single().isEmpty());
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf byteBuf) {
+                        fail("no result expected");
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 0)
+        );
     }
 
     @Test
@@ -273,50 +327,36 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertTrue(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-
         final AtomicInteger invokeCounter1 = new AtomicInteger();
-        inbound.rows().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                invokeCounter1.incrementAndGet();
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(12, found.size());
-                    assertEquals("San Francisco", found.get("city"));
-                    assertEquals("United States", found.get("country"));
-                    Map geo = (Map) found.get("geo");
-                    assertNotNull(geo);
-                    assertEquals(3, geo.size());
-                    assertEquals("ROOFTOP", geo.get("accuracy"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
-
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        invokeCounter1.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map found = mapper.readValue(response, Map.class);
+                            assertEquals(12, found.size());
+                            assertEquals("San Francisco", found.get("city"));
+                            assertEquals("United States", found.get("country"));
+                            Map geo = (Map) found.get("geo");
+                            assertNotNull(geo);
+                            assertEquals(3, geo.size());
+                            assertEquals("ROOFTOP", geo.get("accuracy"));
+                        } catch (IOException e) {
+                            fail("no result expected");
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 1)
+        );
         assertEquals(1, invokeCounter1.get());
-
-        final AtomicInteger invokeCounter2 = new AtomicInteger();
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                invokeCounter2.incrementAndGet();
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(4, found.size());
-                    assertTrue(found.containsKey("code"));
-                    assertTrue(found.containsKey("key"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
-
-        assertEquals(2, invokeCounter2.get());
     }
 
     @Test
@@ -332,42 +372,33 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertTrue(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-
-        List<ByteBuf> found = inbound.rows().toList().toBlocking().single();
-        assertEquals(5, found.size());
-        for (ByteBuf row : found) {
-            String content = row.toString(CharsetUtil.UTF_8);
-            assertNotNull(content);
-            assertTrue(!content.isEmpty());
-            try {
-                Map decoded = mapper.readValue(content, Map.class);
-                assertTrue(decoded.size() > 0);
-                assertTrue(decoded.containsKey("name"));
-            } catch(Exception e) {
-                assertTrue(false);
-            }
-        }
-
-        final AtomicInteger invokeCounter2 = new AtomicInteger();
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                invokeCounter2.incrementAndGet();
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(4, found.size());
-                    assertTrue(found.containsKey("code"));
-                    assertTrue(found.containsKey("key"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
-
-        assertEquals(2, invokeCounter2.get());
+        final AtomicInteger found = new AtomicInteger(0);
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf row) {
+                        found.incrementAndGet();
+                        String content = row.toString(CharsetUtil.UTF_8);
+                        assertNotNull(content);
+                        assertTrue(!content.isEmpty());
+                        try {
+                            Map decoded = mapper.readValue(content, Map.class);
+                            assertTrue(decoded.size() > 0);
+                            assertTrue(decoded.containsKey("name"));
+                        } catch(Exception e) {
+                            assertTrue(false);
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 5)
+        );
+        assertEquals(5, found.get());
     }
 
     @Test
@@ -393,42 +424,266 @@ public class QueryHandlerTest {
         assertEquals(1, firedEvents.size());
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
-        assertTrue(inbound.status().isSuccess());
-        assertEquals(ResponseStatus.SUCCESS, inbound.status());
-
-        List<ByteBuf> found = inbound.rows().toList().toBlocking().single();
-        assertEquals(5, found.size());
-        for (ByteBuf row : found) {
-            String content = row.toString(CharsetUtil.UTF_8);
-            assertNotNull(content);
-            assertTrue(!content.isEmpty());
-            try {
-                Map decoded = mapper.readValue(content, Map.class);
-                assertTrue(decoded.size() > 0);
-                assertTrue(decoded.containsKey("name"));
-            } catch(Exception e) {
-                assertTrue(false);
-            }
-        }
-
-        final AtomicInteger invokeCounter2 = new AtomicInteger();
-        inbound.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf buf) {
-                invokeCounter2.incrementAndGet();
-                String response = buf.toString(CharsetUtil.UTF_8);
-                try {
-                    Map found = mapper.readValue(response, Map.class);
-                    assertEquals(4, found.size());
-                    assertTrue(found.containsKey("code"));
-                    assertTrue(found.containsKey("key"));
-                } catch (IOException e) {
-                    assertFalse(true);
-                }
-            }
-        });
-
-        assertEquals(2, invokeCounter2.get());
+        final AtomicInteger found = new AtomicInteger(0);
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf byteBuf) {
+                        found.incrementAndGet();
+                        String content = byteBuf.toString(CharsetUtil.UTF_8);
+                        assertNotNull(content);
+                        assertTrue(!content.isEmpty());
+                        try {
+                            Map decoded = mapper.readValue(content, Map.class);
+                            assertTrue(decoded.size() > 0);
+                            assertTrue(decoded.containsKey("name"));
+                        } catch(Exception e) {
+                            assertTrue(false);
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 5)
+        );
+        assertEquals(5, found.get());
     }
 
+    @Test
+    public void shouldDecodeOneRowResponseWithQuotesInClientIdAndResults() throws Exception {
+        String response = Resources.read("with_escaped_quotes.json", this.getClass());
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
+
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        queue.add(requestMock);
+        channel.writeInbound(responseHeader, responseChunk);
+        latch.await(1, TimeUnit.SECONDS);
+        assertEquals(1, firedEvents.size());
+        GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
+
+        final AtomicInteger invokeCounter1 = new AtomicInteger();
+        //TODO check the quote in the clientID
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        invokeCounter1.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map found = mapper.readValue(response, Map.class);
+                            assertEquals(12, found.size());
+                            assertEquals("San Francisco", found.get("city"));
+                            assertEquals("United States", found.get("country"));
+                            Map geo = (Map) found.get("geo");
+                            assertNotNull(geo);
+                            assertEquals(3, geo.size());
+                            assertEquals("ROOFTOP", geo.get("accuracy"));
+                            //TODO check the quote in the result
+                        } catch (IOException e) {
+                            assertFalse(true);
+                        }                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 1)
+        );
+        assertEquals(1, invokeCounter1.get());
+    }
+
+    @Test
+    public void shouldDecodeOneRowResponseWithShortClientID() throws Exception {
+        String response = Resources.read("short_client_id.json", this.getClass());
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
+
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        queue.add(requestMock);
+        channel.writeInbound(responseHeader, responseChunk);
+        latch.await(1, TimeUnit.SECONDS);
+        assertEquals(1, firedEvents.size());
+        GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
+
+        final AtomicInteger invokeCounter1 = new AtomicInteger();
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, "123456789", "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        invokeCounter1.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map found = mapper.readValue(response, Map.class);
+                            assertEquals(12, found.size());
+                            assertEquals("San Francisco", found.get("city"));
+                            assertEquals("United States", found.get("country"));
+                            Map geo = (Map) found.get("geo");
+                            assertNotNull(geo);
+                            assertEquals(3, geo.size());
+                            assertEquals("ROOFTOP", geo.get("accuracy"));
+                        } catch (IOException e) {
+                            assertFalse(true);
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 1)
+        );
+        assertEquals(1, invokeCounter1.get());
+    }
+
+    @Test
+    public void shouldDecodeOneRowResponseWithNoClientID() throws Exception {
+        String response = Resources.read("no_client_id.json", this.getClass());
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
+
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        queue.add(requestMock);
+        channel.writeInbound(responseHeader, responseChunk);
+        latch.await(1, TimeUnit.SECONDS);
+        assertEquals(1, firedEvents.size());
+        GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
+
+        final AtomicInteger invokeCounter1 = new AtomicInteger();
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, "", "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        invokeCounter1.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map found = mapper.readValue(response, Map.class);
+                            assertEquals(12, found.size());
+                            assertEquals("San Francisco", found.get("city"));
+                            assertEquals("United States", found.get("country"));
+                            Map geo = (Map) found.get("geo");
+                            assertNotNull(geo);
+                            assertEquals(3, geo.size());
+                            assertEquals("ROOFTOP", geo.get("accuracy"));
+                        } catch (IOException e) {
+                            assertFalse(true);
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 1)
+        );
+        assertEquals(1, invokeCounter1.get());
+    }
+
+    @Test
+    public void shouldDecodeOneRowResponseWithoutPrettyPrint() throws Exception {
+        String response = Resources.read("no_pretty.json", this.getClass());
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
+
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        queue.add(requestMock);
+        channel.writeInbound(responseHeader, responseChunk);
+        latch.await(1, TimeUnit.SECONDS);
+        assertEquals(1, firedEvents.size());
+        GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
+
+        final AtomicInteger invokeCounter1 = new AtomicInteger();
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        invokeCounter1.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map found = mapper.readValue(response, Map.class);
+                            assertEquals(12, found.size());
+                            assertEquals("San Francisco", found.get("city"));
+                            assertEquals("United States", found.get("country"));
+                            Map geo = (Map) found.get("geo");
+                            assertNotNull(geo);
+                            assertEquals(3, geo.size());
+                            assertEquals("ROOFTOP", geo.get("accuracy"));
+                        } catch (IOException e) {
+                            assertFalse(true);
+                        }
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        fail("no error expected");
+                    }
+                },
+                expectedMetricsCounts(0, 1)
+        );
+        assertEquals(1, invokeCounter1.get());
+    }
+
+    @Test
+    public void shouldGroupErrorsAndWarnings() throws InterruptedException {
+        String response = Resources.read("errors_and_warnings.json", this.getClass());
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
+
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        queue.add(requestMock);
+        channel.writeInbound(responseHeader, responseChunk);
+        latch.await(1, TimeUnit.SECONDS);
+        assertEquals(1, firedEvents.size());
+        GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
+
+        Map<String, Object> expectedMetrics = expectedMetricsCounts(1, 0);
+        expectedMetrics.put("warningCount", 1);
+
+        final AtomicInteger count = new AtomicInteger(0);
+        assertResponse(inbound, false, ResponseStatus.FAILURE, FAKE_REQUESTID, FAKE_CLIENTID, "fatal",
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf byteBuf) {
+                        fail("no result expected");
+                    }
+                },
+                new Action1<ByteBuf>() {
+                    @Override
+                    public void call(ByteBuf buf) {
+                        count.incrementAndGet();
+                        String response = buf.toString(CharsetUtil.UTF_8);
+                        try {
+                            Map error = mapper.readValue(response, Map.class);
+                            assertEquals(5, error.size());
+                            if (count.get() == 1) {
+                                assertEquals(new Integer(4100), error.get("code"));
+                                assertEquals(Boolean.FALSE, error.get("temp"));
+                                assertEquals("Parse Error", error.get("msg"));
+                            } else if (count.get() == 2) {
+                                assertEquals(3, error.get("sev"));
+                                assertEquals(201, error.get("code"));
+                                assertEquals(Boolean.TRUE, error.get("temp"));
+                                assertEquals("Nothing to do", error.get("msg"));
+                                assertEquals("nothingToDo", error.get("name"));
+                            }
+                        } catch (IOException e) {
+                            fail();
+                        }
+                    }
+                },
+                expectedMetrics
+        );
+        assertEquals(2, count.get());
+    }
 }

@@ -30,19 +30,50 @@ import rx.Observable;
 
 public class GenericQueryResponse extends AbstractCouchbaseResponse {
 
+    private final Observable<ByteBuf> errors;
     private final Observable<ByteBuf> rows;
+    private final Observable<String> queryStatus;
     private final Observable<ByteBuf> info;
+    private final String requestId;
+    private final String clientRequestId;
 
-    public GenericQueryResponse(Observable<ByteBuf> rows, Observable<ByteBuf> info, ResponseStatus status,
-        CouchbaseRequest request) {
+    public GenericQueryResponse(Observable<ByteBuf> errors, Observable<ByteBuf> rows,
+            Observable<String> queryStatus, Observable<ByteBuf> info,
+            CouchbaseRequest request, ResponseStatus status, String requestId, String clientRequestId) {
         super(status, request);
+        this.errors = errors;
         this.rows = rows;
         this.info = info;
+        this.queryStatus = queryStatus;
+        this.requestId = requestId;
+        this.clientRequestId = clientRequestId == null ? "" : clientRequestId;
     }
 
     public Observable<ByteBuf> rows() {
         return rows;
     }
+
+    public Observable<ByteBuf> errors() {
+        return errors;
+    }
+
+    public Observable<String> queryStatus() {
+        return queryStatus;
+    }
+
     public Observable<ByteBuf> info() { return info; }
 
+    /**
+     * @return the UUID for this request, can be used on the server side for tracing.
+     */
+    public String requestId() {
+        return requestId;
+    }
+
+    /**
+     * @return the client-provided identifier if provided in the request, empty string otherwise.
+     */
+    public String clientRequestId() {
+        return clientRequestId;
+    }
 }

@@ -1,5 +1,7 @@
 {
-    "resultset": [
+    "requestID": "1234test-7802-4fc2-acd6-dfcd1c05a288",
+    "clientContextID": "1234567890123456789012345678901234567890123456789012345678901234",
+    "results": [
         {
             "address": [
                 "563 Second Street"
@@ -21,18 +23,14 @@
             "website": "http://www.21st-amendment.com/"
         }
     ],
-    "info": [
-        {
-            "caller": "http_response:160",
-            "code": 100,
-            "key": "total_rows",
-            "message": "1"
-        },
-        {
-            "caller": "http_response:162",
-            "code": 101,
-            "key": "total_elapsed_time",
-            "message": "109.213835ms"
-        }
-    ]
+    "status": "success",
+    "metrics": {
+        "elapsedTime": "109.213835ms",
+        "executionTime": "108.213835ms",
+        "resultCount": 1,
+        "resultSize": 100,
+        "mutationCount": 0,
+        "errorCount": 0,
+        "warningCount": 0
+    }
 }
