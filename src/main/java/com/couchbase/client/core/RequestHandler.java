@@ -369,10 +369,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                         }
                     }
 
-                    LOGGER.debug("Found nodes {} to be removed after reconfiguration.", nodes);
-
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {
+                            LOGGER.debug("Removing and disconnecting node {}.", node.hostname());
                             removeNode(node);
                             node.disconnect().subscribe();
                         }
