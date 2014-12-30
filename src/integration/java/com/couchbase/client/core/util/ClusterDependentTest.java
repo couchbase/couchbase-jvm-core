@@ -29,6 +29,7 @@ import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
+import io.netty.util.ResourceLeakDetector;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import rx.Observable;
@@ -40,6 +41,10 @@ import rx.functions.Func1;
  * @author Michael Nitschinger
  */
 public class ClusterDependentTest {
+
+    static {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+    }
 
     private static final String seedNode = TestProperties.seedNode();
     private static final String bucket = TestProperties.bucket();
