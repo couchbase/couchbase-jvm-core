@@ -82,4 +82,12 @@ public final class Tuple2<T1, T2> {
         return new Tuple2<T2, T1>(value2, value1);
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Tuple2{");
+        sb.append("value1=").append(value1);
+        sb.append(", value2=").append(value2);
+        sb.append('}');
+        return sb.toString();
+    }
 }

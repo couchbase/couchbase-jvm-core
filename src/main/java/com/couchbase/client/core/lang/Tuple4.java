@@ -107,4 +107,14 @@ public final class Tuple4<T1, T2, T3, T4> {
         return value4;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Tuple4{");
+        sb.append("value1=").append(value1);
+        sb.append(", value2=").append(value2);
+        sb.append(", value3=").append(value3);
+        sb.append(", value4=").append(value4);
+        sb.append('}');
+        return sb.toString();
+    }
 }
