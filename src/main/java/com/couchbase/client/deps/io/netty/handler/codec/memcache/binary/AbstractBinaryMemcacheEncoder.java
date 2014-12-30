@@ -55,7 +55,6 @@ public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMess
         }
 
         buf.writeBytes(extras);
-        extras.release();
     }
 
     /**
