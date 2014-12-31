@@ -159,41 +159,40 @@ public class RequestHandler implements EventHandler<RequestEvent> {
 
     @Override
     public void onEvent(final RequestEvent event, long sequence, final boolean endOfBatch) throws Exception {
-        final CouchbaseRequest request = event.getRequest();
+        try {
+            final CouchbaseRequest request = event.getRequest();
 
-        //prevent non-bootstrap requests to go through if bucket not part of config
-        if (!(request instanceof BootstrapMessage)) {
-            ClusterConfig config = configuration.get();
-            if (config == null || (request.bucket() != null  && !config.hasBucket(request.bucket()))) {
-                request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
-                event.setRequest(null);
+            //prevent non-bootstrap requests to go through if bucket not part of config
+            if (!(request instanceof BootstrapMessage)) {
+                ClusterConfig config = configuration.get();
+                if (config == null || (request.bucket() != null  && !config.hasBucket(request.bucket()))) {
+                    request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
+                    return;
+                }
+            }
+
+            Node[] found = locator(request).locate(request, nodes, configuration.get());
+
+            if (found == null) {
                 return;
             }
-        }
-
-        Node[] found = locator(request).locate(request, nodes, configuration.get());
-
-        if (found == null) {
-            event.setRequest(null);
-            return;
-        }
-        if (found.length == 0) {
-            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
-            event.setRequest(null);
-        }
-        for (int i = 0; i < found.length; i++) {
-            try {
-                found[i].send(request);
-            } catch (Exception ex) {
-                request.observable().onError(ex);
-            } finally {
-                event.setRequest(null);
+            if (found.length == 0) {
+                responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
             }
-        }
-        if (endOfBatch) {
-            for (Node node : nodes) {
-                node.send(SignalFlush.INSTANCE);
+            for (int i = 0; i < found.length; i++) {
+                try {
+                    found[i].send(request);
+                } catch (Exception ex) {
+                    request.observable().onError(ex);
+                }
             }
+            if (endOfBatch) {
+                for (Node node : nodes) {
+                    node.send(SignalFlush.INSTANCE);
+                }
+            }
+        } finally {
+            event.setRequest(null);
         }
     }
 
