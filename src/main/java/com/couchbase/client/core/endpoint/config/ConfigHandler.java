@@ -299,12 +299,32 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         return status;
     }
 
+    /**
+     * If it is still present and open, release the content buffer. Also set it
+     * to null so that next decoding can take a new buffer from the pool.
+     */
+    private void releaseResponseContent() {
+        if (responseContent != null) {
+            if (responseContent.refCnt() > 0) {
+                responseContent.release();
+            }
+            responseContent = null;
+        }
+    }
+
+    @Override
+    protected void finishedDecoding() {
+        super.finishedDecoding();
+        releaseResponseContent();
+    }
+
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
         if (streamingConfigObservable != null) {
             streamingConfigObservable.onCompleted();
         }
         super.handlerRemoved(ctx);
+        releaseResponseContent();
     }
 
 }
