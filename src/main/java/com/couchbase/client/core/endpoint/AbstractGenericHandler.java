@@ -246,11 +246,25 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         while (!sentRequestQueue.isEmpty()) {
             REQUEST req = sentRequestQueue.poll();
             try {
+                sideEffectRequestToCancel(req);
                 req.observable().onError(new RequestCancelledException("Request cancelled in-flight."));
             } catch (Exception ex) {
                 LOGGER.info("Exception thrown while cancelling outstanding operation: " + req, ex);
             }
         }
+    }
+
+
+    /**
+     * This method can be overridden as it is called every time an operation is cancelled.
+     *
+     * Overriding implementations may do some custom logic with them, for example freeing resources they know of
+     * to avoid leaking.
+     *
+     * @param request the request to side effect on.
+     */
+    protected void sideEffectRequestToCancel(final REQUEST request) {
+        // Nothing to do in the generic implementation.
     }
 
     /**
