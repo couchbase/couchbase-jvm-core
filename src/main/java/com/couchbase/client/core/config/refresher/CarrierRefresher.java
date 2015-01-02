@@ -24,21 +24,23 @@ package com.couchbase.client.core.config.refresher;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
-import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
-import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import java.net.InetAddress;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -55,7 +57,7 @@ public class CarrierRefresher extends AbstractRefresher {
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CarrierRefresher.class);
 
-    private final Map<String, Subscription> subscriptions;
+    private final Set<String> subscriptions;
     private final CoreEnvironment environment;
 
     /**
@@ -66,7 +68,7 @@ public class CarrierRefresher extends AbstractRefresher {
      */
     public CarrierRefresher(final CoreEnvironment environment, final ClusterFacade cluster) {
         super(cluster);
-        subscriptions = new ConcurrentHashMap<String, Subscription>();
+        subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
     }
 
@@ -77,62 +79,70 @@ public class CarrierRefresher extends AbstractRefresher {
 
     @Override
     public void markTainted(final BucketConfig config) {
-        if (subscriptions.containsKey(config.name())) {
+        final String bucketName = config.name();
+        if (subscriptions.contains(bucketName)) {
             return;
         }
 
-        LOGGER.debug("Config for bucket \"" + config.name() + "\" marked as tainted, starting polling.");
-        Observable.create(new Observable.OnSubscribe<Object>() {
-            @Override
-            public void call(final Subscriber<? super Object> subscriber) {
-                Subscription subscription = environment.scheduler().createWorker().schedulePeriodically(new Action0() {
+        LOGGER.debug("Config for bucket \"" + bucketName + "\" marked as tainted, starting polling.");
+        subscriptions.add(bucketName);
+        Observable<Long> pollSequence = Observable
+            .interval(1, TimeUnit.SECONDS)
+            .takeWhile(new Func1<Long, Boolean>() {
+                @Override
+                public Boolean call(Long aLong) {
+                    return subscriptions.contains(bucketName);
+                }
+            });
+
+
+        Observable<String> refreshSequence = null;
+        List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
+        Collections.shuffle(nodeInfos);
+        for (final NodeInfo nodeInfo : nodeInfos) {
+            if (refreshSequence == null) {
+                refreshSequence = pollSequence.flatMap(new Func1<Long, Observable<String>>() {
                     @Override
-                    public void call() {
-                        final InetAddress hostname = config.nodes().get(0).hostname();
-                        cluster()
-                            .<GetBucketConfigResponse>send(new GetBucketConfigRequest(config.name(), hostname))
-                            .subscribe(new Subscriber<GetBucketConfigResponse>() {
-                                @Override
-                                public void onCompleted() {
-
-                                }
-
-                                @Override
-                                public void onError(Throwable e) {
-                                    LOGGER.debug("Error while loading tainted config, ignoring", e);
-                                }
-
-                                @Override
-                                public void onNext(GetBucketConfigResponse res) {
-                                    ByteBuf content = res.content();
-                                    if (res.status().isSuccess() && content!= null && content.readableBytes() > 0) {
-                                        String rawConfig = content
-                                            .toString(CharsetUtil.UTF_8)
-                                            .replace("$HOST", hostname.getHostName())
-                                            .trim();
-                                        if (rawConfig.startsWith("{")) {
-                                            provider().proposeBucketConfig(res.bucket(), rawConfig);
-                                        }
-                                    }
-                                    if (content != null && content.refCnt() > 0) {
-                                        content.release();
-                                    }
-                                }
-                            });
+                    public Observable<String> call(Long aLong) {
+                        return refreshAgainstNode(bucketName, nodeInfo.hostname());
                     }
-                }, 0, 1, TimeUnit.SECONDS);
-
-                subscriptions.put(config.name(), subscription);
+                });
+            } else {
+                refreshSequence = refreshSequence.onErrorResumeNext(
+                    refreshAgainstNode(bucketName, nodeInfo.hostname())
+                );
             }
-        }).subscribe();
+        }
+
+        if (refreshSequence == null) {
+            LOGGER.debug("Cannot poll bucket, because node list contains no nodes.");
+            return;
+        }
+
+        refreshSequence.subscribe(new Subscriber<String>() {
+            @Override
+            public void onCompleted() {
+                LOGGER.debug("Completed polling for bucket \"{}\".", bucketName);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                LOGGER.debug("Error while polling bucket config, ignoring.", e);
+            }
+
+            @Override
+            public void onNext(String rawConfig) {
+                if (rawConfig.startsWith("{")) {
+                    provider().proposeBucketConfig(bucketName, rawConfig);
+                }
+            }
+        });
     }
 
     @Override
     public void markUntainted(final BucketConfig config) {
-        Subscription subscription = subscriptions.get(config.name());
-        if (subscription != null) {
+        if (subscriptions.contains(config.name())) {
             LOGGER.debug("Config for bucket \"" + config.name() + "\" marked as untainted, stopping polling.");
-            subscription.unsubscribe();
             subscriptions.remove(config.name());
         }
     }
@@ -151,49 +161,85 @@ public class CarrierRefresher extends AbstractRefresher {
             .subscribe(new Action1<BucketConfig>() {
                 @Override
                 public void call(final BucketConfig config) {
-                    InetAddress hostname = config.nodes().get(0).hostname();
+                    final String bucketName = config.name();
+                    Observable<String> refreshSequence = null;
 
-                    cluster()
-                        .<GetBucketConfigResponse>send(new GetBucketConfigRequest(config.name(), hostname))
-                        .filter(new Func1<GetBucketConfigResponse, Boolean>() {
-                            @Override
-                            public Boolean call(GetBucketConfigResponse response) {
-                                boolean good = response.status().isSuccess() && response.content() != null;
-                                if (!good) {
-                                    if (response.content() != null) {
-                                        response.content().release();
-                                    }
-                                }
-                                return good;
-                            }
-                        })
-                        .map(new Func1<GetBucketConfigResponse, String>() {
-                            @Override
-                            public String call(GetBucketConfigResponse response) {
-                                String raw = response.content().toString(CharsetUtil.UTF_8).trim();
-                                response.content().release();
-                                return raw.replace("$HOST", response.hostname().getHostName());
-                            }
-                        })
-                        .subscribe(new Subscriber<String>() {
-                            @Override
-                            public void onCompleted() {
+                    List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
+                    Collections.shuffle(nodeInfos);
+                    for (NodeInfo nodeInfo : nodeInfos) {
+                        if (refreshSequence == null) {
+                            refreshSequence = refreshAgainstNode(bucketName, nodeInfo.hostname());
+                        } else {
+                            refreshSequence = refreshSequence
+                                .onErrorResumeNext(refreshAgainstNode(bucketName, nodeInfo.hostname()));
+                        }
+                    }
 
-                            }
+                    if (refreshSequence == null) {
+                        LOGGER.debug("No node registered in the current configuration, skipping to refresh.");
+                        return;
+                    }
 
-                            @Override
-                            public void onError(Throwable e) {
-                                LOGGER.debug("Error while refreshing bucket config, ignoring.", e);
-                            }
+                    refreshSequence.subscribe(new Subscriber<String>() {
+                        @Override
+                        public void onCompleted() {
+                            LOGGER.debug("Completed refreshing config for bucket \"{}\"", bucketName);
+                        }
 
-                            @Override
-                            public void onNext(String rawConfig) {
-                                if (rawConfig.startsWith("{")) {
-                                    provider().proposeBucketConfig(config.name(), rawConfig);
-                                }
+                        @Override
+                        public void onError(Throwable e) {
+                            LOGGER.debug("Error while refreshing bucket config, ignoring.", e);
+                        }
+
+                        @Override
+                        public void onNext(String rawConfig) {
+                            if (rawConfig.startsWith("{")) {
+                                provider().proposeBucketConfig(config.name(), rawConfig);
                             }
-                        });
+                        }
+                    });
                 }
             });
     }
+
+    /**
+     * Helper method to fetch a config from a specific node of the cluster.
+     *
+     * @param bucketName the name of the bucket.
+     * @param hostname the hostname of the node to fetch from.
+     * @return a raw configuration or an error.
+     */
+    private Observable<String> refreshAgainstNode(final String bucketName, final InetAddress hostname) {
+        return cluster()
+            .<GetBucketConfigResponse>send(new GetBucketConfigRequest(bucketName, hostname))
+            .doOnNext(new Action1<GetBucketConfigResponse>() {
+                @Override
+                public void call(GetBucketConfigResponse response) {
+                    if (!response.status().isSuccess()) {
+                        if (response.content() != null && response.content().refCnt() > 0) {
+                            response.content().release();
+                        }
+                        throw new ConfigurationException("Could not fetch config from node: " + response);
+                    }
+                }
+            })
+            .map(new Func1<GetBucketConfigResponse, String>() {
+                @Override
+                public String call(GetBucketConfigResponse response) {
+                    String raw = response.content().toString(CharsetUtil.UTF_8).trim();
+                    if (response.content().refCnt() > 0) {
+                        response.content().release();
+                    }
+                    return raw.replace("$HOST", response.hostname().getHostName());
+                }
+            })
+            .doOnError(new Action1<Throwable>() {
+                @Override
+                public void call(Throwable ex) {
+                    LOGGER.debug("Could not fetch config from bucket \"" + bucketName + "\" against \""
+                        + hostname + "\".", ex);
+                }
+            });
+    }
+
 }
