@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,44 +19,29 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.config;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.net.InetAddress;
-import java.util.List;
+package com.couchbase.client.core;
 
 /**
- * A configuration representing the couchbase bucket.
+ * Exception which states that the service is not available for the bucket.
+ *
+ * @author Michael Nitschinger
+ * @since 2.0.3
  */
-@JsonDeserialize(as = DefaultCouchbaseBucketConfig.class)
-public interface CouchbaseBucketConfig extends BucketConfig {
+public class ServiceNotAvailableException extends CouchbaseException {
 
-    /**
-     * Returns the hosts for the partition map.
-     *
-     * @return list of hostnames.
-     */
-    List<NodeInfo> partitionHosts();
+    public ServiceNotAvailableException() {
+    }
 
-    /**
-     * All partitions, sorted by their partition index.
-     *
-     * @return all partitions.
-     */
-    List<Partition> partitions();
+    public ServiceNotAvailableException(String message) {
+        super(message);
+    }
 
-    /**
-     * The number of configured replicas for this bucket.
-     *
-     * @return number of replicas.
-     */
-    int numberOfReplicas();
+    public ServiceNotAvailableException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    /**
-     * Checks if the given hostname has active primary partitions assigned to it.
-     *
-     * @param hostname the hostname of the node to check against.
-     * @return true if it has, false otherwise.
-     */
-    boolean hasPrimaryPartitionsOnNode(InetAddress hostname);
+    public ServiceNotAvailableException(Throwable cause) {
+        super(cause);
+    }
 }

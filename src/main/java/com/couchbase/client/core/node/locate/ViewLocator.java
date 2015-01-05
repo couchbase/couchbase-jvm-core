@@ -21,25 +21,37 @@
  */
 package com.couchbase.client.core.node.locate;
 
+import com.couchbase.client.core.ServiceNotAvailableException;
+import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.node.Node;
-
 import java.util.Set;
 
 public class ViewLocator implements Locator {
+
+    private static final ServiceNotAvailableException NOT_AVAILABLE =
+        new ServiceNotAvailableException("Views are not available on this bucket type.");
 
     private long counter = 0;
 
     @Override
     public Node[] locate(CouchbaseRequest request, Set<Node> nodes, ClusterConfig config) {
+        BucketConfig bucketConfig = config.bucketConfig(request.bucket());
+        if (!(bucketConfig instanceof CouchbaseBucketConfig)) {
+            request.observable().onError(NOT_AVAILABLE);
+            return null;
+        }
+
         int item = (int) counter++ % nodes.size();
         int i = 0;
         for (Node node : nodes) {
-            if (i++ == item) {
+            if (i++ == item && ((CouchbaseBucketConfig) bucketConfig).hasPrimaryPartitionsOnNode(node.hostname())) {
                 return new Node[] { node };
             }
         }
-        throw new IllegalStateException("Node not found for request" + request);
+
+        return new Node[] {};
     }
 }

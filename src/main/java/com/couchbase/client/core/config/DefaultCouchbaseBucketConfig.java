@@ -24,17 +24,19 @@ package com.couchbase.client.core.config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
 
     private final PartitionInfo partitionInfo;
     private final List<NodeInfo> partitionHosts;
+    private final Set<InetAddress> nodesWithPrimaryPartitions;
 
     private final boolean tainted;
     private final long rev;
@@ -65,7 +67,27 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         this.partitionInfo = partitionInfo;
         this.tainted = !partitionInfo.forwardPartitions().isEmpty();
         this.partitionHosts = buildPartitionHosts(nodeInfos, partitionInfo);
+        this.nodesWithPrimaryPartitions = buildNodesWithPrimaryPartitions(nodeInfos, partitionInfo.partitions);
         this.rev = rev;
+    }
+
+    /**
+     * Pre-computes a set of nodes that have primary partitions active.
+     *
+     * @param nodeInfos the list of nodes.
+     * @param partitions the partitions.
+     * @return a set containing the addresses of nodes with primary partitions.
+     */
+    private static Set<InetAddress> buildNodesWithPrimaryPartitions(final List<NodeInfo> nodeInfos,
+        final List<Partition> partitions) {
+        Set<InetAddress> nodes = new HashSet<InetAddress>(nodeInfos.size());
+        for (int p = 0; p < partitions.size(); p++) {
+            int index = partitions.get(p).master();
+            if (index >= 0) {
+                nodes.add(nodeInfos.get(index).hostname());
+            }
+        }
+        return nodes;
     }
 
     /**
@@ -114,6 +136,11 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     @Override
     public boolean tainted() {
         return tainted;
+    }
+
+    @Override
+    public boolean hasPrimaryPartitionsOnNode(final InetAddress hostname) {
+        return nodesWithPrimaryPartitions.contains(hostname);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

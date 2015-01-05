@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,44 +19,27 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
+
 package com.couchbase.client.core.config;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.couchbase.client.core.util.Resources;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
 import java.net.InetAddress;
-import java.util.List;
 
-/**
- * A configuration representing the couchbase bucket.
- */
-@JsonDeserialize(as = DefaultCouchbaseBucketConfig.class)
-public interface CouchbaseBucketConfig extends BucketConfig {
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-    /**
-     * Returns the hosts for the partition map.
-     *
-     * @return list of hostnames.
-     */
-    List<NodeInfo> partitionHosts();
+public class DefaultCouchbaseBucketConfigTest {
 
-    /**
-     * All partitions, sorted by their partition index.
-     *
-     * @return all partitions.
-     */
-    List<Partition> partitions();
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    /**
-     * The number of configured replicas for this bucket.
-     *
-     * @return number of replicas.
-     */
-    int numberOfReplicas();
+    @Test
+    public void shouldHavePrimaryPartitionsOnNode() throws Exception {
+        String raw = Resources.read("config_with_mixed_partitions.json", getClass());
+        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
 
-    /**
-     * Checks if the given hostname has active primary partitions assigned to it.
-     *
-     * @param hostname the hostname of the node to check against.
-     * @return true if it has, false otherwise.
-     */
-    boolean hasPrimaryPartitionsOnNode(InetAddress hostname);
+        assertTrue(config.hasPrimaryPartitionsOnNode(InetAddress.getByName("1.2.3.4")));
+        assertFalse(config.hasPrimaryPartitionsOnNode(InetAddress.getByName("2.3.4.5")));
+    }
 }
