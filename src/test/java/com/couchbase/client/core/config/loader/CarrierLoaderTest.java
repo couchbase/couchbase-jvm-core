@@ -97,7 +97,7 @@ public class CarrierLoaderTest {
     public void shouldThrowExceptionIfNotDiscovered() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> response = Observable.just(
-                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE, "bucket", null, host)
+                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE, "bucket", Unpooled.EMPTY_BUFFER, host)
         );
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
@@ -109,7 +109,7 @@ public class CarrierLoaderTest {
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            assertTrue("Unexpected exception: " + ex, false);
         }
     }
 
