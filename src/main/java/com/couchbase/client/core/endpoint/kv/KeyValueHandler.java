@@ -405,12 +405,16 @@ public class KeyValueHandler
 
         // Release request content from external resources if not retried again.
         if (!status.equals(ResponseStatus.RETRY)) {
+            ByteBuf content = null;
             if (request instanceof BinaryStoreRequest) {
-                ((BinaryStoreRequest) request).content().release();
+                content = ((BinaryStoreRequest) request).content();
             } else if (request instanceof AppendRequest) {
-                ((AppendRequest) request).content().release();
+                content = ((AppendRequest) request).content();
             } else if (request instanceof PrependRequest) {
-                ((PrependRequest) request).content().release();
+                content = ((PrependRequest) request).content();
+            }
+            if (content != null && content.refCnt() > 0) {
+                content.release();
             }
         }
 
