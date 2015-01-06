@@ -689,7 +689,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(0, requestContent.refCnt());
     }
 
@@ -710,7 +710,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
     }
 
@@ -731,7 +731,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(0, requestContent.refCnt());
     }
 
@@ -751,7 +751,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
     }
 
@@ -772,7 +772,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(0, requestContent.refCnt());
     }
 
@@ -793,7 +793,7 @@ public class KeyValueHandlerTest {
         assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
         channel.writeInbound(response);
-        assertEquals(0, content.refCnt());
+        assertEquals(1, content.refCnt());
         assertEquals(1, requestContent.refCnt());
 
     }
