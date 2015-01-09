@@ -24,9 +24,7 @@ package com.couchbase.client.core.node.locate;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.config.DefaultNodeInfo;
-import com.couchbase.client.core.config.DefaultPartition;
 import com.couchbase.client.core.config.NodeInfo;
-import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.node.Node;
@@ -55,6 +53,10 @@ public class KeyValueLocatorTest {
     public void shouldLocateGetRequestForCouchbaseBucket() throws Exception {
         Locator locator = new KeyValueLocator();
 
+
+        NodeInfo nodeInfo1 = new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP);
+        NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP);
+
         GetRequest getRequestMock = mock(GetRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
         Set<Node> nodes = new HashSet<Node>();
@@ -67,16 +69,10 @@ public class KeyValueLocatorTest {
         when(getRequestMock.bucket()).thenReturn("bucket");
         when(getRequestMock.key()).thenReturn("key");
         when(configMock.bucketConfig("bucket")).thenReturn(bucketMock);
-        when(bucketMock.partitions()).thenReturn(Arrays.asList(
-            new DefaultPartition((short) 0, new short[] {1}),
-            new DefaultPartition((short) 0, new short[] {1}),
-            new DefaultPartition((short) 1, new short[] {0}),
-            (Partition) new DefaultPartition((short) 1, new short[] {0})
-        ));
-        when(bucketMock.partitionHosts()).thenReturn(Arrays.asList(
-            (NodeInfo) new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP),
-            new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP)
-        ));
+        when(bucketMock.nodes()).thenReturn(Arrays.asList(nodeInfo1, nodeInfo2));
+        when(bucketMock.numberOfPartitions()).thenReturn(1024);
+        when(bucketMock.nodeIndexForMaster(656)).thenReturn((short) 0);
+        when(bucketMock.nodeAtIndex(0)).thenReturn(nodeInfo1);
 
         Node[] foundNodes = locator.locate(getRequestMock, nodes, configMock);
         assertEquals(node1Mock, foundNodes[0]);

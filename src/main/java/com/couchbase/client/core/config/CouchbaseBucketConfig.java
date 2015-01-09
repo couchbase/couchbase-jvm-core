@@ -23,7 +23,6 @@ package com.couchbase.client.core.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.net.InetAddress;
-import java.util.List;
 
 /**
  * A configuration representing the couchbase bucket.
@@ -32,18 +31,36 @@ import java.util.List;
 public interface CouchbaseBucketConfig extends BucketConfig {
 
     /**
-     * Returns the hosts for the partition map.
+     * Returns the node index for the given partition index and master.
      *
-     * @return list of hostnames.
+     * @param partition the index of the partition.
+     * @return the index of the node.
      */
-    List<NodeInfo> partitionHosts();
+    short nodeIndexForMaster(int partition);
 
     /**
-     * All partitions, sorted by their partition index.
+     * Returns the node index for the given partition index and the replica.
      *
-     * @return all partitions.
+     * @param partition the index of the partition.
+     * @param replica the replica number.
+     * @return the index of the node.
      */
-    List<Partition> partitions();
+    short nodeIndexForReplica(int partition, int replica);
+
+    /**
+     * Returns the total number of partitions.
+     *
+     * @return the number of partitions.
+     */
+    int numberOfPartitions();
+
+    /**
+     * Returns information for the node at the given index.
+     *
+     * @param nodeIndex the index of the node.
+     * @return the information of the node at this index.
+     */
+    NodeInfo nodeAtIndex(int nodeIndex);
 
     /**
      * The number of configured replicas for this bucket.
