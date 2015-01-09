@@ -34,7 +34,7 @@ import java.util.Set;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
 
-    private final PartitionInfo partitionInfo;
+    private final CouchbasePartitionInfo partitionInfo;
     private final List<NodeInfo> partitionHosts;
     private final Set<InetAddress> nodesWithPrimaryPartitions;
 
@@ -60,14 +60,14 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         @JsonProperty("nodeLocator") String locator,
         @JsonProperty("uri") String uri,
         @JsonProperty("streamingUri") String streamingUri,
-        @JsonProperty("vBucketServerMap") PartitionInfo partitionInfo,
+        @JsonProperty("vBucketServerMap") CouchbasePartitionInfo partitionInfo,
         @JsonProperty("nodes") List<NodeInfo> nodeInfos,
         @JsonProperty("nodesExt") List<PortInfo> portInfos) {
         super(name, BucketNodeLocator.fromConfig(locator), uri, streamingUri, nodeInfos, portInfos);
         this.partitionInfo = partitionInfo;
-        this.tainted = !partitionInfo.forwardPartitions().isEmpty();
+        this.tainted = partitionInfo.tainted();
         this.partitionHosts = buildPartitionHosts(nodeInfos, partitionInfo);
-        this.nodesWithPrimaryPartitions = buildNodesWithPrimaryPartitions(nodeInfos, partitionInfo.partitions);
+        this.nodesWithPrimaryPartitions = buildNodesWithPrimaryPartitions(nodeInfos, partitionInfo.partitions());
         this.rev = rev;
     }
 
@@ -81,8 +81,8 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     private static Set<InetAddress> buildNodesWithPrimaryPartitions(final List<NodeInfo> nodeInfos,
         final List<Partition> partitions) {
         Set<InetAddress> nodes = new HashSet<InetAddress>(nodeInfos.size());
-        for (int p = 0; p < partitions.size(); p++) {
-            int index = partitions.get(p).master();
+        for (Partition partition : partitions) {
+            int index = partition.master();
             if (index >= 0) {
                 nodes.add(nodeInfos.get(index).hostname());
             }
@@ -97,10 +97,10 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
      * @param partitionInfo the partition info.
      * @return a ordered reference list for the partition hosts.
      */
-    private static List<NodeInfo> buildPartitionHosts(List<NodeInfo> nodeInfos, PartitionInfo partitionInfo) {
+    private static List<NodeInfo> buildPartitionHosts(List<NodeInfo> nodeInfos, CouchbasePartitionInfo partitionInfo) {
         List<NodeInfo> partitionHosts = new ArrayList<NodeInfo>();
         for (String rawHost : partitionInfo.partitionHosts()) {
-            InetAddress convertedHost = null;
+            InetAddress convertedHost;
             try {
                 convertedHost = InetAddress.getByName(rawHost);
             } catch (UnknownHostException e) {
@@ -112,7 +112,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
                 }
             }
         }
-        if (partitionHosts.size() != partitionInfo.partitionHosts().size()) {
+        if (partitionHosts.size() != partitionInfo.partitionHosts().length) {
             throw new ConfigurationException("Partition size is not equal after conversion, this is a bug.");
         }
         return partitionHosts;
@@ -150,79 +150,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
 
     @Override
     public NodeInfo nodeAtIndex(int nodeIndex) {
-        return nodes().get(nodeIndex);
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    static class PartitionInfo {
-
-        private final int numberOfReplicas;
-        private final List<String> partitionHosts;
-        private final List<Partition> partitions;
-        private final List<Partition> forwardPartitions;
-
-        PartitionInfo(
-            @JsonProperty("numReplicas") int numberOfReplicas,
-            @JsonProperty("serverList") List<String> partitionHosts,
-            @JsonProperty("vBucketMap") List<List<Short>> partitions,
-            @JsonProperty("vBucketMapForward") List<List<Short>> forwardPartitions) {
-            this.numberOfReplicas = numberOfReplicas;
-            trimPort(partitionHosts);
-            this.partitionHosts = partitionHosts;
-            this.partitions = fromPartitionList(partitions);
-            this.forwardPartitions = fromPartitionList(forwardPartitions);
-        }
-
-        public int numberOfReplicas() {
-            return numberOfReplicas;
-        }
-
-        public List<String> partitionHosts() {
-            return partitionHosts;
-        }
-
-        public List<Partition> partitions() {
-            return partitions;
-        }
-
-        public List<Partition> forwardPartitions() {
-            return forwardPartitions;
-        }
-
-        private static void trimPort(List<String> input) {
-            for (int i = 0; i < input.size(); i++) {
-                String[] parts =  input.get(i).split(":");
-                input.set(i, parts[0]);
-            }
-        }
-
-        private static List<Partition> fromPartitionList(List<List<Short>> input) {
-            List<Partition> partitions = new ArrayList<Partition>();
-            if (input == null) {
-                return partitions;
-            }
-
-            for (List<Short> partition : input) {
-                short master = partition.remove(0);
-                short[] replicas = new short[partition.size()];
-                int i = 0;
-                for (short replica : partition) {
-                    replicas[i++] = replica;
-                }
-                partitions.add(new DefaultPartition(master, replicas));
-            }
-            return partitions;
-        }
-
-        @Override
-        public String toString() {
-            return "PartitionInfo{"
-                + "numberOfReplicas=" + numberOfReplicas
-                + ", partitionHosts=" + partitionHosts
-                + ", partitions=" + partitions
-                + ", forwardPartitions=" + forwardPartitions
-                + '}';
-        }
+        return partitionHosts.get(nodeIndex);
     }
 
     @Override
