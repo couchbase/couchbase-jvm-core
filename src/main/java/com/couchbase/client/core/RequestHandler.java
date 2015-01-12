@@ -176,6 +176,14 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 }
             }
 
+            //short-circuit some kind of requests for which we know there won't be any handler to respond.
+            try {
+                checkFeaturesForRequest(request);
+            } catch (UnsupportedOperationException e) {
+                request.observable().onError(e);
+                return;
+            }
+
             Node[] found = locator(request).locate(request, nodes, configuration.get());
 
             if (found == null) {
@@ -198,6 +206,21 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             }
         } finally {
             event.setRequest(null);
+        }
+    }
+
+    /**
+     * Checks, for a sub-set of {@link CouchbaseRequest}, if the current environment has
+     * the necessary feature activated. If not, throws an {@link UnsupportedOperationException}.
+     *
+     * @param request the request to check.
+     * @throws UnsupportedOperationException if the request type needs a particular feature which isn't activated.
+     */
+    protected void checkFeaturesForRequest(CouchbaseRequest request) {
+        if (request instanceof QueryRequest && !environment.queryEnabled()) {
+            throw new UnsupportedOperationException("Request type needs a feature to be enabled in environment: query");
+        } else if (request instanceof  DCPRequest && !environment.dcpEnabled()) {
+            throw new UnsupportedOperationException("Request type needs a feature to be enabled in environment: dcp");
         }
     }
 
