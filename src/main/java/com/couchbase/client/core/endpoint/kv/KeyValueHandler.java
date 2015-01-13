@@ -444,9 +444,9 @@ public class KeyValueHandler
         } else if (request instanceof RemoveRequest) {
             response = new RemoveResponse(status, cas, bucket, content, request);
         } else if (request instanceof CounterRequest) {
-            long value = status.isSuccess() ? msg.content().readLong() : 0;
-            if (msg.content() != null) {
-                msg.content().release();
+            long value = status.isSuccess() ? content.readLong() : 0;
+            if (content != null) {
+                content.release();
             }
             response = new CounterResponse(status, bucket, value, cas, request);
         } else if (request instanceof UnlockRequest) {
