@@ -53,6 +53,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import rx.Scheduler;
 import rx.subjects.ReplaySubject;
+
 import java.util.Queue;
 
 /**
@@ -458,6 +459,9 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             viewInfoObservable.onCompleted();
         }
         cleanupViewStates();
+        if (responseContent != null && responseContent.refCnt() > 0) {
+            responseContent.release();
+        }
         super.handlerRemoved(ctx);
     }
 }
