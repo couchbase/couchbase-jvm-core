@@ -202,6 +202,9 @@ public class Observe {
                         int persisted = 0;
                         boolean persistedMaster = false;
                         for (ObserveResponse response : observeResponses) {
+                            if (response.content() != null && response.content().refCnt() > 0) {
+                                response.content().release();
+                            }
                             ObserveResponse.ObserveStatus status = response.observeStatus();
                             if (response.master()) {
                                 if (status == persistIdentifier) {
