@@ -71,6 +71,10 @@ public class MutationMessage extends AbstractDCPRequest {
         return expiration;
     }
 
+    public int lockTime() {
+        return lockTime;
+    }
+
     public int flags() {
         return flags;
     }
