@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint.query;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
+import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -33,7 +34,6 @@ import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.message.query.QueryRequest;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufProcessor;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -216,33 +216,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * @return
      */
     private static int findSectionClosingPosition(ByteBuf buf, char openingChar, char closingChar) {
-        ClosingPositionBufProcessor processor = new ClosingPositionBufProcessor(openingChar, closingChar);
-        return buf.forEachByte(processor);
-    }
-
-    private static class ClosingPositionBufProcessor implements ByteBufProcessor {
-        private int openCount = 0;
-        private final char openingChar;
-        private final char closingChar;
-
-        public ClosingPositionBufProcessor(char openingChar, char closingChar) {
-            this.openingChar = openingChar;
-            this.closingChar = closingChar;
-        }
-
-        @Override
-        public boolean process(byte current) throws Exception {
-            if (current == openingChar) {
-                openCount++;
-            } else if (current == closingChar && openCount > 0) {
-                openCount--;
-                if (openCount == 0) {
-                    //This will make the ByteBuf.forEachByte return current byte's index
-                    return false;
-                }
-            }
-            return true;
-        }
+        return buf.forEachByte(new ClosingPositionBufProcessor(openingChar, closingChar));
     }
 
     /**
@@ -496,21 +470,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
 
         while (true) {
             int openBracketPos = bytesBeforeInResponse('{');
-            int closeBracketPos = -1;
-            int openBrackets = 0;
-            for (int i = responseContent.readerIndex(); i <= responseContent.writerIndex(); i++) {
-                byte current = responseContent.getByte(i);
-                if (current == '{') {
-                    openBrackets++;
-                } else if (current == '}' && openBrackets > 0) {
-                    openBrackets--;
-                    if (openBrackets == 0) {
-                        closeBracketPos = i;
-                        break;
-                    }
-                }
-            }
-
+            int closeBracketPos = findSectionClosingPosition(responseContent, '{', '}');
             if (closeBracketPos == -1) {
                 break;
             }
