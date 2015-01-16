@@ -200,16 +200,17 @@ public class CouchbaseCore implements ClusterFacade {
     public <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request) {
         if (request instanceof InternalRequest) {
             handleInternalRequest(request);
+            return (Observable<R>) request.observable().observeOn(environment.scheduler());
         } else if (request instanceof ClusterRequest) {
             handleClusterRequest(request);
+            return (Observable<R>) request.observable().observeOn(environment.scheduler());
         } else {
             boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
             if (!published) {
                 request.observable().onError(BACKPRESSURE_EXCEPTION);
             }
+            return (Observable<R>) request.observable();
         }
-
-        return (Observable<R>) request.observable().observeOn(environment.scheduler());
     }
 
     /**

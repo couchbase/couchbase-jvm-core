@@ -30,10 +30,13 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.lmax.disruptor.EventSink;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.CharsetUtil;
+import rx.Scheduler;
+import rx.functions.Action0;
 import rx.subjects.Subject;
 
 import java.io.IOException;
@@ -179,7 +182,25 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected void publishResponse(final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
-        responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, observable);
+        if (response.status() != ResponseStatus.RETRY && observable != null) {
+            final Scheduler.Worker worker = env().scheduler().createWorker();
+            worker.schedule(new Action0() {
+                @Override
+                public void call() {
+                    try {
+                        observable.onNext(response);
+                        observable.onCompleted();
+                    } catch(Exception ex) {
+                        LOGGER.warn("Caught exception while onNext on observable", ex);
+                        observable.onError(ex);
+                    } finally {
+                        worker.unsubscribe();
+                    }
+                }
+            });
+        } else {
+            responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, observable);
+        }
     }
 
     /**
