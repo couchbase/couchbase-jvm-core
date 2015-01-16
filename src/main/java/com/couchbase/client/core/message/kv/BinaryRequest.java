@@ -52,4 +52,11 @@ public interface BinaryRequest extends CouchbaseRequest {
      * @return the {@link BinaryRequest} for proper chaining.
      */
     BinaryRequest partition(short id);
+
+    /**
+     * A opaque value representing this request.
+     *
+     * @return an automatically generated opaque value.
+     */
+    int opaque();
 }

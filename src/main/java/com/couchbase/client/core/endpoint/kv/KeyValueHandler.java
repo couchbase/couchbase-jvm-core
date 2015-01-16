@@ -53,11 +53,6 @@ import com.couchbase.client.core.message.kv.UnlockRequest;
 import com.couchbase.client.core.message.kv.UnlockResponse;
 import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.message.kv.UpsertResponse;
-import com.lmax.disruptor.EventSink;
-import com.lmax.disruptor.RingBuffer;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
@@ -65,6 +60,11 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultB
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import com.lmax.disruptor.EventSink;
+import com.lmax.disruptor.RingBuffer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Queue;
 
@@ -157,6 +157,8 @@ public class KeyValueHandler
         if (msg.partition() >= 0) {
             request.setReserved(msg.partition());
         }
+
+        request.setOpaque(msg.opaque());
 
         // Retain just the content, since a response could be "Not my Vbucket".
         // The response handler checks the status and then releases if needed.
@@ -401,6 +403,11 @@ public class KeyValueHandler
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
         BinaryRequest request = currentRequest();
+
+        if (request.opaque() != msg.getOpaque()) {
+            throw new IllegalStateException("Opaque values for " + msg.getClass() + " do not match.");
+        }
+
         ResponseStatus status = convertStatus(msg.getStatus());
 
         // Release request content from external resources if not retried again.
