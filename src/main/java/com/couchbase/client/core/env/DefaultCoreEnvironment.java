@@ -64,6 +64,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int VIEW_ENDPOINTS = 1;
     public static final int QUERY_ENDPOINTS = 1;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
+    public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -131,6 +132,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
     private final Delay observeIntervalDelay;
+    private final Delay reconnectDelay;
     private final String userAgent;
     private final String packageNameAndVersion;
 
@@ -168,6 +170,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         packageNameAndVersion = stringPropertyOr("packageNameAndVersion", builder.packageNameAndVersion());
         userAgent = stringPropertyOr("userAgent", builder.userAgent());
         observeIntervalDelay = builder.observeIntervalDelay();
+        reconnectDelay = builder.reconnectDelay();
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -365,6 +368,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return observeIntervalDelay;
     }
 
+    @Override
+    public Delay reconnectDelay() {
+        return reconnectDelay;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -389,6 +397,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int viewServiceEndpoints = VIEW_ENDPOINTS;
         private int queryServiceEndpoints = QUERY_ENDPOINTS;
         private Delay observeIntervalDelay = OBSERVE_INTERVAL_DELAY;
+        private Delay reconnectDelay = RECONNECT_DELAY;
         private EventLoopGroup ioPool;
         private Scheduler scheduler;
 
@@ -613,6 +622,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         public Builder observeIntervalDelay(final Delay observeIntervalDelay) {
             this.observeIntervalDelay = observeIntervalDelay;
+            return this;
+        }
+
+        @Override
+        public Delay reconnectDelay() {
+            return reconnectDelay;
+        }
+
+        public Builder reconnectDelay(final Delay reconnectDelay) {
+            this.reconnectDelay = reconnectDelay;
             return this;
         }
 
