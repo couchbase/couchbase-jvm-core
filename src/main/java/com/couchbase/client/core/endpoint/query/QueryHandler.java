@@ -207,6 +207,19 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     }
 
     /**
+     * Checks if there's not another section opened before the current one,
+     * which starts at openBracketPos
+     *
+     * @param openBracketPos the position of the current section's opening bracket
+     * @return true if transition to next state sould be made because there's a new
+     * section opening
+     */
+    private boolean isEmptySection(int openBracketPos) {
+        int nextColon = bytesBeforeInResponse(':');
+        return nextColon > -1 && nextColon < openBracketPos;
+    }
+
+    /**
      * Finds the position of the correct closing character, taking into account the fact that before the correct one,
      * other sub section with same opening and closing characters can be encountered.
      *
@@ -371,9 +384,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * For now skip the signature.
      */
     private void skipQuerySignature() {
-        int nextColon = bytesBeforeInResponse(':');
         int openPos = bytesBeforeInResponse('{');
-        if (openPos < nextColon) { //checks for empty signature
+        if (!isEmptySection(openPos)) { //checks for empty signature
             int closePos = findSectionClosingPosition(responseContent, '{', '}');
             if (closePos > 0) {
                 int length = closePos - openPos - responseContent.readerIndex() + 1;
@@ -391,8 +403,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private void parseQueryRows() {
         while (true) {
             int openBracketPos = bytesBeforeInResponse('{');
-            int nextColonPos = bytesBeforeInResponse(':');
-            if (nextColonPos < openBracketPos) {
+            if (isEmptySection(openBracketPos)) {
                 queryParsingState = transitionToNextToken();
                 break;
             }
@@ -417,8 +428,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private void parseQueryError() {
         while (true) {
             int openBracketPos = bytesBeforeInResponse('{');
-            int nextColonPos = bytesBeforeInResponse(':');
-            if (nextColonPos < openBracketPos) {
+            if (isEmptySection(openBracketPos)) {
                 queryParsingState = transitionToNextToken(); //warnings or status
                 break;
             }
