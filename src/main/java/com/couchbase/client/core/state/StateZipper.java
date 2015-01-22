@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Couchbase, Inc.
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,42 +21,33 @@
  */
 package com.couchbase.client.core.state;
 
-import rx.Observable;
-
 /**
- * A stateful component that changes its state and notifies subscribed parties.
+ * Describes a generic {@link StateZipper}.
+ *
+ * See the actual implementation for the {@link AbstractStateZipper} for more details and usage information.
  *
  * @author Michael Nitschinger
- * @since 1.0
+ * @since 1.1.0
  */
-public interface Stateful<S extends Enum> {
+public interface StateZipper<T, S extends Enum> extends Stateful<S> {
 
     /**
-     * Returns a infinite observable which gets updated when the state of the component changes.
+     * Register the given stream to be zipped into the state computation.
      *
-     * @return a {@link Observable} updated with state transitions.
+     * @param identifier the identifier used to uniquely identify the stream.
+     * @param stateful the stateful compontent to be registered.
      */
-    Observable<S> states();
+    void register(T identifier, Stateful<S> stateful);
 
     /**
-     * Returns the current state.
+     * Deregisters a stream identified by the identifier from the state computation.
      *
-     * @return the current state.
+     * @param identifier the identifier used to uniquely identify the stream.
      */
-    S state();
+    void deregister(T identifier);
 
     /**
-     * Check if the given state is the same as the current one.
-     *
-     * @param state the stats to check against.
-     * @return true if it is the same, false otherwise.
+     * Terminate the zipper and deregister all registered streams.
      */
-    boolean isState(S state);
-
-    /**
-     * Returns true if there are subscribers observing the state stream.
-     *
-     * @return true if at least one does, false otherwise.
-     */
-    boolean hasSubscribers();
+    void terminate();
 }
