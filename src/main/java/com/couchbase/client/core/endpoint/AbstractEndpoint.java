@@ -119,6 +119,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private final CoreEnvironment env;
 
     /**
+     * Defines if the endpoint should destroy itself after one successful msg.
+     */
+    private final boolean isTransient;
+
+    /**
      * Factory which handles {@link SSLEngine} creation.
      */
     private SSLEngineFactory sslEngineFactory;
@@ -149,19 +154,22 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Constructor to which allows to pass in an artificial bootstrap adapter.
      *
      * This method should not be used outside of tests. Please use the
-     * {@link #AbstractEndpoint(String, String, String, int, CoreEnvironment, RingBuffer)} constructor instead.
+     * {@link #AbstractEndpoint(String, String, String, int, CoreEnvironment, RingBuffer, boolean)} constructor
+     * instead.
      *
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
      * @param adapter the bootstrap adapter.
      */
-    protected AbstractEndpoint(final String bucket, final String password, final BootstrapAdapter adapter) {
+    protected AbstractEndpoint(final String bucket, final String password, final BootstrapAdapter adapter,
+        final boolean isTransient) {
         super(LifecycleState.DISCONNECTED);
         bootstrap = adapter;
         this.bucket = bucket;
         this.password = password;
         this.responseBuffer = null;
         this.env = null;
+        this.isTransient = isTransient;
     }
 
     /**
@@ -175,12 +183,13 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param responseBuffer the response buffer for passing responses up the stack.
      */
     protected AbstractEndpoint(final String hostname, final String bucket, final String password, final int port,
-        final CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer) {
+        final CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer, boolean isTransient) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.password = password;
         this.responseBuffer = responseBuffer;
         this.env = environment;
+        this.isTransient = isTransient;
         if (environment.sslEnabled()) {
             this.sslEngineFactory = new SSLEngineFactory(environment);
         }
@@ -263,6 +272,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         } else if (future.cause() instanceof ClosedChannelException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
                                 + "Generic Failure.");
+                            transitionState(LifecycleState.DISCONNECTED);
+                            LOGGER.warn(future.cause().getMessage());
+                            observable.onError(future.cause());
+                        } else if (isTransient) {
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
@@ -354,6 +367,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     public void notifyChannelInactive() {
         LOGGER.debug(logIdent(channel, this) + "Got notified from Channel as inactive.");
+        if (isTransient) {
+            return;
+        }
 
         responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, SignalConfigReload.INSTANCE, null);
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {

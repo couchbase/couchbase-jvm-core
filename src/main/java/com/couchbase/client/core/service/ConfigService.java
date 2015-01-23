@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,46 +25,18 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.config.ConfigEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.config.BucketStreamingRequest;
-import com.couchbase.client.core.message.internal.SignalFlush;
-import com.couchbase.client.core.service.strategies.RandomSelectionStrategy;
-import com.couchbase.client.core.service.strategies.SelectionStrategy;
-import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
-import rx.Subscriber;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ConfigService extends AbstractService {
-
-    private static final SelectionStrategy STRATEGY = new RandomSelectionStrategy();
-    private static final EndpointFactory FACTORY = new ConfigEndpointFactory();
-    private static final int INITIAL_ENDPOINTS = 1;
-
-    private final String hostname;
-    private final String bucket;
-    private final String password;
-    private final int port;
-    private final CoreEnvironment env;
-    private final RingBuffer<ResponseEvent> responseBuffer;
+public class ConfigService extends AbstractOnDemandService {
 
     /**
-     * Contains a list of pinned {@link Endpoint}s.
+     * The endpoint factory.
      */
-    private final List<Endpoint> pinnedEndpoints;
+    private static final EndpointFactory FACTORY = new ConfigEndpointFactory();
 
     public ConfigService(String hostname, String bucket, String password, int port, CoreEnvironment env,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, INITIAL_ENDPOINTS, STRATEGY, responseBuffer, FACTORY);
-        pinnedEndpoints = new ArrayList<Endpoint>();
-        this.hostname = hostname;
-        this.bucket = bucket;
-        this.password = password;
-        this.port = port;
-        this.env = env;
-        this.responseBuffer = responseBuffer;
+        RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, responseBuffer, FACTORY);
     }
 
     @Override
@@ -72,40 +44,10 @@ public class ConfigService extends AbstractService {
         return ServiceType.CONFIG;
     }
 
-    @Override
-    public void send(final CouchbaseRequest request) {
-        if (request instanceof BucketStreamingRequest) {
-            final Endpoint endpoint = FACTORY.create(hostname, bucket, password, port, env, responseBuffer);
-            endpointStates.add(endpoint.states());
-            endpoint
-                .connect()
-                .subscribe(new Subscriber<LifecycleState>() {
-                    @Override
-                    public void onCompleted() {
-                        pinnedEndpoints.add(endpoint);
-                        endpoint.send(request);
-                        endpoint.send(SignalFlush.INSTANCE);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        request.observable().onError(e);
-                    }
-
-                    @Override
-                    public void onNext(LifecycleState state) {
-
-                    }
-                });
-        } else {
-            super.send(request);
-        }
-    }
-
     static class ConfigEndpointFactory implements EndpointFactory {
         @Override
         public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
-                               RingBuffer<ResponseEvent> responseBuffer) {
+            RingBuffer<ResponseEvent> responseBuffer) {
             return new ConfigEndpoint(hostname, bucket, password, port, env, responseBuffer);
         }
     }

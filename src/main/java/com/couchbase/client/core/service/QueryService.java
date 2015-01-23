@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +30,12 @@ import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
 /**
- * The {@link QueryService} is composed of and manages {@link QueryEndpoint}s.
+ * The {@link QueryService} is composed of and manages {@link com.couchbase.client.core.endpoint.query.QueryEndpoint}s.
  *
  * @author Michael Nitschinger
  * @since 1.0
  */
-public class QueryService extends AbstractService {
+public class QueryService extends AbstractPoolingService {
 
     /**
      * The endpoint selection strategy.
@@ -59,7 +59,8 @@ public class QueryService extends AbstractService {
      */
     public QueryService(final String hostname, final String bucket, final String password, final int port,
         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.viewEndpoints(), STRATEGY, responseBuffer, FACTORY);
+        super(hostname, bucket, password, port, env, env.queryEndpoints(), env.queryEndpoints(), STRATEGY,
+                responseBuffer, FACTORY);
     }
 
 
@@ -69,7 +70,7 @@ public class QueryService extends AbstractService {
     }
 
     /**
-     * The factory for {@link QueryEndpoint}s.
+     * The factory for {@link com.couchbase.client.core.endpoint.query.QueryEndpoint}s.
      */
     static class QueryEndpointFactory implements EndpointFactory {
         @Override

@@ -104,7 +104,7 @@ public class KeyValueHandlerTest {
     public void setup() {
         eventSink = new CollectingResponseEventSink();
         requestQueue = new ArrayDeque<BinaryRequest>();
-        channel = new EmbeddedChannel(new KeyValueHandler(mock(AbstractEndpoint.class), eventSink, requestQueue));
+        channel = new EmbeddedChannel(new KeyValueHandler(mock(AbstractEndpoint.class), eventSink, requestQueue, false));
     }
 
     @Test

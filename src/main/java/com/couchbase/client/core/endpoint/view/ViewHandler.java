@@ -104,8 +104,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
-    public ViewHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer) {
-        super(endpoint, responseBuffer);
+    public ViewHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, boolean isTransient) {
+        super(endpoint, responseBuffer, isTransient);
     }
 
     /**
@@ -115,8 +115,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    ViewHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<ViewRequest> queue) {
-        super(endpoint, responseBuffer, queue);
+    ViewHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<ViewRequest> queue, boolean isTransient) {
+        super(endpoint, responseBuffer, queue, isTransient);
     }
 
     @Override

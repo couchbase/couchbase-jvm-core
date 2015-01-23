@@ -101,8 +101,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
-    public ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer) {
-        super(endpoint, responseBuffer);
+    public ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, boolean isTransient) {
+        super(endpoint, responseBuffer, isTransient);
     }
 
     /**
@@ -112,8 +112,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<ConfigRequest> queue) {
-        super(endpoint, responseBuffer, queue);
+    ConfigHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<ConfigRequest> queue, boolean isTransient) {
+        super(endpoint, responseBuffer, queue, isTransient);
     }
 
     @Override

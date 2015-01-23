@@ -21,66 +21,38 @@
  */
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.ResponseEvent;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.message.CouchbaseMessage;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import rx.schedulers.Schedulers;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import com.couchbase.client.core.CouchbaseException;
-import com.couchbase.client.core.ResponseEvent;
-import com.couchbase.client.core.endpoint.query.QueryHandler;
-import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.message.CouchbaseMessage;
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.query.GenericQueryRequest;
-import com.couchbase.client.core.message.query.GenericQueryResponse;
-import com.couchbase.client.core.message.query.QueryRequest;
-import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
-import com.couchbase.client.core.util.Resources;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.DefaultLastHttpContent;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.util.CharsetUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
-import rx.subjects.Subject;
 
 /**
  * Verifies the correct functionality of the {@link AbstractGenericHandler}.
@@ -137,7 +109,7 @@ public class AbstractGenericHandlerTest {
 
         ArrayDeque<Q> queue = new ArrayDeque<Q>();
 
-        return new AbstractGenericHandler<R, E, Q>(endpoint, responseRingBuffer, queue) {
+        return new AbstractGenericHandler<R, E, Q>(endpoint, responseRingBuffer, queue, false) {
             @Override
             protected E encodeRequest(ChannelHandlerContext ctx, Q msg) throws Exception {
                 return delegate.encodeRequest(ctx, msg);

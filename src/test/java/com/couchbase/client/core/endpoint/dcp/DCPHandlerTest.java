@@ -71,7 +71,7 @@ public class DCPHandlerTest {
     public void setup() {
         eventSink = new CollectingResponseEventSink();
         requestQueue = new ArrayDeque<DCPRequest>();
-        channel = new EmbeddedChannel(new DCPHandler(mock(AbstractEndpoint.class), eventSink, requestQueue));
+        channel = new EmbeddedChannel(new DCPHandler(mock(AbstractEndpoint.class), eventSink, requestQueue, true));
     }
 
     @Test

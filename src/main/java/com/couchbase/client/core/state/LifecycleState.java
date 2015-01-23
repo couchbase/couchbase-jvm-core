@@ -72,6 +72,14 @@ public enum LifecycleState {
     /**
      * The component is connected, but with service degradation.
      */
-    DEGRADED
+    DEGRADED,
+
+    /**
+     * The component is idle and has no associated connections to identify.
+     *
+     * This is most commonly the case with "on demand" services, when no endpoints are
+     * registered. In this case "DISCONNECTED" is not the right way to describe its state.
+     */
+    IDLE
 
 }

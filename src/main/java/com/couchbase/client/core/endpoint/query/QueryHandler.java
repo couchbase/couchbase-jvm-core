@@ -127,8 +127,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
-    public QueryHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer) {
-        super(endpoint, responseBuffer);
+    public QueryHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, boolean isTransient) {
+        super(endpoint, responseBuffer, isTransient);
     }
 
     /**
@@ -138,8 +138,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    QueryHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<QueryRequest> queue) {
-        super(endpoint, responseBuffer, queue);
+    QueryHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<QueryRequest> queue, boolean isTransient) {
+        super(endpoint, responseBuffer, queue, isTransient);
     }
 
     @Override

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,32 +26,18 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.dcp.DCPEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.service.strategies.FirstConnectedSelectionStrategy;
-import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
-/**
- * The {@link DCPService} is composed of and manages {@link DCPEndpoint}s.
- *
- * @author Sergey Avseyev
- * @since 1.1.0
- */
-public class DCPService extends AbstractService {
-    /**
-     * The endpoint selection strategy.
-     */
-    private static final SelectionStrategy STRATEGY = new FirstConnectedSelectionStrategy();
+public class DCPService extends AbstractOnDemandService {
 
     /**
      * The endpoint factory.
      */
     private static final EndpointFactory FACTORY = new DCPEndpointFactory();
 
-    private static final int NUM_ENDPOINTS = 1;
-
-    public DCPService(String hostname, String bucket, String password, int port,
-                      CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, NUM_ENDPOINTS, STRATEGY, responseBuffer, FACTORY);
+    public DCPService(String hostname, String bucket, String password, int port, CoreEnvironment env,
+                      RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, responseBuffer, FACTORY);
     }
 
     @Override
@@ -59,14 +45,12 @@ public class DCPService extends AbstractService {
         return ServiceType.DCP;
     }
 
-    /**
-     * The factory for {@link DCPEndpoint}s.
-     */
     static class DCPEndpointFactory implements EndpointFactory {
         @Override
-        public Endpoint create(final String hostname, final String bucket, final String password, final int port,
-                               final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
+            RingBuffer<ResponseEvent> responseBuffer) {
             return new DCPEndpoint(hostname, bucket, password, port, env, responseBuffer);
         }
     }
+
 }

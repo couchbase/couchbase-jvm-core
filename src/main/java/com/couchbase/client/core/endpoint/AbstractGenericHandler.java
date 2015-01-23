@@ -79,6 +79,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     private final Queue<REQUEST> sentRequestQueue;
 
+    private final boolean isTransient;
+
     /**
      * The request which is expected to return next.
      */
@@ -92,8 +94,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param endpoint the endpoint reference.
      * @param responseBuffer the response buffer.
      */
-    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer) {
-        this(endpoint, responseBuffer, new ArrayDeque<REQUEST>());
+    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer, final boolean isTransient) {
+        this(endpoint, responseBuffer, new ArrayDeque<REQUEST>(), isTransient);
     }
 
     /**
@@ -104,11 +106,12 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param queue the queue.
      */
     protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer,
-        final Queue<REQUEST> queue) {
+        final Queue<REQUEST> queue, final boolean isTransient) {
         this.endpoint = endpoint;
         this.responseBuffer = responseBuffer;
         this.sentRequestQueue = queue;
         this.currentDecodingState = DecodingState.INITIAL;
+        this.isTransient = isTransient;
     }
 
     /**
@@ -209,6 +212,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected void finishedDecoding() {
         this.currentDecodingState = DecodingState.FINISHED;
+        if (isTransient) {
+            endpoint.disconnect();
+        }
     }
 
     @Override

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
+
 package com.couchbase.client.core.service;
 
 import com.couchbase.client.core.ResponseEvent;
@@ -29,13 +30,7 @@ import com.couchbase.client.core.service.strategies.PartitionSelectionStrategy;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.lmax.disruptor.RingBuffer;
 
-/**
- * The {@link KeyValueService} is composed of and manages {@link KeyValueEndpoint}s.
- *
- * @author Michael Nitschinger
- * @since 1.0
- */
-public class KeyValueService extends AbstractService {
+public class KeyValueService extends AbstractPoolingService {
 
     /**
      * The endpoint selection strategy.
@@ -58,8 +53,9 @@ public class KeyValueService extends AbstractService {
      * @param responseBuffer the shared response buffer.
      */
     public KeyValueService(final String hostname, final String bucket, final String password, final int port,
-                           final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.kvEndpoints(), STRATEGY, responseBuffer, FACTORY);
+        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, password, port, env, env.kvEndpoints(), env.kvEndpoints(), STRATEGY, responseBuffer,
+            FACTORY);
     }
 
     @Override

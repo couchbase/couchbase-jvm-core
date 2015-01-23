@@ -38,13 +38,13 @@ public class QueryEndpoint extends AbstractEndpoint {
 
     public QueryEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
         RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, environment, responseBuffer);
+        super(hostname, bucket, password, port, environment, responseBuffer, false);
     }
 
     @Override
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {
         pipeline
             .addLast(new HttpClientCodec())
-            .addLast(new QueryHandler(this, responseBuffer()));
+            .addLast(new QueryHandler(this, responseBuffer(), false));
     }
 }
