@@ -92,32 +92,24 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
             } else if (message instanceof CouchbaseResponse) {
                 final CouchbaseResponse response = (CouchbaseResponse) message;
                 ResponseStatus status = response.status();
-                switch (status) {
-                    case SUCCESS:
-                    case EXISTS:
-                    case NOT_EXISTS:
-                    case FAILURE:
-                        final Scheduler.Worker worker = environment.scheduler().createWorker();
-                        final Subject<CouchbaseResponse, CouchbaseResponse> obs = event.getObservable();
-                        worker.schedule(new Action0() {
-                            @Override
-                            public void call() {
-                                try {
-                                    obs.onNext(response);
-                                    obs.onCompleted();
-                                } catch(Exception ex) {
-                                    obs.onError(ex);
-                                } finally {
-                                    worker.unsubscribe();
-                                }
+                if (status == ResponseStatus.RETRY) {
+                    retry(event);
+                } else {
+                    final Scheduler.Worker worker = environment.scheduler().createWorker();
+                    final Subject<CouchbaseResponse, CouchbaseResponse> obs = event.getObservable();
+                    worker.schedule(new Action0() {
+                        @Override
+                        public void call() {
+                            try {
+                                obs.onNext(response);
+                                obs.onCompleted();
+                            } catch(Exception ex) {
+                                obs.onError(ex);
+                            } finally {
+                                worker.unsubscribe();
                             }
-                        });
-                        break;
-                    case RETRY:
-                        retry(event);
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("The ResponseStatus " + status + " is not supported.");
+                        }
+                    });
                 }
             } else if (message instanceof CouchbaseRequest) {
                 retry(event);

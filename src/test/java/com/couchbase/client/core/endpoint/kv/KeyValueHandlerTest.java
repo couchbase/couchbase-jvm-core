@@ -602,7 +602,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("{someconfig...}", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("", Unpooled.EMPTY_BUFFER,
             content.copy());
-        response.setStatus(KeyValueHandler.STATUS_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueHandler.ERR_NOT_MY_VBUCKET);
 
         ObserveRequest requestMock = mock(ObserveRequest.class);
         requestQueue.add(requestMock);
@@ -626,7 +626,7 @@ public class KeyValueHandlerTest {
 
         assertEquals(1, eventSink.responseEvents().size());
         CounterResponse event = (CounterResponse) eventSink.responseEvents().get(0).getMessage();
-        assertEquals(ResponseStatus.FAILURE, event.status());
+        assertEquals(ResponseStatus.INVALID_ARGUMENTS, event.status());
         assertEquals(0, event.value());
     }
 
@@ -700,7 +700,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(KeyValueHandler.STATUS_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueHandler.ERR_NOT_MY_VBUCKET);
 
         UpsertRequest requestMock = mock(UpsertRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
@@ -742,7 +742,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(KeyValueHandler.STATUS_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueHandler.ERR_NOT_MY_VBUCKET);
 
         AppendRequest requestMock = mock(AppendRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
@@ -783,7 +783,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(KeyValueHandler.STATUS_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueHandler.ERR_NOT_MY_VBUCKET);
 
         PrependRequest requestMock = mock(PrependRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);

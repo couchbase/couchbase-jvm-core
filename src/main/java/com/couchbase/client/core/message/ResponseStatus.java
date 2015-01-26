@@ -45,6 +45,41 @@ public enum ResponseStatus {
     NOT_EXISTS,
 
     /**
+     * The response indicates that a mutation try did not happen properly.
+     */
+    NOT_STORED,
+
+    /**
+     * The response indicates that the request was too big for some reason.
+     */
+    TOO_BIG,
+
+    /**
+     * Indicates a failure which is considered to be transient.
+     */
+    TEMPORARY_FAILURE,
+
+    /**
+     * Indicates that the request type was dispatched but not known by the server or it is not supported.
+     */
+    COMMAND_UNAVAILABLE,
+
+    /**
+     * The requested service is currently out of memory.
+     */
+    OUT_OF_MEMORY,
+
+    /**
+     * The service reported that the request arguments are invalid.
+     */
+    INVALID_ARGUMENTS,
+
+    /**
+     * The remote service failed for an internal reason.
+     */
+    INTERNAL_ERROR,
+
+    /**
      * Generic failure status.
      */
     FAILURE,

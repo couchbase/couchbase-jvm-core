@@ -55,7 +55,6 @@ import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.message.kv.UpsertResponse;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
-import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
@@ -96,10 +95,20 @@ public class KeyValueHandler
     public static final byte OP_APPEND = BinaryMemcacheOpcodes.APPEND;
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
 
-    /**
-     * Represents the "Not My VBucket" status response.
-     */
-    public static final byte STATUS_NOT_MY_VBUCKET = 0x07;
+    public static final byte SUCCESS = 0x00;
+    public static final byte ERR_NOT_FOUND = 0x01;
+    public static final byte ERR_EXISTS = 0x02;
+    public static final byte ERR_2BIG = 0x03;
+    public static final byte ERR_INVAL = 0x04;
+    public static final byte ERR_NOT_STORED = 0x05;
+    public static final byte ERR_DELTA_BADVAL = 0x06;
+    public static final byte ERR_NOT_MY_VBUCKET = 0x07;
+    public static final byte ERR_UNKNOWN_COMMAND = (byte) 0x81;
+    public static final byte ERR_NO_MEM = (byte) 0x82;
+    public static final byte ERR_NOT_SUPPORTED = (byte) 0x83;
+    public static final byte ERR_INTERNAL = (byte) 0x84;
+    public static final byte ERR_BUSY = (byte) 0x85;
+    public static final byte ERR_TEMP_FAIL = (byte) 0x86;
 
     /**
      * Creates a new {@link KeyValueHandler} with the default queue for requests.
@@ -506,14 +515,34 @@ public class KeyValueHandler
      */
     private static ResponseStatus convertStatus(final short status) {
         switch (status) {
-            case BinaryMemcacheResponseStatus.SUCCESS:
+            case SUCCESS:
                 return ResponseStatus.SUCCESS;
-            case BinaryMemcacheResponseStatus.KEY_EEXISTS:
+            case ERR_EXISTS:
                 return ResponseStatus.EXISTS;
-            case BinaryMemcacheResponseStatus.KEY_ENOENT:
+            case ERR_NOT_FOUND:
                 return ResponseStatus.NOT_EXISTS;
-            case STATUS_NOT_MY_VBUCKET:
+            case ERR_NOT_MY_VBUCKET:
                 return ResponseStatus.RETRY;
+            case ERR_NOT_STORED:
+                return ResponseStatus.NOT_STORED;
+            case ERR_2BIG:
+                return ResponseStatus.TOO_BIG;
+            case ERR_TEMP_FAIL:
+                return ResponseStatus.TEMPORARY_FAILURE;
+            case ERR_BUSY:
+                return ResponseStatus.TEMPORARY_FAILURE;
+            case ERR_NO_MEM:
+                return ResponseStatus.OUT_OF_MEMORY;
+            case ERR_UNKNOWN_COMMAND:
+                return ResponseStatus.COMMAND_UNAVAILABLE;
+            case ERR_NOT_SUPPORTED:
+                return ResponseStatus.COMMAND_UNAVAILABLE;
+            case ERR_INTERNAL:
+                return ResponseStatus.INTERNAL_ERROR;
+            case ERR_INVAL:
+                return ResponseStatus.INVALID_ARGUMENTS;
+            case ERR_DELTA_BADVAL:
+                return ResponseStatus.INVALID_ARGUMENTS;
             default:
                 return ResponseStatus.FAILURE;
         }
