@@ -67,6 +67,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int QUERY_ENDPOINTS = 1;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
     public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
+    public static final Delay RETRY_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 100);
     public static final RetryStrategy RETRY_STRATEGY = BestEffortRetryStrategy.INSTANCE;
     public static final long MAX_REQUEST_LIFETIME = TimeUnit.SECONDS.toMillis(75);
 
@@ -137,6 +138,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int queryServiceEndpoints;
     private final Delay observeIntervalDelay;
     private final Delay reconnectDelay;
+    private final Delay retryDelay;
     private final String userAgent;
     private final String packageNameAndVersion;
     private final RetryStrategy retryStrategy;
@@ -177,8 +179,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         userAgent = stringPropertyOr("userAgent", builder.userAgent());
         observeIntervalDelay = builder.observeIntervalDelay();
         reconnectDelay = builder.reconnectDelay();
+        retryDelay = builder.retryDelay();
         retryStrategy = builder.retryStrategy();
-        maxRequestLifetime = builder.maxRequestLifetime();
+        maxRequestLifetime = longPropertyOr("maxRequestLifetime", builder.maxRequestLifetime());
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -382,6 +385,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public Delay retryDelay() {
+        return retryDelay;
+    }
+
+    @Override
     public RetryStrategy retryStrategy() {
         return retryStrategy;
     }
@@ -416,6 +424,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int queryServiceEndpoints = QUERY_ENDPOINTS;
         private Delay observeIntervalDelay = OBSERVE_INTERVAL_DELAY;
         private Delay reconnectDelay = RECONNECT_DELAY;
+        private Delay retryDelay = RETRY_DELAY;
         private RetryStrategy retryStrategy = RETRY_STRATEGY;
         private EventLoopGroup ioPool;
         private Scheduler scheduler;
@@ -655,6 +664,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
+        public Delay retryDelay() {
+            return retryDelay;
+        }
+
+        public Builder retryDelay(final Delay retryDelay) {
+            this.retryDelay = retryDelay;
+            return this;
+        }
+
+        @Override
         public Observable<Boolean> shutdown() {
             throw new UnsupportedOperationException("Shutdown should not be called on the Builder.");
         }
@@ -731,6 +750,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", dcpEnabled=").append(dcpEnabled);
         sb.append(", retryStrategy=").append(retryStrategy);
         sb.append(", maxRequestLifetime=").append(maxRequestLifetime);
+        sb.append(", retryDelay=").append(retryDelay);
+        sb.append(", reconnectDelay=").append(reconnectDelay);
+        sb.append(", observeIntervalDelay=").append(observeIntervalDelay);
         sb.append('}');
         return sb.toString();
     }

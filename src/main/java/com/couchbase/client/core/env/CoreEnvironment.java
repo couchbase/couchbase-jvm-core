@@ -139,6 +139,13 @@ public interface CoreEnvironment {
     Delay reconnectDelay();
 
     /**
+     * Returns the {@link Delay} for request retries.
+     *
+     * @return the request retry delay.
+     */
+    Delay retryDelay();
+
+    /**
      * Returns the size of the request ringbuffer.
      *
      * @return the size of the ringbuffer.
