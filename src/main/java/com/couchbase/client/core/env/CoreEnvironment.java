@@ -193,4 +193,15 @@ public interface CoreEnvironment {
      * @return the retry strategy.
      */
     RetryStrategy retryStrategy();
+
+    /**
+     * Returns the maximum time in milliseconds a request is allowed to life.
+     *
+     * If the best effort retry strategy is used, the request will still be cancelled after this
+     * period to make sure that requests are not sticking around forever. Make sure it is longer than any
+     * timeout you potentially have configured.
+     *
+     * @return the maximum request lifetime.
+     */
+    long maxRequestLifetime();
 }

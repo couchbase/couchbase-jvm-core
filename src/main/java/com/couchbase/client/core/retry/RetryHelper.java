@@ -24,6 +24,7 @@ package com.couchbase.client.core.retry;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.lmax.disruptor.RingBuffer;
 
@@ -38,13 +39,13 @@ public class RetryHelper {
     /**
      * Either retry or cancel a request, based on the strategy used.
      *
-     * @param strategy the strategy to check against.
+     * @param environment the core environment for context.
      * @param request the request to either retry or cancel.
      * @param responseBuffer the response buffer where to maybe retry on.
      */
-    public static void retryOrCancel(final RetryStrategy strategy, final CouchbaseRequest request,
+    public static void retryOrCancel(final CoreEnvironment environment, final CouchbaseRequest request,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        if (strategy.shouldRetry(request)) {
+        if (environment.retryStrategy().shouldRetry(request, environment)) {
             responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
         } else {
             request.observable().onError(new RequestCancelledException("Could not dispatch request, cancelling "

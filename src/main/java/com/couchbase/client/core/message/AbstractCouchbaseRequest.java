@@ -48,6 +48,11 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     private final String password;
 
     /**
+     * The time when the request was created.
+     */
+    private final long creationTime;
+
+    /**
      * Create a new {@link AbstractCouchbaseRequest}.
      *
      * Depending on the type of operation, bucket and password may be null, this needs to
@@ -78,6 +83,7 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
         this.bucket = bucket;
         this.password = password;
         this.observable = observable;
+        this.creationTime = System.nanoTime();
     }
 
     @Override
@@ -93,6 +99,11 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     @Override
     public String password() {
         return password;
+    }
+
+    @Override
+    public long creationTime() {
+        return creationTime;
     }
 
     @Override

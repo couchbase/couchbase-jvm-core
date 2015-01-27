@@ -37,6 +37,11 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
     private final CouchbaseRequest request;
 
     /**
+     * The time when the response was created.
+     */
+    private final long creationTime;
+
+    /**
      * Sets the required properties for the response.
      *
      * @param status the status of the response.
@@ -44,6 +49,7 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
     protected AbstractCouchbaseResponse(final ResponseStatus status, final CouchbaseRequest request) {
         this.status = status;
         this.request = request;
+        this.creationTime = System.nanoTime();
     }
 
     @Override
@@ -57,6 +63,11 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
     @Override
     public CouchbaseRequest request() {
         return request;
+    }
+
+    @Override
+    public long creationTime() {
+        return creationTime;
     }
 
     @Override

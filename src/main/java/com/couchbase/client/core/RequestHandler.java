@@ -191,7 +191,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 return;
             }
             if (found.length == 0) {
-                RetryHelper.retryOrCancel(environment.retryStrategy(), request, responseBuffer);
+                RetryHelper.retryOrCancel(environment, request, responseBuffer);
             }
             for (int i = 0; i < found.length; i++) {
                 try {

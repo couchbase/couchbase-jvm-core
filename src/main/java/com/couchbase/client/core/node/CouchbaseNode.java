@@ -111,7 +111,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         } else {
             Service service = serviceRegistry.locate(request);
             if (service == null) {
-                RetryHelper.retryOrCancel(environment.retryStrategy(), request, responseBuffer);
+                RetryHelper.retryOrCancel(environment, request, responseBuffer);
 
             } else {
                 service.send(request);

@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.retry;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 
 /**
@@ -35,8 +36,9 @@ public interface RetryStrategy {
      * Decides whether the given {@link CouchbaseRequest} should be retried or cancelled.
      *
      * @param request the request in question.
+     * @parem environment the environment for more context.
      * @return true if it should be retried, false otherwise.
      */
-    boolean shouldRetry(CouchbaseRequest request);
+    boolean shouldRetry(CouchbaseRequest request, CoreEnvironment environment);
 
 }

@@ -57,7 +57,7 @@ public abstract class AbstractPoolingService extends AbstractDynamicService {
         if (endpoints().length == maxEndpoints) {
             Endpoint endpoint = strategy.select(request, endpoints());
             if (endpoint == null) {
-                RetryHelper.retryOrCancel(env.retryStrategy(), request, responseBuffer);
+                RetryHelper.retryOrCancel(env, request, responseBuffer);
 
             } else {
                 endpoint.send(request);

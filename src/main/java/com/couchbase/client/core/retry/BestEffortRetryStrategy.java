@@ -21,10 +21,13 @@
  */
 package com.couchbase.client.core.retry;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * A {@link RetryStrategy} that will always retry.
+ * A {@link RetryStrategy} that will retry until the max request lifetime is reached.
  *
  * @author Michael Nitschinger
  * @since 1.1.0
@@ -40,8 +43,8 @@ public class BestEffortRetryStrategy implements RetryStrategy {
     }
 
     @Override
-    public boolean shouldRetry(final CouchbaseRequest request) {
-        return true;
+    public boolean shouldRetry(final CouchbaseRequest request, final CoreEnvironment env) {
+        return TimeUnit.MILLISECONDS.toNanos(env.maxRequestLifetime()) > System.nanoTime() - request.creationTime();
     }
 
     @Override
