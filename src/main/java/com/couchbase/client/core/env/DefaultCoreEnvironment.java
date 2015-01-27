@@ -24,6 +24,8 @@ package com.couchbase.client.core.env;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.retry.BestEffortRetryStrategy;
+import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -65,6 +67,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int QUERY_ENDPOINTS = 1;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
     public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
+    public static final RetryStrategy RETRY_STRATEGY = BestEffortRetryStrategy.INSTANCE;
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -135,6 +138,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final Delay reconnectDelay;
     private final String userAgent;
     private final String packageNameAndVersion;
+    private final RetryStrategy retryStrategy;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -171,6 +175,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         userAgent = stringPropertyOr("userAgent", builder.userAgent());
         observeIntervalDelay = builder.observeIntervalDelay();
         reconnectDelay = builder.reconnectDelay();
+        retryStrategy = builder.retryStrategy();
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -373,6 +378,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return reconnectDelay;
     }
 
+    @Override
+    public RetryStrategy retryStrategy() {
+        return retryStrategy;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -398,6 +408,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int queryServiceEndpoints = QUERY_ENDPOINTS;
         private Delay observeIntervalDelay = OBSERVE_INTERVAL_DELAY;
         private Delay reconnectDelay = RECONNECT_DELAY;
+        private RetryStrategy retryStrategy = RETRY_STRATEGY;
         private EventLoopGroup ioPool;
         private Scheduler scheduler;
 
@@ -660,6 +671,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        @Override
+        public RetryStrategy retryStrategy() {
+            return retryStrategy;
+        }
+
+        public Builder retryStrategy(final RetryStrategy retryStrategy) {
+            this.retryStrategy = retryStrategy;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -690,6 +711,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", coreScheduler=").append(coreScheduler.getClass().getSimpleName());
         sb.append(", packageNameAndVersion=").append(packageNameAndVersion);
         sb.append(", dcpEnabled=").append(dcpEnabled);
+        sb.append(", retryStrategy=").append(retryStrategy);
         sb.append('}');
         return sb.toString();
     }

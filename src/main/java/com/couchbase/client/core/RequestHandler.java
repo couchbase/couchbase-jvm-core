@@ -45,6 +45,7 @@ import com.couchbase.client.core.node.locate.KeyValueLocator;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.node.locate.QueryLocator;
 import com.couchbase.client.core.node.locate.ViewLocator;
+import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
@@ -190,7 +191,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 return;
             }
             if (found.length == 0) {
-                responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
+                RetryHelper.retryOrCancel(environment.retryStrategy(), request, responseBuffer);
             }
             for (int i = 0; i < found.length; i++) {
                 try {

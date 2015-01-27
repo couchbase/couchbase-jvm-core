@@ -22,6 +22,7 @@
 package com.couchbase.client.core.env;
 
 import com.couchbase.client.core.message.observe.Observe;
+import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
 import rx.Observable;
@@ -185,4 +186,11 @@ public interface CoreEnvironment {
      * @return string containing package name and version
      */
     String packageNameAndVersion();
+
+    /**
+     * The retry strategy on how to dispatch requests in the failure case.
+     *
+     * @return the retry strategy.
+     */
+    RetryStrategy retryStrategy();
 }
