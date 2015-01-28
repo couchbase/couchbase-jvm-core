@@ -22,35 +22,35 @@
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-apply plugin: 'maven-publish'
-apply plugin: 'com.github.johnrengelman.shadow'
+buildscript {
+    repositories {
+        maven { url 'http://repo.spring.io/plugins-release' }
+    }
+    dependencies {
+        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '1.2.0'
+
+    id 'checkstyle'
+}
 
 apply plugin: 'propdeps'
 apply plugin: 'propdeps-maven'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
 
-apply plugin: 'checkstyle'
-
 group = 'com.couchbase.client'
 description = 'Official Couchbase JVM Core Library'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
-
-buildscript {
-    repositories {
-        maven { url 'http://repo.spring.io/plugins-release' }
-        jcenter()
-    }
-    dependencies {
-        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.1.2'
-    }
-}
 
 repositories {
     mavenCentral()
@@ -161,12 +161,14 @@ task integrationTest(type: Test) {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.12'
+    gradleVersion = '2.2'
 }
 
-task sourcesJar(type: Jar) {
+task sourcesJar(type: Jar, dependsOn: ':shadowSources') {
     classifier = 'sources'
     from sourceSets.main.allSource
+    //include rewritten sources for relocated shadowed libraries
+    from files("build/shadow/src")
 }
 
 task javadocJar(type: Jar) {
@@ -285,5 +287,86 @@ afterEvaluate {
     configure(processResources) {
         filter(ReplaceTokens,
                 tokens: [specVersion: version, implVersion: getVersionName()])
+    }
+}
+
+//utility method for shadowSources
+void withFileSystem(URI uri, callback) {
+    java.nio.file.FileSystem fileSystem = null
+    try {
+        fileSystem = java.nio.file.FileSystems.newFileSystem(uri, [:])
+        callback(fileSystem)
+    } catch (java.nio.file.FileSystemAlreadyExistsException e) {
+        fileSystem = java.nio.file.FileSystems.getFileSystem(uri)
+        callback(fileSystem)
+    } finally {
+        if (fileSystem != null) {
+            fileSystem.close();
+        }
+    }
+}
+
+//a task that extracts the sources for relocated dependencies and rewrite them
+// with corrected packages.
+task shadowSources << {
+    def componentIds = configurations.compile.incoming.resolutionResult.allDependencies
+            .findAll {
+                (it.selected.id.toString().startsWith('io.netty')
+                || it.selected.id.toString().startsWith('com.fasterxml')
+                || it.selected.id.toString().startsWith('com.lmax'))
+    }
+    .collect { it.selected.id }
+
+    String jacksonPackage = "com.fasterxml.jackson"
+    String disruptorPackage = "com.lmax.disruptor"
+    String nettyPackage = "io.netty"
+
+    String shadowedPackage = "com.couchbase.client.deps."
+    String shadowedPath = shadowedPackage.replace('.', '/')
+
+    java.nio.charset.Charset sourceCharset = java.nio.charset.StandardCharsets.UTF_8
+    java.nio.file.Path shadowedSourceDir = file("build/shadow/src").toPath()
+
+    def result = dependencies.createArtifactResolutionQuery()
+            .forComponents(componentIds)
+            .withArtifacts(JvmLibrary, SourcesArtifact)
+            .execute()
+
+    for (component in result.resolvedComponents) {
+        component.getArtifacts(SourcesArtifact).each {
+            int sourceFileCounter = 0
+
+            withFileSystem(new URI("jar:file:" + it.file.absolutePath)) { sourceJarFileSystem ->
+
+                zipTree(it.file).visit { element ->
+                    String relativePath = element.relativePath.toString()
+                    if (relativePath.startsWith("META-INF") || element.file.isDirectory() ||
+                            !element.file.getName().endsWith(".java")) {
+                        return
+                    }
+                    java.nio.file.Path shadowedFile = shadowedSourceDir.resolve(shadowedPath + relativePath)
+                    if (java.nio.file.Files.exists(shadowedFile)) {
+                        return
+                    }
+                    if (!java.nio.file.Files.exists(shadowedFile.getParent())) {
+                        java.nio.file.Files.createDirectories(shadowedFile.getParent())
+                    }
+                    sourceFileCounter++
+
+                    java.nio.file.Path originalFile = sourceJarFileSystem.getPath(element.relativePath.toString())
+                    String content = new String(java.nio.file.Files.readAllBytes(originalFile), sourceCharset);
+
+                    content = content.replaceAll(jacksonPackage, shadowedPackage + jacksonPackage)
+                    content = content.replaceAll(disruptorPackage, shadowedPackage +  disruptorPackage)
+                    content = content.replaceAll(nettyPackage, shadowedPackage + nettyPackage);
+                    java.nio.file.Files.write(shadowedFile, content.getBytes(sourceCharset));
+                }
+            }
+
+            if (sourceFileCounter > 0)
+                println "Processing ${sourceFileCounter} sources for ${component.id} shadow sourceJar"
+            else
+                println "Nothing to do for ${component.id}"
+        }
     }
 }
