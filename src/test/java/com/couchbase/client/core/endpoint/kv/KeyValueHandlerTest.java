@@ -23,6 +23,9 @@ package com.couchbase.client.core.endpoint.kv;
 
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.kv.AppendRequest;
@@ -51,19 +54,26 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBina
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.Before;
 import org.junit.Test;
 import rx.subjects.AsyncSubject;
+
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -819,6 +829,57 @@ public class KeyValueHandlerTest {
         channel.writeInbound(response);
         assertEquals(0, content.refCnt());
         responseSubject.toBlocking().single();
+    }
+
+    @Test
+    public void shouldFireKeepAlive() throws Exception {
+        final AtomicInteger keepAliveEventCounter = new AtomicInteger();
+        final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+
+        KeyValueHandler testHandler = new KeyValueHandler(mock(AbstractEndpoint.class), eventSink,
+                requestQueue, false) {
+
+            @Override
+            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                super.channelRegistered(ctx);
+                ctxRef.compareAndSet(null, ctx);
+            }
+
+            @Override
+            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                assertEquals(1, keepAliveEventCounter.incrementAndGet());
+            }
+
+            @Override
+            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                assertEquals(2, keepAliveEventCounter.incrementAndGet());
+            }
+
+            @Override
+            protected CoreEnvironment env() {
+                return DefaultCoreEnvironment.create();
+            }
+        };
+        EmbeddedChannel channel = new EmbeddedChannel(testHandler);
+
+        //test idle event triggers a k/v keepAlive request and hook is called
+        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT);
+
+        assertEquals(1, keepAliveEventCounter.get());
+        assertTrue(requestQueue.peek() instanceof KeyValueHandler.KeepAliveRequest);
+        KeyValueHandler.KeepAliveRequest keepAliveRequest = (KeyValueHandler.KeepAliveRequest) requestQueue.peek();
+
+        //test responding to the request with memcached response is interpreted into a KeepAliveResponse, hook is called
+        DefaultFullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("", Unpooled.EMPTY_BUFFER);
+        response.setOpaque(keepAliveRequest.opaque());
+        response.setStatus(KeyValueHandler.ERR_NO_MEM);
+        channel.writeInbound(response);
+        KeyValueHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+                .cast(KeyValueHandler.KeepAliveResponse.class)
+                .timeout(1, TimeUnit.SECONDS).toBlocking().single();
+
+        assertEquals(2, keepAliveEventCounter.get());
+        assertEquals(ResponseStatus.OUT_OF_MEMORY, keepAliveResponse.status());
     }
 
 }
