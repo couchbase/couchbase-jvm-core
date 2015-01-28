@@ -30,6 +30,9 @@ import com.couchbase.client.core.config.refresher.CarrierRefresher;
 import com.couchbase.client.core.config.refresher.HttpRefresher;
 import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.event.EventBus;
+import com.couchbase.client.core.event.system.BucketClosedEvent;
+import com.couchbase.client.core.event.system.BucketOpenedEvent;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
@@ -52,7 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * **The default implementation of a {@link ConfigurationProvider}.**
  *
- * The {@link ConfigurationProvider} is the central orchestrator for configuration management. Observers can subscribe
+ * The {@link ConfigurationProvider} is the central orchestrator for configuration management. Observers can observe
  * bucket and cluster configurations from this component. Behind the scenes, it facilitates configuration loaders and
  * configuration refreshers that grab initial configurations and keep them refreshed respectively. The structure
  * looks like this:
@@ -115,6 +118,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     private final List<Loader> loaderChain;
     private final Map<LoaderType, Refresher> refreshers;
     private final CoreEnvironment environment;
+    private final EventBus eventBus;
+
 
     /**
      * Signals if the provider is bootstrapped and serving configs.
@@ -163,6 +168,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         this.loaderChain = loaderChain;
         this.refreshers = refreshers;
         this.environment = environment;
+        this.eventBus = environment.eventBus();
 
         configObservable = PublishSubject.create();
         seedHosts = new AtomicReference<Set<InetAddress>>();
@@ -256,6 +262,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 @Override
                 public void call(ClusterConfig clusterConfig) {
                     LOGGER.info("Opened bucket " + bucket);
+                    if (eventBus != null) {
+                        eventBus.publish(new BucketOpenedEvent(bucket));
+                    }
                 }
             })
             .onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
@@ -274,6 +283,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             public ClusterConfig call(String bucket) {
                 removeBucketConfig(bucket);
                 LOGGER.info("Closed bucket " + bucket);
+                if (eventBus != null) {
+                    eventBus.publish(new BucketClosedEvent(bucket));
+                }
                 return currentConfig.get();
             }
         });

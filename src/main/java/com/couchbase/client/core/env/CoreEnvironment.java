@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.message.observe.Observe;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
@@ -211,4 +212,11 @@ public interface CoreEnvironment {
      * @return the maximum request lifetime.
      */
     long maxRequestLifetime();
+
+    /**
+     * Returns the event bus where events are broadcasted on and can be published to.
+     *
+     * @return the configured event bus.
+     */
+    EventBus eventBus();
 }
