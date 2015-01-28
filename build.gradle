@@ -124,12 +124,6 @@ dependencies {
     markdownDoclet 'ch.raffael.pegdown-doclet:pegdown-doclet:1.1.1'
 }
 
-idea {
-    module {
-        scopes.PROVIDED.minus += configurations.compile
-    }
-}
-
 javadoc {
     doLast {
         copy {
