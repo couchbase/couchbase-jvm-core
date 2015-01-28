@@ -25,6 +25,8 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
+import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
@@ -33,9 +35,11 @@ import com.couchbase.client.core.util.Resources;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultHttpResponse;
@@ -48,6 +52,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -67,6 +72,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -92,9 +98,11 @@ public class QueryHandlerTest {
     private Queue<QueryRequest> queue;
     private EmbeddedChannel channel;
     private Disruptor<ResponseEvent> responseBuffer;
+    private RingBuffer<ResponseEvent> responseRingBuffer;
     private List<CouchbaseMessage> firedEvents;
     private CountDownLatch latch;
     private QueryHandler handler;
+    private AbstractEndpoint endpoint;
 
     @Before
     @SuppressWarnings("unchecked")
@@ -115,15 +123,16 @@ public class QueryHandlerTest {
                 latch.countDown();
             }
         });
+        responseRingBuffer = responseBuffer.start();
 
         CoreEnvironment environment = mock(CoreEnvironment.class);
         when(environment.scheduler()).thenReturn(Schedulers.computation());
-        AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
+        endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
 
         queue = new ArrayDeque<QueryRequest>();
-        handler = new QueryHandler(endpoint, responseBuffer.start(), queue, false);
+        handler = new QueryHandler(endpoint, responseRingBuffer, queue, false);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -685,5 +694,47 @@ public class QueryHandlerTest {
                 expectedMetrics
         );
         assertEquals(2, count.get());
+    }
+
+    @Test
+    public void shouldFireKeepAlive() throws Exception {
+        final AtomicInteger keepAliveEventCounter = new AtomicInteger();
+        final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+
+        QueryHandler testHandler = new QueryHandler(endpoint, responseRingBuffer, queue, false) {
+            @Override
+            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                super.channelRegistered(ctx);
+                ctxRef.compareAndSet(null, ctx);
+            }
+
+            @Override
+            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                assertEquals(1, keepAliveEventCounter.incrementAndGet());
+            }
+
+            @Override
+            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                assertEquals(2, keepAliveEventCounter.incrementAndGet());
+            }
+        };
+        EmbeddedChannel channel = new EmbeddedChannel(testHandler);
+
+        //test idle event triggers a query keepAlive request and hook is called
+        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT);
+
+        assertEquals(1, keepAliveEventCounter.get());
+        assertTrue(queue.peek() instanceof QueryHandler.KeepAliveRequest);
+        QueryHandler.KeepAliveRequest keepAliveRequest = (QueryHandler.KeepAliveRequest) queue.peek();
+
+        //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+        channel.writeInbound(response);
+        QueryHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+                .cast(QueryHandler.KeepAliveResponse.class)
+                .timeout(1, TimeUnit.SECONDS).toBlocking().single();
+
+        assertEquals(2, keepAliveEventCounter.get());
+        assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
     }
 }

@@ -25,6 +25,9 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
+import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
@@ -121,6 +124,14 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
 
     @Override
     protected HttpRequest encodeRequest(final ChannelHandlerContext ctx, final ViewRequest msg) throws Exception {
+        if (msg instanceof KeepAliveRequest) {
+            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.HEAD, "/",
+                    Unpooled.EMPTY_BUFFER);
+            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, 0);
+            return request;
+        }
+
         StringBuilder path = new StringBuilder();
 
         HttpMethod method = HttpMethod.GET;
@@ -185,7 +196,11 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             }
         }
 
-        if (msg instanceof HttpContent) {
+        if (request instanceof KeepAliveRequest) {
+            response = new KeepAliveResponse(statusFromCode(responseHeader.getStatus().code()), request);
+            responseContent.clear();
+            responseContent.discardReadBytes();
+        } else if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
 
             if (currentRequest() instanceof ViewQueryRequest) {
@@ -206,6 +221,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
                 finishedDecoding();
             } else if (request instanceof RemoveDesignDocumentRequest) {
                 response = handleRemoveDesignDocumentResponse((RemoveDesignDocumentRequest) request);
+                finishedDecoding();
+            } else if (request instanceof KeepAliveRequest) {
                 finishedDecoding();
             }
         }
@@ -463,5 +480,22 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      */
     private static int findSectionClosingPosition(ByteBuf buf, char openingChar, char closingChar) {
         return buf.forEachByte(new ClosingPositionBufProcessor(openingChar, closingChar));
+    }
+
+    @Override
+    protected CouchbaseRequest createKeepAliveRequest() {
+        return new KeepAliveRequest();
+    }
+
+    protected static class KeepAliveRequest extends AbstractCouchbaseRequest implements ViewRequest {
+        protected KeepAliveRequest() {
+            super(null, null);
+        }
+    }
+
+    protected static class KeepAliveResponse extends AbstractCouchbaseResponse {
+        protected KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
+            super(status, request);
+        }
     }
 }
