@@ -27,9 +27,6 @@ import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
-import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
-import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
@@ -161,9 +158,6 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
             request.content().writeBytes(query);
             query.release();
-        } else if (msg instanceof KeepAliveRequest) {
-            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.HEAD, "/");
-            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
         } else {
             throw new IllegalArgumentException("Unknown incoming QueryRequest type "
                 + msg.getClass());
@@ -185,12 +179,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             }
         }
 
-        if (currentRequest() instanceof KeepAliveRequest) {
-            response = new KeepAliveResponse(statusFromCode(responseHeader.getStatus().code()), currentRequest());
-            responseContent.clear();
-            responseContent.discardReadBytes();
-            finishedDecoding();
-        } else if (msg instanceof HttpContent) {
+        if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
 
             if (currentRequest() instanceof GenericQueryRequest) {
@@ -561,20 +550,5 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         super.handlerRemoved(ctx);
     }
 
-    @Override
-    protected CouchbaseRequest createKeepAliveRequest() {
-        return new KeepAliveRequest();
-    }
 
-    protected static class KeepAliveRequest extends AbstractCouchbaseRequest implements QueryRequest {
-        protected KeepAliveRequest() {
-            super(null, null);
-        }
-    }
-
-    protected static class KeepAliveResponse extends AbstractCouchbaseResponse {
-        protected KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
-            super(status, request);
-        }
-    }
 }

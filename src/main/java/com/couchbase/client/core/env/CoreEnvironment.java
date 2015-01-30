@@ -214,13 +214,6 @@ public interface CoreEnvironment {
     long maxRequestLifetime();
 
     /**
-     * The time in milliseconds after which some service will issue a form of keep-alive request.
-     *
-     * @return the interval of idle time in milliseconds after which a keep-alive is triggered.
-     */
-    long keepAliveInterval();
-
-    /**
      * Returns the event bus where events are broadcasted on and can be published to.
      *
      * @return the configured event bus.

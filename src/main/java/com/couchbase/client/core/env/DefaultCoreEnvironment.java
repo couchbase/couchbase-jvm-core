@@ -73,7 +73,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final Delay RETRY_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 100);
     public static final RetryStrategy RETRY_STRATEGY = BestEffortRetryStrategy.INSTANCE;
     public static final long MAX_REQUEST_LIFETIME = TimeUnit.SECONDS.toMillis(75);
-    public static final long KEEPALIVEINTERVAL = TimeUnit.SECONDS.toMillis(30);
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -147,7 +146,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final String packageNameAndVersion;
     private final RetryStrategy retryStrategy;
     private final long maxRequestLifetime;
-    private final long keepAliveInterval;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -188,7 +186,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         retryDelay = builder.retryDelay();
         retryStrategy = builder.retryStrategy();
         maxRequestLifetime = longPropertyOr("maxRequestLifetime", builder.maxRequestLifetime());
-        keepAliveInterval = longPropertyOr("keepAliveInterval", builder.keepAliveInterval());
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -408,11 +405,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public long keepAliveInterval() {
-        return this.keepAliveInterval;
-    }
-
-    @Override
     public EventBus eventBus() {
         return eventBus;
     }
@@ -448,7 +440,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private Scheduler scheduler;
         private EventBus eventBus;
         private long maxRequestLifetime = MAX_REQUEST_LIFETIME;
-        private long keepAliveInterval = KEEPALIVEINTERVAL;
 
         protected Builder() {
         }
@@ -875,21 +866,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
-        public long keepAliveInterval() {
-            return keepAliveInterval;
-        }
-
-        /**
-         * Sets the time of inactivity, in milliseconds, after which some services
-         * will issue a form of keep-alive request to their corresponding server/nodes
-         * (default is 30s, values <= 0 deactivate the idle check).
-         */
-        public Builder keepAliveInterval(long keepAliveIntervalMilliseconds) {
-            this.keepAliveInterval = keepAliveIntervalMilliseconds;
-            return this;
-        }
-
-        @Override
         public EventBus eventBus() {
             return eventBus;
         }
@@ -935,7 +911,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", retryDelay=").append(retryDelay);
         sb.append(", reconnectDelay=").append(reconnectDelay);
         sb.append(", observeIntervalDelay=").append(observeIntervalDelay);
-        sb.append(", keepAliveInterval=").append(keepAliveInterval);
         sb.append('}');
         return sb.toString();
     }

@@ -24,11 +24,8 @@ package com.couchbase.client.core.endpoint.kv;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
-import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.kv.AbstractKeyValueRequest;
-import com.couchbase.client.core.message.kv.AbstractKeyValueResponse;
 import com.couchbase.client.core.message.kv.AppendRequest;
 import com.couchbase.client.core.message.kv.AppendResponse;
 import com.couchbase.client.core.message.kv.BinaryRequest;
@@ -97,7 +94,6 @@ public class KeyValueHandler
     public static final byte OP_TOUCH = BinaryMemcacheOpcodes.TOUCH;
     public static final byte OP_APPEND = BinaryMemcacheOpcodes.APPEND;
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
-    public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
 
     public static final byte SUCCESS = 0x00;
     public static final byte ERR_NOT_FOUND = 0x01;
@@ -162,8 +158,6 @@ public class KeyValueHandler
             request = handleAppendRequest((AppendRequest) msg);
         } else if (msg instanceof PrependRequest) {
             request = handlePrependRequest((PrependRequest) msg);
-        } else if (msg instanceof KeepAliveRequest) {
-            request = handleKeepAliveRequest((KeepAliveRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
                 + msg.getClass());
@@ -414,23 +408,6 @@ public class KeyValueHandler
         return request;
     }
 
-    /**
-     * Encodes a {@link KeepAliveRequest} request into a NOOP operation.
-     *
-     * @param msg the {@link KeepAliveRequest} triggering the NOOP.
-     * @return a ready {@link BinaryMemcacheRequest}.
-     */
-    private static BinaryMemcacheRequest handleKeepAliveRequest(KeepAliveRequest msg) {
-        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest();
-        request
-                .setOpcode(OP_NOOP)
-                .setKeyLength((short) 0)
-                .setExtras(Unpooled.EMPTY_BUFFER)
-                .setExtrasLength((byte) 0)
-                .setTotalBodyLength(0);
-        return request;
-    }
-
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -503,11 +480,6 @@ public class KeyValueHandler
             response = new AppendResponse(status, cas, bucket, content, request);
         } else if (request instanceof PrependRequest) {
             response = new PrependResponse(status, cas, bucket, content, request);
-        } else if (request instanceof KeepAliveRequest) {
-            if (content != null && content.refCnt() > 0) {
-                content.release();
-            }
-            response = new KeepAliveResponse(status, request);
         } else {
             throw new IllegalStateException("Unhandled request/response pair: " + request.getClass() + "/"
                 + msg.getClass());
@@ -576,23 +548,4 @@ public class KeyValueHandler
         }
     }
 
-    @Override
-    protected CouchbaseRequest createKeepAliveRequest() {
-        return new KeepAliveRequest();
-    }
-
-    protected static class KeepAliveRequest extends AbstractKeyValueRequest {
-
-        protected KeepAliveRequest() {
-            super(null, null, null);
-            partition((short) 0);
-        }
-    }
-
-    protected static class KeepAliveResponse extends AbstractKeyValueResponse {
-
-        public KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
-            super(status, null, null, request);
-        }
-    }
 }
