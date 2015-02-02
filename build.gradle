@@ -22,6 +22,9 @@
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 buildscript {
     repositories {
         maven { url 'http://repo.spring.io/plugins-release' }
@@ -160,8 +163,8 @@ task wrapper(type: Wrapper) {
 
 task sourcesJar(type: Jar, dependsOn: ':shadowSources') {
     classifier = 'sources'
-    from sourceSets.main.allSource
-    //include rewritten sources for relocated shadowed libraries
+    //includes all project sources with rewritten imports of relocated shadowed libraries
+    //includes rewritten sources for relocated shadowed libraries
     from files("build/shadow/src")
 }
 
@@ -362,5 +365,34 @@ task shadowSources << {
             else
                 println "Nothing to do for ${component.id}"
         }
+
+        int totalProjectSource = 0
+        int rewrittenProjectSource = 0
+        sourceSets.main.allSource.visit { element ->
+            totalProjectSource++
+            String relativePath = element.relativePath.toString()
+            java.nio.file.Path shadowedFile = shadowedSourceDir.resolve(relativePath)
+            if (java.nio.file.Files.exists(shadowedFile)) {
+                return
+            }
+            if (!java.nio.file.Files.exists(shadowedFile.getParent())) {
+                java.nio.file.Files.createDirectories(shadowedFile.getParent())
+            }
+
+            java.nio.file.Path originalFile = element.file.toPath()
+
+            if (relativePath.startsWith("META-INF") || element.file.isDirectory() ||
+                    !element.file.getName().endsWith(".java")) {
+                Files.copy(originalFile, shadowedFile, StandardCopyOption.COPY_ATTRIBUTES)
+            } else {
+                rewrittenProjectSource++
+                String content = new String(java.nio.file.Files.readAllBytes(originalFile), sourceCharset);
+                content = content.replaceAll(jacksonPackage, shadowedPackage + jacksonPackage)
+                content = content.replaceAll(disruptorPackage, shadowedPackage +  disruptorPackage)
+                content = content.replaceAll(nettyPackage, shadowedPackage + nettyPackage);
+                java.nio.file.Files.write(shadowedFile, content.getBytes(sourceCharset));
+            }
+        }
+        println "Rewritten ${totalProjectSource} sources out of ${totalProjectSource} source files for project sources."
     }
 }
