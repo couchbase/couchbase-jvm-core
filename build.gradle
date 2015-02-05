@@ -342,20 +342,20 @@ task shadowSources << {
                         return
                     }
                     java.nio.file.Path shadowedFile = shadowedSourceDir.resolve(shadowedPath + relativePath)
-                    if (java.nio.file.Files.exists(shadowedFile)) {
+                    if (Files.exists(shadowedFile)) {
                         return
                     }
-                    if (!java.nio.file.Files.exists(shadowedFile.getParent())) {
-                        java.nio.file.Files.createDirectories(shadowedFile.getParent())
+                    if (!Files.exists(shadowedFile.getParent())) {
+                        Files.createDirectories(shadowedFile.getParent())
                     }
                     sourceFileCounter++
 
                     java.nio.file.Path originalFile = sourceJarFileSystem.getPath(element.relativePath.toString())
-                    String content = new String(java.nio.file.Files.readAllBytes(originalFile), sourceCharset);
+                    String content = new String(Files.readAllBytes(originalFile), sourceCharset);
 
                     content = content.replaceAll(jacksonPackage, shadowedPackage + jacksonPackage)
                     content = content.replaceAll(disruptorPackage, shadowedPackage +  disruptorPackage)
-                    content = content.replaceAll(nettyPackage, shadowedPackage + nettyPackage);
+                    content = content.replaceAll("([^.])" + nettyPackage, "\$1" + shadowedPackage + nettyPackage);
                     java.nio.file.Files.write(shadowedFile, content.getBytes(sourceCharset));
                 }
             }
@@ -365,34 +365,34 @@ task shadowSources << {
             else
                 println "Nothing to do for ${component.id}"
         }
-
-        int totalProjectSource = 0
-        int rewrittenProjectSource = 0
-        sourceSets.main.allSource.visit { element ->
-            totalProjectSource++
-            String relativePath = element.relativePath.toString()
-            java.nio.file.Path shadowedFile = shadowedSourceDir.resolve(relativePath)
-            if (java.nio.file.Files.exists(shadowedFile)) {
-                return
-            }
-            if (!java.nio.file.Files.exists(shadowedFile.getParent())) {
-                java.nio.file.Files.createDirectories(shadowedFile.getParent())
-            }
-
-            java.nio.file.Path originalFile = element.file.toPath()
-
-            if (relativePath.startsWith("META-INF") || element.file.isDirectory() ||
-                    !element.file.getName().endsWith(".java")) {
-                Files.copy(originalFile, shadowedFile, StandardCopyOption.COPY_ATTRIBUTES)
-            } else {
-                rewrittenProjectSource++
-                String content = new String(java.nio.file.Files.readAllBytes(originalFile), sourceCharset);
-                content = content.replaceAll(jacksonPackage, shadowedPackage + jacksonPackage)
-                content = content.replaceAll(disruptorPackage, shadowedPackage +  disruptorPackage)
-                content = content.replaceAll(nettyPackage, shadowedPackage + nettyPackage);
-                java.nio.file.Files.write(shadowedFile, content.getBytes(sourceCharset));
-            }
-        }
-        println "Rewritten ${totalProjectSource} sources out of ${totalProjectSource} source files for project sources."
     }
+
+    int totalProjectSource = 0
+    int rewrittenProjectSource = 0
+    sourceSets.main.allSource.visit { element ->
+        totalProjectSource++
+        String relativePath = element.relativePath.toString()
+        java.nio.file.Path shadowedFile = shadowedSourceDir.resolve(relativePath)
+        if (Files.exists(shadowedFile)) {
+            return
+        }
+        if (!Files.exists(shadowedFile.getParent())) {
+            Files.createDirectories(shadowedFile.getParent())
+        }
+
+        java.nio.file.Path originalFile = element.file.toPath()
+
+        if (relativePath.startsWith("META-INF") || element.file.isDirectory() ||
+                !element.file.getName().endsWith(".java")) {
+            Files.copy(originalFile, shadowedFile, StandardCopyOption.COPY_ATTRIBUTES)
+        } else {
+            rewrittenProjectSource++
+            String content = new String(Files.readAllBytes(originalFile), sourceCharset);
+            content = content.replaceAll(jacksonPackage, shadowedPackage + jacksonPackage)
+            content = content.replaceAll(disruptorPackage, shadowedPackage +  disruptorPackage)
+            content = content.replaceAll("([^.])" + nettyPackage, "\$1" + shadowedPackage + nettyPackage);
+            Files.write(shadowedFile, content.getBytes(sourceCharset));
+        }
+    }
+    println "Rewritten ${totalProjectSource} sources out of ${totalProjectSource} source files for project sources."
 }
