@@ -21,14 +21,19 @@
  */
 package com.couchbase.client.core.endpoint.util;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
 
 /**
- * A {@link ByteBufProcessor} to find a closing character position.
+ * A {@link ByteBufProcessor} to find a closing character position. Applying this to a
+ * buffer will output the position of the closing of the section, relative to that buffer's
+ * readerIndex, or -1 if the end of the section couldn't be found.
  *
  * Note that this processor will only work correctly if the number of opening and closing
  * characters match up. This is typically the case when searching for open and closing {}
  * in a streaming JSON response.
+ *
+ * It is invoked on a {@link ByteBuf} by calling {@link ByteBuf#forEachByte(ByteBufProcessor)} methods.
  *
  * @author Simon Baslé
  * @since 1.1.0
@@ -50,6 +55,10 @@ public class ClosingPositionBufProcessor implements ByteBufProcessor {
      */
     private final char closingChar;
 
+    /**
+     * @param openingChar the opening section character (used to detect a sub-section).
+     * @param closingChar the closing section character to search for.
+     */
     public ClosingPositionBufProcessor(char openingChar, char closingChar) {
         this.openingChar = openingChar;
         this.closingChar = closingChar;
