@@ -464,6 +464,8 @@ public class QueryHandlerTest {
 
     @Test
     public void shouldDecodeOneRowResponseWithQuotesInClientIdAndResults() throws Exception {
+        String expectedClientIdWithQuotes = "ThisIsA\\\"Client\\\"Id";
+
         String response = Resources.read("with_escaped_quotes.json", this.getClass());
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
         HttpContent responseChunk = new DefaultLastHttpContent(Unpooled.copiedBuffer(response, CharsetUtil.UTF_8));
@@ -476,8 +478,7 @@ public class QueryHandlerTest {
         GenericQueryResponse inbound = (GenericQueryResponse) firedEvents.get(0);
 
         final AtomicInteger invokeCounter1 = new AtomicInteger();
-        //TODO check the quote in the clientID
-        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, FAKE_CLIENTID, "success",
+        assertResponse(inbound, true, ResponseStatus.SUCCESS, FAKE_REQUESTID, expectedClientIdWithQuotes, "success",
                 new Action1<ByteBuf>() {
                     @Override
                     public void call(ByteBuf buf) {
