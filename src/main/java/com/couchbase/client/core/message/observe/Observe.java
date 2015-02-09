@@ -193,11 +193,11 @@ public class Observe {
         final ObserveResponse.ObserveStatus persistIdentifier;
         final ObserveResponse.ObserveStatus replicaIdentifier;
         if (remove) {
-            persistIdentifier = ObserveResponse.ObserveStatus.FOUND_NOT_PERSISTED;
+            persistIdentifier = ObserveResponse.ObserveStatus.NOT_FOUND_PERSISTED;
             replicaIdentifier = ObserveResponse.ObserveStatus.NOT_FOUND_NOT_PERSISTED;
         } else {
             persistIdentifier = ObserveResponse.ObserveStatus.FOUND_PERSISTED;
-            replicaIdentifier = ObserveResponse.ObserveStatus.NOT_FOUND_PERSISTED;
+            replicaIdentifier = ObserveResponse.ObserveStatus.FOUND_NOT_PERSISTED;
         }
 
         Observable<ObserveResponse> observeResponses = sendObserveRequests(core, bucket, id, cas, persistTo,
