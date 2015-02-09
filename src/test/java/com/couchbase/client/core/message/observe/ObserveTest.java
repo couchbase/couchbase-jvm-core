@@ -33,6 +33,7 @@ import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
+import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import org.junit.Test;
 import rx.Observable;
 
@@ -66,7 +67,8 @@ public class ObserveTest {
         );
 
         Observable<Boolean> result = Observe.call(
-                cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE
+                cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE,
+                BestEffortRetryStrategy.INSTANCE
         );
         result.toBlocking().single();
     }
@@ -88,7 +90,8 @@ public class ObserveTest {
         );
 
         Observable<Boolean> result = Observe.call(
-                cluster, "bucket", "id", 1234, false, Observe.PersistTo.FOUR, Observe.ReplicateTo.NONE
+                cluster, "bucket", "id", 1234, false, Observe.PersistTo.FOUR, Observe.ReplicateTo.NONE,
+                BestEffortRetryStrategy.INSTANCE
         );
         result.toBlocking().single();
     }
@@ -120,7 +123,8 @@ public class ObserveTest {
         );
 
         Observable<Boolean> result = Observe.call(
-                cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE
+                cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE,
+                BestEffortRetryStrategy.INSTANCE
         );
         result.toBlocking().single();
     }

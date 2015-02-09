@@ -123,6 +123,12 @@ public class KeyValueLocator implements Locator {
             return null;
         }
         if (nodeId == -1) {
+            if (request instanceof ObserveRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                        + ((ObserveRequest) request).replica() + " not available for bucket " + config.name()));
+                return null;
+            }
+
             return new Node[] { };
         }
 

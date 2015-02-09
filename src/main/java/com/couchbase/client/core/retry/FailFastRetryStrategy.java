@@ -46,6 +46,11 @@ public class FailFastRetryStrategy implements RetryStrategy {
     }
 
     @Override
+    public boolean shouldRetryObserve() {
+        return false;
+    }
+
+    @Override
     public String toString() {
         return "FailFast";
     }

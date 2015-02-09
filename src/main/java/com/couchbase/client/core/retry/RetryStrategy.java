@@ -23,6 +23,7 @@ package com.couchbase.client.core.retry;
 
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.kv.ObserveRequest;
 
 /**
  * Base interface for all {@link RetryStrategy} implementations.
@@ -40,5 +41,16 @@ public interface RetryStrategy {
      * @return true if it should be retried, false otherwise.
      */
     boolean shouldRetry(CouchbaseRequest request, CoreEnvironment environment);
+
+    /**
+     * Decides whether {@link ObserveRequest}s should be retried or cancelled when an error happens.
+     *
+     * When false is returned, as soon as an error happens (for example one of the nodes that need to be reached
+     * does not have an active partition because of a node failure) the whole observe sequence is aborted. If
+     * retried, errors are swallowed and the observe cycle will start again.
+     *
+     * @return true if it should be retried, false otherwise.
+     */
+    boolean shouldRetryObserve();
 
 }

@@ -25,16 +25,20 @@ package com.couchbase.client.core.message.observe;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.DocumentConcurrentlyModifiedException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
+import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +49,8 @@ import java.util.concurrent.TimeUnit;
  * @author Michael Nitschinger
  * @since 1.0.1
  */
+@InterfaceStability.Uncommitted
+@InterfaceAudience.Private
 public class Observe {
 
     /**
@@ -184,13 +190,14 @@ public class Observe {
     }
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
-        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo) {
-        return call(core, bucket, id, cas, remove, persistTo, replicateTo, DEFAULT_DELAY);
+        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final RetryStrategy retryStrategy) {
+        return call(core, bucket, id, cas, remove, persistTo, replicateTo, DEFAULT_DELAY, retryStrategy);
     }
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
         final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo,
-        final Delay delay) {
+        final Delay delay, final RetryStrategy retryStrategy) {
 
         final ObserveResponse.ObserveStatus persistIdentifier;
         final ObserveResponse.ObserveStatus replicaIdentifier;
@@ -203,7 +210,7 @@ public class Observe {
         }
 
         Observable<ObserveResponse> observeResponses = sendObserveRequests(core, bucket, id, cas, persistTo,
-            replicateTo);
+            replicateTo, retryStrategy);
 
         return observeResponses
                 .toList()
@@ -284,7 +291,9 @@ public class Observe {
     }
 
     private static Observable<ObserveResponse> sendObserveRequests(final ClusterFacade core, final String bucket,
-        final String id, final long cas, final PersistTo persistTo, final ReplicateTo replicateTo) {
+        final String id, final long cas, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final RetryStrategy retryStrategy) {
+        final boolean swallowErrors = retryStrategy.shouldRetryObserve();
         return Observable.defer(new Func0<Observable<ObserveResponse>>() {
             @Override
             public Observable<ObserveResponse> call() {
@@ -313,18 +322,22 @@ public class Observe {
                             public Observable<ObserveResponse> call(Integer replicas) {
                                 List<Observable<ObserveResponse>> obs = new ArrayList<Observable<ObserveResponse>>();
                                 if (persistTo != PersistTo.NONE) {
-                                    obs.add(core.<ObserveResponse>send(new ObserveRequest(id, cas, true, (short) 0, bucket)));
+                                    Observable<ObserveResponse> res = core.send(new ObserveRequest(id, cas, true, (short) 0, bucket));
+                                    if (swallowErrors) {
+                                        obs.add(res.onErrorResumeNext(Observable.<ObserveResponse>empty()));
+                                    } else {
+                                        obs.add(res);
+                                    }
                                 }
 
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
-                                    if (replicas >= 1) {
-                                        obs.add(core.<ObserveResponse>send(new ObserveRequest(id, cas, false, (short) 1, bucket)));
-                                    }
-                                    if (replicas >= 2) {
-                                        obs.add(core.<ObserveResponse>send(new ObserveRequest(id, cas, false, (short) 2, bucket)));
-                                    }
-                                    if (replicas == 3) {
-                                        obs.add(core.<ObserveResponse>send(new ObserveRequest(id, cas, false, (short) 3, bucket)));
+                                    for (short i = 1; i <= replicas; i++) {
+                                        Observable<ObserveResponse> res = core.send(new ObserveRequest(id, cas, false, i, bucket));
+                                        if (swallowErrors) {
+                                            obs.add(res.onErrorResumeNext(Observable.<ObserveResponse>empty()));
+                                        } else {
+                                            obs.add(res);
+                                        }
                                     }
                                 }
                                 return Observable.merge(obs);
