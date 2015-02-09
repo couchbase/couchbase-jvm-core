@@ -22,17 +22,22 @@
 package com.couchbase.client.core.message.observe;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.DocumentConcurrentlyModifiedException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
+import com.couchbase.client.core.message.kv.ObserveRequest;
+import com.couchbase.client.core.message.kv.ObserveResponse;
 import org.junit.Test;
 import rx.Observable;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -84,6 +89,38 @@ public class ObserveTest {
 
         Observable<Boolean> result = Observe.call(
                 cluster, "bucket", "id", 1234, false, Observe.PersistTo.FOUR, Observe.ReplicateTo.NONE
+        );
+        result.toBlocking().single();
+    }
+
+    @Test(expected = DocumentConcurrentlyModifiedException.class)
+    public void shouldFailWhenConcurrentlyModified() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+
+        // Setup a mocked config which returns no replica configured
+        CouchbaseBucketConfig bucketConfig = mock(CouchbaseBucketConfig.class);
+        when(bucketConfig.numberOfReplicas()).thenReturn(1);
+        ClusterConfig clusterConfig = mock(ClusterConfig.class);
+        when(clusterConfig.bucketConfig("bucket")).thenReturn(bucketConfig);
+        GetClusterConfigResponse clusterConfigResponse = new GetClusterConfigResponse(
+                clusterConfig, ResponseStatus.SUCCESS
+        );
+        when(cluster.send(isA(GetClusterConfigRequest.class))).thenReturn(
+                Observable.just((CouchbaseResponse) clusterConfigResponse)
+        );
+        ObserveResponse observeResponse = new ObserveResponse(
+                ResponseStatus.SUCCESS,
+                ObserveResponse.ObserveStatus.MODIFIED.value(),
+                true,
+                "bucket",
+                mock(CouchbaseRequest.class)
+        );
+        when(cluster.send(isA(ObserveRequest.class))).thenReturn(
+                Observable.just((CouchbaseResponse) observeResponse)
+        );
+
+        Observable<Boolean> result = Observe.call(
+                cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE
         );
         result.toBlocking().single();
     }
