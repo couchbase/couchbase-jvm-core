@@ -21,6 +21,16 @@
  */
 package com.couchbase.client.core;
 
+/**
+ * This exception is thrown when the given operation targeting a specific replica is not fulfillable because the
+ * replica is not available (configured).
+ *
+ * This can be because the replica is not configured on the bucket at all (permanent) or the replica is currently
+ * not available (temporary).
+ *
+ * @author Michael Nitschinger
+ * @since 1.0.0
+ */
 public class ReplicaNotConfiguredException extends CouchbaseException {
 
     public ReplicaNotConfiguredException() {

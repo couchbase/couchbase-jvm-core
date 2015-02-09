@@ -23,6 +23,7 @@
 package com.couchbase.client.core.message.observe;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
@@ -287,8 +288,18 @@ public class Observe {
                             @Override
                             public Integer call(GetClusterConfigResponse response) {
                                 CouchbaseBucketConfig conf =
-                                    (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
-                                return conf.numberOfReplicas();
+                                        (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
+                                int numReplicas = conf.numberOfReplicas();
+
+                                if (replicateTo.touchesReplica() && replicateTo.value() > numReplicas) {
+                                    throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
+                                            "the bucket.");
+                                }
+                                if (persistTo.touchesReplica() && persistTo.value() - 1 > numReplicas) {
+                                    throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
+                                            "the bucket.");
+                                }
+                                return numReplicas;
                             }
                         })
                         .flatMap(new Func1<Integer, Observable<ObserveResponse>>() {
