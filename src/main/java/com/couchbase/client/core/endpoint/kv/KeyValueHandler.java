@@ -81,6 +81,8 @@ import java.util.Queue;
 public class KeyValueHandler
     extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, BinaryRequest> {
 
+    //Memcached OPCODES are defined on 1 byte. Some cbserver specific commands are casted
+    // to byte to conform to this limitation and exploit the negative range.
     public static final byte OP_GET_BUCKET_CONFIG = (byte) 0xb5;
     public static final byte OP_GET = BinaryMemcacheOpcodes.GET;
     public static final byte OP_GET_AND_LOCK = (byte) 0x94;
@@ -99,20 +101,21 @@ public class KeyValueHandler
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
     public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
 
-    public static final byte SUCCESS = 0x00;
-    public static final byte ERR_NOT_FOUND = 0x01;
-    public static final byte ERR_EXISTS = 0x02;
-    public static final byte ERR_2BIG = 0x03;
-    public static final byte ERR_INVAL = 0x04;
-    public static final byte ERR_NOT_STORED = 0x05;
-    public static final byte ERR_DELTA_BADVAL = 0x06;
-    public static final byte ERR_NOT_MY_VBUCKET = 0x07;
-    public static final byte ERR_UNKNOWN_COMMAND = (byte) 0x81;
-    public static final byte ERR_NO_MEM = (byte) 0x82;
-    public static final byte ERR_NOT_SUPPORTED = (byte) 0x83;
-    public static final byte ERR_INTERNAL = (byte) 0x84;
-    public static final byte ERR_BUSY = (byte) 0x85;
-    public static final byte ERR_TEMP_FAIL = (byte) 0x86;
+    //Memcached response codes are defined on 2 bytes (a short)
+    public static final short SUCCESS = 0x00;
+    public static final short ERR_NOT_FOUND = 0x01;
+    public static final short ERR_EXISTS = 0x02;
+    public static final short ERR_2BIG = 0x03;
+    public static final short ERR_INVAL = 0x04;
+    public static final short ERR_NOT_STORED = 0x05;
+    public static final short ERR_DELTA_BADVAL = 0x06;
+    public static final short ERR_NOT_MY_VBUCKET = 0x07;
+    public static final short ERR_UNKNOWN_COMMAND = 0x81;
+    public static final short ERR_NO_MEM = 0x82;
+    public static final short ERR_NOT_SUPPORTED = 0x83;
+    public static final short ERR_INTERNAL = 0x84;
+    public static final short ERR_BUSY = 0x85;
+    public static final short ERR_TEMP_FAIL = 0x86;
 
     /**
      * Creates a new {@link KeyValueHandler} with the default queue for requests.
@@ -541,7 +544,7 @@ public class KeyValueHandler
      * @param status the status to convert.
      * @return the converted response status.
      */
-    private static ResponseStatus convertStatus(final short status) {
+    protected static final ResponseStatus convertStatus(final short status) {
         switch (status) {
             case SUCCESS:
                 return ResponseStatus.SUCCESS;

@@ -62,11 +62,11 @@ import java.util.Queue;
  * @since 1.1.0
  */
 public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, DCPRequest> {
-    public static final byte OP_OPEN_CONNECTION = (byte) 0x50;
-    public static final byte OP_STREAM_REQUEST = (byte) 0x53;
-    public static final byte OP_SNAPSHOT_MARKER = (byte) 0x56;
-    public static final byte OP_MUTATION = (byte) 0x57;
-    public static final byte OP_REMOVE = (byte) 0x58;
+    public static final byte OP_OPEN_CONNECTION = 0x50;
+    public static final byte OP_STREAM_REQUEST = 0x53;
+    public static final byte OP_SNAPSHOT_MARKER = 0x56;
+    public static final byte OP_MUTATION = 0x57;
+    public static final byte OP_REMOVE = 0x58;
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPHandler.class);
     /**
      * Maps stream identifiers to {@link DCPStream}. The identifiers put into

@@ -292,6 +292,11 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         assertEquals(ResponseStatus.EXISTS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
 
+        GetResponse secondLockResponse = (GetResponse) cluster().send(new GetRequest(key, bucket(), true, false, 2))
+                .toBlocking().single();
+        assertEquals(ResponseStatus.TEMPORARY_FAILURE, secondLockResponse.status());
+        ReferenceCountUtil.releaseLater(secondLockResponse.content());
+
         Thread.sleep(3000);
 
         request = new UpsertRequest(key, Unpooled.copiedBuffer("content", CharsetUtil.UTF_8), bucket());
