@@ -60,6 +60,11 @@ public enum ResponseStatus {
     TEMPORARY_FAILURE,
 
     /**
+     * Indicates that the server is busy, which is considered to be transient.
+     */
+    SERVER_BUSY,
+
+    /**
      * Indicates that the request type was dispatched but not known by the server or it is not supported.
      */
     COMMAND_UNAVAILABLE,

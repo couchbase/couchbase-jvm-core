@@ -896,7 +896,7 @@ public class KeyValueHandlerTest {
         assertEquals(ResponseStatus.OUT_OF_MEMORY, KeyValueHandler.convertStatus((short) 0x82));
         assertEquals(ResponseStatus.COMMAND_UNAVAILABLE, KeyValueHandler.convertStatus((short) 0x83));
         assertEquals(ResponseStatus.INTERNAL_ERROR, KeyValueHandler.convertStatus((short) 0x84));
-        assertEquals(ResponseStatus.TEMPORARY_FAILURE, KeyValueHandler.convertStatus((short) 0x85));
+        assertEquals(ResponseStatus.SERVER_BUSY, KeyValueHandler.convertStatus((short) 0x85));
         assertEquals(ResponseStatus.TEMPORARY_FAILURE, KeyValueHandler.convertStatus((short) 0x86));
 
         assertEquals(ResponseStatus.FAILURE, KeyValueHandler.convertStatus(Short.MAX_VALUE));
