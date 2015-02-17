@@ -192,10 +192,12 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         }
 
         if (currentRequest() instanceof KeepAliveRequest) {
-            response = new KeepAliveResponse(statusFromCode(responseHeader.getStatus().code()), currentRequest());
-            responseContent.clear();
-            responseContent.discardReadBytes();
-            finishedDecoding();
+            if (msg instanceof LastHttpContent) {
+                response = new KeepAliveResponse(statusFromCode(responseHeader.getStatus().code()), currentRequest());
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
         } else if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
             boolean lastChunk = msg instanceof LastHttpContent;
