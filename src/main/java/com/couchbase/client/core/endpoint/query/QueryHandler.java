@@ -21,8 +21,6 @@
  */
 package com.couchbase.client.core.endpoint.query;
 
-import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.*;
-
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
@@ -36,6 +34,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.message.query.QueryRequest;
+import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,9 +50,13 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import rx.Scheduler;
 import rx.subjects.AsyncSubject;
-import rx.subjects.ReplaySubject;
 
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
+import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findNextChar;
+import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findNextCharNotPrefixedBy;
+import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findSectionClosingPosition;
 
 /**
  * The {@link QueryHandler} is responsible for encoding {@link QueryRequest}s into lower level
@@ -102,17 +105,17 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     /**
      * Represents an observable that sends result chunks.
      */
-    private ReplaySubject<ByteBuf> queryRowObservable;
+    private UnicastAutoReleaseSubject<ByteBuf> queryRowObservable;
 
     /**
      * Represents an observable that has the signature of the N1QL results if there are any.
      */
-    private AsyncSubject<ByteBuf> querySignatureObservable;
+    private UnicastAutoReleaseSubject<ByteBuf> querySignatureObservable;
 
     /**
      * Represents an observable that sends errors and warnings if any during query execution.
      */
-    private ReplaySubject<ByteBuf> queryErrorObservable;
+    private UnicastAutoReleaseSubject<ByteBuf> queryErrorObservable;
 
     /**
      * Represent an observable that has the final execution status of the query, once all result rows and/or
@@ -123,7 +126,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     /**
      * Represents an observable containing metrics on a terminated query.
      */
-    private AsyncSubject<ByteBuf> queryInfoObservable;
+    private UnicastAutoReleaseSubject<ByteBuf> queryInfoObservable;
 
     /**
      * Represents the current query parsing state.
@@ -308,11 +311,13 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         }
 
         Scheduler scheduler = env().scheduler();
-        queryRowObservable = ReplaySubject.create();
-        queryErrorObservable = ReplaySubject.create();
+        long ttl = env().autoreleaseAfter();
+        queryRowObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
+        queryErrorObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         queryStatusObservable = AsyncSubject.create();
-        queryInfoObservable = AsyncSubject.create();
-        querySignatureObservable = AsyncSubject.create();
+        queryInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
+        querySignatureObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
+
         return new GenericQueryResponse(
                 queryErrorObservable.onBackpressureBuffer().observeOn(scheduler),
                 queryRowObservable.onBackpressureBuffer().observeOn(scheduler),

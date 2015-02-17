@@ -22,8 +22,6 @@
 package com.couchbase.client.core.message.view;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
-import rx.subjects.ReplaySubject;
 
 public class ViewQueryRequest extends AbstractCouchbaseRequest implements ViewRequest {
 
@@ -42,7 +40,7 @@ public class ViewQueryRequest extends AbstractCouchbaseRequest implements ViewRe
     }
 
     public ViewQueryRequest(String design, String view, boolean development, boolean spatial, String query, String bucket, String password) {
-        super(bucket, password, ReplaySubject.<CouchbaseResponse>create());
+        super(bucket, password);
         this.design = design;
         this.view = view;
         this.query = query;

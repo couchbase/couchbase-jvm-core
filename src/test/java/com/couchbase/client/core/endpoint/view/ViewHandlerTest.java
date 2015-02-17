@@ -126,6 +126,8 @@ public class ViewHandlerTest {
 
         CoreEnvironment environment = mock(CoreEnvironment.class);
         when(environment.scheduler()).thenReturn(Schedulers.computation());
+        when(environment.maxRequestLifetime()).thenReturn(10000L); // 10 seconds
+        when(environment.autoreleaseAfter()).thenReturn(2000L);
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");

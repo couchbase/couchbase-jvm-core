@@ -34,7 +34,6 @@ import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.util.Resources;
-import com.couchbase.client.core.utils.Buffers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -139,6 +138,8 @@ public class QueryHandlerTest {
         CoreEnvironment environment = mock(CoreEnvironment.class);
         when(environment.scheduler()).thenReturn(Schedulers.computation());
         when(environment.queryEnabled()).thenReturn(Boolean.TRUE);
+        when(environment.maxRequestLifetime()).thenReturn(10000L);
+        when(environment.autoreleaseAfter()).thenReturn(2000L);
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");

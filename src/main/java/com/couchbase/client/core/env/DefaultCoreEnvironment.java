@@ -74,6 +74,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final RetryStrategy RETRY_STRATEGY = BestEffortRetryStrategy.INSTANCE;
     public static final long MAX_REQUEST_LIFETIME = TimeUnit.SECONDS.toMillis(75);
     public static final long KEEPALIVEINTERVAL = TimeUnit.SECONDS.toMillis(30);
+    public static final long AUTORELEASE_AFTER = TimeUnit.SECONDS.toMillis(2);
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -148,6 +149,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final RetryStrategy retryStrategy;
     private final long maxRequestLifetime;
     private final long keepAliveInterval;
+    private final long autoreleaseAfter;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -189,6 +191,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         retryStrategy = builder.retryStrategy();
         maxRequestLifetime = longPropertyOr("maxRequestLifetime", builder.maxRequestLifetime());
         keepAliveInterval = longPropertyOr("keepAliveInterval", builder.keepAliveInterval());
+        autoreleaseAfter = longPropertyOr("autoreleaseAfter", builder.autoreleaseAfter());
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -417,6 +420,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return eventBus;
     }
 
+    @Override
+    public long autoreleaseAfter() {
+        return autoreleaseAfter;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -449,6 +457,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private EventBus eventBus;
         private long maxRequestLifetime = MAX_REQUEST_LIFETIME;
         private long keepAliveInterval = KEEPALIVEINTERVAL;
+        private long autoreleaseAfter = AUTORELEASE_AFTER;
 
         protected Builder() {
         }
@@ -890,6 +899,21 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         @Override
+        public long autoreleaseAfter() {
+            return autoreleaseAfter;
+        }
+
+        /**
+         * Sets the time after which any non-consumed buffers will be automatically released.
+         * Setting this to a higher value than a few seconds is not recommended since this
+         * may lead to increased garbage collection.
+         */
+        public Builder autoreleaseAfter(long autoreleaseAfter) {
+            this.autoreleaseAfter = autoreleaseAfter;
+            return this;
+        }
+
+        @Override
         public EventBus eventBus() {
             return eventBus;
         }
@@ -936,6 +960,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", reconnectDelay=").append(reconnectDelay);
         sb.append(", observeIntervalDelay=").append(observeIntervalDelay);
         sb.append(", keepAliveInterval=").append(keepAliveInterval);
+        sb.append(", autoreleaseAfter=").append(autoreleaseAfter);
         sb.append('}');
         return sb.toString();
     }

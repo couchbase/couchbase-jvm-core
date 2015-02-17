@@ -214,6 +214,15 @@ public interface CoreEnvironment {
     long maxRequestLifetime();
 
     /**
+     * The time in milliseconds after which a non-subscribed observable is going to be automatically released.
+     *
+     * This prevents accidentally leaking buffers when requested but not consumed by the user.
+     *
+     * @return the time after which the buffers are released if not subscribed.
+     */
+    long autoreleaseAfter();
+
+    /**
      * The time in milliseconds after which some service will issue a form of keep-alive request.
      *
      * @return the interval of idle time in milliseconds after which a keep-alive is triggered.
@@ -226,4 +235,6 @@ public interface CoreEnvironment {
      * @return the configured event bus.
      */
     EventBus eventBus();
+
+
 }
