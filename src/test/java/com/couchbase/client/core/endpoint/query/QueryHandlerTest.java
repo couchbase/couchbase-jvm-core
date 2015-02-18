@@ -43,6 +43,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
@@ -54,6 +55,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import org.junit.After;
@@ -736,8 +738,9 @@ public class QueryHandlerTest {
         QueryHandler.KeepAliveRequest keepAliveRequest = (QueryHandler.KeepAliveRequest) queue.peek();
 
         //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-        channel.writeInbound(response);
+        HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+        LastHttpContent responseEnd = new DefaultLastHttpContent();
+        channel.writeInbound(response, responseEnd);
         QueryHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(QueryHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
