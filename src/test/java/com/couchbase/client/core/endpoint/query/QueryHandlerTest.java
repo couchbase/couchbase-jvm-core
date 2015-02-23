@@ -58,6 +58,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -199,6 +200,7 @@ public class QueryHandlerTest {
         List<ByteBuf> metricList = inbound.info().timeout(1, TimeUnit.SECONDS).toList().toBlocking().single();
         assertEquals(1, metricList.size());
         String metricsJson = metricList.get(0).toString(CharsetUtil.UTF_8);
+        metricList.get(0).release();
         try {
             Map metrics = mapper.readValue(metricsJson, Map.class);
             assertEquals(7, metrics.size());
@@ -396,6 +398,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf row) {
                         found.incrementAndGet();
                         String content = row.toString(CharsetUtil.UTF_8);
+                        row.release();
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
@@ -448,6 +451,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf byteBuf) {
                         found.incrementAndGet();
                         String content = byteBuf.toString(CharsetUtil.UTF_8);
+                        byteBuf.release();
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
@@ -628,6 +632,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         invokeCounter1.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        buf.release();
                         try {
                             Map found = mapper.readValue(response, Map.class);
                             assertEquals(12, found.size());
@@ -682,6 +687,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         count.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        buf.release();
                         try {
                             Map error = mapper.readValue(response, Map.class);
                             assertEquals(5, error.size());
@@ -744,6 +750,9 @@ public class QueryHandlerTest {
         QueryHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(QueryHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
+
+        ReferenceCountUtil.releaseLater(response);
+        ReferenceCountUtil.releaseLater(responseEnd);
 
         assertEquals(2, keepAliveEventCounter.get());
         assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
@@ -813,6 +822,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf byteBuf) {
                         found.incrementAndGet();
                         String content = byteBuf.toString(CharsetUtil.UTF_8);
+                        byteBuf.release();
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
@@ -827,6 +837,7 @@ public class QueryHandlerTest {
                 new Action1<ByteBuf>() {
                     @Override
                     public void call(ByteBuf buf) {
+                        buf.release();
                         errors.incrementAndGet();
                     }
                 },
