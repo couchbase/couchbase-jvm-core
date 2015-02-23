@@ -1,6 +1,9 @@
 {
   "requestID": "1234test-7802-4fc2-acd6-dfcd1c05a288",
   "clientContextID": "123456789",
+  "signature": {
+    "*": "*"
+  },
   "results": [
     {
       "address": [
