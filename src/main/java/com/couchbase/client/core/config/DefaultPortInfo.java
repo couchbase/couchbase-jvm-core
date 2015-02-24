@@ -21,10 +21,13 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +35,7 @@ public class DefaultPortInfo implements PortInfo {
 
     private final Map<ServiceType, Integer> ports;
     private final Map<ServiceType, Integer> sslPorts;
+    private final InetAddress hostname;
 
     /**
      * Creates a new {@link DefaultPortInfo}.
@@ -39,9 +43,17 @@ public class DefaultPortInfo implements PortInfo {
      * @param services the list of services mapping to ports.
      */
     @JsonCreator
-    public DefaultPortInfo(@JsonProperty("services") Map<String, Integer> services) {
+    public DefaultPortInfo(
+            @JsonProperty("services") Map<String, Integer> services,
+            @JsonProperty("hostname") String hostname
+    ) {
         ports = new HashMap<ServiceType, Integer>();
         sslPorts = new HashMap<ServiceType, Integer>();
+        try {
+            this.hostname = InetAddress.getByName(hostname);
+        } catch (UnknownHostException e) {
+            throw new CouchbaseException("Could not analyze hostname from config.", e);
+        }
 
         for (Map.Entry<String, Integer> entry : services.entrySet()) {
             String service = entry.getKey();
@@ -58,6 +70,10 @@ public class DefaultPortInfo implements PortInfo {
                 sslPorts.put(ServiceType.VIEW, port);
             } else if (service.equals("mgmtSSL")) {
                 sslPorts.put(ServiceType.CONFIG, port);
+            } else if (service.equals("n1ql")) {
+                ports.put(ServiceType.QUERY, port);
+            } else if (service.equals("n1qlSSL")) {
+                sslPorts.put(ServiceType.QUERY, port);
             }
         }
     }
@@ -73,7 +89,16 @@ public class DefaultPortInfo implements PortInfo {
     }
 
     @Override
+    public InetAddress hostname() {
+        return hostname;
+    }
+
+    @Override
     public String toString() {
-        return "DefaultPortInfo{" + "ports=" + ports + ", sslPorts=" + sslPorts + '}';
+        return "DefaultPortInfo{"
+                + "ports=" + ports
+                + ", sslPorts=" + sslPorts
+                + ", hostname='" + hostname
+                + '\'' + '}';
     }
 }

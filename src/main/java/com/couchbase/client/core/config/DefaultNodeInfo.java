@@ -40,7 +40,6 @@ import java.util.Map;
  */
 public class DefaultNodeInfo implements NodeInfo {
 
-    private final String viewUri;
     private final InetAddress hostname;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
@@ -58,35 +57,27 @@ public class DefaultNodeInfo implements NodeInfo {
             @JsonProperty("couchApiBase") String viewUri,
             @JsonProperty("hostname") String hostname,
             @JsonProperty("ports") Map<String, Integer> ports) {
-        this.viewUri = viewUri;
         try {
             this.hostname = InetAddress.getByName(trimPort(hostname));
         } catch (UnknownHostException e) {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
-        this.directServices = parseDirectServices(ports);
+        this.directServices = parseDirectServices(viewUri, ports);
         this.sslServices = new HashMap<ServiceType, Integer>();
     }
 
     /**
      * Creates a new {@link DefaultNodeInfo} with SSL services.
      *
-     * @param viewUri  the URI of the view service.
      * @param hostname the hostname of the node.
      * @param direct   the port list of the direct node services.
      * @param ssl      the port list of the ssl node services.
      */
-    public DefaultNodeInfo(String viewUri, InetAddress hostname, Map<ServiceType, Integer> direct,
-                           Map<ServiceType, Integer> ssl) {
-        this.viewUri = viewUri;
+    public DefaultNodeInfo(InetAddress hostname, Map<ServiceType, Integer> direct,
+        Map<ServiceType, Integer> ssl) {
         this.hostname = hostname;
         this.directServices = direct;
         this.sslServices = ssl;
-    }
-
-    @Override
-    public String viewUri() {
-        return viewUri;
     }
 
     @Override
@@ -104,7 +95,7 @@ public class DefaultNodeInfo implements NodeInfo {
         return sslServices;
     }
 
-    private Map<ServiceType, Integer> parseDirectServices(final Map<String, Integer> input) {
+    private Map<ServiceType, Integer> parseDirectServices(final String viewUri, final Map<String, Integer> input) {
         Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
         for (Map.Entry<String, Integer> entry : input.entrySet()) {
             String type = entry.getKey();
@@ -128,7 +119,7 @@ public class DefaultNodeInfo implements NodeInfo {
 
     @Override
     public String toString() {
-        return "NodeInfo{" + "viewUri='" + viewUri + '\'' + ", hostname=" + hostname + ", configPort="
+        return "NodeInfo{" + ", hostname=" + hostname + ", configPort="
                 + configPort + ", directServices=" + directServices + ", sslServices=" + sslServices + '}';
     }
 }

@@ -33,13 +33,6 @@ import java.util.Map;
 public interface NodeInfo {
 
     /**
-     * The view uri.
-     *
-     * @return the view uri.
-     */
-    String viewUri();
-
-    /**
      * The inet address of the node.
      *
      * @return the host address.

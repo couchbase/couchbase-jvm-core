@@ -39,16 +39,21 @@ public abstract class AbstractBucketConfig implements BucketConfig {
         this.locator = locator;
         this.uri = uri;
         this.streamingUri = streamingUri;
-        if (portInfos == null) {
-            this.nodeInfo = nodeInfos;
-        } else {
-            List<NodeInfo> modified = new ArrayList<NodeInfo>();
-            for (int i = 0; i < nodeInfos.size(); i++) {
-                modified.add(new DefaultNodeInfo(nodeInfos.get(i).viewUri(), nodeInfos.get(i).hostname(),
-                    portInfos.get(i).ports(), portInfos.get(i).sslPorts()));
-            }
-            this.nodeInfo = modified;
+        this.nodeInfo = portInfos == null ? nodeInfos : nodeInfoFromExtended(portInfos);
+    }
+
+    /**
+     * Helper method to create the {@link NodeInfo}s from from the extended node information.
+     *
+     * @param nodesExt the extended information.
+     * @return the generated node infos.
+     */
+    private static List<NodeInfo> nodeInfoFromExtended(final List<PortInfo> nodesExt) {
+        List<NodeInfo> converted = new ArrayList<NodeInfo>(nodesExt.size());
+        for (PortInfo nodeExt : nodesExt) {
+            converted.add(new DefaultNodeInfo(nodeExt.hostname(), nodeExt.ports(), nodeExt.sslPorts()));
         }
+        return converted;
     }
 
     @Override
