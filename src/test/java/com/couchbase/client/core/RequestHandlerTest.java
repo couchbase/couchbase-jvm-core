@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core;
 
+import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
@@ -33,6 +34,7 @@ import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import org.junit.Test;
 import rx.Observable;
@@ -157,16 +159,19 @@ public class RequestHandlerTest {
     }
 
     private void assertFeatureForRequest(RequestHandler handler, CouchbaseRequest request, boolean expectedOk) {
+        BucketConfig mockConfig = mock(BucketConfig.class);
+        when(mockConfig.serviceEnabled(ServiceType.BINARY)).thenReturn(true);
+
         try {
-            handler.checkFeaturesForRequest(request);
+            handler.checkFeaturesForRequest(request, mockConfig);
             if (!expectedOk) {
                 fail();
             }
-        } catch (UnsupportedOperationException e) {
+        } catch (ServiceNotAvailableException e) {
             if (expectedOk) {
                 fail();
             }
-            assertTrue(e.getMessage().startsWith("Request type needs a feature to be enabled in environment"));
+            assertTrue(e.getMessage().endsWith("service is not enabled or no node in the cluster supports it."));
         }
     }
 

@@ -168,24 +168,24 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         try {
             final CouchbaseRequest request = event.getRequest();
 
+            ClusterConfig config = configuration.get();
             //prevent non-bootstrap requests to go through if bucket not part of config
             if (!(request instanceof BootstrapMessage)) {
-                ClusterConfig config = configuration.get();
                 if (config == null || (request.bucket() != null  && !config.hasBucket(request.bucket()))) {
                     request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
                     return;
                 }
+
+                //short-circuit some kind of requests for which we know there won't be any handler to respond.
+                try {
+                    checkFeaturesForRequest(request, config.bucketConfig(request.bucket()));
+                } catch (UnsupportedOperationException e) {
+                    request.observable().onError(e);
+                    return;
+                }
             }
 
-            //short-circuit some kind of requests for which we know there won't be any handler to respond.
-            try {
-                checkFeaturesForRequest(request);
-            } catch (UnsupportedOperationException e) {
-                request.observable().onError(e);
-                return;
-            }
-
-            Node[] found = locator(request).locate(request, nodes, configuration.get());
+            Node[] found = locator(request).locate(request, nodes, config);
 
             if (found == null) {
                 return;
@@ -217,11 +217,15 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param request the request to check.
      * @throws UnsupportedOperationException if the request type needs a particular feature which isn't activated.
      */
-    protected void checkFeaturesForRequest(CouchbaseRequest request) {
-        if (request instanceof QueryRequest && !environment.queryEnabled()) {
-            throw new UnsupportedOperationException("Request type needs a feature to be enabled in environment: query");
-        } else if (request instanceof  DCPRequest && !environment.dcpEnabled()) {
-            throw new UnsupportedOperationException("Request type needs a feature to be enabled in environment: dcp");
+    protected void checkFeaturesForRequest(CouchbaseRequest request, BucketConfig config) {
+        if (request instanceof BinaryRequest && !config.serviceEnabled(ServiceType.BINARY)) {
+            throw new ServiceNotAvailableException("The KeyValue service is not enabled or no node in the cluster supports it.");
+        } else if (request instanceof ViewRequest && !config.serviceEnabled(ServiceType.VIEW)) {
+            throw new ServiceNotAvailableException("The View service is not enabled or no node in the cluster supports it.");
+        } else if (request instanceof QueryRequest && !(environment.queryEnabled() || config.serviceEnabled(ServiceType.QUERY))) {
+            throw new ServiceNotAvailableException("The Query service is not enabled or no node in the cluster supports it.");
+        } else if (request instanceof  DCPRequest && !(environment.dcpEnabled() || config.serviceEnabled(ServiceType.DCP))) {
+            throw new ServiceNotAvailableException("The DCP service is not enabled or no node in the cluster supports it.");
         }
     }
 

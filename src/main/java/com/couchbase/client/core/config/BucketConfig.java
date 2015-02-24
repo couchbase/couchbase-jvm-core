@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -109,5 +110,13 @@ public interface BucketConfig {
      * @return the bucket type.
      */
     BucketType type();
+
+    /**
+     * Check if the service is enabled on the bucket.
+     *
+     * @param type the type to check.
+     * @return true if it is, false otherwise.
+     */
+    boolean serviceEnabled(ServiceType type);
 
 }

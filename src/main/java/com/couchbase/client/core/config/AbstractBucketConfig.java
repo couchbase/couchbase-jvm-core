@@ -21,8 +21,12 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.service.ServiceType;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractBucketConfig implements BucketConfig {
 
@@ -32,6 +36,7 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final String uri;
     private final String streamingUri;
     private final List<NodeInfo> nodeInfo;
+    private final Set<ServiceType> enabledServices;
 
     protected AbstractBucketConfig(String name, BucketNodeLocator locator, String uri, String streamingUri,
         List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
@@ -40,6 +45,12 @@ public abstract class AbstractBucketConfig implements BucketConfig {
         this.uri = uri;
         this.streamingUri = streamingUri;
         this.nodeInfo = portInfos == null ? nodeInfos : nodeInfoFromExtended(portInfos);
+
+        this.enabledServices = new HashSet<ServiceType>();
+        for (NodeInfo info : nodeInfo) {
+            this.enabledServices.addAll(info.services().keySet());
+            this.enabledServices.addAll(info.sslServices().keySet());
+        }
     }
 
     /**
@@ -92,4 +103,8 @@ public abstract class AbstractBucketConfig implements BucketConfig {
         return this;
     }
 
+    @Override
+    public boolean serviceEnabled(ServiceType type) {
+        return enabledServices.contains(type);
+    }
 }
