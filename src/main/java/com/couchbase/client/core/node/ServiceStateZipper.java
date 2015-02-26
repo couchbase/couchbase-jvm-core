@@ -19,25 +19,25 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+package com.couchbase.client.core.node;
 
-import com.couchbase.client.core.endpoint.Endpoint;
+import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.AbstractStateZipper;
 import com.couchbase.client.core.state.LifecycleState;
 
 import java.util.Collection;
 
 /**
- * Calculates a merged state for all registered endpoints.
+ * Calculates a merged state for all registered services.
  *
  * @author Michael Nitschinger
- * @since 1.1.0
+ * @since 1.1.1
  */
-public class EndpointStateZipper extends AbstractStateZipper<Endpoint, LifecycleState> {
+public class ServiceStateZipper extends AbstractStateZipper<Service, LifecycleState>  {
 
     private final LifecycleState initialState;
 
-    public EndpointStateZipper(LifecycleState initial) {
+    public ServiceStateZipper(LifecycleState initial) {
         super(initial);
         this.initialState = initial;
     }
@@ -45,13 +45,15 @@ public class EndpointStateZipper extends AbstractStateZipper<Endpoint, Lifecycle
     @Override
     protected LifecycleState zipWith(Collection<LifecycleState> states) {
         if (states.isEmpty()) {
-            return initialState;
+            return LifecycleState.DISCONNECTED;
         }
+
         int connected = 0;
         int connecting = 0;
         int disconnecting = 0;
-        for (LifecycleState endpointState : states) {
-            switch (endpointState) {
+        int idle = 0;
+        for (LifecycleState serviceState : states) {
+            switch (serviceState) {
                 case CONNECTED:
                     connected++;
                     break;
@@ -61,11 +63,14 @@ public class EndpointStateZipper extends AbstractStateZipper<Endpoint, Lifecycle
                 case DISCONNECTING:
                     disconnecting++;
                     break;
-                default:
-                    // ignore
+                case IDLE:
+                    idle++;
+                    break;
             }
         }
-        if (states.size() == connected) {
+        if (states.size() == idle) {
+            return LifecycleState.IDLE;
+        } else if (states.size() == (connected + idle)) {
             return LifecycleState.CONNECTED;
         } else if (connected > 0) {
             return LifecycleState.DEGRADED;
@@ -77,4 +82,5 @@ public class EndpointStateZipper extends AbstractStateZipper<Endpoint, Lifecycle
             return LifecycleState.DISCONNECTED;
         }
     }
+
 }
