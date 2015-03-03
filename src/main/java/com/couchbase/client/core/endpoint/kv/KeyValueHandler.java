@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint.kv;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -101,21 +102,6 @@ public class KeyValueHandler
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
     public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
 
-    //Memcached response codes are defined on 2 bytes (a short)
-    public static final short SUCCESS = 0x00;
-    public static final short ERR_NOT_FOUND = 0x01;
-    public static final short ERR_EXISTS = 0x02;
-    public static final short ERR_2BIG = 0x03;
-    public static final short ERR_INVAL = 0x04;
-    public static final short ERR_NOT_STORED = 0x05;
-    public static final short ERR_DELTA_BADVAL = 0x06;
-    public static final short ERR_NOT_MY_VBUCKET = 0x07;
-    public static final short ERR_UNKNOWN_COMMAND = 0x81;
-    public static final short ERR_NO_MEM = 0x82;
-    public static final short ERR_NOT_SUPPORTED = 0x83;
-    public static final short ERR_INTERNAL = 0x84;
-    public static final short ERR_BUSY = 0x85;
-    public static final short ERR_TEMP_FAIL = 0x86;
 
     /**
      * Creates a new {@link KeyValueHandler} with the default queue for requests.
@@ -443,7 +429,7 @@ public class KeyValueHandler
             throw new IllegalStateException("Opaque values for " + msg.getClass() + " do not match.");
         }
 
-        ResponseStatus status = convertStatus(msg.getStatus());
+        ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
 
         // Release request content from external resources if not retried again.
         if (!status.equals(ResponseStatus.RETRY)) {
@@ -535,47 +521,6 @@ public class KeyValueHandler
             ((AppendRequest) request).content().release();
         } else if (request instanceof PrependRequest) {
             ((PrependRequest) request).content().release();
-        }
-    }
-
-    /**
-     * Convert the binary protocol status in a typesafe enum that can be acted upon later.
-     *
-     * @param status the status to convert.
-     * @return the converted response status.
-     */
-    protected static final ResponseStatus convertStatus(final short status) {
-        switch (status) {
-            case SUCCESS:
-                return ResponseStatus.SUCCESS;
-            case ERR_EXISTS:
-                return ResponseStatus.EXISTS;
-            case ERR_NOT_FOUND:
-                return ResponseStatus.NOT_EXISTS;
-            case ERR_NOT_MY_VBUCKET:
-                return ResponseStatus.RETRY;
-            case ERR_NOT_STORED:
-                return ResponseStatus.NOT_STORED;
-            case ERR_2BIG:
-                return ResponseStatus.TOO_BIG;
-            case ERR_TEMP_FAIL:
-                return ResponseStatus.TEMPORARY_FAILURE;
-            case ERR_BUSY:
-                return ResponseStatus.SERVER_BUSY;
-            case ERR_NO_MEM:
-                return ResponseStatus.OUT_OF_MEMORY;
-            case ERR_UNKNOWN_COMMAND:
-                return ResponseStatus.COMMAND_UNAVAILABLE;
-            case ERR_NOT_SUPPORTED:
-                return ResponseStatus.COMMAND_UNAVAILABLE;
-            case ERR_INTERNAL:
-                return ResponseStatus.INTERNAL_ERROR;
-            case ERR_INVAL:
-                return ResponseStatus.INVALID_ARGUMENTS;
-            case ERR_DELTA_BADVAL:
-                return ResponseStatus.INVALID_ARGUMENTS;
-            default:
-                return ResponseStatus.FAILURE;
         }
     }
 

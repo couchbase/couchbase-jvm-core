@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint.config;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
@@ -206,7 +207,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
                 return null;
             }
 
-            ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+            ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
             String body = responseContent.readableBytes() > 0
                 ? responseContent.toString(CHARSET) : responseHeader.getStatus().reasonPhrase();
 
@@ -246,7 +247,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         final HttpResponse header) {
         SocketAddress addr = ctx.channel().remoteAddress();
         String host = addr instanceof InetSocketAddress ? ((InetSocketAddress) addr).getHostName() : addr.toString();
-        ResponseStatus status = statusFromCode(header.getStatus().code());
+        ResponseStatus status = ResponseStatusConverter.fromHttp(header.getStatus().code());
 
         Observable<String> scheduledObservable = null;
         if (status.isSuccess()) {
@@ -274,29 +275,6 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             responseContent.clear();
             responseContent.writeBytes(currentChunk.substring(separatorIndex + 4).getBytes(CHARSET));
         }
-    }
-
-    /**
-     * Converts a HTTP status code in its appropriate {@link ResponseStatus} representation.
-     *
-     * @param code the http code.
-     * @return the parsed status.
-     */
-    private static ResponseStatus statusFromCode(int code) {
-        ResponseStatus status;
-        switch (code) {
-            case 200:
-            case 201:
-            case 202:
-                status = ResponseStatus.SUCCESS;
-                break;
-            case 404:
-                status = ResponseStatus.NOT_EXISTS;
-                break;
-            default:
-                status = ResponseStatus.FAILURE;
-        }
-        return status;
     }
 
     /**

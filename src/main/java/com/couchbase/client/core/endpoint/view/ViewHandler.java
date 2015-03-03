@@ -24,6 +24,7 @@ package com.couchbase.client.core.endpoint.view;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
@@ -32,7 +33,6 @@ import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
 import com.couchbase.client.core.message.view.RemoveDesignDocumentRequest;
@@ -251,7 +251,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         }
 
         if (request instanceof KeepAliveRequest) {
-            response = new KeepAliveResponse(statusFromCode(responseHeader.getStatus().code()), request);
+            response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), request);
             responseContent.clear();
             responseContent.discardReadBytes();
         } else if (msg instanceof HttpContent) {
@@ -291,18 +291,18 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @return the parsed response.
      */
     private CouchbaseResponse handleGetDesignDocumentResponse(final GetDesignDocumentRequest request) {
-        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
         return new GetDesignDocumentResponse(request.name(), request.development(), responseContent.copy(), status,
             request);
     }
 
     private CouchbaseResponse handleUpsertDesignDocumentResponse(final UpsertDesignDocumentRequest request) {
-        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
         return new UpsertDesignDocumentResponse(status, responseContent.copy(), request);
     }
 
     private CouchbaseResponse handleRemoveDesignDocumentResponse(final RemoveDesignDocumentRequest request) {
-        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
         return new RemoveDesignDocumentResponse(status, responseContent.copy(), request);
     }
 
@@ -316,7 +316,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
     private CouchbaseResponse handleViewQueryResponse() {
         int code = responseHeader.getStatus().code();
         String phrase = responseHeader.getStatus().reasonPhrase();
-        ResponseStatus status = statusFromCode(responseHeader.getStatus().code());
+        ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
         Scheduler scheduler = env().scheduler();
         long ttl = env().autoreleaseAfter();
         viewRowObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
@@ -484,28 +484,6 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CHARSET));
         encoded.release();
         raw.release();
-    }
-
-    /**
-     * Converts a HTTP status code in its appropriate {@link ResponseStatus} representation.
-     *
-     * @param code the http code.
-     * @return the parsed status.
-     */
-    private static ResponseStatus statusFromCode(int code) {
-        ResponseStatus status;
-        switch (code) {
-            case 200:
-            case 201:
-                status = ResponseStatus.SUCCESS;
-                break;
-            case 404:
-                status = ResponseStatus.NOT_EXISTS;
-                break;
-            default:
-                status = ResponseStatus.FAILURE;
-        }
-        return status;
     }
 
     @Override

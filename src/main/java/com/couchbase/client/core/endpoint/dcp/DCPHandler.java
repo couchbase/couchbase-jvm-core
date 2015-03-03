@@ -25,6 +25,7 @@ package com.couchbase.client.core.endpoint.dcp;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -40,9 +41,7 @@ import com.couchbase.client.core.message.dcp.SnapshotMarkerMessage;
 import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
-import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
-import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
 import com.lmax.disruptor.EventSink;
 import io.netty.buffer.ByteBuf;
@@ -62,12 +61,18 @@ import java.util.Queue;
  * @since 1.1.0
  */
 public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, DCPRequest> {
+
+    /**
+     * The Logger used in this handler.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPHandler.class);
+
     public static final byte OP_OPEN_CONNECTION = 0x50;
     public static final byte OP_STREAM_REQUEST = 0x53;
     public static final byte OP_SNAPSHOT_MARKER = 0x56;
     public static final byte OP_MUTATION = 0x57;
     public static final byte OP_REMOVE = 0x58;
-    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPHandler.class);
+
     /**
      * Maps stream identifiers to {@link DCPStream}. The identifiers put into
      * opaque fields of each packet of the stream and helps to multiplex streams.
@@ -101,21 +106,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         streams = new HashMap<Integer, DCPStream>();
     }
 
-    /**
-     * Convert the binary protocol status in a typesafe enum that can be acted upon later.
-     *
-     * @param status the status to convert.
-     * @return the converted response status.
-     */
-    private static ResponseStatus convertStatus(final short status) {
-        switch (status) {
-            case BinaryMemcacheResponseStatus.SUCCESS:
-                return ResponseStatus.SUCCESS;
-            default:
-                return ResponseStatus.FAILURE;
-        }
-    }
-
     @Override
     protected BinaryMemcacheRequest encodeRequest(ChannelHandlerContext ctx, DCPRequest msg) throws Exception {
         BinaryMemcacheRequest request;
@@ -125,18 +115,13 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         } else if (msg instanceof StreamRequestRequest) {
             request = handleStreamRequestRequest(ctx, (StreamRequestRequest) msg);
         } else {
-            throw new IllegalArgumentException("Unknown incoming DCPRequest type "
-                    + msg.getClass());
+            throw new IllegalArgumentException("Unknown incoming DCPRequest type " + msg.getClass());
         }
+
         if (msg.partition() >= 0) {
             request.setReserved(msg.partition());
         }
-        if (request instanceof FullBinaryMemcacheRequest) {
-            ByteBuf content = ((FullBinaryMemcacheRequest) request).content();
-            if (content != null) {
-                content.retain();
-            }
-        }
+
         return request;
     }
 
@@ -144,7 +129,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     protected CouchbaseResponse decodeResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg)
             throws Exception {
         DCPRequest request = currentRequest();
-        ResponseStatus status = convertStatus(msg.getStatus());
+        ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
 
         CouchbaseResponse response = null;
 
@@ -259,14 +244,24 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         }
     }
 
-    private BinaryMemcacheRequest handleOpenConnectionRequest(ChannelHandlerContext ctx, OpenConnectionRequest msg) {
+    /**
+     * Creates a DCP Open Connection Request.
+     *
+     * @param ctx the channel handler context.
+     * @param msg the open connect message.
+     * @return a converted {@link BinaryMemcacheRequest}.
+     */
+    private BinaryMemcacheRequest handleOpenConnectionRequest(final ChannelHandlerContext ctx,
+        final OpenConnectionRequest msg) {
         ByteBuf extras = ctx.alloc().buffer(8);
-        extras.writeInt(msg.sequenceNumber());
-        extras.writeInt(msg.type().flags());
-        byte extrasLength = (byte) extras.readableBytes();
+        extras
+            .writeInt(msg.sequenceNumber())
+            .writeInt(msg.type().flags());
 
         String key = msg.connectionName();
+        byte extrasLength = (byte) extras.readableBytes();
         short keyLength = (short) key.length();
+
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key, extras);
         request.setOpcode(OP_OPEN_CONNECTION);
         request.setKeyLength(keyLength);
@@ -276,28 +271,48 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         return request;
     }
 
-    private BinaryMemcacheRequest handleStreamRequestRequest(ChannelHandlerContext ctx, StreamRequestRequest msg) {
+    /**
+     * Creates a DCP Stream Request.
+     *
+     * See the [Protocol Description](https://github.com/couchbaselabs/dcp-documentation/blob/master/documentation/
+     * commands/stream-request.md) for more details.
+     *
+     * @param ctx the channel handler context.
+     * @param msg the stream request message.
+     * @return a converted {@link BinaryMemcacheRequest}.
+     */
+    private BinaryMemcacheRequest handleStreamRequestRequest(final ChannelHandlerContext ctx,
+        final StreamRequestRequest msg) {
         ByteBuf extras = ctx.alloc().buffer(48);
-        extras.writeInt(0).writeInt(0);
-        extras.writeLong(msg.startSequenceNumber());
-        extras.writeLong(msg.endSequenceNumber());
-        extras.writeLong(msg.vbucketUUID());
-        extras.writeLong(msg.snapshotStartSequenceNumber());
-        extras.writeLong(msg.snapshotEndSequenceNumber());
+        extras
+            .writeInt(0) // flags
+            .writeInt(0) // reserved
+            .writeLong(msg.startSequenceNumber()) // start sequence number
+            .writeLong(msg.endSequenceNumber()) // end sequence number
+            .writeLong(msg.vbucketUUID()) // vbucket UUID
+            .writeLong(msg.snapshotStartSequenceNumber()) // snapshot start sequence number
+            .writeLong(msg.snapshotEndSequenceNumber()); // snapshot end sequence number
+
         byte extrasLength = (byte) extras.readableBytes();
 
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(extras);
         request.setOpcode(OP_STREAM_REQUEST);
         request.setExtrasLength(extrasLength);
         request.setTotalBodyLength(extrasLength);
-        request.setOpaque(initializeStream(msg));
+        request.setOpaque(initializeUniqueStream(msg.bucket()));
 
         return request;
     }
 
-    private int initializeStream(StreamRequestRequest msg) {
+    /**
+     * Initializes a unique stream ID and stores it for later reference.
+     *
+     * @param bucket the name of the bucket.
+     * @return the generated stream ID.
+     */
+    private int initializeUniqueStream(final String bucket) {
         int streamId = nextStreamId++;
-        DCPStream stream = new DCPStream(streamId, msg.bucket());
+        DCPStream stream = new DCPStream(streamId, bucket);
         streams.put(streamId, stream);
         return streamId;
     }
