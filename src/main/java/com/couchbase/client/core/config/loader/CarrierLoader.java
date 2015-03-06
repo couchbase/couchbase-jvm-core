@@ -30,8 +30,8 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.Buffers;
 import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -74,22 +74,23 @@ public class CarrierLoader extends AbstractLoader {
         }
         LOGGER.debug("Starting to discover config through Carrier Bootstrap");
 
-        return cluster()
-            .<GetBucketConfigResponse>send(new GetBucketConfigRequest(bucket, hostname))
-            .map(new Func1<GetBucketConfigResponse, String>() {
-                @Override
-                public String call(GetBucketConfigResponse response) {
-                    if (!response.status().isSuccess()) {
-                        response.content().release();
-                        throw new IllegalStateException("Bucket config response did not return with success.");
-                    }
-
-                    LOGGER.debug("Successfully loaded config through carrier.");
-                    String content = response.content().toString(CharsetUtil.UTF_8);
+        return Buffers.wrapColdWithAutoRelease(
+           cluster().<GetBucketConfigResponse>send(new GetBucketConfigRequest(bucket, hostname))
+        )
+        .map(new Func1<GetBucketConfigResponse, String>() {
+            @Override
+            public String call(GetBucketConfigResponse response) {
+                if (!response.status().isSuccess()) {
                     response.content().release();
-                    return replaceHostWildcard(content, hostname);
+                    throw new IllegalStateException("Bucket config response did not return with success.");
                 }
-            });
+
+                LOGGER.debug("Successfully loaded config through carrier.");
+                String content = response.content().toString(CharsetUtil.UTF_8);
+                response.content().release();
+                return replaceHostWildcard(content, hostname);
+            }
+        });
     }
 
 }
