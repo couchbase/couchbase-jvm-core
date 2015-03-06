@@ -25,8 +25,9 @@ import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCounted;
 
-public class GetDesignDocumentResponse extends AbstractCouchbaseResponse {
+public class GetDesignDocumentResponse extends AbstractCouchbaseResponse implements ReferenceCounted {
 
     private final String name;
     private final boolean development;
@@ -34,6 +35,9 @@ public class GetDesignDocumentResponse extends AbstractCouchbaseResponse {
 
     public GetDesignDocumentResponse(String name, boolean development, ByteBuf content, ResponseStatus status, CouchbaseRequest request) {
         super(status, request);
+        if (content == null) {
+            throw new IllegalArgumentException("Content cannot be null. Consider using an empty buffer instead.");
+        }
         this.name = name;
         this.development = development;
         this.content = content;
@@ -49,5 +53,32 @@ public class GetDesignDocumentResponse extends AbstractCouchbaseResponse {
 
     public ByteBuf content() {
         return content;
+    }
+
+    @Override
+    public int refCnt() {
+        return content.refCnt();
+    }
+
+    @Override
+    public GetDesignDocumentResponse retain() {
+        content.retain();
+        return this;
+    }
+
+    @Override
+    public GetDesignDocumentResponse retain(int increment) {
+        content.retain(increment);
+        return this;
+    }
+
+    @Override
+    public boolean release() {
+        return content.release();
+    }
+
+    @Override
+    public boolean release(int decrement) {
+        return content.release(decrement);
     }
 }

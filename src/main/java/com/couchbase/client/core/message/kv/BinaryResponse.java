@@ -23,11 +23,14 @@ package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.CouchbaseResponse;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ReferenceCounted;
 
 /**
  * Marker interface which signals a binary response.
+ *
+ * @since 1.0.0
  */
-public interface BinaryResponse extends CouchbaseResponse {
+public interface BinaryResponse extends CouchbaseResponse, ReferenceCounted {
 
     /**
      * Contains the content of the response, potentially null or empty.
@@ -36,5 +39,10 @@ public interface BinaryResponse extends CouchbaseResponse {
      */
     ByteBuf content();
 
+    /**
+     * The name of the bucket where this response is coming from.
+     *
+     * @return the bucket name.
+     */
     String bucket();
 }
