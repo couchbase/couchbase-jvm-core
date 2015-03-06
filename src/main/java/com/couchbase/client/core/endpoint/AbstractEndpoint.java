@@ -240,6 +240,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
         transitionState(LifecycleState.CONNECTING);
+        hasWritten = false;
         doConnect(observable);
         return observable;
     }
@@ -338,7 +339,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     public void send(final CouchbaseRequest request) {
         if (state() == LifecycleState.CONNECTED) {
             if (request instanceof SignalFlush) {
-                if (hasWritten) {
+                if (hasWritten && channel.isActive()) {
                     channel.flush();
                     hasWritten = false;
                 }
