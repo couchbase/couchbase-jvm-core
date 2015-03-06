@@ -32,6 +32,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.lmax.disruptor.EventSink;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.timeout.IdleState;
@@ -306,9 +307,12 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 if (keepAlive != null) {
                     keepAlive.observable().subscribe(new KeepAliveResponseAction(ctx));
                     onKeepAliveFired(ctx, keepAlive);
-                    ctx.pipeline().writeAndFlush(keepAlive);
+
+                    Channel channel = ctx.channel();
+                    if (channel.isActive() && channel.isWritable()) {
+                        ctx.pipeline().writeAndFlush(keepAlive);
+                    }
                 }
-                return;
             }
         } else {
             super.userEventTriggered(ctx, evt);
