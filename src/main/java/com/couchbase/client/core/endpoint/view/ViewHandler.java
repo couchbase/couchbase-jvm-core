@@ -480,7 +480,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
 
         ByteBuf raw = ctx.alloc().buffer(user.length() + pw.length() + 1);
         raw.writeBytes((user + ":" + pw).getBytes(CHARSET));
-        ByteBuf encoded = Base64.encode(raw);
+        ByteBuf encoded = Base64.encode(raw, false);
         request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CHARSET));
         encoded.release();
         raw.release();
