@@ -58,6 +58,7 @@ import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -436,7 +437,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         @Override
         public void operationComplete(Future<Void> future) throws Exception {
-            if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
+            if (!future.isSuccess() &&
+                !(future.cause() instanceof ClosedChannelException) &&
+                !(future.cause() instanceof IOException)) {
                 LOGGER.warn("Error during IO write phase.", future.cause());
             }
         }
