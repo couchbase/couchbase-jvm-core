@@ -37,6 +37,8 @@ import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import org.junit.Test;
 import rx.Observable;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
@@ -96,6 +98,10 @@ public class ObserveTest {
         result.toBlocking().single();
     }
 
+    /**
+     * When the returned observe response is from the master but it contains a different cas
+     * than requested, it is an indication that the document has been concurrently modified.
+     */
     @Test(expected = DocumentConcurrentlyModifiedException.class)
     public void shouldFailWhenConcurrentlyModified() {
         ClusterFacade cluster = mock(ClusterFacade.class);
@@ -113,8 +119,9 @@ public class ObserveTest {
         );
         ObserveResponse observeResponse = new ObserveResponse(
                 ResponseStatus.SUCCESS,
-                ObserveResponse.ObserveStatus.MODIFIED.value(),
+                ObserveResponse.ObserveStatus.FOUND_NOT_PERSISTED.value(),
                 true,
+                45678,
                 "bucket",
                 mock(CouchbaseRequest.class)
         );
@@ -126,7 +133,10 @@ public class ObserveTest {
                 cluster, "bucket", "id", 1234, false, Observe.PersistTo.NONE, Observe.ReplicateTo.ONE,
                 BestEffortRetryStrategy.INSTANCE
         );
-        result.toBlocking().single();
+        result
+            .timeout(5, TimeUnit.SECONDS)
+            .toBlocking()
+            .single();
     }
 
 }

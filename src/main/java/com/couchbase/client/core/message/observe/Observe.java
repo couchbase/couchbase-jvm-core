@@ -246,16 +246,16 @@ public class Observe {
                             }
                             ObserveResponse.ObserveStatus status = response.observeStatus();
 
-                            if (status == ObserveResponse.ObserveStatus.MODIFIED) {
-                                throw new DocumentConcurrentlyModifiedException();
-                            }
-
                             if (response.master()) {
+                                if (cas != response.cas()) {
+                                    throw new DocumentConcurrentlyModifiedException();
+                                }
+
                                 if (status == persistIdentifier) {
                                     persisted++;
                                     persistedMaster = true;
                                 }
-                            } else {
+                            } else if(cas == response.cas()) {
                                 if (status == persistIdentifier) {
                                     persisted++;
                                     replicated++;

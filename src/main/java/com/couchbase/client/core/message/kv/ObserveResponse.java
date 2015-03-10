@@ -12,11 +12,13 @@ public class ObserveResponse extends AbstractKeyValueResponse {
 
     private final ObserveStatus observeStatus;
     private final boolean master;
+    private final long cas;
 
-    public ObserveResponse(ResponseStatus status, byte obs, boolean master, String bucket, CouchbaseRequest request) {
+    public ObserveResponse(ResponseStatus status, byte obs, boolean master, long cas, String bucket, CouchbaseRequest request) {
         super(status, bucket, null, request);
         observeStatus = ObserveStatus.valueOf(obs);
         this.master = master;
+        this.cas = cas;
     }
 
     public ObserveStatus observeStatus() {
@@ -25,6 +27,10 @@ public class ObserveResponse extends AbstractKeyValueResponse {
 
     public boolean master() {
         return master;
+    }
+
+    public long cas() {
+        return cas;
     }
 
     public static enum ObserveStatus {
