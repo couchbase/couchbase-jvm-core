@@ -179,7 +179,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 //short-circuit some kind of requests for which we know there won't be any handler to respond.
                 try {
                     checkFeaturesForRequest(request, config.bucketConfig(request.bucket()));
-                } catch (UnsupportedOperationException e) {
+                } catch (ServiceNotAvailableException e) {
                     request.observable().onError(e);
                     return;
                 }
@@ -212,10 +212,10 @@ public class RequestHandler implements EventHandler<RequestEvent> {
 
     /**
      * Checks, for a sub-set of {@link CouchbaseRequest}, if the current environment has
-     * the necessary feature activated. If not, throws an {@link UnsupportedOperationException}.
+     * the necessary feature activated. If not, throws an {@link ServiceNotAvailableException}.
      *
      * @param request the request to check.
-     * @throws UnsupportedOperationException if the request type needs a particular feature which isn't activated.
+     * @throws ServiceNotAvailableException if the request type needs a particular feature which isn't activated.
      */
     protected void checkFeaturesForRequest(CouchbaseRequest request, BucketConfig config) {
         if (request instanceof BinaryRequest && !config.serviceEnabled(ServiceType.BINARY)) {
