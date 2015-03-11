@@ -212,7 +212,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             .group(environment.ioPool())
             .channel(channelClass)
             .option(ChannelOption.ALLOCATOR, allocator)
-            .option(ChannelOption.TCP_NODELAY, false)
+            .option(ChannelOption.TCP_NODELAY, true)
             .handler(new ChannelInitializer<Channel>() {
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
