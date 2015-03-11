@@ -236,5 +236,15 @@ public interface CoreEnvironment {
      */
     EventBus eventBus();
 
+    /**
+     * Returns if buffer pooling is enabled for greater GC efficiency.
+     *
+     * In general this is always set to true and should only be set to false if there are leaks reported
+     * that are not fixable by correcting user level code.
+     *
+     * @return true if enabled, false otherwise.
+     */
+    boolean bufferPoolingEnabled();
+
 
 }

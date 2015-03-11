@@ -35,7 +35,9 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.NotConnectedException;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -201,11 +203,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         } else if (environment.ioPool() instanceof OioEventLoopGroup) {
             channelClass = OioSocketChannel.class;
         }
+
+        ByteBufAllocator allocator = env.bufferPoolingEnabled()
+                ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
+
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(environment.ioPool())
             .channel(channelClass)
-            .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+            .option(ChannelOption.ALLOCATOR, allocator)
             .option(ChannelOption.TCP_NODELAY, false)
             .handler(new ChannelInitializer<Channel>() {
                 @Override

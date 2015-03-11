@@ -75,6 +75,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long MAX_REQUEST_LIFETIME = TimeUnit.SECONDS.toMillis(75);
     public static final long KEEPALIVEINTERVAL = TimeUnit.SECONDS.toMillis(30);
     public static final long AUTORELEASE_AFTER = TimeUnit.SECONDS.toMillis(2);
+    public static final boolean BUFFER_POOLING_ENABLED = true;
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -150,6 +151,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final long maxRequestLifetime;
     private final long keepAliveInterval;
     private final long autoreleaseAfter;
+    private final boolean bufferPoolingEnabled;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -192,6 +194,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         maxRequestLifetime = longPropertyOr("maxRequestLifetime", builder.maxRequestLifetime());
         keepAliveInterval = longPropertyOr("keepAliveInterval", builder.keepAliveInterval());
         autoreleaseAfter = longPropertyOr("autoreleaseAfter", builder.autoreleaseAfter());
+        bufferPoolingEnabled = booleanPropertyOr("bufferPoolingEnabled", builder.bufferPoolingEnabled());
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
@@ -425,6 +428,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return autoreleaseAfter;
     }
 
+    @Override
+    public boolean bufferPoolingEnabled() {
+        return bufferPoolingEnabled;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -458,6 +466,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private long maxRequestLifetime = MAX_REQUEST_LIFETIME;
         private long keepAliveInterval = KEEPALIVEINTERVAL;
         private long autoreleaseAfter = AUTORELEASE_AFTER;
+        private boolean bufferPoolingEnabled = BUFFER_POOLING_ENABLED;
 
         protected Builder() {
         }
@@ -918,8 +927,32 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return eventBus;
         }
 
+        /**
+         * Sets the event bus to an alternative implementation.
+         *
+         * This setting should only be tweaked in advanced cases.
+         */
         public Builder eventBus(final EventBus eventBus) {
             this.eventBus = eventBus;
+            return this;
+        }
+
+        @Override
+        public boolean bufferPoolingEnabled() {
+            return bufferPoolingEnabled;
+        }
+
+        /**
+         * Forcefully disable buffer pooling by setting the value to false.
+         *
+         * This should not be used in general because buffer pooling is in place to reduce GC
+         * pressure during workloads. It is implemented to be used as a "last resort" if the
+         * client is suspect to a buffer leak which can terminate the application. Until a
+         * solution is found to the leak buffer pooling can be disabled at the cost of higher
+         * GC.
+         */
+        public Builder bufferPoolingEnabled(boolean bufferPoolingEnabled) {
+            this.bufferPoolingEnabled = bufferPoolingEnabled;
             return this;
         }
 
@@ -966,6 +999,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", observeIntervalDelay=").append(observeIntervalDelay);
         sb.append(", keepAliveInterval=").append(keepAliveInterval);
         sb.append(", autoreleaseAfter=").append(autoreleaseAfter);
+        sb.append(", bufferPoolingEnabled=").append(bufferPoolingEnabled);
         return sb;
     }
 
