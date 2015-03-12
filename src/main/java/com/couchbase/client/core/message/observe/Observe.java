@@ -246,8 +246,14 @@ public class Observe {
                             }
                             ObserveResponse.ObserveStatus status = response.observeStatus();
 
+                            // the CAS values always need to match up to make sure we are still observing the right
+                            // document. The only exclusion from that rule is when a real delete is returned, because
+                            // then the cas value is 0.
+                            boolean validCas = cas == response.cas()
+                                || (remove && response.cas() == 0 && status == persistIdentifier);
+
                             if (response.master()) {
-                                if (cas != response.cas()) {
+                                if (!validCas) {
                                     throw new DocumentConcurrentlyModifiedException();
                                 }
 
@@ -255,7 +261,7 @@ public class Observe {
                                     persisted++;
                                     persistedMaster = true;
                                 }
-                            } else if(cas == response.cas()) {
+                            } else if (validCas) {
                                 if (status == persistIdentifier) {
                                     persisted++;
                                     replicated++;
@@ -268,8 +274,10 @@ public class Observe {
                         boolean persistDone = false;
                         boolean replicateDone = false;
 
-                        if (persistTo == PersistTo.MASTER && persistedMaster) {
-                            persistDone = true;
+                        if (persistTo == PersistTo.MASTER) {
+                            if (persistedMaster) {
+                                persistDone = true;
+                            }
                         } else if (persisted >= persistTo.value()) {
                             persistDone = true;
                         }
