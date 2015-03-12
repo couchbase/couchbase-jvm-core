@@ -82,6 +82,15 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     private static final String NAMESPACE = "com.couchbase.";
 
+    /**
+     * The minimum size of the io and computation pools in order to prevent deadlock and resource
+     * starvation.
+     *
+     * Normally this should be higher by default, but if the number of cores are very small or the configuration
+     * is wrong it can even go down to 1.
+     */
+    static final int MIN_POOL_SIZE = 3;
+
     private static final String VERSION_PROPERTIES = "com.couchbase.client.core.properties";
 
     /**
@@ -178,8 +187,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         bootstrapCarrierEnabled = booleanPropertyOr("bootstrapCarrierEnabled", builder.bootstrapCarrierEnabled());
         bootstrapCarrierDirectPort = intPropertyOr("bootstrapCarrierDirectPort", builder.bootstrapCarrierDirectPort());
         bootstrapCarrierSslPort = intPropertyOr("bootstrapCarrierSslPort", builder.bootstrapCarrierSslPort());
-        ioPoolSize = intPropertyOr("ioPoolSize", builder.ioPoolSize());
-        computationPoolSize = intPropertyOr("computationPoolSize", builder.computationPoolSize());
+        int ioPoolSize = intPropertyOr("ioPoolSize", builder.ioPoolSize());
+        int computationPoolSize = intPropertyOr("computationPoolSize", builder.computationPoolSize());
         responseBufferSize = intPropertyOr("responseBufferSize", builder.responseBufferSize());
         requestBufferSize = intPropertyOr("requestBufferSize", builder.requestBufferSize());
         kvServiceEndpoints = intPropertyOr("kvEndpoints", builder.kvEndpoints());
@@ -195,6 +204,21 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         keepAliveInterval = longPropertyOr("keepAliveInterval", builder.keepAliveInterval());
         autoreleaseAfter = longPropertyOr("autoreleaseAfter", builder.autoreleaseAfter());
         bufferPoolingEnabled = booleanPropertyOr("bufferPoolingEnabled", builder.bufferPoolingEnabled());
+
+        if (ioPoolSize < MIN_POOL_SIZE) {
+            LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
+            this.ioPoolSize = MIN_POOL_SIZE;
+        } else {
+            this.ioPoolSize = ioPoolSize;
+        }
+
+        if (computationPoolSize < MIN_POOL_SIZE) {
+            LOGGER.info("computationPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, computationPoolSize,
+                MIN_POOL_SIZE);
+            this.computationPoolSize = MIN_POOL_SIZE;
+        } else {
+            this.computationPoolSize = computationPoolSize;
+        }
 
         this.ioPool = builder.ioPool() == null
             ? new NioEventLoopGroup(ioPoolSize(), new DefaultThreadFactory("cb-io", true)) : builder.ioPool();
