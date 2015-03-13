@@ -54,9 +54,13 @@ public class DefaultNodeInfo implements NodeInfo {
      */
     @JsonCreator
     public DefaultNodeInfo(
-            @JsonProperty("couchApiBase") String viewUri,
-            @JsonProperty("hostname") String hostname,
-            @JsonProperty("ports") Map<String, Integer> ports) {
+        @JsonProperty("couchApiBase") String viewUri,
+        @JsonProperty("hostname") String hostname,
+        @JsonProperty("ports") Map<String, Integer> ports) {
+        if (hostname == null) {
+            throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
+        }
+
         try {
             this.hostname = InetAddress.getByName(trimPort(hostname));
         } catch (UnknownHostException e) {
@@ -75,6 +79,10 @@ public class DefaultNodeInfo implements NodeInfo {
      */
     public DefaultNodeInfo(InetAddress hostname, Map<ServiceType, Integer> direct,
         Map<ServiceType, Integer> ssl) {
+        if (hostname == null) {
+            throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
+        }
+
         this.hostname = hostname;
         this.directServices = direct;
         this.sslServices = ssl;

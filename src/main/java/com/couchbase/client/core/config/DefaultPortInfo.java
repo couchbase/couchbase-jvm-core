@@ -40,17 +40,20 @@ public class DefaultPortInfo implements PortInfo {
     /**
      * Creates a new {@link DefaultPortInfo}.
      *
+     * Note that if the hostname is null (not provided by the server), it is explicitly set to null because otherwise
+     * the loaded InetAddress would point to localhost.
+     *
      * @param services the list of services mapping to ports.
      */
     @JsonCreator
     public DefaultPortInfo(
-            @JsonProperty("services") Map<String, Integer> services,
-            @JsonProperty("hostname") String hostname
+        @JsonProperty("services") Map<String, Integer> services,
+        @JsonProperty("hostname") String hostname
     ) {
         ports = new HashMap<ServiceType, Integer>();
         sslPorts = new HashMap<ServiceType, Integer>();
         try {
-            this.hostname = InetAddress.getByName(hostname);
+            this.hostname = hostname == null ? null : InetAddress.getByName(hostname);
         } catch (UnknownHostException e) {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
@@ -96,9 +99,9 @@ public class DefaultPortInfo implements PortInfo {
     @Override
     public String toString() {
         return "DefaultPortInfo{"
-                + "ports=" + ports
-                + ", sslPorts=" + sslPorts
-                + ", hostname='" + hostname
-                + '\'' + '}';
+            + "ports=" + ports
+            + ", sslPorts=" + sslPorts
+            + ", hostname='" + hostname
+            + '\'' + '}';
     }
 }
