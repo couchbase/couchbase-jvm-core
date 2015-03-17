@@ -368,7 +368,14 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         }
 
         if (queryParsingState == QUERY_STATE_DONE) {
-            cleanupQueryStates();
+            //final state, but there could still be a small chunk with closing brackets
+            //only finalize and reset if this is the last chunk
+            sectionDone = lastChunk;
+            //if false this will allow next iteration to skip non-relevant automatic
+            //transition to next token (which is desirable since there is no more token).
+            if (sectionDone) {
+                cleanupQueryStates();
+            }
         }
     }
 
