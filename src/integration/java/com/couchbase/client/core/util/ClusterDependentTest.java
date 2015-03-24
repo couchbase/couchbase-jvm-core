@@ -30,12 +30,19 @@ import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.message.cluster.SeedNodesResponse;
+import com.couchbase.client.core.message.config.ClusterConfigRequest;
+import com.couchbase.client.core.message.config.ClusterConfigResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import rx.Observable;
 import rx.functions.Func1;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base test class for tests that need a working cluster reference.
@@ -52,7 +59,11 @@ public class ClusterDependentTest {
     private static final String bucket = TestProperties.bucket();
     private static final String password = TestProperties.password();
 
-    private static final CoreEnvironment env = DefaultCoreEnvironment.create();
+    private static final CoreEnvironment env = DefaultCoreEnvironment
+            .builder()
+            .dcpEnabled(true)
+            .build();
+
     private static ClusterFacade cluster;
 
     @BeforeClass
@@ -88,5 +99,37 @@ public class ClusterDependentTest {
 
     public static CoreEnvironment env() {
         return env;
+    }
+
+    /**
+     * Checks based on the cluster node versions if DCP is available.
+     *
+     * @return true if all nodes in the cluster are version 3 or later.
+     */
+    public static boolean isDCPEnabled() throws Exception {
+        ClusterConfigResponse response = cluster()
+            .<ClusterConfigResponse>send(new ClusterConfigRequest("Administrator", "password"))
+            .toBlocking()
+            .single();
+        return minNodeVersionFromConfig(response.config()) >= 3;
+    }
+
+    private static Integer minNodeVersionFromConfig(String rawConfig) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+
+        JavaType type = mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
+        Map<String, Object> result = mapper.readValue(rawConfig, type);
+
+        List<Object> nodes = (List<Object>) result.get("nodes");
+        int min = 99;
+        for (Object n : nodes) {
+            Map<String, Object> node = (Map<String, Object>) n;
+            String version = (String) node.get("version");
+            int major = Integer.parseInt(version.substring(0, 1));
+            if (major < min) {
+                min = major;
+            }
+        }
+        return min;
     }
 }
