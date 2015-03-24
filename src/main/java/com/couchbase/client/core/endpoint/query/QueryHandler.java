@@ -25,6 +25,9 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
+import com.couchbase.client.core.endpoint.util.StringClosingPositionBufProcessor;
+import com.couchbase.client.core.endpoint.util.WhitespaceSkipper;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
@@ -38,6 +41,7 @@ import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufProcessor;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -427,18 +431,37 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * Parse the signature section in the N1QL response.
      */
     private void parseQuerySignature(boolean lastChunk) {
-        int openPos = findNextChar(responseContent, '{');
-        if (!isEmptySection(openPos)) { //checks for empty signature
-            int closePos = findSectionClosingPosition(responseContent, '{', '}');
-            if (closePos > 0) {
-                int length = closePos - openPos - responseContent.readerIndex() + 1;
-                responseContent.skipBytes(openPos);
-                ByteBuf signature = responseContent.readSlice(length);
-                querySignatureObservable.onNext(signature.copy());
-            } else {
-                //wait for more data
-                return;
-            }
+        ByteBufProcessor processor = null;
+        //signature can be any valid JSON item, which get tricky to detect
+        //let's try to find out what's the boundary character
+        int openPos = responseContent.forEachByte(new WhitespaceSkipper()) - responseContent.readerIndex();
+        if (openPos < 0) {
+            //only whitespace left in the buffer, need more data
+            return;
+        }
+        char openChar = (char) responseContent.getByte(responseContent.readerIndex() + openPos);
+        if (openChar == '{') {
+            processor = new ClosingPositionBufProcessor('{', '}', true);
+        } else if (openChar == '[') {
+            processor = new ClosingPositionBufProcessor('[', ']', true);
+        } else if (openChar == '"') {
+            processor = new StringClosingPositionBufProcessor();
+        } //else this should be a scalar, skip processor
+
+        int closePos;
+        if (processor != null) {
+            closePos = responseContent.forEachByte(processor) - responseContent.readerIndex();
+        } else {
+            closePos = findNextChar(responseContent, ',') - 1;
+        }
+        if (closePos > 0) {
+            responseContent.skipBytes(openPos);
+            int length = closePos - openPos + 1;
+            ByteBuf signature = responseContent.readSlice(length);
+            querySignatureObservable.onNext(signature.copy());
+        } else {
+            //wait for more data
+            return;
         }
         //note: the signature section could be absent, so we'll make sure to complete the observable
         // when receiving status since this is in every well-formed response.

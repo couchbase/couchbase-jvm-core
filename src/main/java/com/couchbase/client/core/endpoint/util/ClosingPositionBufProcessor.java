@@ -75,6 +75,10 @@ public class ClosingPositionBufProcessor implements ByteBufProcessor {
      * @param detectJsonString set to true to not inspect bytes detected as being part of a String.
      */
     public ClosingPositionBufProcessor(char openingChar, char closingChar, boolean detectJsonString) {
+        if (openingChar == closingChar) {
+            throw new IllegalArgumentException("only asymmetric section enclosing characters are supported");
+        }
+
         this.openingChar = openingChar;
         this.closingChar = closingChar;
         this.detectJsonString = detectJsonString;
