@@ -254,7 +254,9 @@ public class Observe {
 
                             if (response.master()) {
                                 if (!validCas) {
-                                    throw new DocumentConcurrentlyModifiedException();
+                                    throw new DocumentConcurrentlyModifiedException("The CAS on the active node "
+                                        + "changed for ID \"" + id + "\", indicating it has been modified in the "
+                                        + "meantime.");
                                 }
 
                                 if (status == persistIdentifier) {
@@ -329,13 +331,11 @@ public class Observe {
                             @Override
                             public Observable<ObserveResponse> call(Integer replicas) {
                                 List<Observable<ObserveResponse>> obs = new ArrayList<Observable<ObserveResponse>>();
-                                if (persistTo != PersistTo.NONE) {
-                                    Observable<ObserveResponse> res = core.send(new ObserveRequest(id, cas, true, (short) 0, bucket));
-                                    if (swallowErrors) {
-                                        obs.add(res.onErrorResumeNext(Observable.<ObserveResponse>empty()));
-                                    } else {
-                                        obs.add(res);
-                                    }
+                                Observable<ObserveResponse> masterRes = core.send(new ObserveRequest(id, cas, true, (short) 0, bucket));
+                                if (swallowErrors) {
+                                    obs.add(masterRes.onErrorResumeNext(Observable.<ObserveResponse>empty()));
+                                } else {
+                                    obs.add(masterRes);
                                 }
 
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
