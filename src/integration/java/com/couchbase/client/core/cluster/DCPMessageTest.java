@@ -37,6 +37,7 @@ import com.couchbase.client.core.message.kv.UpsertResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,6 +90,7 @@ public class DCPMessageTest extends ClusterDependentTest {
                 .toBlocking()
                 .single();
         assertEquals(ResponseStatus.SUCCESS, foo.status());
+        ReferenceCountUtil.releaseLater(foo.content());
 
         subscriber.awaitTerminalEvent();
         List<DCPRequest> items = subscriber.getOnNextEvents();
@@ -101,6 +103,7 @@ public class DCPMessageTest extends ClusterDependentTest {
             } else if (found instanceof MutationMessage) {
                 seenMutation = true;
                 assertEquals("foo", ((MutationMessage) found).key());
+                ReferenceCountUtil.releaseLater(((MutationMessage) found).content());
             }
         }
 
