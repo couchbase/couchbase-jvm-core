@@ -31,6 +31,7 @@ import org.junit.Test;
 import rx.functions.Action1;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Verifies basic functionality of view operations.
@@ -47,12 +48,9 @@ public class ViewMessageTest extends ClusterDependentTest {
             .toBlocking()
             .single();
         assertEquals(ResponseStatus.NOT_EXISTS, single.status());
-        single.info().toBlocking().forEach(new Action1<ByteBuf>() {
-            @Override
-            public void call(ByteBuf byteBuf) {
-                ReferenceCountUtil.releaseLater(byteBuf);
-            }
-        });
+        String error = single.error().toBlocking().singleOrDefault(null);
+        assertNotNull(error);
+
         single.rows().toBlocking().forEach(new Action1<ByteBuf>() {
             @Override
             public void call(ByteBuf byteBuf) {
