@@ -43,4 +43,8 @@ public class FixedDelay extends Delay {
         return delay;
     }
 
+    @Override
+    public String toString() {
+        return "FixedDelay{" + delay + " " + unit()+ "}";
+    }
 }
