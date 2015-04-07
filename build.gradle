@@ -80,10 +80,10 @@ def getVersionName() {
 }
 
 ext {
-    nettyVersion = '4.0.25.Final'
-    rxVersion = '1.0.4'
-    disruptorVersion = '3.3.0'
-    jacksonVersion = '2.4.2'
+    nettyVersion = '4.0.26.Final'
+    rxVersion = '1.0.8'
+    disruptorVersion = '3.3.2'
+    jacksonVersion = '2.5.2'
 
     slf4jVersion = '1.7.7'
     commonsVersion = '1.1.3'
