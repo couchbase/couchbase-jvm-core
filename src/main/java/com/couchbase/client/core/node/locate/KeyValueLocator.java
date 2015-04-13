@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Couchbase, Inc.
+ * Copyright (C) 2014-2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,29 +45,31 @@ import java.util.SortedMap;
 import java.util.zip.CRC32;
 
 /**
- * This {@link Locator} finds the proper {@link Node}s for every incoming {@link CouchbaseRequest}.
+ * This {@link Locator} finds the proper {@link Node}s for every incoming {@link BinaryRequest}.
  *
  * Depending on the bucket type used, it either uses partition/vbucket (couchbase) or ketama (memcache) hashing. For
  * broadcast-type operations, it will return all suitable nodes without hashing by key.
+ *
+ * @since 1.0.0
+ * @author Michael Nitschinger
+ * @author Simon Baslé
  */
 public class KeyValueLocator implements Locator {
 
+    /**
+     * The Logger used.
+     */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueLocator.class);
+
+    /**
+     * An empty node array which can be reused and does not need to be re-created all the time.
+     */
+    private static final Node[] EMPTY_NODES = new Node[] { };
 
     @Override
     public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
         if (request instanceof GetBucketConfigRequest) {
-            for (Node node : nodes) {
-                if (node.isState(LifecycleState.CONNECTED)) {
-                    // If the hostnames are not equal, it is not the node where the service has
-                    // been enabled, so go look for the next one.
-                    if (!((GetBucketConfigRequest) request).hostname().equals(node.hostname())) {
-                        continue;
-                    }
-                    return new Node[] { node };
-                }
-            }
-            return new Node[] {};
+            return handleBucketConfigRequest((GetBucketConfigRequest) request, nodes);
         }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
@@ -81,6 +83,29 @@ public class KeyValueLocator implements Locator {
     }
 
     /**
+     * Special node handling for the get bucket config request.
+     *
+     * This is necessary to properly bootstrap the driver. if the hostnames are not equal, it is not the node where
+     * the service has been enabled, so the code looks for the next one until it finds one. If none is found, the
+     * operation is rescheduled.
+     *
+     * @param request the request to check
+     * @param nodes the nodes to iterate
+     * @return either the found node or an empty list indicating to retry later.
+     */
+    private static Node[] handleBucketConfigRequest(GetBucketConfigRequest request, Set<Node> nodes) {
+        for (Node node : nodes) {
+            if (node.isState(LifecycleState.CONNECTED)) {
+                if (!request.hostname().equals(node.hostname())) {
+                    continue;
+                }
+                return new Node[] { node };
+            }
+        }
+        return EMPTY_NODES;
+    }
+
+    /**
      * Locates the proper {@link Node}s for a Couchbase bucket.
      *
      * @param request the request.
@@ -88,58 +113,25 @@ public class KeyValueLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
+    private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
         final CouchbaseBucketConfig config) {
         String key = request.key();
 
-        CRC32 crc32 = new CRC32();
-        try {
-            crc32.update(key.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        long rv = (crc32.getValue() >> 16) & 0x7fff;
-        int partitionId = (int) rv & config.numberOfPartitions() - 1;
+        int partitionId = partitionForKey(key, config.numberOfPartitions());
         request.partition((short) partitionId);
 
-        int nodeId;
-        if (request instanceof ReplicaGetRequest) {
-            nodeId = config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1);
-        } else if (request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0){
-            nodeId = config.nodeIndexForReplica(partitionId, ((ObserveRequest) request).replica() - 1);
-        } else {
-            nodeId = config.nodeIndexForMaster(partitionId);
-        }
-
-        if (nodeId == -2) {
-            if (request instanceof ReplicaGetRequest) {
-                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                    + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + config.name()));
-            } else if (request instanceof ObserveRequest) {
-                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                    + ((ObserveRequest) request).replica() + " not configured for bucket " + config.name()));
-            }
-
-            return null;
-        }
-        if (nodeId == -1) {
-            if (request instanceof ObserveRequest) {
-                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                        + ((ObserveRequest) request).replica() + " not available for bucket " + config.name()));
-                return null;
-            }
-
-            return new Node[] { };
+        int nodeId = calculateNodeId(partitionId, request, config);
+        if (nodeId < 0) {
+            return errorObservables(nodeId, request, config.name());
         }
 
         NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
-
         if (config.nodes().size() != nodes.size()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
                         nodes.size(), config.nodes().size());
             }
-            return new Node[] { };
+            return EMPTY_NODES;
         }
 
         for (Node node : nodes) {
@@ -152,6 +144,76 @@ public class KeyValueLocator implements Locator {
     }
 
     /**
+     * Helper method to calculate the node if for the given partition and request type.
+     *
+     * @param partitionId the partition id.
+     * @param request the request used.
+     * @param config the current bucket configuration.
+     * @return the calculated node id.
+     */
+    private static int calculateNodeId(int partitionId, BinaryRequest request, CouchbaseBucketConfig config) {
+        if (request instanceof ReplicaGetRequest) {
+            return config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1);
+        } else if (request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0){
+            return config.nodeIndexForReplica(partitionId, ((ObserveRequest) request).replica() - 1);
+        } else {
+            return config.nodeIndexForMaster(partitionId);
+        }
+    }
+
+    /**
+     * Fail observables because the partitions do not match up.
+     *
+     * @param nodeId the current node id of the partition
+     * @param request the request to error
+     * @param name the name of the bucket
+     * @return A node array indicating to retry or move on.
+     */
+    private static Node[] errorObservables(int nodeId, BinaryRequest request, String name) {
+        if (nodeId == -2) {
+            if (request instanceof ReplicaGetRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                        + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + name));
+            } else if (request instanceof ObserveRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                        + ((ObserveRequest) request).replica() + " not configured for bucket " + name));
+            }
+
+            return null;
+        }
+
+        if (nodeId == -1) {
+            if (request instanceof ObserveRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                        + ((ObserveRequest) request).replica() + " not available for bucket " + name));
+                return null;
+            }
+
+            return EMPTY_NODES;
+        }
+
+        return EMPTY_NODES;
+    }
+
+    /**
+     * Calculate the vbucket for the given key.
+     *
+     * @param key the key to calculate from.
+     * @param numPartitions the number of partitions in the bucket.
+     * @return the calculated partition.
+     */
+    private static int partitionForKey(String key, int numPartitions) {
+        CRC32 crc32 = new CRC32();
+        try {
+            crc32.update(key.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        long rv = (crc32.getValue() >> 16) & 0x7fff;
+        return (int) rv &numPartitions - 1;
+    }
+
+    /**
      * Locates the proper {@link Node}s for a Memcache bucket.
      *
      * @param request the request.
@@ -159,10 +221,10 @@ public class KeyValueLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
+    private static Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
         final MemcachedBucketConfig config) {
 
-        long hash = ketamaHash(request.key());
+        long hash = calculateKetamaHash(request.key());
         if (!config.ketamaNodes().containsKey(hash)) {
             SortedMap<Long, NodeInfo> tailMap = config.ketamaNodes().tailMap(hash);
             if (tailMap.isEmpty()) {
@@ -183,7 +245,13 @@ public class KeyValueLocator implements Locator {
         throw new IllegalStateException("Node not found for request" + request);
     }
 
-    private long ketamaHash(final String key) {
+    /**
+     * Calculates the ketama hash for the given key.
+     *
+     * @param key the key to calculate.
+     * @return the calculated hash.
+     */
+    private static long calculateKetamaHash(final String key) {
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.update(key.getBytes(CharsetUtil.UTF_8));
