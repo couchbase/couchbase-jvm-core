@@ -430,39 +430,48 @@ public class KeyValueHandler
         }
 
         ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
-
-        // Release request content from external resources if not retried again.
         if (!status.equals(ResponseStatus.RETRY)) {
-            ByteBuf content = null;
-            if (request instanceof BinaryStoreRequest) {
-                content = ((BinaryStoreRequest) request).content();
-            } else if (request instanceof AppendRequest) {
-                content = ((AppendRequest) request).content();
-            } else if (request instanceof PrependRequest) {
-                content = ((PrependRequest) request).content();
-            }
-            if (content != null && content.refCnt() > 0) {
-                content.release();
-            }
+           maybeFreeContent(request);
         }
 
-        CouchbaseResponse response;
-        ByteBuf content = msg.content().retain();
+        msg.content().retain();
+        CouchbaseResponse response = handleCommonResponseMessages(request, msg, ctx, status);
+
+        if (response == null) {
+            response = handleOtherResponseMessages(request, msg, status);
+        }
+
+        if (response == null) {
+            throw new IllegalStateException("Unhandled request/response pair: " + request.getClass() + "/"
+                    + msg.getClass());
+        }
+
+        finishedDecoding();
+        return response;
+    }
+
+    /**
+     * Helper method to decode all common response messages.
+     *
+     * @param request the current request.
+     * @param msg the current response message.
+     * @param ctx the handler context.
+     * @param status the response status code.
+     * @return the decoded response or null if none did match.
+     */
+    private static CouchbaseResponse handleCommonResponseMessages(BinaryRequest request, FullBinaryMemcacheResponse msg,
+         ChannelHandlerContext ctx, ResponseStatus status) {
+        CouchbaseResponse response = null;
+        ByteBuf content = msg.content();
         long cas = msg.getCAS();
         String bucket = request.bucket();
+
         if (request instanceof GetRequest || request instanceof ReplicaGetRequest) {
-            int flags = 0;
-            if (msg.getExtrasLength() > 0) {
-                final ByteBuf extrasReleased = msg.getExtras();
-                final ByteBuf extras = ctx.alloc().buffer(msg.getExtrasLength());
-                extras.writeBytes(extrasReleased, extrasReleased.readerIndex(), extrasReleased.readableBytes());
-                flags = extras.getInt(0);
-                extras.release();
-            }
+            int flags = extractFlagsFromGetResponse(ctx, msg.getExtras(), msg.getExtrasLength());
             response = new GetResponse(status, cas, flags, bucket, content, request);
         } else if (request instanceof GetBucketConfigRequest) {
             response = new GetBucketConfigResponse(status, bucket, content,
-                ((GetBucketConfigRequest) request).hostname());
+                    ((GetBucketConfigRequest) request).hostname());
         } else if (request instanceof InsertRequest) {
             response = new InsertResponse(status, cas, bucket, content, request);
         } else if (request instanceof UpsertRequest) {
@@ -471,16 +480,41 @@ public class KeyValueHandler
             response = new ReplaceResponse(status, cas, bucket, content, request);
         } else if (request instanceof RemoveRequest) {
             response = new RemoveResponse(status, cas, bucket, content, request);
-        } else if (request instanceof CounterRequest) {
-            long value = status.isSuccess() ? content.readLong() : 0;
-            if (content != null && content.refCnt() > 0) {
-                content.release();
-            }
-            response = new CounterResponse(status, bucket, value, cas, request);
-        } else if (request instanceof UnlockRequest) {
+        }
+
+        return response;
+    }
+
+    /**
+     * Helper method to decode all other response messages.
+     *
+     * @param request the current request.
+     * @param msg the current response message.
+     * @param status the response status code.
+     * @return the decoded response or null if none did match.
+     */
+    private static CouchbaseResponse handleOtherResponseMessages(BinaryRequest request, FullBinaryMemcacheResponse msg,
+        ResponseStatus status) {
+        CouchbaseResponse response = null;
+        ByteBuf content = msg.content();
+        long cas = msg.getCAS();
+        String bucket = request.bucket();
+
+        if (request instanceof UnlockRequest) {
             response = new UnlockResponse(status, bucket, content, request);
         } else if (request instanceof TouchRequest) {
             response = new TouchResponse(status, bucket, content, request);
+        } else if (request instanceof AppendRequest) {
+            response = new AppendResponse(status, cas, bucket, content, request);
+        } else if (request instanceof PrependRequest) {
+            response = new PrependResponse(status, cas, bucket, content, request);
+        } else if (request instanceof KeepAliveRequest) {
+            releaseContent(content);
+            response = new KeepAliveResponse(status, request);
+        } else if (request instanceof CounterRequest) {
+            long value = status.isSuccess() ? content.readLong() : 0;
+            releaseContent(content);
+            response = new CounterResponse(status, bucket, value, cas, request);
         } else if (request instanceof ObserveRequest) {
             byte observed = ObserveResponse.ObserveStatus.UNKNOWN.value();
             long observedCas = 0;
@@ -489,27 +523,62 @@ public class KeyValueHandler
                 observed = content.getByte(keyLength + 4);
                 observedCas = content.getLong(keyLength + 5);
             }
-            if (content != null && content.refCnt() > 0) {
-                content.release();
-            }
+            releaseContent(content);
             response = new ObserveResponse(status, observed, ((ObserveRequest) request).master(), observedCas,
-                bucket, request);
-        } else if (request instanceof AppendRequest) {
-            response = new AppendResponse(status, cas, bucket, content, request);
-        } else if (request instanceof PrependRequest) {
-            response = new PrependResponse(status, cas, bucket, content, request);
-        } else if (request instanceof KeepAliveRequest) {
-            if (content != null && content.refCnt() > 0) {
-                content.release();
-            }
-            response = new KeepAliveResponse(status, request);
-        } else {
-            throw new IllegalStateException("Unhandled request/response pair: " + request.getClass() + "/"
-                + msg.getClass());
+                    bucket, request);
         }
 
-        finishedDecoding();
         return response;
+    }
+
+    /**
+     * Helper method to release content from external resources.
+     *
+     * This method should be called when it is clear that the request is not tried again.
+     *
+     * @param request the request where to free the content.
+     */
+    private static void maybeFreeContent(BinaryRequest request) {
+        ByteBuf content = null;
+        if (request instanceof BinaryStoreRequest) {
+            content = ((BinaryStoreRequest) request).content();
+        } else if (request instanceof AppendRequest) {
+            content = ((AppendRequest) request).content();
+        } else if (request instanceof PrependRequest) {
+            content = ((PrependRequest) request).content();
+        }
+        releaseContent(content);
+    }
+
+    /**
+     * Helper method to safely release the content.
+     *
+     * @param content the content to safely release if needed.
+     */
+    private static void releaseContent(ByteBuf content) {
+        if (content != null && content.refCnt() > 0) {
+            content.release();
+        }
+    }
+
+    /**
+     * Helper method to extract the flags from the extras buffer.
+     *
+     * @param ctx the handler context.
+     * @param extrasReleased the extras of the msg.
+     * @param extrasLength the extras length.
+     * @return the extracted flags.
+     */
+    private static int extractFlagsFromGetResponse(ChannelHandlerContext ctx, ByteBuf extrasReleased,
+        int extrasLength) {
+        int flags = 0;
+        if (extrasLength > 0) {
+            final ByteBuf extras = ctx.alloc().buffer(extrasLength);
+            extras.writeBytes(extrasReleased, extrasReleased.readerIndex(), extrasReleased.readableBytes());
+            flags = extras.getInt(0);
+            extras.release();
+        }
+        return flags;
     }
 
     /**
