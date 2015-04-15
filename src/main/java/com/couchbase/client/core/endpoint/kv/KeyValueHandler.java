@@ -464,22 +464,23 @@ public class KeyValueHandler
         CouchbaseResponse response = null;
         ByteBuf content = msg.content();
         long cas = msg.getCAS();
+        short statusCode = msg.getStatus();
         String bucket = request.bucket();
 
         if (request instanceof GetRequest || request instanceof ReplicaGetRequest) {
             int flags = extractFlagsFromGetResponse(ctx, msg.getExtras(), msg.getExtrasLength());
-            response = new GetResponse(status, cas, flags, bucket, content, request);
+            response = new GetResponse(status, statusCode, cas, flags, bucket, content, request);
         } else if (request instanceof GetBucketConfigRequest) {
-            response = new GetBucketConfigResponse(status, bucket, content,
+            response = new GetBucketConfigResponse(status, statusCode, bucket, content,
                     ((GetBucketConfigRequest) request).hostname());
         } else if (request instanceof InsertRequest) {
-            response = new InsertResponse(status, cas, bucket, content, request);
+            response = new InsertResponse(status, statusCode, cas, bucket, content, request);
         } else if (request instanceof UpsertRequest) {
-            response = new UpsertResponse(status, cas, bucket, content, request);
+            response = new UpsertResponse(status, statusCode, cas, bucket, content, request);
         } else if (request instanceof ReplaceRequest) {
-            response = new ReplaceResponse(status, cas, bucket, content, request);
+            response = new ReplaceResponse(status, statusCode, cas, bucket, content, request);
         } else if (request instanceof RemoveRequest) {
-            response = new RemoveResponse(status, cas, bucket, content, request);
+            response = new RemoveResponse(status, statusCode, cas, bucket, content, request);
         }
 
         return response;
@@ -498,23 +499,24 @@ public class KeyValueHandler
         CouchbaseResponse response = null;
         ByteBuf content = msg.content();
         long cas = msg.getCAS();
+        short statusCode = msg.getStatus();
         String bucket = request.bucket();
 
         if (request instanceof UnlockRequest) {
-            response = new UnlockResponse(status, bucket, content, request);
+            response = new UnlockResponse(status, statusCode, bucket, content, request);
         } else if (request instanceof TouchRequest) {
-            response = new TouchResponse(status, bucket, content, request);
+            response = new TouchResponse(status, statusCode, bucket, content, request);
         } else if (request instanceof AppendRequest) {
-            response = new AppendResponse(status, cas, bucket, content, request);
+            response = new AppendResponse(status, statusCode, cas, bucket, content, request);
         } else if (request instanceof PrependRequest) {
-            response = new PrependResponse(status, cas, bucket, content, request);
+            response = new PrependResponse(status, statusCode, cas, bucket, content, request);
         } else if (request instanceof KeepAliveRequest) {
             releaseContent(content);
-            response = new KeepAliveResponse(status, request);
+            response = new KeepAliveResponse(status, statusCode, request);
         } else if (request instanceof CounterRequest) {
             long value = status.isSuccess() ? content.readLong() : 0;
             releaseContent(content);
-            response = new CounterResponse(status, bucket, value, cas, request);
+            response = new CounterResponse(status, statusCode, bucket, value, cas, request);
         } else if (request instanceof ObserveRequest) {
             byte observed = ObserveResponse.ObserveStatus.UNKNOWN.value();
             long observedCas = 0;
@@ -524,8 +526,8 @@ public class KeyValueHandler
                 observedCas = content.getLong(keyLength + 5);
             }
             releaseContent(content);
-            response = new ObserveResponse(status, observed, ((ObserveRequest) request).master(), observedCas,
-                    bucket, request);
+            response = new ObserveResponse(status, statusCode, observed, ((ObserveRequest) request).master(),
+                    observedCas, bucket, request);
         }
 
         return response;
@@ -614,8 +616,8 @@ public class KeyValueHandler
 
     protected static class KeepAliveResponse extends AbstractKeyValueResponse {
 
-        public KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
-            super(status, null, null, request);
+        public KeepAliveResponse(ResponseStatus status, short serverStatusCode, CouchbaseRequest request) {
+            super(status, serverStatusCode, null, null, request);
         }
     }
 }

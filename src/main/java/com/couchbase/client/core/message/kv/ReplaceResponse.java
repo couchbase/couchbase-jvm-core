@@ -29,8 +29,9 @@ public class ReplaceResponse extends AbstractKeyValueResponse {
 
     private final long cas;
 
-    public ReplaceResponse(ResponseStatus status, long cas, String bucket, ByteBuf content, CouchbaseRequest request) {
-        super(status, bucket, content, request);
+    public ReplaceResponse(ResponseStatus status, short serverStatusCode, long cas, String bucket, ByteBuf content,
+                           CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, content, request);
         this.cas = cas;
     }
 

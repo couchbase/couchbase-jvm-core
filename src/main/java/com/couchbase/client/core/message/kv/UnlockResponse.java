@@ -27,8 +27,9 @@ import io.netty.buffer.ByteBuf;
 
 public class UnlockResponse extends AbstractKeyValueResponse {
 
-    public UnlockResponse(ResponseStatus status, String bucket, ByteBuf content, CouchbaseRequest request) {
-        super(status, bucket, content, request);
+    public UnlockResponse(ResponseStatus status, short serverStatusCode, String bucket, ByteBuf content,
+                          CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, content, request);
     }
 
 }

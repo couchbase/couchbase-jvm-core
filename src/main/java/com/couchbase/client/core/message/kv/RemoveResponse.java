@@ -35,9 +35,9 @@ public class RemoveResponse extends AbstractKeyValueResponse {
 
     private final long cas;
 
-    public RemoveResponse(final ResponseStatus status, final long cas, final String bucket, final ByteBuf content,
-        final CouchbaseRequest request) {
-        super(status, bucket, content, request);
+    public RemoveResponse(final ResponseStatus status, final short serverStatusCode, final long cas, final String bucket,
+                          final ByteBuf content, final CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, content, request);
         this.cas = cas;
     }
 

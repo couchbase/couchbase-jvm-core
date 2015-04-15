@@ -13,8 +13,9 @@ public class PrependResponse extends AbstractKeyValueResponse {
 
     private final long cas;
 
-    public PrependResponse(ResponseStatus status, long cas, String bucket, ByteBuf content, CouchbaseRequest request) {
-        super(status, bucket, content, request);
+    public PrependResponse(ResponseStatus status, short serverStatusCode, long cas, String bucket, ByteBuf content,
+                           CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, content, request);
         this.cas = cas;
     }
 

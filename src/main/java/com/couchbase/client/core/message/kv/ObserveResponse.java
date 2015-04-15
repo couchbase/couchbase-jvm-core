@@ -14,8 +14,9 @@ public class ObserveResponse extends AbstractKeyValueResponse {
     private final boolean master;
     private final long cas;
 
-    public ObserveResponse(ResponseStatus status, byte obs, boolean master, long cas, String bucket, CouchbaseRequest request) {
-        super(status, bucket, null, request);
+    public ObserveResponse(ResponseStatus status, short serverStatusCode, byte obs, boolean master, long cas,
+                           String bucket, CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, null, request);
         observeStatus = ObserveStatus.valueOf(obs);
         this.master = master;
         this.cas = cas;

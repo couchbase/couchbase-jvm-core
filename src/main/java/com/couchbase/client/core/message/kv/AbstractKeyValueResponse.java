@@ -31,11 +31,14 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
 
     private final ByteBuf content;
     private final String bucket;
+    private final short serverStatusCode;
 
-    protected AbstractKeyValueResponse(ResponseStatus status, String bucket, ByteBuf content, CouchbaseRequest request) {
+    protected AbstractKeyValueResponse(ResponseStatus status, short serverStatusCode, String bucket, ByteBuf content,
+                                       CouchbaseRequest request) {
         super(status, request);
         this.content = content == null ? Unpooled.EMPTY_BUFFER : content;
         this.bucket = bucket;
+        this.serverStatusCode = serverStatusCode;
     }
 
     @Override
@@ -46,6 +49,11 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
     @Override
     public String bucket() {
         return bucket;
+    }
+
+    @Override
+    public short serverStatusCode() {
+        return serverStatusCode;
     }
 
     @Override
@@ -79,7 +87,7 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
     public String toString() {
         final StringBuilder sb = new StringBuilder("BinaryResponse{");
         sb.append("bucket='").append(bucket).append('\'');
-        sb.append(", status=").append(status());
+        sb.append(", status=").append(status()).append(" (").append(serverStatusCode()).append(')');
         sb.append(", request=").append(request());
         sb.append(", content=").append(content);
         sb.append('}');

@@ -23,6 +23,7 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -84,7 +85,8 @@ public class CarrierLoaderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
         ByteBuf content = Unpooled.copiedBuffer("myconfig", CharsetUtil.UTF_8);
         Observable<CouchbaseResponse> response = Observable.just(
-                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.SUCCESS, "bucket", content, host)
+                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.SUCCESS,
+                        ResponseStatusConverter.BINARY_SUCCESS, "bucket", content, host)
         );
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
@@ -97,7 +99,8 @@ public class CarrierLoaderTest {
     public void shouldThrowExceptionIfNotDiscovered() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> response = Observable.just(
-                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE, "bucket", Unpooled.EMPTY_BUFFER, host)
+                (CouchbaseResponse) new GetBucketConfigResponse(ResponseStatus.FAILURE,
+                        ResponseStatusConverter.BINARY_ERR_NOT_FOUND, "bucket", Unpooled.EMPTY_BUFFER, host)
         );
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 

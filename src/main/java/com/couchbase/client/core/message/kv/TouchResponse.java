@@ -11,7 +11,8 @@ import io.netty.buffer.ByteBuf;
  */
 public class TouchResponse extends AbstractKeyValueResponse {
 
-    public TouchResponse(ResponseStatus status, String bucket, ByteBuf content, CouchbaseRequest request) {
-        super(status, bucket, content, request);
+    public TouchResponse(ResponseStatus status, short serverStatusCode, String bucket, ByteBuf content,
+                         CouchbaseRequest request) {
+        super(status, serverStatusCode, bucket, content, request);
     }
 }
