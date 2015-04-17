@@ -126,18 +126,19 @@ public class KeyValueLocator implements Locator {
         }
 
         NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
-        if (config.nodes().size() != nodes.size()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
-                        nodes.size(), config.nodes().size());
-            }
-            return EMPTY_NODES;
-        }
 
         for (Node node : nodes) {
             if (node.hostname().equals(nodeInfo.hostname())) {
                 return new Node[] { node };
             }
+        }
+
+        if (config.nodes().size() != nodes.size()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
+                    nodes.size(), config.nodes().size());
+            }
+            return EMPTY_NODES;
         }
 
         throw new IllegalStateException("Node not found for request" + request);
@@ -236,10 +237,19 @@ public class KeyValueLocator implements Locator {
 
         NodeInfo found = config.ketamaNodes().get(hash);
         request.partition((short) 0);
+
         for (Node node : nodes) {
             if (node.hostname().equals(found.hostname())) {
                 return new Node[] { node };
             }
+        }
+
+        if (config.nodes().size() != nodes.size()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
+                    nodes.size(), config.nodes().size());
+            }
+            return EMPTY_NODES;
         }
 
         throw new IllegalStateException("Node not found for request" + request);
