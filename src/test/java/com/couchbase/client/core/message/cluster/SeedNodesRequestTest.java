@@ -59,6 +59,16 @@ public class SeedNodesRequestTest {
         assertEquals(1, request.nodes().size());
     }
 
+    @Test
+    public void shouldProceedIfOnlyPartialFailure() {
+        String invalidIp = "999.999.999.999";
+        SeedNodesRequest request = new SeedNodesRequest("127.0.0.1", invalidIp);
+        assertEquals(1, request.nodes().size());
+
+        request = new SeedNodesRequest("127.0.0.1", "");
+        assertEquals(1, request.nodes().size());
+    }
+
     @Test(expected = ConfigurationException.class)
     public void shouldFailOnNullHostname() {
         List<String> nodes = null;
@@ -72,7 +82,7 @@ public class SeedNodesRequestTest {
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailOnEmptyHostInVarargs() {
-        new SeedNodesRequest("127.0.0.1", "");
+        new SeedNodesRequest("999.999.999.999", "");
     }
 
 }
