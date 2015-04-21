@@ -134,18 +134,18 @@ public class KeyValueLocator implements Locator {
 
         NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
 
+        for (Node node : nodes) {
+            if (node.hostname().equals(nodeInfo.hostname())) {
+                return new Node[] { node };
+            }
+        }
+
         if (config.nodes().size() != nodes.size()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
                         nodes.size(), config.nodes().size());
             }
             return new Node[] { };
-        }
-
-        for (Node node : nodes) {
-            if (node.hostname().equals(nodeInfo.hostname())) {
-                return new Node[] { node };
-            }
         }
 
         throw new IllegalStateException("Node not found for request" + request);
@@ -178,6 +178,14 @@ public class KeyValueLocator implements Locator {
             if (node.hostname().equals(found.hostname())) {
                 return new Node[] { node };
             }
+        }
+
+        if (config.nodes().size() != nodes.size()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
+                        nodes.size(), config.nodes().size());
+            }
+            return new Node[] { };
         }
 
         throw new IllegalStateException("Node not found for request" + request);
