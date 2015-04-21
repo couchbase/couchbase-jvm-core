@@ -68,6 +68,7 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.CharsetUtil;
 
 import java.util.Queue;
 
@@ -200,7 +201,7 @@ public class KeyValueHandler
         }
 
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request
@@ -230,7 +231,7 @@ public class KeyValueHandler
      */
     private static BinaryMemcacheRequest handleReplicaGetRequest(final ReplicaGetRequest msg) {
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
 
         request.setOpcode(OP_GET_REPLICA)
@@ -258,7 +259,7 @@ public class KeyValueHandler
         extras.writeInt(msg.expiration());
 
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         byte extrasLength = (byte) extras.readableBytes();
         FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
 
@@ -287,7 +288,7 @@ public class KeyValueHandler
      */
     private static BinaryMemcacheRequest handleRemoveRequest(final RemoveRequest msg) {
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
 
         request.setOpcode(OP_REMOVE);
@@ -313,7 +314,7 @@ public class KeyValueHandler
         extras.writeInt(msg.expiry());
 
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key, extras);
         request.setOpcode(msg.delta() < 0 ? OP_COUNTER_DECR : OP_COUNTER_INCR);
@@ -330,7 +331,7 @@ public class KeyValueHandler
      */
     private static BinaryMemcacheRequest handleUnlockRequest(final UnlockRequest msg) {
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request.setOpcode(OP_UNLOCK);
         request.setKeyLength(keyLength);
@@ -349,7 +350,7 @@ public class KeyValueHandler
         extras.writeInt(msg.expiry());
 
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request.setExtras(extras);
@@ -368,9 +369,10 @@ public class KeyValueHandler
     private static BinaryMemcacheRequest handleObserveRequest(final ChannelHandlerContext ctx,
         final ObserveRequest msg) {
         String key = msg.key();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         ByteBuf content = ctx.alloc().buffer();
         content.writeShort(msg.partition());
-        content.writeShort(key.length());
+        content.writeShort(keyLength);
         content.writeBytes(key.getBytes(CHARSET));
 
         BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest("", Unpooled.EMPTY_BUFFER, content);
@@ -381,7 +383,7 @@ public class KeyValueHandler
 
     private static BinaryMemcacheRequest handleAppendRequest(final AppendRequest msg) {
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
 
         request.setOpcode(OP_APPEND);
@@ -393,7 +395,7 @@ public class KeyValueHandler
 
     private static BinaryMemcacheRequest handlePrependRequest(final PrependRequest msg) {
         String key = msg.key();
-        short keyLength = (short) key.length();
+        short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
         BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
 
         request.setOpcode(OP_PREPEND);

@@ -113,15 +113,15 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         ReferenceCountUtil.releaseLater(response.content());
 
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
-        response = cluster().<UpsertResponse>send(upsert)
+        response = cluster()
+            .<UpsertResponse>send(upsert)
             .flatMap(new Func1<UpsertResponse, Observable<ReplaceResponse>>() {
-                @Override
-                public Observable<ReplaceResponse> call(UpsertResponse response) {
-                    ReferenceCountUtil.releaseLater(response.content());
-                    return cluster().send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket()));
-                }
-            }
-        ).toBlocking().single();
+                 @Override
+                 public Observable<ReplaceResponse> call(UpsertResponse response) {
+                     ReferenceCountUtil.releaseLater(response.content());
+                     return cluster().send(new ReplaceRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket()));
+                 }
+            }).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
 
         assertEquals(ResponseStatus.SUCCESS, response.status());
@@ -356,6 +356,20 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         response = cluster().<UpsertResponse>send(request).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
+    }
+
+    @Test
+    public void shouldHandleSpecialKeyChars() {
+        String key = "AVERY® READY INDEX®";
+        String content = "Hello World!";
+        UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
+        UpsertResponse response = cluster().<UpsertResponse>send(upsert).toBlocking().single();
+        ReferenceCountUtil.releaseLater(response.content());
+
+        GetRequest request = new GetRequest(key, bucket());
+        GetResponse getResponse = cluster().<GetResponse>send(request).toBlocking().single();
+        assertEquals(content, getResponse.content().toString(CharsetUtil.UTF_8));
+        ReferenceCountUtil.releaseLater(getResponse.content());
     }
 
 }
