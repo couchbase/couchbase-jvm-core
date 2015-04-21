@@ -161,7 +161,7 @@ public class QueryHandlerTest {
         assertEquals(HttpMethod.POST, outbound.getMethod());
         assertEquals(HttpVersion.HTTP_1_1, outbound.getProtocolVersion());
         assertEquals("/query", outbound.getUri());
-        assertFalse(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
+        assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
         assertTrue(outbound instanceof FullHttpRequest);
         assertEquals("query", ((FullHttpRequest) outbound).content().toString(CharsetUtil.UTF_8));

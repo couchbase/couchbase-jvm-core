@@ -43,6 +43,7 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufProcessor;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpContent;
@@ -183,11 +184,13 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         } else if (msg instanceof KeepAliveRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            return request;
         } else {
             throw new IllegalArgumentException("Unknown incoming QueryRequest type "
                 + msg.getClass());
         }
 
+        addAuth(ctx, request, msg.bucket(), msg.password());
         return request;
     }
 
@@ -607,6 +610,29 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             responseContent.release();
         }
         super.handlerRemoved(ctx);
+    }
+
+    /**
+     * Add basic authentication headers to a {@link HttpRequest}.
+     *
+     * The given information is Base64 encoded and the authorization header is set appropriately. Since this needs
+     * to be done for every request, it is refactored out.
+     *
+     * @param ctx the handler context.
+     * @param request the request where the header should be added.
+     * @param user the username for auth.
+     * @param password the password for auth.
+     */
+    private static void addAuth(final ChannelHandlerContext ctx, final HttpRequest request, final String user,
+        final String password) {
+        final String pw = password == null ? "" : password;
+
+        ByteBuf raw = ctx.alloc().buffer(user.length() + pw.length() + 1);
+        raw.writeBytes((user + ":" + pw).getBytes(CHARSET));
+        ByteBuf encoded = Base64.encode(raw, false);
+        request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CHARSET));
+        encoded.release();
+        raw.release();
     }
 
     @Override
