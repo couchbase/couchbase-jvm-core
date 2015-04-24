@@ -263,7 +263,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             public void operationComplete(final ChannelFuture future) throws Exception {
                 if (state() == LifecycleState.DISCONNECTING || state() == LifecycleState.DISCONNECTED) {
                     LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Endpoint connect completed, "
-                        + "but got instructed to disconnect in the meantime.");
+                            + "but got instructed to disconnect in the meantime.");
                     transitionState(LifecycleState.DISCONNECTED);
                     channel = null;
                 } else {
@@ -274,12 +274,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     } else {
                         if (future.cause() instanceof AuthenticationException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                + "Authentication Failure.");
+                                    + "Authentication Failure.");
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ClosedChannelException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                + "Generic Failure.");
+                                    + "Generic Failure.");
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
@@ -382,11 +382,18 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             return;
         }
 
-        responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, SignalConfigReload.INSTANCE, null);
+        signalConfigReload();
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
             connect();
         }
+    }
+
+    /**
+     * Signal a "config reload" event to the upper config layers.
+     */
+    public void signalConfigReload() {
+        responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, SignalConfigReload.INSTANCE, null);
     }
 
     /**

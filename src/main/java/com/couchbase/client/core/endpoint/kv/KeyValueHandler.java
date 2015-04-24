@@ -25,6 +25,8 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -68,6 +70,7 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 
 import java.util.Queue;
@@ -82,6 +85,11 @@ import java.util.Queue;
  */
 public class KeyValueHandler
     extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, BinaryRequest> {
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueHandler.class);
 
     //Memcached OPCODES are defined on 1 byte. Some cbserver specific commands are casted
     // to byte to conform to this limitation and exploit the negative range.
@@ -530,6 +538,15 @@ public class KeyValueHandler
         } else if (request instanceof PrependRequest) {
             ((PrependRequest) request).content().release();
         }
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            LOGGER.debug(logIdent(ctx, endpoint()) + "Identified Idle State, signalling config reload.");
+            endpoint().signalConfigReload();
+        }
+        super.userEventTriggered(ctx, evt);
     }
 
     @Override
