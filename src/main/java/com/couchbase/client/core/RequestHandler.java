@@ -362,7 +362,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 return Observable.just(config);
             }
 
-            return Observable.from(nodes).doOnNext(new Action1<Node>() {
+            return Observable.from(new HashSet<Node>(nodes)).doOnNext(new Action1<Node>() {
                 @Override
                 public void call(Node node) {
                     removeNode(node);
