@@ -386,6 +386,13 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     }
 
     /**
+     * The parent endpoint.
+     */
+    protected AbstractEndpoint endpoint() {
+        return endpoint;
+    }
+
+    /**
      * Simple log helper to give logs a common prefix.
      *
      * @param ctx the context.
