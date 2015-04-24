@@ -38,7 +38,7 @@ public class DefaultEventBus implements EventBus {
     private final Scheduler scheduler;
 
     public DefaultEventBus(final Scheduler scheduler) {
-        bus = PublishSubject.create();
+        bus = PublishSubject.<CouchbaseEvent>create().toSerialized();
         this.scheduler = scheduler;
     }
 
