@@ -208,7 +208,7 @@ public class KeyValueLocator implements Locator {
         try {
             crc32.update(key.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            LOGGER.error("Unsupported encoding found, UTF-8 needed while encoding document ID {}", key);
         }
         long rv = (crc32.getValue() >> 16) & 0x7fff;
         return (int) rv &numPartitions - 1;

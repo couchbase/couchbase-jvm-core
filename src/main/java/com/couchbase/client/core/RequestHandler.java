@@ -78,11 +78,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(RequestHandler.class);
 
     /**
-     * The initial number of nodes, will expand automatically if more are needed.
-     */
-    private static final int INITIAL_NODE_SIZE = 128;
-
-    /**
      * The node locator for the binary service.
      */
     private final Locator binaryLocator = new KeyValueLocator();
@@ -156,9 +151,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     configuration.set(config);
                     reconfigure(config).subscribe();
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    LOGGER.error("Error while subscribing to bucket config stream.", ex);
                 }
-
             }
         });
     }
