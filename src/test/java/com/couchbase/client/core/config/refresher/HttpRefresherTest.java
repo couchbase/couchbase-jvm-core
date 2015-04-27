@@ -31,6 +31,7 @@ import com.couchbase.client.core.util.Resources;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 
 /**
  * Verifies the correct functionality of the {@link HttpRefresher}.
@@ -57,7 +60,8 @@ public class HttpRefresherTest {
             Resources.read("stream1.json", this.getClass()),
             Resources.read("stream2.json", this.getClass()),
             Resources.read("stream3.json", this.getClass())
-        );
+        ).observeOn(Schedulers.computation());
+
         Observable<CouchbaseResponse> response = Observable.just((CouchbaseResponse)
             new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
         );
@@ -77,9 +81,12 @@ public class HttpRefresherTest {
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
         assertTrue(latch.await(3, TimeUnit.SECONDS));
+
+        refresher.deregisterBucket("default");
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldFallbackToVerboseIfTerseFails() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
@@ -87,7 +94,7 @@ public class HttpRefresherTest {
             Resources.read("stream1.json", this.getClass()),
             Resources.read("stream2.json", this.getClass()),
             Resources.read("stream3.json", this.getClass())
-        );
+        ).observeOn(Schedulers.computation());
 
         Observable<CouchbaseResponse> failingResponse = Observable.error(new Exception("failed"));
         Observable<CouchbaseResponse> successResponse = Observable.just((CouchbaseResponse)
@@ -109,9 +116,12 @@ public class HttpRefresherTest {
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
         assertTrue(latch.await(3, TimeUnit.SECONDS));
+
+        refresher.deregisterBucket("default");
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldFallbackToVerboseIfTerseIsNotSuccess() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
@@ -119,10 +129,10 @@ public class HttpRefresherTest {
             Resources.read("stream1.json", this.getClass()),
             Resources.read("stream2.json", this.getClass()),
             Resources.read("stream3.json", this.getClass())
-        );
+        ).observeOn(Schedulers.computation());
 
         Observable<CouchbaseResponse> failingResponse = Observable.just((CouchbaseResponse)
-                new BucketStreamingResponse(null, "", ResponseStatus.NOT_EXISTS, null)
+                        new BucketStreamingResponse(null, "", ResponseStatus.NOT_EXISTS, null)
         );
         Observable<CouchbaseResponse> successResponse = Observable.just((CouchbaseResponse)
                 new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
@@ -144,6 +154,42 @@ public class HttpRefresherTest {
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
         assertTrue(latch.await(3, TimeUnit.SECONDS));
+
+        refresher.deregisterBucket("default");
+    }
+
+    @Test
+    public void shouldResubscribeIfClosed() throws Exception {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+
+        Observable<String> configStream = Observable.just(
+            Resources.read("stream1.json", this.getClass()),
+            Resources.read("stream2.json", this.getClass()),
+            Resources.read("stream3.json", this.getClass())
+        ).observeOn(Schedulers.computation());
+
+        Observable<CouchbaseResponse> response = Observable.just((CouchbaseResponse)
+            new BucketStreamingResponse(configStream, "", ResponseStatus.SUCCESS, null)
+        );
+        when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(response);
+
+        HttpRefresher refresher = new HttpRefresher(cluster);
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        refresher.configs().subscribe(new Action1<BucketConfig>() {
+            @Override
+            public void call(BucketConfig bucketConfig) {
+                assertEquals("default", bucketConfig.name());
+                latch.countDown();
+            }
+        });
+
+        Observable<Boolean> observable = refresher.registerBucket("default", "");
+        assertTrue(observable.toBlocking().single());
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
+
+        refresher.deregisterBucket("default");
+        verify(cluster, atLeast(2)).send(isA(BucketStreamingRequest.class));
     }
 
 }
