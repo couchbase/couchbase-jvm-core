@@ -25,9 +25,12 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -39,6 +42,11 @@ import rx.functions.Func1;
  */
 public class HttpRefresher extends AbstractRefresher {
 
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(HttpRefresher.class);
+
     private static final String TERSE_PATH = "/pools/default/bs/";
     private static final String VERBOSE_PATH = "/pools/default/bucketsStreaming/";
 
@@ -48,7 +56,7 @@ public class HttpRefresher extends AbstractRefresher {
 
     @Override
     public Observable<Boolean> registerBucket(final String name, final String password) {
-        return super.registerBucket(name, password).flatMap(new Func1<Boolean, Observable<BucketStreamingResponse>>() {
+        Observable<BucketStreamingResponse> response = super.registerBucket(name, password).flatMap(new Func1<Boolean, Observable<BucketStreamingResponse>>() {
             @Override
             public Observable<BucketStreamingResponse> call(Boolean aBoolean) {
                 return cluster()
@@ -76,25 +84,66 @@ public class HttpRefresher extends AbstractRefresher {
                         }
                     });
             }
-        })
-            .map(new Func1<BucketStreamingResponse, Boolean>() {
-                @Override
-                public Boolean call(final BucketStreamingResponse response) {
-                    response
-                        .configs()
-                        .map(new Func1<String, String>() {
-                            @Override
-                            public String call(String s) {
-                                return s.replace("$HOST", response.host());
-                            }
-                        })
-                        .subscribe(new Action1<String>() {
-                            @Override
-                            public void call(final String rawConfig) {
-                                pushConfig(rawConfig);
+        });
+
+        repeatConfigUntilUnsubscribed(name, response);
+
+        return response.map(new Func1<BucketStreamingResponse, Boolean>() {
+            @Override
+            public Boolean call(BucketStreamingResponse response) {
+                return response.status().isSuccess();
+            }
+        });
+    }
+
+    /**
+     * Helper method to push configs until unsubscribed, even when a stream closes.
+     *
+     * @param name the name of the bucket.
+     * @param response the response source observable to resubscribe if needed.
+     */
+    private void repeatConfigUntilUnsubscribed(final String name, Observable<BucketStreamingResponse> response) {
+        response.flatMap(new Func1<BucketStreamingResponse, Observable<String>>() {
+            @Override
+            public Observable<String> call(final BucketStreamingResponse response) {
+                LOGGER.debug("Config stream started for {} on {}.", name, response.host());
+
+                return response
+                    .configs()
+                    .map(new Func1<String, String>() {
+                        @Override
+                        public String call(String s) {
+                            return s.replace("$HOST", response.host());
+                        }
+                    })
+                    .doOnCompleted(new Action0() {
+                        @Override
+                        public void call() {
+                            LOGGER.debug("Config stream ended for {} on {}.", name, response.host());
                         }
                     });
-                return true;
+            }
+        })
+        .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
+            @Override
+            public Observable<?> call(Observable<? extends Void> observable) {
+                return observable.flatMap(new Func1<Void, Observable<?>>() {
+                    @Override
+                    public Observable<?> call(Void aVoid) {
+                        if (HttpRefresher.this.registrations().containsKey(name)) {
+                            LOGGER.debug("Resubscribing config stream for bucket {}, still registered.", name);
+                            return Observable.just(true);
+                        } else {
+                            LOGGER.debug("Not resubscribing config stream for bucket {}, not registered.", name);
+                            return Observable.empty();
+                        }
+                    }
+                });
+            }
+        }).subscribe(new Action1<String>() {
+            @Override
+            public void call(String rawConfig) {
+                pushConfig(rawConfig);
             }
         });
     }
