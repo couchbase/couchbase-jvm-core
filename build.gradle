@@ -81,7 +81,7 @@ def getVersionName() {
 
 ext {
     nettyVersion = '4.0.26.Final'
-    rxVersion = '1.0.9'
+    rxVersion = '1.0.10'
     disruptorVersion = '3.3.2'
     jacksonVersion = '2.5.2'
 
