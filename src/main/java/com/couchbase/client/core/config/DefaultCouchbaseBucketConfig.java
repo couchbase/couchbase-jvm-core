@@ -46,7 +46,6 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
      *
      * @param rev the revision of the config.
      * @param name the name of the bucket.
-     * @param locator the locator for this bucket.
      * @param uri the URI for this bucket.
      * @param streamingUri the streaming URI for this bucket.
      * @param partitionInfo partition info for this bucket.
@@ -57,13 +56,12 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     public DefaultCouchbaseBucketConfig(
         @JsonProperty("rev") long rev,
         @JsonProperty("name") String name,
-        @JsonProperty("nodeLocator") String locator,
         @JsonProperty("uri") String uri,
         @JsonProperty("streamingUri") String streamingUri,
         @JsonProperty("vBucketServerMap") CouchbasePartitionInfo partitionInfo,
         @JsonProperty("nodes") List<NodeInfo> nodeInfos,
         @JsonProperty("nodesExt") List<PortInfo> portInfos) {
-        super(name, BucketNodeLocator.fromConfig(locator), uri, streamingUri, nodeInfos, portInfos);
+        super(name, BucketNodeLocator.VBUCKET, uri, streamingUri, nodeInfos, portInfos);
         this.partitionInfo = partitionInfo;
         this.tainted = partitionInfo.tainted();
         this.partitionHosts = buildPartitionHosts(nodeInfos, partitionInfo);

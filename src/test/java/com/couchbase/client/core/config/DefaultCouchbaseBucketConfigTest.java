@@ -42,6 +42,7 @@ public class DefaultCouchbaseBucketConfigTest {
 
         assertTrue(config.hasPrimaryPartitionsOnNode(InetAddress.getByName("1.2.3.4")));
         assertFalse(config.hasPrimaryPartitionsOnNode(InetAddress.getByName("2.3.4.5")));
+        assertEquals(BucketNodeLocator.VBUCKET, config.locator());
     }
 
     @Test
@@ -52,6 +53,6 @@ public class DefaultCouchbaseBucketConfigTest {
         InetAddress expected = InetAddress.getByName("1.2.3.4");
         assertEquals(1, config.nodes().size());
         assertEquals(expected, config.nodes().get(0).hostname());
-
+        assertEquals(BucketNodeLocator.VBUCKET, config.locator());
     }
 }

@@ -21,25 +21,22 @@
  */
 package com.couchbase.client.core.config;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
+/**
+ * Represents the node locator used for the specific bucket type.
+ *
+ * @author Michael Nitschinger
+ * @since 1.0.0
+ */
 public enum BucketNodeLocator {
 
+    /**
+     * The partition based node locator.
+     */
     VBUCKET,
-    KETAMA;
 
     /**
-     * Create a new {@link BucketNodeLocator} from a raw bucket type.
-     *
-     * @param text the raw bucket type.
-     * @return the proper enum.
+     * The node locator based on the ketama location algorithm.
      */
-    @JsonCreator
-    public static BucketNodeLocator fromConfig(final String text) {
-        if (text == null) {
-            return null;
-        }
-        return valueOf(text.toUpperCase());
-    }
+    KETAMA
 
 }

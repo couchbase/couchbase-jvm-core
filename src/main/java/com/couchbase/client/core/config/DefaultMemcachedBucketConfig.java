@@ -23,7 +23,6 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
      *
      * @param rev the revision of the config.
      * @param name the name of the bucket.
-     * @param locator the locator for this bucket.
      * @param uri the URI for this bucket.
      * @param streamingUri the streaming URI for this bucket.
      * @param nodeInfos related node information.
@@ -33,12 +32,11 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
     public DefaultMemcachedBucketConfig(
         @JsonProperty("rev") long rev,
         @JsonProperty("name") String name,
-        @JsonProperty("nodeLocator") String locator,
         @JsonProperty("uri") String uri,
         @JsonProperty("streamingUri") String streamingUri,
         @JsonProperty("nodes") List<NodeInfo> nodeInfos,
         @JsonProperty("nodesExt") List<PortInfo> portInfos) {
-        super(name, BucketNodeLocator.fromConfig(locator), uri, streamingUri, nodeInfos, portInfos);
+        super(name, BucketNodeLocator.KETAMA, uri, streamingUri, nodeInfos, portInfos);
         this.rev = rev;
         this.ketamaNodes = new TreeMap<Long, NodeInfo>();
         populateKetamaNodes();
