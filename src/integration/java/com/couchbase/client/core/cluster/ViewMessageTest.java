@@ -44,7 +44,7 @@ public class ViewMessageTest extends ClusterDependentTest {
     @Test
     public void shouldQueryNonExistentView() {
         ViewQueryResponse single = cluster()
-            .<ViewQueryResponse>send(new ViewQueryRequest("designdoc", "foobar", false, "debug=true", bucket(), password()))
+            .<ViewQueryResponse>send(new ViewQueryRequest("designdoc", "foobar", false, "debug=true", null, bucket(), password()))
             .toBlocking()
             .single();
         assertEquals(ResponseStatus.NOT_EXISTS, single.status());
