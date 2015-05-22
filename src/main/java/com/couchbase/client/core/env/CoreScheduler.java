@@ -21,7 +21,10 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.env.resources.ShutdownHook;
+import rx.Observable;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.internal.schedulers.NewThreadWorker;
@@ -38,15 +41,45 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Michael Nitschinger
  */
-public class CoreScheduler extends Scheduler {
+public class CoreScheduler extends Scheduler implements ShutdownHook {
 
     private static final String THREAD_NAME_PREFIX = "cb-computations-";
     private static final RxThreadFactory THREAD_FACTORY = new RxThreadFactory(THREAD_NAME_PREFIX);
 
     final FixedSchedulerPool pool;
+    private volatile boolean shutdown;
 
     public CoreScheduler(int poolSize) {
         pool = new FixedSchedulerPool(poolSize);
+    }
+
+    public Observable<Boolean> shutdown() {
+        if (isShutdown()) {
+            return Observable.just(true);
+        }
+
+        return Observable.create(new Observable.OnSubscribe<Boolean>() {
+            @Override
+            public void call(Subscriber<? super Boolean> subscriber) {
+                try {
+                    for (PoolWorker worker : pool.eventLoops) {
+                        if (!worker.isUnsubscribed()) {
+                            worker.unsubscribe();
+                        }
+                    }
+                    shutdown = true;
+                    subscriber.onNext(true);
+                    subscriber.onCompleted();
+                } catch (Exception e) {
+                    subscriber.onError(e);
+                }
+            }
+        });
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return shutdown;
     }
 
     @Override
@@ -108,6 +141,8 @@ public class CoreScheduler extends Scheduler {
             s.addParent(innerSubscription);
             return s;
         }
+
+
     }
 
     private static final class PoolWorker extends NewThreadWorker {
