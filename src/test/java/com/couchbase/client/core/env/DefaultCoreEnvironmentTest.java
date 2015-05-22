@@ -21,13 +21,27 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import io.netty.channel.local.LocalEventLoopGroup;
 import org.junit.Test;
+import rx.functions.Actions;
+import rx.schedulers.Schedulers;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultCoreEnvironmentTest {
+
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DefaultCoreEnvironmentTest.class);
 
     @Test
     public void shouldInitAndShutdownCoreEnvironment() throws Exception {
@@ -80,6 +94,86 @@ public class DefaultCoreEnvironmentTest {
 
         assertEquals(DefaultCoreEnvironment.MIN_POOL_SIZE, env.ioPoolSize());
         assertEquals(DefaultCoreEnvironment.MIN_POOL_SIZE, env.computationPoolSize());
+    }
+
+    @Test
+    public void shouldNotLeakThreadsWithDefaultConfiguration() throws InterruptedException {
+        int loops = 3;
+        ThreadMXBean mx = ManagementFactory.getThreadMXBean();
+        LOGGER.info("Initial Threads (will be ignored later):");
+        Set<String> ignore = dump(threads(mx));
+        int[] peaks = new int[loops];
+
+        for (int i = 0; i < loops; i++) {
+            CoreEnvironment env = DefaultCoreEnvironment.create();
+            env.scheduler().createWorker().schedule(Actions.empty());
+            env.scheduler().createWorker().schedule(Actions.empty());
+            env.scheduler().createWorker().schedule(Actions.empty());
+            env.scheduler().createWorker().schedule(Actions.empty());
+            env.scheduler().createWorker().schedule(Actions.empty());
+            env.scheduler().createWorker().schedule(Actions.empty());
+
+            LOGGER.info("===Created threads:");
+            Set<String> afterCreate = dump(threads(mx, ignore));
+
+            env.shutdown().toBlocking().last();
+            Set<String> afterShutdown = threads(mx, ignore);
+
+            peaks[i] = afterShutdown.size();
+            LOGGER.info("===Shutdown went from " + afterCreate.size() + " to " + afterShutdown.size() + " threads, remaining: ");
+            dump(afterShutdown);
+        }
+        boolean peakGrowing = false;
+        StringBuilder peaksDump = new StringBuilder("========Thread peaks : ").append(peaks[0]);
+        for (int i = 1; i < loops; i++) {
+            peaksDump.append(' ').append(peaks[i]);
+            peakGrowing = peakGrowing || (peaks[i] != peaks[i - 1]);
+        }
+        LOGGER.info(peaksDump.toString());
+        assertFalse("Number of threads is growing despite shutdown, see console output", peakGrowing);
+    }
+
+    private Set<String> dump(Set<String> threads) {
+        for (String thread : threads) {
+            LOGGER.info(thread);
+        }
+        return threads;
+    }
+
+    private Set<String> threads(ThreadMXBean mx, Set<String> ignore) {
+        Set<String> all = threads(mx);
+        all.removeAll(ignore);
+        return all;
+    }
+
+    private Set<String> threads(ThreadMXBean mx) {
+        ThreadInfo[] dump = mx.getThreadInfo(mx.getAllThreadIds());
+        Set<String> names = new HashSet<String>(dump.length);
+        for (ThreadInfo threadInfo : dump) {
+            names.add(threadInfo.getThreadName());
+        }
+        return names;
+    }
+
+    @Test
+    public void shouldShowUnmanagedCustomResourcesInEnvDump() {
+        //create an environment with a custom IOPool and Scheduler that are not cleaned up on shutdown
+        DefaultCoreEnvironment env = DefaultCoreEnvironment.builder()
+                .ioPool(new LocalEventLoopGroup())
+                .scheduler(Schedulers.trampoline()).build();
+        String dump = env.dumpParameters(new StringBuilder()).toString();
+
+        assertTrue(dump, dump.contains("LocalEventLoopGroup!unmanaged"));
+        assertTrue(dump, dump.contains("TrampolineScheduler!unmanaged"));
+    }
+
+    @Test
+    public void shouldShowOnlyClassNameForManagedResourcesInEnvDump() {
+        //create an environment with a custom IOPool and Scheduler that are not cleaned up on shutdown
+        DefaultCoreEnvironment env = DefaultCoreEnvironment.create();
+        String dump = env.dumpParameters(new StringBuilder()).toString();
+
+        assertFalse(dump, dump.contains("!unmanaged"));
     }
 
 }
