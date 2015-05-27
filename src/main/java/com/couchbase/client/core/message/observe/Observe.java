@@ -213,7 +213,23 @@ public class Observe {
             replicateTo, retryStrategy);
 
         return observeResponses
-                .toList()
+                //each response is converted into an ObserveItem state
+                .map(new Func1<ObserveResponse, ObserveItem>() {
+                    @Override
+                    public ObserveItem call(ObserveResponse observeResponse) {
+                        return new ObserveItem(id, observeResponse, cas, remove, persistIdentifier, replicaIdentifier);
+                    }
+                })
+                //scan will aggregate each individual state and emit the intermediate states.
+                //This allows for the minimum number of checks to occur before finding out that our criteria has been met.
+                .scan(new ObserveItem(),
+                        new Func2<ObserveItem, ObserveItem, ObserveItem>() {
+                            @Override
+                            public ObserveItem call(ObserveItem currentStatus, ObserveItem newStatus) {
+                                return currentStatus.add(newStatus);
+                            }
+                        })
+                //repetitions will occur unless errors are raised
                 .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
                     @Override
                     public Observable<?> call(Observable<? extends Void> observable) {
@@ -234,67 +250,18 @@ public class Observe {
                         });
                     }
                 })
-                .skipWhile(new Func1<List<ObserveResponse>, Boolean>() {
+                //ignore intermediate states as long as they don't match the criteria
+                .skipWhile(new Func1<ObserveItem, Boolean>() {
                     @Override
-                    public Boolean call(List<ObserveResponse> observeResponses) {
-                        int replicated = 0;
-                        int persisted = 0;
-                        boolean persistedMaster = false;
-                        for (ObserveResponse response : observeResponses) {
-                            if (response.content() != null && response.content().refCnt() > 0) {
-                                response.content().release();
-                            }
-                            ObserveResponse.ObserveStatus status = response.observeStatus();
-
-                            // the CAS values always need to match up to make sure we are still observing the right
-                            // document. The only exclusion from that rule is when a real delete is returned, because
-                            // then the cas value is 0.
-                            boolean validCas = cas == response.cas()
-                                || (remove && response.cas() == 0 && status == persistIdentifier);
-
-                            if (response.master()) {
-                                if (!validCas) {
-                                    throw new DocumentConcurrentlyModifiedException("The CAS on the active node "
-                                        + "changed for ID \"" + id + "\", indicating it has been modified in the "
-                                        + "meantime.");
-                                }
-
-                                if (status == persistIdentifier) {
-                                    persisted++;
-                                    persistedMaster = true;
-                                }
-                            } else if (validCas) {
-                                if (status == persistIdentifier) {
-                                    persisted++;
-                                    replicated++;
-                                } else if (status == replicaIdentifier) {
-                                    replicated++;
-                                }
-                            }
-                        }
-
-                        boolean persistDone = false;
-                        boolean replicateDone = false;
-
-                        if (persistTo == PersistTo.MASTER) {
-                            if (persistedMaster) {
-                                persistDone = true;
-                            }
-                        } else if (persisted >= persistTo.value()) {
-                            persistDone = true;
-                        }
-
-                        if (replicated >= replicateTo.value()) {
-                            replicateDone = true;
-                        }
-
-                        return !(persistDone && replicateDone);
+                    public Boolean call(ObserveItem status) {
+                        return !status.check(persistTo, replicateTo);
                     }
                 })
+                //finish as soon as the first poll that matches the whole criteria is encountered
                 .take(1)
-                .map(new Func1<List<ObserveResponse>, Boolean>() {
+                .map(new Func1<ObserveItem, Boolean>() {
                     @Override
-                    public Boolean call(List<ObserveResponse> observeResponses) {
+                    public Boolean call(ObserveItem observeResponses) {
                         return true;
                     }
                 });
@@ -352,11 +319,148 @@ public class Observe {
                                 if (obs.size() == 1) {
                                     return obs.get(0);
                                 } else {
-                                    return Observable.merge(obs);
+                                    //mergeDelayErrors will give a chance to other nodes to respond (maybe with enough
+                                    //responses for the whole poll to be considered a success)
+                                    return Observable.mergeDelayError(Observable.from(obs));
                                 }
                             }
                         });
             }
         });
+    }
+
+    /**
+     * An immutable state class that can be constructed from an {@link ObserveResponse}
+     * and aggregated with other intermediary states during a {@link Observable#scan(Func2) scan}.
+     *
+     * This encapsulates the logic of tracking observed state and checking it against a
+     * {@link ReplicateTo replication} or {@link PersistTo persistence} criteria.
+     *
+     * Having each intermediate state will allow to shortcut as soon as the desired state is
+     * observed, not until all the replicas have manifested themselves.
+     */
+    private static class ObserveItem {
+
+        private final int replicated;
+        private final int persisted;
+        private final boolean persistedMaster;
+
+
+        /**
+         * Build an {@link ObserveItem} state from a {@link ObserveResponse}.
+         *
+         * @param id the observed key.
+         * @param response the {@link ObserveResponse} received for that key.
+         * @param cas the cas that we expect.
+         * @param remove true if this is a remove operation, false otherwise.
+         * @param persistIdentifier the {@link ObserveResponse.ObserveStatus} to watch for in persistence.
+         * @param replicaIdentifier the {@link ObserveResponse.ObserveStatus} to watch for in replication.
+         * @throws DocumentConcurrentlyModifiedException if the cas observed on master copy isn't the expected one.
+         */
+        public ObserveItem(String id, ObserveResponse response, long cas, boolean remove,
+                           ObserveResponse.ObserveStatus persistIdentifier,
+                           ObserveResponse.ObserveStatus replicaIdentifier) {
+            int replicated = 0;
+            int persisted = 0;
+            boolean persistedMaster = false;
+
+
+            if (response.content() != null && response.content().refCnt() > 0) {
+                response.content().release();
+            }
+            ObserveResponse.ObserveStatus status = response.observeStatus();
+
+            // the CAS values always need to match up to make sure we are still observing the right
+            // document. The only exclusion from that rule is when a real delete is returned, because
+            // then the cas value is 0.
+            boolean validCas = cas == response.cas()
+                    || (remove && response.cas() == 0 && status == persistIdentifier);
+
+            if (response.master()) {
+                if (!validCas) {
+                    throw new DocumentConcurrentlyModifiedException("The CAS on the active node "
+                            + "changed for ID \"" + id + "\", indicating it has been modified in the "
+                            + "meantime.");
+                }
+
+                if (status == persistIdentifier) {
+                    persisted++;
+                    persistedMaster = true;
+                }
+            } else if (validCas) {
+                if (status == persistIdentifier) {
+                    persisted++;
+                    replicated++;
+                } else if (status == replicaIdentifier) {
+                    replicated++;
+                }
+            }
+
+            this.replicated = replicated;
+            this.persisted = persisted;
+            this.persistedMaster = persistedMaster;
+        }
+
+
+        private ObserveItem(int replicated, int persisted, boolean persistedMaster) {
+            this.replicated = replicated;
+            this.persisted = persisted;
+            this.persistedMaster = persistedMaster;
+        }
+
+        /**
+         * An empty {@link Observe.ObserveItem}, when nothing has been observed yet.
+         */
+        public ObserveItem() {
+            this(0, 0, false);
+        }
+
+        /**
+         * Aggregate two ObserveItems together, merging the state they represent.
+         *
+         * @param other the other ObserveItem to aggregate with.
+         * @return a new {@link ObserveItem} representing the aggregated state of this and the other state.
+         */
+        public ObserveItem add(ObserveItem other) {
+            return new ObserveItem(this.replicated + other.replicated,
+                    this.persisted + other.persisted,
+                    this.persistedMaster || other.persistedMaster);
+        }
+
+        /**
+         * Checks the state to see if it matches the given criteria.
+         *
+         * @param persistTo minimum number of persistence to be observed for this to match.
+         * @param replicateTo minimum number of replications to be observed for this to match.
+         * @return true if the current state matches the given criteria.
+         */
+        public boolean check(PersistTo persistTo, ReplicateTo replicateTo) {
+            boolean persistDone = false;
+            boolean replicateDone = false;
+
+            if (persistTo == PersistTo.MASTER) {
+                if (persistedMaster) {
+                    persistDone = true;
+                }
+            } else if (persisted >= persistTo.value()) {
+                persistDone = true;
+            }
+
+            if (replicated >= replicateTo.value()) {
+                replicateDone = true;
+            }
+
+            return persistDone && replicateDone;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("persisted ").append(persisted);
+            if (persistedMaster)
+                sb.append(" (master)");
+            sb.append(", replicated ").append(replicated);
+            return sb.toString();
+        }
     }
 }
