@@ -25,9 +25,7 @@ import com.couchbase.client.core.service.ServiceType;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public abstract class AbstractBucketConfig implements BucketConfig {
 
@@ -37,7 +35,7 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final String uri;
     private final String streamingUri;
     private final List<NodeInfo> nodeInfo;
-    private final Set<ServiceType> enabledServices;
+    private final int enabledServices;
 
     protected AbstractBucketConfig(String name, BucketNodeLocator locator, String uri, String streamingUri,
         List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
@@ -47,11 +45,16 @@ public abstract class AbstractBucketConfig implements BucketConfig {
         this.streamingUri = streamingUri;
         this.nodeInfo = portInfos == null ? nodeInfos : nodeInfoFromExtended(portInfos, nodeInfos);
 
-        this.enabledServices = new HashSet<ServiceType>();
+        int es = 0;
         for (NodeInfo info : nodeInfo) {
-            this.enabledServices.addAll(info.services().keySet());
-            this.enabledServices.addAll(info.sslServices().keySet());
+            for (ServiceType type : info.services().keySet()) {
+                es |= 1 << type.ordinal();
+            }
+            for (ServiceType type : info.sslServices().keySet()) {
+                es |= 1 << type.ordinal();
+            }
         }
+        this.enabledServices = es;
     }
 
     /**
@@ -113,6 +116,6 @@ public abstract class AbstractBucketConfig implements BucketConfig {
 
     @Override
     public boolean serviceEnabled(ServiceType type) {
-        return enabledServices.contains(type);
+        return (enabledServices & (1 << type.ordinal())) != 0;
     }
 }
