@@ -62,6 +62,7 @@ public class ClusterDependentTest {
     private static final CoreEnvironment env = DefaultCoreEnvironment
             .builder()
             .dcpEnabled(true)
+            .tcpNodelayEnabled(false)
             .build();
 
     private static ClusterFacade cluster;

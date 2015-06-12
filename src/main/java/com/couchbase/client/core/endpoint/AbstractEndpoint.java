@@ -207,12 +207,13 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         ByteBufAllocator allocator = env.bufferPoolingEnabled()
                 ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
 
+        boolean tcpNodelay = environment().tcpNodelayEnabled();
         bootstrap = new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(environment.ioPool())
             .channel(channelClass)
             .option(ChannelOption.ALLOCATOR, allocator)
-            .option(ChannelOption.TCP_NODELAY, true)
+            .option(ChannelOption.TCP_NODELAY, tcpNodelay)
             .handler(new ChannelInitializer<Channel>() {
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
