@@ -61,7 +61,7 @@ public class ResponseHandlerTest {
 
         ResponseEvent retryEvent = new ResponseEvent();
         retryEvent.setMessage(new InsertResponse(ResponseStatus.RETRY, ResponseStatusConverter.BINARY_ERR_TEMP_FAIL,
-                0, "bucket", config, mock(InsertRequest.class)));
+                0, "bucket", config, null, mock(InsertRequest.class)));
         retryEvent.setObservable(mock(Subject.class));
         handler.onEvent(retryEvent, 1, true);
 
@@ -80,7 +80,7 @@ public class ResponseHandlerTest {
 
         ResponseEvent retryEvent = new ResponseEvent();
         retryEvent.setMessage(new InsertResponse(ResponseStatus.RETRY, ResponseStatusConverter.BINARY_ERR_TEMP_FAIL,
-                0, "bucket", config, mock(InsertRequest.class)));
+                0, "bucket", config, null, mock(InsertRequest.class)));
         retryEvent.setObservable(mock(Subject.class));
         handler.onEvent(retryEvent, 1, true);
 

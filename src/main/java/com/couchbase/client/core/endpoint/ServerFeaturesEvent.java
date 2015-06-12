@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Couchbase, Inc.
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,35 +19,28 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.message.kv;
+package com.couchbase.client.core.endpoint;
 
-import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.ResponseStatus;
-import io.netty.buffer.ByteBuf;
+import com.couchbase.client.core.endpoint.kv.KeyValueFeatureHandler;
+
+import java.util.List;
 
 /**
- * Represents a response to a {@link RemoveRequest}.
+ * An event sent by the {@link KeyValueFeatureHandler} to list all the negotiated features.
  *
  * @author Michael Nitschinger
- * @since 1.0
+ * @since 1.2.0
  */
-public class RemoveResponse extends AbstractKeyValueResponse {
+public class ServerFeaturesEvent {
 
-    private final long cas;
-    private final MutationDescriptor mutationDescriptor;
+    private final List<ServerFeatures> supportedFeatures;
 
-    public RemoveResponse(final ResponseStatus status, final short serverStatusCode, final long cas, final String bucket,
-        final ByteBuf content, final MutationDescriptor mutationDescriptor, final CouchbaseRequest request) {
-        super(status, serverStatusCode, bucket, content, request);
-        this.cas = cas;
-        this.mutationDescriptor = mutationDescriptor;
+    public ServerFeaturesEvent(List<ServerFeatures> supportedFeatures) {
+        this.supportedFeatures = supportedFeatures;
     }
 
-    public long cas() {
-        return cas;
+    public List<ServerFeatures> supportedFeatures() {
+        return supportedFeatures;
     }
 
-    public MutationDescriptor mutationDescriptor() {
-        return mutationDescriptor;
-    }
 }

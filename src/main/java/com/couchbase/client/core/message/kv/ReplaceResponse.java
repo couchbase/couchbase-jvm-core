@@ -28,14 +28,20 @@ import io.netty.buffer.ByteBuf;
 public class ReplaceResponse extends AbstractKeyValueResponse {
 
     private final long cas;
+    private final MutationDescriptor mutationDescriptor;
 
     public ReplaceResponse(ResponseStatus status, short serverStatusCode, long cas, String bucket, ByteBuf content,
-                           CouchbaseRequest request) {
+        MutationDescriptor mutationDescriptor, CouchbaseRequest request) {
         super(status, serverStatusCode, bucket, content, request);
         this.cas = cas;
+        this.mutationDescriptor = mutationDescriptor;
     }
 
     public long cas() {
         return cas;
+    }
+
+    public MutationDescriptor mutationDescriptor() {
+        return mutationDescriptor;
     }
 }
