@@ -297,7 +297,7 @@ public interface CoreEnvironment {
     boolean tcpNodelayEnabled();
 
     /**
-     * Returns true if extended mutation metadata is enabled.
+     * Returns true if extended mutation tokens are enabled.
      *
      * Note that while this may return true, the server also needs to support it (Couchbase Server
      * 4.0 and above). It will be negotiated during connection setup, but needs to be explicitly
@@ -306,5 +306,5 @@ public interface CoreEnvironment {
      *
      * @return true if enabled on the client side.
      */
-    boolean mutationMetadataEnabled();
+    boolean mutationTokensEnabled();
 }

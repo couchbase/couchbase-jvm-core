@@ -74,7 +74,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         boolean tcpNodelay = environment.tcpNodelayEnabled();
 
         features = new ArrayList<ServerFeatures>();
-        if (environment.mutationMetadataEnabled()) {
+        if (environment.mutationTokensEnabled()) {
             features.add(ServerFeatures.MUTATION_SEQNO);
         }
         features.add(tcpNodelay ? ServerFeatures.TCPNODELAY : ServerFeatures.TCPDELAY);

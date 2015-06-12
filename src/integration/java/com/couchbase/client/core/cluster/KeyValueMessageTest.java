@@ -28,7 +28,7 @@ import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.message.kv.GetResponse;
 import com.couchbase.client.core.message.kv.InsertRequest;
 import com.couchbase.client.core.message.kv.InsertResponse;
-import com.couchbase.client.core.message.kv.MutationDescriptor;
+import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.message.kv.RemoveRequest;
 import com.couchbase.client.core.message.kv.RemoveResponse;
 import com.couchbase.client.core.message.kv.ReplaceRequest;
@@ -67,7 +67,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
         UpsertResponse response = cluster().<UpsertResponse>send(upsert).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
-        assertValidMetadata(response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
 
         GetRequest request = new GetRequest(key, bucket());
         GetResponse getResponse = cluster().<GetResponse>send(request).toBlocking().single();
@@ -82,7 +82,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), 1, 0, bucket());
         UpsertResponse response = cluster().<UpsertResponse>send(upsert).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
-        assertValidMetadata(response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
 
         Thread.sleep(2000);
 
@@ -100,13 +100,13 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         InsertResponse insertResponse = cluster().<InsertResponse>send(insert).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, insertResponse.status());
         ReferenceCountUtil.releaseLater(insertResponse.content());
-        assertValidMetadata(insertResponse.mutationDescriptor());
+        assertValidMetadata(insertResponse.mutationToken());
 
         insert = new InsertRequest(key, Unpooled.copiedBuffer(content, CharsetUtil.UTF_8), bucket());
         insertResponse = cluster().<InsertResponse>send(insert).toBlocking().single();
         assertEquals(ResponseStatus.EXISTS, insertResponse.status());
         ReferenceCountUtil.releaseLater(insertResponse.content());
-        assertNull(insertResponse.mutationDescriptor());
+        assertNull(insertResponse.mutationToken());
     }
 
     @Test
@@ -118,7 +118,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         ReplaceResponse response = cluster().<ReplaceResponse>send(insert).toBlocking().single();
         assertEquals(ResponseStatus.NOT_EXISTS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
-        assertNull(response.mutationDescriptor());
+        assertNull(response.mutationToken());
 
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
         response = cluster()
@@ -131,7 +131,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
                  }
             }).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
-        assertValidMetadata(response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
 
         assertEquals(ResponseStatus.SUCCESS, response.status());
     }
@@ -145,7 +145,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         ReplaceResponse response = cluster().<ReplaceResponse>send(insert).toBlocking().single();
         assertEquals(ResponseStatus.NOT_EXISTS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
-        assertNull(response.mutationDescriptor());
+        assertNull(response.mutationToken());
 
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
         response = cluster().<UpsertResponse>send(upsert)
@@ -158,7 +158,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
             }).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
         assertEquals(ResponseStatus.EXISTS, response.status());
-        assertNull(response.mutationDescriptor());
+        assertNull(response.mutationToken());
     }
 
     @Test
@@ -170,7 +170,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         ReplaceResponse response = cluster().<ReplaceResponse>send(insert).toBlocking().single();
         assertEquals(ResponseStatus.NOT_EXISTS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
-        assertNull(response.mutationDescriptor());
+        assertNull(response.mutationToken());
 
         UpsertRequest upsert = new UpsertRequest(key, Unpooled.copiedBuffer("insert content", CharsetUtil.UTF_8), bucket());
         response = cluster().<UpsertResponse>send(upsert)
@@ -183,7 +183,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
             }).toBlocking().single();
         ReferenceCountUtil.releaseLater(response.content());
         assertEquals(ResponseStatus.SUCCESS, response.status());
-        assertValidMetadata(response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
     }
 
     @Test
@@ -194,15 +194,15 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         UpsertResponse upsertResponse = cluster().<UpsertResponse>send(upsert).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, upsertResponse.status());
         ReferenceCountUtil.releaseLater(upsertResponse.content());
-        assertValidMetadata(upsertResponse.mutationDescriptor());
+        assertValidMetadata(upsertResponse.mutationToken());
 
         RemoveRequest remove = new RemoveRequest(key, bucket());
         RemoveResponse response = cluster().<RemoveResponse>send(remove).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
         assertTrue(response.cas() != 0);
         ReferenceCountUtil.releaseLater(response.content());
-        assertValidMetadata(response.mutationDescriptor());
-        assertMetadataSequence(upsertResponse.mutationDescriptor(), response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
+        assertMetadataSequence(upsertResponse.mutationToken(), response.mutationToken());
 
         GetRequest get = new GetRequest(key, bucket());
         GetResponse getResponse = cluster().<GetResponse>send(get).toBlocking().single();
@@ -218,21 +218,21 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         UpsertResponse upsertResponse = cluster().<UpsertResponse>send(upsert).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, upsertResponse.status());
         ReferenceCountUtil.releaseLater(upsertResponse.content());
-        assertValidMetadata(upsertResponse.mutationDescriptor());
+        assertValidMetadata(upsertResponse.mutationToken());
 
         RemoveRequest remove = new RemoveRequest(key, 1233443, bucket());
         RemoveResponse response = cluster().<RemoveResponse>send(remove).toBlocking().single();
         assertEquals(ResponseStatus.EXISTS, response.status());
         ReferenceCountUtil.releaseLater(response.content());
-        assertNull(response.mutationDescriptor());
+        assertNull(response.mutationToken());
 
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
         response = cluster().<RemoveResponse>send(remove).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
         assertTrue(response.cas() != 0);
         ReferenceCountUtil.releaseLater(response.content());
-        assertValidMetadata(response.mutationDescriptor());
-        assertMetadataSequence(upsertResponse.mutationDescriptor(), response.mutationDescriptor());
+        assertValidMetadata(response.mutationToken());
+        assertMetadataSequence(upsertResponse.mutationToken(), response.mutationToken());
     }
 
     @Test
@@ -251,8 +251,8 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         assertTrue(response1.cas() != response2.cas());
         assertTrue(response2.cas() != response3.cas());
 
-        assertMetadataSequence(response1.mutationDescriptor(), response2.mutationDescriptor());
-        assertMetadataSequence(response2.mutationDescriptor(), response3.mutationDescriptor());
+        assertMetadataSequence(response1.mutationToken(), response2.mutationToken());
+        assertMetadataSequence(response2.mutationToken(), response3.mutationToken());
     }
 
     @Test
@@ -271,8 +271,8 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         assertTrue(response1.cas() != response2.cas());
         assertTrue(response2.cas() != response3.cas());
 
-        assertMetadataSequence(response1.mutationDescriptor(), response2.mutationDescriptor());
-        assertMetadataSequence(response2.mutationDescriptor(), response3.mutationDescriptor());
+        assertMetadataSequence(response1.mutationToken(), response2.mutationToken());
+        assertMetadataSequence(response2.mutationToken(), response3.mutationToken());
     }
 
     @Test
@@ -403,16 +403,17 @@ public class KeyValueMessageTest extends ClusterDependentTest {
      *
      * Note that if mutation metadata is disabled, null is expected.
      *
-     * @param descriptor the descriptor to check
+     * @param token the token to check
      * @throws Exception
      */
-    private void assertValidMetadata(MutationDescriptor descriptor) throws Exception {
+    private void assertValidMetadata(MutationToken token) throws Exception {
         if (isMutationMetadataEnabled()) {
-            assertNotNull(descriptor);
-            assertTrue(descriptor.seqNo() > 0);
-            assertTrue(descriptor.vbucketUUID() != 0);
+            assertNotNull(token);
+            assertTrue(token.sequenceNumber() > 0);
+            assertTrue(token.vbucketUUID() != 0);
+            assertTrue(token.vbucketID() > 0);
         } else {
-            assertNull(descriptor);
+            assertNull(token);
         }
     }
 
@@ -425,13 +426,16 @@ public class KeyValueMessageTest extends ClusterDependentTest {
      * @param second the second mutation
      * @throws Exception
      */
-    private void assertMetadataSequence(MutationDescriptor first, MutationDescriptor second) throws Exception {
+    private void assertMetadataSequence(MutationToken first, MutationToken second) throws Exception {
         if (isMutationMetadataEnabled()) {
             assertNotNull(first);
             assertNotNull(second);
             assertTrue(first.vbucketUUID() != 0);
+            assertTrue(first.vbucketID() > 0);
+            assertTrue(second.vbucketID() > 0);
             assertEquals(first.vbucketUUID(), second.vbucketUUID());
-            assertTrue((first.seqNo()+1) == second.seqNo());
+            assertTrue((first.sequenceNumber()+1) == second.sequenceNumber());
+            assertEquals(first.vbucketID(), second.vbucketID());
         } else {
             assertNull(first);
             assertNull(second);

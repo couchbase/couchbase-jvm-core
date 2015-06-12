@@ -34,20 +34,20 @@ import io.netty.buffer.ByteBuf;
 public class InsertResponse extends AbstractKeyValueResponse {
 
     private long cas;
-    private final MutationDescriptor mutationDescriptor;
+    private final MutationToken mutationToken;
 
     public InsertResponse(ResponseStatus status, short serverStatusCode, long cas, String bucket, ByteBuf content,
-        MutationDescriptor mutationDescriptor, CouchbaseRequest request) {
+        MutationToken mutationToken, CouchbaseRequest request) {
         super(status, serverStatusCode, bucket, content, request);
         this.cas = cas;
-        this.mutationDescriptor = mutationDescriptor;
+        this.mutationToken = mutationToken;
     }
 
     public long cas() {
         return cas;
     }
 
-    public MutationDescriptor mutationDescriptor() {
-        return mutationDescriptor;
+    public MutationToken mutationToken() {
+        return mutationToken;
     }
 }

@@ -64,7 +64,7 @@ public class ClusterDependentTest {
     private static final CoreEnvironment env = DefaultCoreEnvironment
             .builder()
             .dcpEnabled(true)
-            .mutationMetadataEnabled(true)
+            .mutationTokensEnabled(true)
             .build();
 
     private static ClusterFacade cluster;
