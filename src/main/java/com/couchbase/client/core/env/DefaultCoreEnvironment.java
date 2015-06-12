@@ -78,6 +78,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long AUTORELEASE_AFTER = TimeUnit.SECONDS.toMillis(2);
     public static final boolean BUFFER_POOLING_ENABLED = true;
     public static final boolean TCP_NODELAY_ENALED = true;
+    public static final boolean MUTATION_METADATA_ENABLED = false;
+
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
 
@@ -163,6 +165,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final long autoreleaseAfter;
     private final boolean bufferPoolingEnabled;
     private final boolean tcpNodelayEnabled;
+    private final boolean mutationMetadataEnabled;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -209,6 +212,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         autoreleaseAfter = longPropertyOr("autoreleaseAfter", builder.autoreleaseAfter());
         bufferPoolingEnabled = booleanPropertyOr("bufferPoolingEnabled", builder.bufferPoolingEnabled());
         tcpNodelayEnabled = booleanPropertyOr("tcpNodelayEnabled", builder.tcpNodelayEnabled());
+        mutationMetadataEnabled = booleanPropertyOr("mutationMetadataEnabled", builder.mutationMetadataEnabled());
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -465,6 +469,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return tcpNodelayEnabled;
     }
 
+    @Override
+    public boolean mutationMetadataEnabled() {
+        return mutationMetadataEnabled;
+    }
+
     public static class Builder implements CoreEnvironment {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -502,6 +511,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private long autoreleaseAfter = AUTORELEASE_AFTER;
         private boolean bufferPoolingEnabled = BUFFER_POOLING_ENABLED;
         private boolean tcpNodelayEnabled = TCP_NODELAY_ENALED;
+        private boolean mutationMetadataEnabled = MUTATION_METADATA_ENABLED;
 
         protected Builder() {
         }
@@ -1031,6 +1041,24 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        @Override
+        public boolean mutationMetadataEnabled() {
+            return mutationMetadataEnabled;
+        }
+
+        /**
+         * If mutation metadata is enabled, it can be used for advanced durability requirements,
+         * as well as optimized RYOW consistency.
+         *
+         * Note that just enabling it here won't help if the server does not support it as well. Use at
+         * least Couchbase Server 4.0. Also, consider the additional overhead of 16 bytes per mutation response
+         * (8 byte for the vbucket uuid and 8 byte for the sequence number).
+         */
+        public Builder mutationMetadataEnabled(boolean mutationMetadataEnabled) {
+            this.mutationMetadataEnabled = mutationMetadataEnabled;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1082,6 +1110,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", autoreleaseAfter=").append(autoreleaseAfter);
         sb.append(", bufferPoolingEnabled=").append(bufferPoolingEnabled);
         sb.append(", tcpNodelayEnabled=").append(tcpNodelayEnabled);
+        sb.append(", mutationMetadataEnabled=").append(mutationMetadataEnabled);
         return sb;
     }
 
