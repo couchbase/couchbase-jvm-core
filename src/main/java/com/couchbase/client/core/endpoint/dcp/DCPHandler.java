@@ -130,12 +130,11 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     protected CouchbaseResponse decodeResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg)
             throws Exception {
         DCPRequest request = currentRequest();
-        ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
 
         CouchbaseResponse response = null;
 
         if (msg.getOpcode() == OP_OPEN_CONNECTION && request instanceof OpenConnectionRequest) {
-            response = new OpenConnectionResponse(status, request);
+            response = new OpenConnectionResponse(ResponseStatusConverter.fromBinary(msg.getStatus()), request);
         } else if (msg.getOpcode() == OP_STREAM_REQUEST && request instanceof StreamRequestRequest) {
             ByteBuf content = msg.content();
             Scheduler scheduler = env().scheduler();
@@ -145,8 +144,8 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
                 FailoverLogEntry entry = new FailoverLogEntry(content.readLong(), content.readLong());
                 failoverLog.add(entry);
             }
-            response = new StreamRequestResponse(status, stream.subject().onBackpressureBuffer().observeOn(scheduler),
-                    failoverLog, request);
+            response = new StreamRequestResponse(ResponseStatusConverter.fromBinary(msg.getStatus()),
+                    stream.subject().onBackpressureBuffer().observeOn(scheduler), failoverLog, request);
         } else {
             /**
              * FIXME
