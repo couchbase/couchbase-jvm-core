@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Couchbase, Inc.
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,26 @@ package com.couchbase.client.core;
 
 /**
  * This exception is thrown when the given operation targeting a specific replica is not fulfillable because the
- * replica is not configured (for example replica 2 is asked for, but only 1 is configured).
+ * replica is not available (the node has been failed over or is marked as down).
+ *
  *
  * @author Michael Nitschinger
- * @since 1.0.0
+ * @since 1.2.0
  */
-public class ReplicaNotConfiguredException extends CouchbaseException {
+public class ReplicaNotAvailableException extends CouchbaseException {
 
-    public ReplicaNotConfiguredException() {
+    public ReplicaNotAvailableException() {
     }
 
-    public ReplicaNotConfiguredException(String message) {
+    public ReplicaNotAvailableException(String message) {
         super(message);
     }
 
-    public ReplicaNotConfiguredException(String message, Throwable cause) {
+    public ReplicaNotAvailableException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public ReplicaNotConfiguredException(Throwable cause) {
+    public ReplicaNotAvailableException(Throwable cause) {
         super(cause);
     }
 }

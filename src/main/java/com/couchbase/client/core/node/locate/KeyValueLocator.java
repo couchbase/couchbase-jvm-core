@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.node.locate;
 
+import com.couchbase.client.core.ReplicaNotAvailableException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
@@ -165,6 +166,12 @@ public class KeyValueLocator implements Locator {
     /**
      * Fail observables because the partitions do not match up.
      *
+     * If the replica is not even available in the configuration (identified by a -2 node index),
+     * it is clear that this replica is not configured. If a -1 is returned it is configured, but
+     * currently not available (not enough nodes in the cluster, for example if a node is seen down,
+     * after a failover, or during rebalance. Replica partitions in general take longer to heal than
+     * active partitions, since they are sacrificed for application availability.
+     *
      * @param nodeId the current node id of the partition
      * @param request the request to error
      * @param name the name of the bucket
@@ -185,8 +192,12 @@ public class KeyValueLocator implements Locator {
 
         if (nodeId == -1) {
             if (request instanceof ObserveRequest) {
-                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                request.observable().onError(new ReplicaNotAvailableException("Replica number "
                         + ((ObserveRequest) request).replica() + " not available for bucket " + name));
+                return null;
+            } else if (request instanceof ReplicaGetRequest) {
+                request.observable().onError(new ReplicaNotAvailableException("Replica number "
+                        + ((ReplicaGetRequest) request).replica() + " not available for bucket " + name));
                 return null;
             }
 
