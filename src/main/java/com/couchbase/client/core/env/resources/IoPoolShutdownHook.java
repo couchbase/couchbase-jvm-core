@@ -51,18 +51,22 @@ public class IoPoolShutdownHook implements ShutdownHook {
                     @Override
                     public void operationComplete(final Future future) throws Exception {
                         if (!subscriber.isUnsubscribed()) {
-                            if (future.isSuccess()) {
-                                subscriber.onNext(true);
-                                shutdown = true;
-                                subscriber.onCompleted();
-                            } else {
-                                subscriber.onError(future.cause());
+                            try {
+                                if (future.isSuccess()) {
+                                    subscriber.onNext(true);
+                                    shutdown = true;
+                                    subscriber.onCompleted();
+                                } else {
+                                    subscriber.onError(future.cause());
+                                }
+                            } catch (Exception ex) {
+                                subscriber.onError(ex);
                             }
                         }
                     }
                 });
             }
-        });
+        }).onErrorResumeNext(Observable.just(true));
     }
 
     @Override
