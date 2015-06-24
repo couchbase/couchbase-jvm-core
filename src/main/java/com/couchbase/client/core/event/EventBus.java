@@ -45,4 +45,14 @@ public interface EventBus {
      */
     void publish(CouchbaseEvent event);
 
+    /**
+     * Checks if the event bus has subscribers.
+     *
+     * This method can be utilized on the publisher side to avoid complex event creation when there is no one
+     * on the other side listening and the event would be discarded immediately afterwards.
+     *
+     * @return true if it has subscribers, false otherwise.
+     */
+    boolean hasSubscribers();
+
 }
