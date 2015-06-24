@@ -29,7 +29,6 @@ import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.dcp.AbstractDCPRequest;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
@@ -40,6 +39,7 @@ import com.couchbase.client.core.message.dcp.RemoveMessage;
 import com.couchbase.client.core.message.dcp.SnapshotMarkerMessage;
 import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
@@ -315,6 +315,11 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         DCPStream stream = new DCPStream(streamId, bucket);
         streams.put(streamId, stream);
         return streamId;
+    }
+
+    @Override
+    protected ServiceType serviceType() {
+        return ServiceType.DCP;
     }
 
 }

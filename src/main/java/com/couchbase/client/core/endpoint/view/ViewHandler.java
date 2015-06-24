@@ -26,8 +26,6 @@ import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.util.ClosingPositionBufProcessor;
-import com.couchbase.client.core.lang.Tuple;
-import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -42,6 +40,7 @@ import com.couchbase.client.core.message.view.UpsertDesignDocumentResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
 import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.message.view.ViewRequest;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
@@ -585,5 +584,10 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         protected KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
             super(status, request);
         }
+    }
+
+    @Override
+    protected ServiceType serviceType() {
+        return ServiceType.VIEW;
     }
 }

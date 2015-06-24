@@ -62,6 +62,7 @@ import com.couchbase.client.core.message.kv.UnlockRequest;
 import com.couchbase.client.core.message.kv.UnlockResponse;
 import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.message.kv.UpsertResponse;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
@@ -664,5 +665,10 @@ public class KeyValueHandler
         public KeepAliveResponse(ResponseStatus status, short serverStatusCode, CouchbaseRequest request) {
             super(status, serverStatusCode, null, null, request);
         }
+    }
+
+    @Override
+    protected ServiceType serviceType() {
+        return ServiceType.BINARY;
     }
 }
