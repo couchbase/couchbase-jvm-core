@@ -858,7 +858,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         /**
-         * Sets the {@Delay} for retries of requests (default value is a delay growing exponentially
+         * Sets the {@link Delay} for retries of requests (default value is a delay growing exponentially
          * between 100us and 100ms).
          */
         public Builder retryDelay(final Delay retryDelay) {
