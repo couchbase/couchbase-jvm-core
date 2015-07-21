@@ -150,6 +150,10 @@ public class DefaultCoreEnvironmentTest {
         ThreadInfo[] dump = mx.getThreadInfo(mx.getAllThreadIds());
         Set<String> names = new HashSet<String>(dump.length);
         for (ThreadInfo threadInfo : dump) {
+            if (threadInfo == null || threadInfo.getThreadName() == null) {
+                continue;
+            }
+
             names.add(threadInfo.getThreadName());
         }
         return names;
