@@ -30,9 +30,12 @@ import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.observe.Observe;
+import com.couchbase.client.core.metrics.DefaultLatencyMetricsCollectorConfig;
 import com.couchbase.client.core.metrics.DefaultMetricsCollectorConfig;
+import com.couchbase.client.core.metrics.LatencyMetricsCollectorConfig;
 import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.MetricsCollectorConfig;
+import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.metrics.SystemMetricsCollector;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
@@ -182,6 +185,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook coreSchedulerShutdownHook;
 
     private final MetricsCollector systemMetricsCollector;
+    private final NetworkLatencyMetricsCollector networkLatencyMetricsCollector;
 
     protected DefaultCoreEnvironment(final Builder builder) {
         if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
@@ -264,6 +268,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 ? DefaultMetricsCollectorConfig.create()
                 : builder.systemMetricsCollectorConfig
         );
+        this.networkLatencyMetricsCollector = new NetworkLatencyMetricsCollector(
+            eventBus,
+            coreScheduler,
+            builder.networkLatencyMetricsCollectorConfig == null
+                ? DefaultLatencyMetricsCollectorConfig.create()
+                : builder.networkLatencyMetricsCollectorConfig
+        );
     }
 
     public static DefaultCoreEnvironment create() {
@@ -312,9 +323,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @SuppressWarnings("unchecked")
     public Observable<Boolean> shutdown() {
         return Observable.mergeDelayError(
-                ioPoolShutdownHook.shutdown(),
-                coreSchedulerShutdownHook.shutdown(),
-                Observable.just(systemMetricsCollector.shutdown())
+            ioPoolShutdownHook.shutdown(),
+            coreSchedulerShutdownHook.shutdown(),
+            Observable.just(systemMetricsCollector.shutdown()),
+            Observable.just(networkLatencyMetricsCollector.shutdown())
         ).reduce(true, new Func2<Boolean, Boolean, Boolean>() {
             @Override
             public Boolean call(Boolean a, Boolean b) {
@@ -493,6 +505,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return systemMetricsCollector;
     }
 
+    @Override
+    public NetworkLatencyMetricsCollector networkLatencyMetricsCollector() {
+        return networkLatencyMetricsCollector;
+    }
+
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -533,6 +550,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean mutationTokensEnabled = MUTATION_TOKENS_ENABLED;
 
         private MetricsCollectorConfig systemMetricsCollectorConfig = null;
+        private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
 
         protected Builder() {
         }
@@ -907,6 +925,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public Builder systemMetricsCollectorConfig(MetricsCollectorConfig metricsCollectorConfig) {
             this.systemMetricsCollectorConfig = metricsCollectorConfig;
+            return this;
+        }
+
+        /**
+         * Sets a custom configuration for the {@link NetworkLatencyMetricsCollector}.
+         *
+         * @param metricsCollectorConfig the custom configuration for the collector.
+         */
+        public Builder networkLatencyMetricsCollectorConfig(LatencyMetricsCollectorConfig metricsCollectorConfig) {
+            this.networkLatencyMetricsCollectorConfig = metricsCollectorConfig;
             return this;
         }
 

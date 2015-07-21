@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,34 +19,25 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
+
 package com.couchbase.client.core.metrics;
 
 /**
- * A generic metrics collector.
+ * A collector which collects and emits latency measurements.
  *
  * @author Michael Nitschinger
  * @since 1.2.0
  */
-public interface MetricsCollector {
+public interface LatencyMetricsCollector<I extends LatencyMetricsIdentifier> extends MetricsCollector {
 
     /**
-     * Its high-level configuration.
+     * Records a latency for the given identifier.
+     *
+     * @param identifier the unique identifier to use.
+     * @param latency the latency to record for it.
      */
-    MetricsCollectorConfig config();
+    void record(I identifier, long latency);
 
-    /**
-     * Shuts down the collector (non-reversible) and frees bound resources.
-     */
-    boolean shutdown();
-
-    /**
-     * True if this collector actually emits something.
-     */
-    boolean isEnabled();
-
-    /**
-     * Triggers the immediate emission of whatever is currently collected. Useful for testing.
-     */
-    void triggerEmit();
-
+    @Override
+    LatencyMetricsCollectorConfig config();
 }

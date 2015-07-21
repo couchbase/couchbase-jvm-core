@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,34 +19,30 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
+
 package com.couchbase.client.core.metrics;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * A generic metrics collector.
+ * Additional configuration for the latency metrics collector.
  *
  * @author Michael Nitschinger
  * @since 1.2.0
  */
-public interface MetricsCollector {
+public interface LatencyMetricsCollectorConfig extends MetricsCollectorConfig {
 
     /**
-     * Its high-level configuration.
+     * The target unit for the emitted latencies.
+     *
+     * @return the target unit to emit.
      */
-    MetricsCollectorConfig config();
+    TimeUnit targetUnit();
 
     /**
-     * Shuts down the collector (non-reversible) and frees bound resources.
+     * The percentiles which should be exposed in the metric.
+     *
+     * @return the percentiles to expose.
      */
-    boolean shutdown();
-
-    /**
-     * True if this collector actually emits something.
-     */
-    boolean isEnabled();
-
-    /**
-     * Triggers the immediate emission of whatever is currently collected. Useful for testing.
-     */
-    void triggerEmit();
-
+    Double[] targetPercentiles();
 }

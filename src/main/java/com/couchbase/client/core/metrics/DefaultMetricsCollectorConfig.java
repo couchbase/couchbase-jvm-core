@@ -45,7 +45,7 @@ public class DefaultMetricsCollectorConfig implements MetricsCollectorConfig {
         return new Builder();
     }
 
-    private DefaultMetricsCollectorConfig(Builder builder) {
+    protected DefaultMetricsCollectorConfig(Builder builder) {
         emitFrequency = builder.emitFrequency;
         emitFrequencyUnit = builder.emitFrequencyUnit;
     }
@@ -68,11 +68,21 @@ public class DefaultMetricsCollectorConfig implements MetricsCollectorConfig {
         protected Builder() {
         }
 
+        /**
+         * Overrides the default emit frequency for this metric collector.
+         *
+         * @param emitFrequency the custom emit frequency.
+         */
         public Builder emitFrequency(long emitFrequency) {
             this.emitFrequency = emitFrequency;
             return this;
         }
 
+        /**
+         * Overrides the default emit frequency unit for this metric collector.
+         *
+         * @param emitFrequencyUnit the custom emit frequency unit.
+         */
         public Builder emitFrequencyUnit(TimeUnit emitFrequencyUnit) {
             this.emitFrequencyUnit = emitFrequencyUnit;
             return this;

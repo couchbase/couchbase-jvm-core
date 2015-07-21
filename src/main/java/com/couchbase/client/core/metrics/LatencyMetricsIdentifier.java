@@ -22,31 +22,10 @@
 package com.couchbase.client.core.metrics;
 
 /**
- * A generic metrics collector.
+ * A class which uniquely identifies a latency metric.
  *
  * @author Michael Nitschinger
  * @since 1.2.0
  */
-public interface MetricsCollector {
-
-    /**
-     * Its high-level configuration.
-     */
-    MetricsCollectorConfig config();
-
-    /**
-     * Shuts down the collector (non-reversible) and frees bound resources.
-     */
-    boolean shutdown();
-
-    /**
-     * True if this collector actually emits something.
-     */
-    boolean isEnabled();
-
-    /**
-     * Triggers the immediate emission of whatever is currently collected. Useful for testing.
-     */
-    void triggerEmit();
-
+public interface LatencyMetricsIdentifier extends Comparable<LatencyMetricsIdentifier> {
 }

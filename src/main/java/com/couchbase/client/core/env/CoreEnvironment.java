@@ -24,6 +24,7 @@ package com.couchbase.client.core.env;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.message.observe.Observe;
 import com.couchbase.client.core.metrics.MetricsCollector;
+import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
@@ -315,4 +316,12 @@ public interface CoreEnvironment {
      * @return the collector.
      */
     MetricsCollector systemMetricsCollector();
+
+    /**
+     * Returns the collector responsible for aggregating and publishing network latency information.
+     *
+     * @return the collector.
+     */
+    NetworkLatencyMetricsCollector networkLatencyMetricsCollector();
+
 }
