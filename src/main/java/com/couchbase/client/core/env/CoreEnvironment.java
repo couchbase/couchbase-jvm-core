@@ -23,6 +23,7 @@ package com.couchbase.client.core.env;
 
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.message.observe.Observe;
+import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
@@ -307,4 +308,11 @@ public interface CoreEnvironment {
      * @return true if enabled on the client side.
      */
     boolean mutationTokensEnabled();
+
+    /**
+     * Returns the collector responsible for aggregating and publishing system information like gc and memory.
+     *
+     * @return the collector.
+     */
+    MetricsCollector systemMetricsCollector();
 }
