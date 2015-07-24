@@ -29,7 +29,7 @@ public class BucketStreamState {
     /**
      * Default state, which matches all changes in the stream.
      */
-    public static final BucketStreamState BLANK = new BucketStreamState(0, 0, 0xffffffff, 0, 0);
+    public static final BucketStreamState BLANK = new BucketStreamState(0, 0, 0xffffffff, 0, 0xffffffff);
 
     /**
      * A unique identifier that is generated that is assigned to each VBucket.
@@ -89,5 +89,16 @@ public class BucketStreamState {
 
     public long snapshotEndSequenceNumber() {
         return snapshotEndSequenceNumber;
+    }
+
+    public String toString() {
+        return "BucketStreamState{" +
+                "vbucketUUID=" + vbucketUUID +
+                ", startSequenceNumber=" + startSequenceNumber +
+                ", endSequenceNumber=" + endSequenceNumber +
+                ", snapshotStartSequenceNumber=" + snapshotStartSequenceNumber +
+                ", snapshotEndSequenceNumber=" + snapshotEndSequenceNumber +
+                '}';
+
     }
 }
