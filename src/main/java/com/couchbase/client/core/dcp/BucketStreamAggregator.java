@@ -23,6 +23,8 @@
 package com.couchbase.client.core.dcp;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
@@ -42,6 +44,8 @@ import rx.functions.Func1;
  * @author Michael Nitschinger
  * @since 1.2.0
  */
+@InterfaceStability.Experimental
+@InterfaceAudience.Public
 public class BucketStreamAggregator {
 
     private final ClusterFacade core;

@@ -22,9 +22,15 @@
 
 package com.couchbase.client.core.dcp;
 
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
+
 /**
  * @author Sergey Avseyev
+ * @since 1.2.0
  */
+@InterfaceStability.Experimental
+@InterfaceAudience.Public
 public class BucketStreamState {
     /**
      * Default state, which matches all changes in the stream.
