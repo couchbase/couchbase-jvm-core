@@ -38,11 +38,33 @@ import com.couchbase.client.core.message.ResponseStatus;
 @InterfaceAudience.Private
 public abstract class AbstractDCPResponse extends AbstractCouchbaseResponse implements DCPResponse {
     /**
+     * The partition (vBucket) of the document.
+     */
+    private short partition;
+
+    /**
      * Creates {@link AbstractDCPResponse}.
      *
-     * @param status  the status of the response.
+     * @param status the status of the response.
      */
     public AbstractDCPResponse(ResponseStatus status, CouchbaseRequest request) {
         super(status, request);
+    }
+
+    @Override
+    public short partition() {
+        if (partition == -1) {
+            throw new IllegalStateException("Partition requested but not set beforehand");
+        }
+        return partition;
+    }
+
+    @Override
+    public DCPResponse partition(short partition) {
+        if (partition < 0) {
+            throw new IllegalArgumentException("Partition must be larger than or equal to zero");
+        }
+        this.partition = partition;
+        return this;
     }
 }

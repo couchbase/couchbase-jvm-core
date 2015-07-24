@@ -31,6 +31,7 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.dcp.AbstractDCPRequest;
 import com.couchbase.client.core.message.dcp.DCPRequest;
+import com.couchbase.client.core.message.dcp.DCPResponse;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
 import com.couchbase.client.core.message.dcp.MutationMessage;
 import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
@@ -131,7 +132,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             throws Exception {
         DCPRequest request = currentRequest();
 
-        CouchbaseResponse response = null;
+        DCPResponse response = null;
 
         if (msg.getOpcode() == OP_OPEN_CONNECTION && request instanceof OpenConnectionRequest) {
             response = new OpenConnectionResponse(ResponseStatusConverter.fromBinary(msg.getStatus()), request);
@@ -182,6 +183,9 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             } finally {
                 currentRequest(oldRequest);
             }
+        }
+        if (request != null && request.partition() >= 0 && response != null) {
+            response.partition(request.partition());
         }
 
         if (response != null || request == null) {

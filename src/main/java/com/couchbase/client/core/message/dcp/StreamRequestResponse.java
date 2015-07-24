@@ -46,8 +46,8 @@ public class StreamRequestResponse extends AbstractDCPResponse {
      * @param status  the status of the response.
      * @param request
      */
-    public StreamRequestResponse(ResponseStatus status, Observable<DCPRequest> stream,
-                                 List<FailoverLogEntry> failoverLog, CouchbaseRequest request) {
+    public StreamRequestResponse(final ResponseStatus status, final Observable<DCPRequest> stream,
+                                 final List<FailoverLogEntry> failoverLog, final CouchbaseRequest request) {
         super(status, request);
         this.stream = stream;
         this.failoverLog = failoverLog;
