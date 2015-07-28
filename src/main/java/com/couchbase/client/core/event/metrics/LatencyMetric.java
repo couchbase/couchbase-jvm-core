@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.event.metrics;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -80,5 +81,20 @@ public class LatencyMetric {
         sb.append(", percentiles=").append(percentiles);
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Exports this object to a plain map structure which can be easily converted into other
+     * target formats.
+     *
+     * @return the exported structure.
+     */
+    public Map<String, Object> export() {
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("min", min());
+        result.put("max", max());
+        result.put("count", count());
+        result.put("percentiles", percentiles());
+        return result;
     }
 }

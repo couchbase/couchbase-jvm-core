@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.event;
 
+import java.util.Map;
+
 /**
  * Defines the generic couchbase event pushed through the event bus.
  *
@@ -35,5 +37,12 @@ public interface CouchbaseEvent {
      * @return the event type.
      */
     EventType type();
+
+    /**
+     * Converts the event into a map representation of simple types.
+     *
+     * @return the map representation.
+     */
+    Map<String, Object> toMap();
 
 }

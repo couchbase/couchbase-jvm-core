@@ -26,6 +26,7 @@ import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
+import com.couchbase.client.core.utils.Events;
 
 import java.net.InetAddress;
 import java.util.HashSet;
@@ -72,6 +73,20 @@ public class ConfigUpdatedEvent implements CouchbaseEvent {
     @Override
     public EventType type() {
         return EventType.SYSTEM;
+    }
+
+    @Override
+    public Map<String, Object> toMap() {
+        Map<String, Object> result = Events.identityMap(this);
+        result.put("openBuckets", openBuckets());
+
+        Set<String> clusterNodes = new HashSet<String>();
+        for (InetAddress node : clusterNodes()) {
+            clusterNodes.add(node.toString());
+        }
+        result.put("clusterNodes", clusterNodes);
+
+        return result;
     }
 
 }

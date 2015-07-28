@@ -23,6 +23,9 @@ package com.couchbase.client.core.event.system;
 
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
+import com.couchbase.client.core.utils.Events;
+
+import java.util.Map;
 
 /**
  * Event published when a bucket is opened.
@@ -53,5 +56,12 @@ public class BucketOpenedEvent implements CouchbaseEvent {
         sb.append("name='").append(name).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public Map<String, Object> toMap() {
+        Map<String, Object> result = Events.identityMap(this);
+        result.put("name", name());
+        return result;
     }
 }

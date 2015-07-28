@@ -23,6 +23,7 @@ package com.couchbase.client.core.event.metrics;
 
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
+import com.couchbase.client.core.utils.Events;
 
 import java.util.Map;
 
@@ -56,5 +57,11 @@ public class SystemMetricsEvent implements CouchbaseEvent {
         return sb.toString();
     }
 
+    @Override
+    public Map<String, Object> toMap() {
+        Map<String, Object> result = Events.identityMap(this);
+        result.putAll(all());
+        return result;
+    }
 
 }

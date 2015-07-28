@@ -41,6 +41,13 @@ public class DefaultMetricsCollectorConfig implements MetricsCollectorConfig {
         return new DefaultMetricsCollectorConfig(builder());
     }
 
+    public static DefaultMetricsCollectorConfig create(long emitFrequency, TimeUnit emitFrequencyUnit) {
+        Builder builder = builder();
+        builder.emitFrequency(emitFrequency);
+        builder.emitFrequencyUnit(emitFrequencyUnit);
+        return builder.build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }
