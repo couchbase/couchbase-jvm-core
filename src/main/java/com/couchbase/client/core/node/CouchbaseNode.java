@@ -44,6 +44,7 @@ import rx.functions.Func1;
 
 import java.net.InetAddress;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The general implementation of a {@link Node}.
@@ -63,6 +64,11 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      * The logger used.
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Node.class);
+
+    /**
+     * The threshold above which reverse DNS lookup is logged as being too slow (in milliseconds).
+     */
+    private static final long DNS_RESOLUTION_THRESHOLD = TimeUnit.SECONDS.toMillis(1);
 
     /**
      * The hostname or IP address of the node.
@@ -107,6 +113,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         this.responseBuffer = responseBuffer;
         this.eventBus = environment.eventBus();
         this.serviceStates = new ServiceStateZipper(LifecycleState.DISCONNECTED);
+
+        //JVMCBC-229: eagerly trigger and time a reverse DNS lookup
+        long lookupStart = System.nanoTime();
+        String lookupResult = hostname.getHostName();
+        long lookupDurationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lookupStart);
+        if (lookupDurationMs >= DNS_RESOLUTION_THRESHOLD) {
+            LOGGER.warn("DNS Reverse Lookup of " + lookupResult + " is slow, took " + lookupDurationMs + "ms");
+        }
 
         serviceStates.states().subscribe(new Action1<LifecycleState>() {
             @Override
