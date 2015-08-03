@@ -34,6 +34,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.ObserveRequest;
+import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
@@ -156,8 +157,10 @@ public class KeyValueLocator implements Locator {
     private static int calculateNodeId(int partitionId, BinaryRequest request, CouchbaseBucketConfig config) {
         if (request instanceof ReplicaGetRequest) {
             return config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1);
-        } else if (request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0){
+        } else if (request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0) {
             return config.nodeIndexForReplica(partitionId, ((ObserveRequest) request).replica() - 1);
+        } else if (request instanceof ObserveSeqnoRequest && ((ObserveSeqnoRequest) request).replica() > 0) {
+            return config.nodeIndexForReplica(partitionId, ((ObserveSeqnoRequest) request).replica() - 1);
         } else {
             return config.nodeIndexForMaster(partitionId);
         }
@@ -185,6 +188,9 @@ public class KeyValueLocator implements Locator {
             } else if (request instanceof ObserveRequest) {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
                         + ((ObserveRequest) request).replica() + " not configured for bucket " + name));
+            } else if (request instanceof ObserveSeqnoRequest) {
+                request.observable().onError(new ReplicaNotConfiguredException("Replica number "
+                        + ((ObserveSeqnoRequest) request).replica() + " not configured for bucket " + name));
             }
 
             return null;
@@ -198,6 +204,10 @@ public class KeyValueLocator implements Locator {
             } else if (request instanceof ReplicaGetRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
                         + ((ReplicaGetRequest) request).replica() + " not available for bucket " + name));
+                return null;
+            } else if (request instanceof ObserveSeqnoRequest) {
+                request.observable().onError(new ReplicaNotAvailableException("Replica number "
+                        + ((ObserveSeqnoRequest) request).replica() + " not available for bucket " + name));
                 return null;
             }
 

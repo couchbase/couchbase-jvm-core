@@ -40,6 +40,7 @@ import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.kv.BinaryStoreRequest;
 import com.couchbase.client.core.message.kv.CounterRequest;
 import com.couchbase.client.core.message.kv.CounterResponse;
+import com.couchbase.client.core.message.kv.FailoverObserveSeqnoResponse;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
 import com.couchbase.client.core.message.kv.GetRequest;
@@ -47,8 +48,10 @@ import com.couchbase.client.core.message.kv.GetResponse;
 import com.couchbase.client.core.message.kv.InsertRequest;
 import com.couchbase.client.core.message.kv.InsertResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
+import com.couchbase.client.core.message.kv.NoFailoverObserveSeqnoResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
+import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.PrependRequest;
 import com.couchbase.client.core.message.kv.PrependResponse;
 import com.couchbase.client.core.message.kv.RemoveRequest;
@@ -110,6 +113,7 @@ public class KeyValueHandler
     public static final byte OP_COUNTER_DECR = BinaryMemcacheOpcodes.DECREMENT;
     public static final byte OP_UNLOCK = (byte) 0x95;
     public static final byte OP_OBSERVE = (byte) 0x92;
+    public static final byte OP_OBSERVE_SEQ = (byte) 0x91;
     public static final byte OP_TOUCH = BinaryMemcacheOpcodes.TOUCH;
     public static final byte OP_APPEND = BinaryMemcacheOpcodes.APPEND;
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
@@ -160,6 +164,8 @@ public class KeyValueHandler
             request = handleUnlockRequest((UnlockRequest) msg);
         } else if (msg instanceof ObserveRequest) {
             request = handleObserveRequest(ctx, (ObserveRequest) msg);
+        } else if (msg instanceof ObserveSeqnoRequest) {
+            request = handleObserveSeqnoRequest(ctx, (ObserveSeqnoRequest) msg);
         } else if (msg instanceof GetBucketConfigRequest) {
             request = handleGetBucketConfigRequest();
         } else if (msg instanceof AppendRequest) {
@@ -182,7 +188,9 @@ public class KeyValueHandler
         // Retain just the content, since a response could be "Not my Vbucket".
         // The response handler checks the status and then releases if needed.
         // Observe has content, but not external, so it should not be retained.
-        if (!(msg instanceof ObserveRequest) && (request instanceof FullBinaryMemcacheRequest)) {
+        if (!(msg instanceof ObserveRequest)
+            && !(msg instanceof ObserveSeqnoRequest)
+            && (request instanceof FullBinaryMemcacheRequest)) {
             ((FullBinaryMemcacheRequest) request).content().retain();
         }
 
@@ -395,6 +403,17 @@ public class KeyValueHandler
         return request;
     }
 
+    private static BinaryMemcacheRequest handleObserveSeqnoRequest(final ChannelHandlerContext ctx,
+        final ObserveSeqnoRequest msg) {
+        ByteBuf content = ctx.alloc().buffer();
+        content.writeLong(msg.vbucketUUID());
+
+        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest("", Unpooled.EMPTY_BUFFER, content);
+        request.setOpcode(OP_OBSERVE_SEQ);
+        request.setTotalBodyLength(content.readableBytes());
+        return request;
+    }
+
     private static BinaryMemcacheRequest handleAppendRequest(final AppendRequest msg) {
         String key = msg.key();
         short keyLength = (short) key.getBytes(CharsetUtil.UTF_8).length;
@@ -559,6 +578,46 @@ public class KeyValueHandler
             releaseContent(content);
             response = new ObserveResponse(status, statusCode, observed, ((ObserveRequest) request).master(),
                     observedCas, bucket, request);
+        } else if (request instanceof ObserveSeqnoRequest) {
+            if (status.isSuccess()) {
+                byte format = content.readByte();
+                switch(format) {
+                    case 0:
+                        response = new NoFailoverObserveSeqnoResponse(
+                            ((ObserveSeqnoRequest) request).master(),
+                            content.readShort(),
+                            content.readLong(),
+                            content.readLong(),
+                            content.readLong(),
+                            status,
+                            statusCode,
+                            bucket,
+                            request
+                        );
+                        break;
+                    case 1:
+                        response = new FailoverObserveSeqnoResponse(
+                            ((ObserveSeqnoRequest) request).master(),
+                            content.readShort(),
+                            content.readLong(),
+                            content.readLong(),
+                            content.readLong(),
+                            content.readLong(),
+                            content.readLong(),
+                            status,
+                            statusCode,
+                            bucket,
+                            request
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown format for observe-seq: " + format);
+                }
+            } else {
+                response = new NoFailoverObserveSeqnoResponse(((ObserveSeqnoRequest) request).master(), (short) 0, 0,
+                    0, 0, status, statusCode, bucket, request);
+            }
+            releaseContent(content);
         }
 
         return response;
