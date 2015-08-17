@@ -23,6 +23,7 @@ package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.config.DefaultClusterConfig;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -37,10 +38,15 @@ import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import org.junit.Test;
+import org.mockito.Mockito;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -288,6 +294,49 @@ public class RequestHandlerTest {
         verify(mockEvent).setRequest(null);
 
         response.toBlocking().single();
+    }
+
+    @Test
+    public void shouldNotFailReconfigureOnRemoveAllRaceCondition() throws InterruptedException {
+        final ClusterConfig config = mock(DefaultClusterConfig.class);
+        when(config.bucketConfigs()).thenReturn(Collections.<String, BucketConfig>emptyMap());
+        final Subject<ClusterConfig, ClusterConfig> configObservable = PublishSubject.<ClusterConfig>create();
+
+        //this simulates the race condition in JVMCBC-231, otherwise calls all methods of HashSet
+        final Set<Node> nodes = Mockito.spy(new HashSet<Node>());
+        when(nodes.isEmpty()).thenReturn(false);
+
+        final RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+
+        //mock and add the nodes
+        final Node node1 = mock(Node.class);
+        when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
+        when(node1.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
+        final Node node2 = mock(Node.class);
+        when(node2.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
+        when(node2.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
+        final Node node3 = mock(Node.class);
+        when(node3.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
+        when(node3.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
+        handler.addNode(node1).toBlocking().single();
+        handler.addNode(node2).toBlocking().single();
+        handler.addNode(node3).toBlocking().single();
+
+        //first reconfiguration with empty node list triggers the removal of all in the nodes set...
+        try {
+            handler.reconfigure(config).toBlocking().single();
+        } catch (NoSuchElementException e) {
+            fail("failed to remove all nodes on first pass - " + e);
+        }
+
+        //... yet second empty node list configuration will still go into the branch where the nodes set is
+        //seen as empty (race condition previously encountered)
+        try {
+            handler.reconfigure(config).toBlocking().single();
+        } catch (NoSuchElementException e) {
+            fail("race condition on removing all during reconfigure - " + e);
+        }
+        //OK - the effect of the race condition should have been avoided there by dong a snapshot
     }
 
     /**
