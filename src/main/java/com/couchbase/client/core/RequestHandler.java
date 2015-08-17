@@ -363,12 +363,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         LOGGER.debug("Starting reconfiguration.");
 
         if (config.bucketConfigs().values().isEmpty()) {
-            LOGGER.debug("No node found in config, disconnecting all nodes.");
-            if (nodes.isEmpty()) {
+            LOGGER.debug("No open bucket found in config, disconnecting all nodes.");
+            //JVMCBC-231: a race condition can happen where the nodes set is seen as
+            // not empty, while the subsequent Observable.from is not, failing in calling last()
+            Set<Node> snapshotNodes;
+            synchronized (nodes) {
+                snapshotNodes = new HashSet<Node>(nodes);
+            }
+            if (snapshotNodes.isEmpty()) {
                 return Observable.just(config);
             }
 
-            return Observable.from(new HashSet<Node>(nodes)).doOnNext(new Action1<Node>() {
+            return Observable.from(snapshotNodes).doOnNext(new Action1<Node>() {
                 @Override
                 public void call(Node node) {
                     removeNode(node);
