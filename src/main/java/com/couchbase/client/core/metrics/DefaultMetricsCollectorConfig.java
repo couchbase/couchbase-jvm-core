@@ -52,7 +52,7 @@ public class DefaultMetricsCollectorConfig implements MetricsCollectorConfig {
         return builder.build();
     }
 
-    public static Builder builder() {
+    private static Builder builder() {
         return new Builder();
     }
 
