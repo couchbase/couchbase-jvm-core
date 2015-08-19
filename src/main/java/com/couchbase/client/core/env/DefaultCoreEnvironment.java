@@ -36,7 +36,7 @@ import com.couchbase.client.core.metrics.LatencyMetricsCollectorConfig;
 import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.MetricsCollectorConfig;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
-import com.couchbase.client.core.metrics.SystemMetricsCollector;
+import com.couchbase.client.core.metrics.RuntimeMetricsCollector;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
@@ -184,7 +184,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook ioPoolShutdownHook;
     private final ShutdownHook coreSchedulerShutdownHook;
 
-    private final MetricsCollector systemMetricsCollector;
+    private final MetricsCollector runtimeMetricsCollector;
     private final NetworkLatencyMetricsCollector networkLatencyMetricsCollector;
 
     protected DefaultCoreEnvironment(final Builder builder) {
@@ -261,12 +261,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                     : builder.schedulerShutdownHook;
         }
         this.eventBus = builder.eventBus == null ? new DefaultEventBus(coreScheduler) : builder.eventBus;
-        this.systemMetricsCollector = new SystemMetricsCollector(
+        this.runtimeMetricsCollector = new RuntimeMetricsCollector(
             eventBus,
             coreScheduler,
-            builder.systemMetricsCollectorConfig == null
+            builder.runtimeMetricsCollectorConfig == null
                 ? DefaultMetricsCollectorConfig.create()
-                : builder.systemMetricsCollectorConfig
+                : builder.runtimeMetricsCollectorConfig
         );
         this.networkLatencyMetricsCollector = new NetworkLatencyMetricsCollector(
             eventBus,
@@ -325,7 +325,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return Observable.mergeDelayError(
             ioPoolShutdownHook.shutdown(),
             coreSchedulerShutdownHook.shutdown(),
-            Observable.just(systemMetricsCollector.shutdown()),
+            Observable.just(runtimeMetricsCollector.shutdown()),
             Observable.just(networkLatencyMetricsCollector.shutdown())
         ).reduce(true, new Func2<Boolean, Boolean, Boolean>() {
             @Override
@@ -501,8 +501,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public MetricsCollector systemMetricsCollector() {
-        return systemMetricsCollector;
+    public MetricsCollector runtimeMetricsCollector() {
+        return runtimeMetricsCollector;
     }
 
     @Override
@@ -549,7 +549,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean tcpNodelayEnabled = TCP_NODELAY_ENALED;
         private boolean mutationTokensEnabled = MUTATION_TOKENS_ENABLED;
 
-        private MetricsCollectorConfig systemMetricsCollectorConfig = null;
+        private MetricsCollectorConfig runtimeMetricsCollectorConfig = null;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
 
         protected Builder() {
@@ -919,12 +919,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         /**
-         * Sets a custom configuration for the {@link SystemMetricsCollector}.
+         * Sets a custom configuration for the {@link RuntimeMetricsCollector}.
          *
          * @param metricsCollectorConfig the custom configuration
          */
-        public Builder systemMetricsCollectorConfig(MetricsCollectorConfig metricsCollectorConfig) {
-            this.systemMetricsCollectorConfig = metricsCollectorConfig;
+        public Builder runtimeMetricsCollectorConfig(MetricsCollectorConfig metricsCollectorConfig) {
+            this.runtimeMetricsCollectorConfig = metricsCollectorConfig;
             return this;
         }
 

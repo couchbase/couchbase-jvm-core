@@ -311,11 +311,11 @@ public interface CoreEnvironment {
     boolean mutationTokensEnabled();
 
     /**
-     * Returns the collector responsible for aggregating and publishing system information like gc and memory.
+     * Returns the collector responsible for aggregating and publishing runtime information like gc and memory.
      *
      * @return the collector.
      */
-    MetricsCollector systemMetricsCollector();
+    MetricsCollector runtimeMetricsCollector();
 
     /**
      * Returns the collector responsible for aggregating and publishing network latency information.
