@@ -25,8 +25,12 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.env.resources.IoPoolShutdownHook;
 import com.couchbase.client.core.env.resources.NoOpShutdownHook;
 import com.couchbase.client.core.env.resources.ShutdownHook;
+import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.DefaultEventBus;
 import com.couchbase.client.core.event.EventBus;
+import com.couchbase.client.core.event.EventType;
+import com.couchbase.client.core.event.consumers.LoggingConsumer;
+import com.couchbase.client.core.logging.CouchbaseLogLevel;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.observe.Observe;
@@ -45,6 +49,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.Scheduler;
+import rx.Subscription;
+import rx.functions.Func1;
 import rx.functions.Func2;
 
 import java.util.Properties;
@@ -186,6 +192,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     private final MetricsCollector runtimeMetricsCollector;
     private final NetworkLatencyMetricsCollector networkLatencyMetricsCollector;
+    private final Subscription metricsCollectorSubscription;
 
     protected DefaultCoreEnvironment(final Builder builder) {
         if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
@@ -275,6 +282,20 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 ? DefaultLatencyMetricsCollectorConfig.create()
                 : builder.networkLatencyMetricsCollectorConfig
         );
+
+        if (builder.defaultMetricsLoggingConsumer != null) {
+            metricsCollectorSubscription = eventBus
+                .get()
+                .filter(new Func1<CouchbaseEvent, Boolean>() {
+                    @Override
+                    public Boolean call(CouchbaseEvent evt) {
+                        return evt.type().equals(EventType.METRIC);
+                    }
+                })
+                .subscribe(builder.defaultMetricsLoggingConsumer);
+        } else {
+            metricsCollectorSubscription = null;
+        }
     }
 
     public static DefaultCoreEnvironment create() {
@@ -322,6 +343,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     @SuppressWarnings("unchecked")
     public Observable<Boolean> shutdown() {
+        if (metricsCollectorSubscription != null && !metricsCollectorSubscription.isUnsubscribed()) {
+            metricsCollectorSubscription.unsubscribe();
+        }
+
         return Observable.mergeDelayError(
             ioPoolShutdownHook.shutdown(),
             coreSchedulerShutdownHook.shutdown(),
@@ -551,6 +576,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig = null;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
+        private LoggingConsumer defaultMetricsLoggingConsumer = LoggingConsumer.create();
 
         protected Builder() {
         }
@@ -936,6 +962,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         public Builder networkLatencyMetricsCollectorConfig(LatencyMetricsCollectorConfig metricsCollectorConfig) {
             this.networkLatencyMetricsCollectorConfig = metricsCollectorConfig;
             return this;
+        }
+
+        public Builder defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level, LoggingConsumer.OutputFormat format) {
+            if (enabled) {
+                defaultMetricsLoggingConsumer = LoggingConsumer.create(level, format);
+            } else {
+                defaultMetricsLoggingConsumer = null;
+            }
+            return this;
+        }
+
+        public Builder defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level) {
+            return defaultMetricsLoggingConsumer(enabled, level, LoggingConsumer.DEFAULT_FORMAT);
         }
 
         public DefaultCoreEnvironment build() {
