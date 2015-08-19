@@ -37,11 +37,6 @@ public enum EventType {
     /**
      * The event is system state related.
      */
-    SYSTEM,
-
-    /**
-     * The event indicates an error or possible error.
-     */
-    ERROR
+    SYSTEM
 
 }
