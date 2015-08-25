@@ -107,9 +107,9 @@ public class NetworkMetricsTest extends ClusterDependentTest {
             } else if (metric.getKey().request().equals("UpsertRequest")) {
                 hasUpsert = true;
                 assertTrue(metric.getValue().count() >= 1);
-            } else if (metric.getKey().request().equals("GetRequest") && metric.getKey().status().equals("NOT_EXISTS")) {
+            } else if (metric.getKey().request().equals("GetRequest")) {
                 hasGet = true;
-                assertTrue(metric.getValue().count() >= 5);
+                assertTrue(metric.getValue().count() >= 1);
             }
             assertTrue(metric.getValue().max() > 0);
             assertTrue(metric.getValue().min() > 0);
