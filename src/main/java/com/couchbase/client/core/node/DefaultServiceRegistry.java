@@ -51,7 +51,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
      */
     private final Map<String, Map<ServiceType, Service>> localServices;
 
-    private volatile List<Service> serviceCache;
+    private volatile Service[] serviceCache;
 
     /**
      * Create a new {@link DefaultServiceRegistry} with custom containers.
@@ -65,7 +65,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
         final Map<String, Map<ServiceType, Service>> localServices) {
         this.globalServices = globalServices;
         this.localServices = localServices;
-        this.serviceCache = new ArrayList<Service>();
+        this.serviceCache = new Service[] {};
     }
 
     /**
@@ -126,7 +126,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
     }
 
     @Override
-    public List<Service> services() {
+    public Service[] services() {
         return serviceCache;
     }
 
@@ -140,7 +140,7 @@ public class DefaultServiceRegistry implements ServiceRegistry {
                 services.add(service);
             }
         }
-        serviceCache = services;
+        serviceCache = services.toArray(new Service[services.size()]);
     }
 
     @Override
