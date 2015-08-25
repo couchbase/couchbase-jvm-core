@@ -29,6 +29,7 @@ import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -68,6 +69,7 @@ public class KeyValueLocatorTest {
         CouchbaseBucketConfig bucketMock = mock(CouchbaseBucketConfig.class);
         when(getRequestMock.bucket()).thenReturn("bucket");
         when(getRequestMock.key()).thenReturn("key");
+        when(getRequestMock.keyBytes()).thenReturn("key".getBytes(CharsetUtil.UTF_8));
         when(configMock.bucketConfig("bucket")).thenReturn(bucketMock);
         when(bucketMock.nodes()).thenReturn(Arrays.asList(nodeInfo1, nodeInfo2));
         when(bucketMock.numberOfPartitions()).thenReturn(1024);

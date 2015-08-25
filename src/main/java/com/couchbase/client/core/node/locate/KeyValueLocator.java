@@ -38,8 +38,7 @@ import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
-import io.netty.util.CharsetUtil;
-import java.io.UnsupportedEncodingException;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -117,9 +116,8 @@ public class KeyValueLocator implements Locator {
      */
     private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
         final CouchbaseBucketConfig config) {
-        String key = request.key();
 
-        int partitionId = partitionForKey(key, config.numberOfPartitions());
+        int partitionId = partitionForKey(request.keyBytes(), config.numberOfPartitions());
         request.partition((short) partitionId);
 
         int nodeId = calculateNodeId(partitionId, request, config);
@@ -224,13 +222,9 @@ public class KeyValueLocator implements Locator {
      * @param numPartitions the number of partitions in the bucket.
      * @return the calculated partition.
      */
-    private static int partitionForKey(String key, int numPartitions) {
+    private static int partitionForKey(byte[] key, int numPartitions) {
         CRC32 crc32 = new CRC32();
-        try {
-            crc32.update(key.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.error("Unsupported encoding found, UTF-8 needed while encoding document ID {}", key);
-        }
+        crc32.update(key);
         long rv = (crc32.getValue() >> 16) & 0x7fff;
         return (int) rv &numPartitions - 1;
     }
@@ -246,7 +240,7 @@ public class KeyValueLocator implements Locator {
     private static Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
         final MemcachedBucketConfig config) {
 
-        long hash = calculateKetamaHash(request.key());
+        long hash = calculateKetamaHash(request.keyBytes());
         if (!config.ketamaNodes().containsKey(hash)) {
             SortedMap<Long, NodeInfo> tailMap = config.ketamaNodes().tailMap(hash);
             if (tailMap.isEmpty()) {
@@ -282,10 +276,10 @@ public class KeyValueLocator implements Locator {
      * @param key the key to calculate.
      * @return the calculated hash.
      */
-    private static long calculateKetamaHash(final String key) {
+    private static long calculateKetamaHash(final byte[] key) {
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
-            md5.update(key.getBytes(CharsetUtil.UTF_8));
+            md5.update(key);
             byte[] digest = md5.digest();
             long rv = ((long) (digest[3] & 0xFF) << 24)
                 | ((long) (digest[2] & 0xFF) << 16)
