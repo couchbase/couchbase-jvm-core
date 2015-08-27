@@ -77,7 +77,6 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.timeout.IdleStateEvent;
 
 import java.util.Queue;
 
@@ -692,11 +691,6 @@ public class KeyValueHandler
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent) {
-            LOGGER.debug(logIdent(ctx, endpoint()) + "Identified Idle State, signalling config reload.");
-            endpoint().signalConfigReload();
-        }
-
         if (evt instanceof ServerFeaturesEvent) {
             seqOnMutation = env().mutationTokensEnabled() &&
                 ((ServerFeaturesEvent) evt).supportedFeatures().contains(ServerFeatures.MUTATION_SEQNO);

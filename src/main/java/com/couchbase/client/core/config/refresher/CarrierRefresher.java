@@ -38,6 +38,7 @@ import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
+
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,6 +73,15 @@ public class CarrierRefresher extends AbstractRefresher {
         super(cluster);
         subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
+
+        Observable
+            .interval(10, TimeUnit.SECONDS, environment.scheduler())
+            .subscribe(new Action1<Long>() {
+                @Override
+                public void call(Long aLong) {
+                    provider().signalOutdated();
+                }
+            });
     }
 
     @Override
