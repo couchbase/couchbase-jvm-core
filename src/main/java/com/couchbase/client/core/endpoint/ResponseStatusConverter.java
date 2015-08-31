@@ -43,6 +43,7 @@ public class ResponseStatusConverter {
     public static final int HTTP_ACCEPTED = 202;
     public static final int HTTP_BAD_REQUEST = 400;
     public static final int HTTP_NOT_FOUND = 404;
+    public static final int HTTP_INTERNAL_ERROR = 500;
 
     public static final short BINARY_SUCCESS = 0x00;
     public static final short BINARY_ERR_NOT_FOUND = 0x01;
@@ -120,6 +121,9 @@ public class ResponseStatusConverter {
                 break;
             case HTTP_BAD_REQUEST:
                 status = ResponseStatus.INVALID_ARGUMENTS;
+                break;
+            case HTTP_INTERNAL_ERROR:
+                status = ResponseStatus.INTERNAL_ERROR;
                 break;
             default:
                 LOGGER.warn("Unknown ResponseStatus with Protocol HTTP: {}", code);
