@@ -71,7 +71,7 @@ public class ByteBufJsonHelper {
                 //advance from
                 from = buf.readerIndex() + found + 1;
                 //search again
-                int next = buf.bytesBefore(from, buf.readableBytes() - from, (byte) c);
+                int next = buf.bytesBefore(from, buf.readableBytes() - from + buf.readerIndex(), (byte) c);
                 if (next == -1) {
                     return -1;
                 } else {

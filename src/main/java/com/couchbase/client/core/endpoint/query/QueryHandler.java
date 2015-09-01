@@ -278,6 +278,9 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             return null;
         }
 
+        //IMPORTANT: from there on, before returning null to get more data you need to reset
+        //the cursor, since following code will consume data from the buffer.
+
         if (responseContent.readableBytes() >= MINIMUM_WINDOW_FOR_CLIENTID_TOKEN
                 && findNextChar(responseContent, ':') < MINIMUM_WINDOW_FOR_CLIENTID_TOKEN) {
             responseContent.markReaderIndex();
@@ -294,9 +297,17 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
                 }
                 //read it
                 clientId = responseContent.readSlice(clientIdSize).toString(CHARSET);
-                //advance to next token
-                responseContent.skipBytes(1);//closing quote
-                responseContent.skipBytes(findNextChar(responseContent, '"')); //next token's quote
+                //advance to next token if possible
+                //closing quote
+                boolean hasClosingQuote = responseContent.readableBytes() > 0;
+                if (hasClosingQuote) {
+                    responseContent.skipBytes(1);
+                }
+                //next token's quote
+                int openingNextToken = findNextChar(responseContent, '"');
+                if (openingNextToken > -1) {
+                    responseContent.skipBytes(openingNextToken);
+                }
             } else {
                 //reset the cursor, there was no client id
                 responseContent.resetReaderIndex();
@@ -310,6 +321,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
                 success = false;
             }
         } else {
+            //it is important to reset the readerIndex if returning null, in order to allow for complete retry
+            responseContent.readerIndex(startIndex);
             return null;
         }
 
@@ -414,11 +427,17 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         } else if (peek.endsWith("\"metrics\":")) {
             newState = QUERY_STATE_INFO;
         } else {
-            IllegalStateException e = new IllegalStateException("Error parsing query response (in TRANSITION) at " + peek);
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace(responseContent.toString(CHARSET), e);
+            if (lastChunk) {
+                IllegalStateException e = new IllegalStateException("Error parsing query response (in TRANSITION) at \""
+                        + peek + "\", enable trace to see response content");
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace(responseContent.toString(CHARSET), e);
+                }
+                throw e;
+            } else {
+                //we need more data
+                return queryParsingState;
             }
-            throw e;
         }
 
         sectionDone = false;
