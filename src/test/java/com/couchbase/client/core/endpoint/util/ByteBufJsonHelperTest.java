@@ -52,6 +52,20 @@ public class ByteBufJsonHelperTest {
         assertEquals(0, source.readerIndex());
     }
 
+    /**
+     * See JVMCBC-239.
+     */
+    @Test
+    public void testFindNextCharNotPrefixedByAfterReaderIndexMoved() throws Exception {
+        //before JVMCBC-239 the fact that the head of the buffer, with skipped data, is larger than its tail would
+        //cause an negative search length and the method would return a -1.
+        ByteBuf source = Unpooled.copiedBuffer("sectionWithLotsAndLotsOfDataToSkip\": \"123456\\\"78901234567890\"",
+                CharsetUtil.UTF_8);
+        source.skipBytes(38);
+
+        assertEquals(22, ByteBufJsonHelper.findNextCharNotPrefixedBy(source, '"', '\\'));
+    }
+
     @Test
     public void shouldFindSectionClosingPositionIfAtStartSection() throws Exception {
         ByteBuf source = Unpooled.copiedBuffer("{123}", CharsetUtil.UTF_8);
