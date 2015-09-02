@@ -21,6 +21,7 @@
  */
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -45,59 +46,46 @@ public class ResponseStatusConverter {
     public static final int HTTP_NOT_FOUND = 404;
     public static final int HTTP_INTERNAL_ERROR = 500;
 
-    public static final short BINARY_SUCCESS = 0x00;
-    public static final short BINARY_ERR_NOT_FOUND = 0x01;
-    public static final short BINARY_ERR_EXISTS = 0x02;
-    public static final short BINARY_ERR_2BIG = 0x03;
-    public static final short BINARY_ERR_INVAL = 0x04;
-    public static final short BINARY_ERR_NOT_STORED = 0x05;
-    public static final short BINARY_ERR_DELTA_BADVAL = 0x06;
-    public static final short BINARY_ERR_NOT_MY_VBUCKET = 0x07;
-    public static final short BINARY_ERR_UNKNOWN_COMMAND = 0x81;
-    public static final short BINARY_ERR_NO_MEM = 0x82;
-    public static final short BINARY_ERR_NOT_SUPPORTED = 0x83;
-    public static final short BINARY_ERR_INTERNAL = 0x84;
-    public static final short BINARY_ERR_BUSY = 0x85;
-    public static final short BINARY_ERR_TEMP_FAIL = 0x86;
-
     /**
      * Convert the binary protocol status in a typesafe enum that can be acted upon later.
      *
-     * @param status the status to convert.
+     * @param code the status to convert.
      * @return the converted response status.
      */
-    public static ResponseStatus fromBinary(final short status) {
+    public static ResponseStatus fromBinary(final short code) {
+        KeyValueStatus status = KeyValueStatus.valueOf(code);
         switch (status) {
-            case BINARY_SUCCESS:
+            case SUCCESS:
                 return ResponseStatus.SUCCESS;
-            case BINARY_ERR_EXISTS:
+            case ERR_EXISTS:
                 return ResponseStatus.EXISTS;
-            case BINARY_ERR_NOT_FOUND:
+            case ERR_NOT_FOUND:
                 return ResponseStatus.NOT_EXISTS;
-            case BINARY_ERR_NOT_MY_VBUCKET:
+            case ERR_NOT_MY_VBUCKET:
                 return ResponseStatus.RETRY;
-            case BINARY_ERR_NOT_STORED:
+            case ERR_NOT_STORED:
                 return ResponseStatus.NOT_STORED;
-            case BINARY_ERR_2BIG:
+            case ERR_TOO_BIG:
                 return ResponseStatus.TOO_BIG;
-            case BINARY_ERR_TEMP_FAIL:
+            case ERR_TEMP_FAIL:
                 return ResponseStatus.TEMPORARY_FAILURE;
-            case BINARY_ERR_BUSY:
+            case ERR_BUSY:
                 return ResponseStatus.SERVER_BUSY;
-            case BINARY_ERR_NO_MEM:
+            case ERR_NO_MEM:
                 return ResponseStatus.OUT_OF_MEMORY;
-            case BINARY_ERR_UNKNOWN_COMMAND:
+            case ERR_UNKNOWN_COMMAND:
                 return ResponseStatus.COMMAND_UNAVAILABLE;
-            case BINARY_ERR_NOT_SUPPORTED:
+            case ERR_NOT_SUPPORTED:
                 return ResponseStatus.COMMAND_UNAVAILABLE;
-            case BINARY_ERR_INTERNAL:
+            case ERR_INTERNAL:
                 return ResponseStatus.INTERNAL_ERROR;
-            case BINARY_ERR_INVAL:
+            case ERR_INVALID:
                 return ResponseStatus.INVALID_ARGUMENTS;
-            case BINARY_ERR_DELTA_BADVAL:
+            case ERR_DELTA_BADVAL:
                 return ResponseStatus.INVALID_ARGUMENTS;
             default:
-                LOGGER.warn("Unknown ResponseStatus with Protocol KeyValue: {}", Integer.toHexString(status));
+                LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
+                        status, Integer.toHexString(status.code()), status.description());
                 return ResponseStatus.FAILURE;
         }
     }

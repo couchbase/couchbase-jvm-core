@@ -613,7 +613,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("{someconfig...}", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("", Unpooled.EMPTY_BUFFER,
             content.copy());
-        response.setStatus(ResponseStatusConverter.BINARY_ERR_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueStatus.ERR_NOT_MY_VBUCKET.code());
 
         ObserveRequest requestMock = mock(ObserveRequest.class);
         requestQueue.add(requestMock);
@@ -711,7 +711,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(ResponseStatusConverter.BINARY_ERR_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueStatus.ERR_NOT_MY_VBUCKET.code());
 
         UpsertRequest requestMock = mock(UpsertRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
@@ -753,7 +753,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(ResponseStatusConverter.BINARY_ERR_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueStatus.ERR_NOT_MY_VBUCKET.code());
 
         AppendRequest requestMock = mock(AppendRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
@@ -794,7 +794,7 @@ public class KeyValueHandlerTest {
         ByteBuf content = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("key", Unpooled.EMPTY_BUFFER,
             content);
-        response.setStatus(ResponseStatusConverter.BINARY_ERR_NOT_MY_VBUCKET);
+        response.setStatus(KeyValueStatus.ERR_NOT_MY_VBUCKET.code());
 
         PrependRequest requestMock = mock(PrependRequest.class);
         ByteBuf requestContent = Unpooled.copiedBuffer("content", CharsetUtil.UTF_8);
@@ -873,7 +873,8 @@ public class KeyValueHandlerTest {
         //test responding to the request with memcached response is interpreted into a KeepAliveResponse, hook is called
         DefaultFullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse("", Unpooled.EMPTY_BUFFER);
         response.setOpaque(keepAliveRequest.opaque());
-        response.setStatus(ResponseStatusConverter.BINARY_ERR_NO_MEM);
+        response.setStatus(KeyValueStatus.ERR_NO_MEM.code());
+
         channel.writeInbound(response);
         KeyValueHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(KeyValueHandler.KeepAliveResponse.class)

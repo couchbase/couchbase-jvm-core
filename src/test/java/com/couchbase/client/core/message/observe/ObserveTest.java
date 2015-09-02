@@ -27,6 +27,7 @@ import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -121,7 +122,7 @@ public class ObserveTest {
                 Observable.just((CouchbaseResponse) clusterConfigResponse)
         );
         ObserveResponse observeResponse = new ObserveResponse(
-                ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+                ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
                 ObserveResponse.ObserveStatus.FOUND_NOT_PERSISTED.value(),
                 true,
                 45678,
@@ -158,7 +159,7 @@ public class ObserveTest {
             Observable.just((CouchbaseResponse) clusterConfigResponse)
         );
         ObserveResponse observeResponse = new ObserveResponse(
-            ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+            ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
             ObserveResponse.ObserveStatus.FOUND_NOT_PERSISTED.value(),
             false,
             45678,

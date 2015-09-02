@@ -30,6 +30,7 @@ import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.DefaultNodeInfo;
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -82,7 +83,7 @@ public class CarrierRefresherTest {
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
         when(cluster.send(any(GetBucketConfigRequest.class))).thenReturn(Observable.just(
             (CouchbaseResponse) new GetBucketConfigResponse(
-                ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+                ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
                 "bucket",
                 content,
                 InetAddress.getByName("localhost")
@@ -114,7 +115,7 @@ public class CarrierRefresherTest {
         ByteBuf content = Unpooled.copiedBuffer("", CharsetUtil.UTF_8);
         when(cluster.send(any(GetBucketConfigRequest.class))).thenReturn(Observable.just(
             (CouchbaseResponse) new GetBucketConfigResponse(
-                ResponseStatus.FAILURE, ResponseStatusConverter.BINARY_ERR_NOT_FOUND,
+                ResponseStatus.FAILURE, KeyValueStatus.ERR_NOT_FOUND.code(),
                 "bucket",
                 content,
                 InetAddress.getByName("localhost")
@@ -151,7 +152,7 @@ public class CarrierRefresherTest {
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
         when(cluster.send(any(GetBucketConfigRequest.class))).thenReturn(Observable.just(
             (CouchbaseResponse) new GetBucketConfigResponse(
-                ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+                ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
                 "bucket",
                 content,
                 InetAddress.getByName("localhost")
@@ -188,7 +189,7 @@ public class CarrierRefresherTest {
         ByteBuf content = Unpooled.copiedBuffer("", CharsetUtil.UTF_8);
         when(cluster.send(any(GetBucketConfigRequest.class))).thenReturn(Observable.just(
             (CouchbaseResponse) new GetBucketConfigResponse(
-                ResponseStatus.FAILURE, ResponseStatusConverter.BINARY_ERR_NOT_FOUND,
+                ResponseStatus.FAILURE, KeyValueStatus.ERR_NOT_FOUND.code(),
                 "bucket",
                 content,
                 InetAddress.getByName("localhost")
@@ -226,7 +227,7 @@ public class CarrierRefresherTest {
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
         Observable<CouchbaseResponse> goodResponse = Observable.just(
             (CouchbaseResponse) new GetBucketConfigResponse(
-                ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+                ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
                 "bucket",
                 content,
                 InetAddress.getByName("1.2.3.4")
@@ -260,7 +261,7 @@ public class CarrierRefresherTest {
 
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
         Observable<CouchbaseResponse> goodResponse = Observable.just((CouchbaseResponse) new GetBucketConfigResponse(
-            ResponseStatus.SUCCESS, ResponseStatusConverter.BINARY_SUCCESS,
+            ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(),
             "bucket",
             content,
             InetAddress.getByName("1.2.3.4")
