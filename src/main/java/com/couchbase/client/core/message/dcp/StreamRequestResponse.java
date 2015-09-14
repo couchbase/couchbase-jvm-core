@@ -39,18 +39,25 @@ import java.util.List;
 public class StreamRequestResponse extends AbstractDCPResponse {
     private final Observable<DCPRequest> stream;
     private final List<FailoverLogEntry> failoverLog;
+    private final long rollbackToSequenceNumber;
 
     /**
      * Sets the required properties for the response.
      *
-     * @param status  the status of the response.
+     * @param status                   the status of the response.
+     * @param stream                   observable, emitting DCP messages from the server
+     * @param failoverLog              the list of failover log entries or null if response status is not success
+     * @param rollbackToSequenceNumber if server instruct to rollback client's state, this field contains sequence
+     *                                 number to use
      * @param request
      */
     public StreamRequestResponse(final ResponseStatus status, final Observable<DCPRequest> stream,
-                                 final List<FailoverLogEntry> failoverLog, final CouchbaseRequest request) {
+                                 final List<FailoverLogEntry> failoverLog, final CouchbaseRequest request,
+                                 final long rollbackToSequenceNumber) {
         super(status, request);
         this.stream = stream;
         this.failoverLog = failoverLog;
+        this.rollbackToSequenceNumber = rollbackToSequenceNumber;
     }
 
     public Observable<DCPRequest> stream() {
@@ -59,5 +66,9 @@ public class StreamRequestResponse extends AbstractDCPResponse {
 
     public List<FailoverLogEntry> failoverLog() {
         return failoverLog;
+    }
+
+    public long getRollbackToSequenceNumber() {
+        return rollbackToSequenceNumber;
     }
 }

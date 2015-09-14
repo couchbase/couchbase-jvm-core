@@ -83,6 +83,10 @@ public class ResponseStatusConverter {
                 return ResponseStatus.INVALID_ARGUMENTS;
             case ERR_DELTA_BADVAL:
                 return ResponseStatus.INVALID_ARGUMENTS;
+            case ERR_RANGE:
+                return ResponseStatus.RANGE_ERROR;
+            case ERR_ROLLBACK:
+                return ResponseStatus.ROLLBACK;
             default:
                 LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
                         status, Integer.toHexString(status.code()), status.description());

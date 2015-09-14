@@ -95,7 +95,19 @@ public enum ResponseStatus {
      *
      * This is a internal response and should not bubble up to the user level.
      */
-    RETRY;
+    RETRY,
+
+    /**
+     * The server reports that requested vBucketID or sequence number does
+     * not fit allowed range.
+     */
+    RANGE_ERROR,
+
+    /**
+     * The server tells client to rollback its view of the DCP stream state.
+     * New sequence number passed in the payload.
+     */
+    ROLLBACK;
 
     /**
      * Check if the current {@link ResponseStatus} is success.
