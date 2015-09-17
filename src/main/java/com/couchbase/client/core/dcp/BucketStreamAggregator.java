@@ -62,19 +62,17 @@ public class BucketStreamAggregator {
      * @return the feed with {@link DCPRequest}s.
      */
     public Observable<DCPRequest> feed() {
-        return feed("jvmCore", BucketStreamAggregatorState.BLANK);
+        return feed(new BucketStreamAggregatorState("jvmCore"));
     }
 
     /**
      * Opens a DCP stream and returns the feed of changes.
-     * Use BucketStreamAggregatorState.BLANK to start from very beginning.
      *
-     * @param name            name of the stream
      * @param aggregatorState state object
      * @return the feed with {@link DCPRequest}s.
      */
-    public Observable<DCPRequest> feed(final String name, final BucketStreamAggregatorState aggregatorState) {
-        return open(name, aggregatorState)
+    public Observable<DCPRequest> feed(final BucketStreamAggregatorState aggregatorState) {
+        return open(aggregatorState)
                 .flatMap(new Func1<StreamRequestResponse, Observable<DCPRequest>>() {
                              @Override
                              public Observable<DCPRequest> call(StreamRequestResponse response) {
@@ -88,31 +86,23 @@ public class BucketStreamAggregator {
      * Opens DCP stream for all vBuckets starting with given state.
      * Use BucketStreamAggregatorState.BLANK to start from very beginning.
      *
-     * @param name            name of the stream
      * @param aggregatorState state object
      * @return collection of stream objects
      */
-    public Observable<StreamRequestResponse> open(final String name, final BucketStreamAggregatorState aggregatorState) {
+    public Observable<StreamRequestResponse> open(final BucketStreamAggregatorState aggregatorState) {
         return core
-                .<OpenConnectionResponse>send(new OpenConnectionRequest(name, bucket))
-                .flatMap(new Func1<OpenConnectionResponse, Observable<Integer>>() {
+                .<OpenConnectionResponse>send(new OpenConnectionRequest(aggregatorState.name(), bucket))
+                .flatMap(new Func1<OpenConnectionResponse, Observable<StreamRequestResponse>>() {
                     @Override
-                    public Observable<Integer> call(OpenConnectionResponse openConnectionResponse) {
-                        return partitionSize();
-                    }
-                })
-                .flatMap(new Func1<Integer, Observable<StreamRequestResponse>>() {
-                    @Override
-                    public Observable<StreamRequestResponse> call(Integer numPartitions) {
+                    public Observable<StreamRequestResponse> call(OpenConnectionResponse reponse) {
                         return Observable
-                                .range(0, numPartitions)
-                                .flatMap(new Func1<Integer, Observable<StreamRequestResponse>>() {
+                                .from(aggregatorState)
+                                .flatMap(new Func1<BucketStreamState, Observable<StreamRequestResponse>>() {
                                     @Override
-                                    public Observable<StreamRequestResponse> call(final Integer partition) {
-                                        final BucketStreamState feed = aggregatorState.get(partition);
+                                    public Observable<StreamRequestResponse> call(final BucketStreamState feed) {
                                         Observable<StreamRequestResponse> res =
                                                 core.send(new StreamRequestRequest(
-                                                        partition.shortValue(), feed.vbucketUUID(),
+                                                        feed.partition(), feed.vbucketUUID(),
                                                         feed.startSequenceNumber(), feed.endSequenceNumber(),
                                                         feed.snapshotStartSequenceNumber(), feed.snapshotEndSequenceNumber(),
                                                         bucket));
@@ -131,7 +121,7 @@ public class BucketStreamAggregator {
                                                         return Observable.just(response);
                                                 }
                                                 return core.send(new StreamRequestRequest(
-                                                        partition.shortValue(), feed.vbucketUUID(),
+                                                        feed.partition(), feed.vbucketUUID(),
                                                         rollbackSequenceNumber, feed.endSequenceNumber(),
                                                         feed.snapshotStartSequenceNumber(), feed.snapshotEndSequenceNumber(),
                                                         bucket));
