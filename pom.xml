@@ -31,7 +31,7 @@
         <rxjava.version>1.0.14</rxjava.version>
         <netty.version>4.0.30.Final</netty.version>
         <disruptor.version>3.3.2</disruptor.version>
-        <jackson.version>2.6.1</jackson.version>
+        <jackson.version>2.6.2</jackson.version>
         <latency-utils.version>2.0.2</latency-utils.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
