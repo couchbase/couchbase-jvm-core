@@ -23,6 +23,7 @@ package com.couchbase.client.core.event.metrics;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A latency metric value object which contains percentile and other related information.
@@ -36,12 +37,14 @@ public class LatencyMetric {
     private final long max;
     private final long count;
     private final Map<Double, Long> percentiles;
+    private final TimeUnit unit;
 
-    public LatencyMetric(long min, long max, long count, Map<Double, Long> percentiles) {
+    public LatencyMetric(long min, long max, long count, Map<Double, Long> percentiles, TimeUnit unit) {
         this.min = min;
         this.max = max;
         this.count = count;
         this.percentiles = percentiles;
+        this.unit = unit;
     }
 
     /**
@@ -72,6 +75,13 @@ public class LatencyMetric {
         return percentiles;
     }
 
+    /**
+     * Returns the time unit for the percentiles, min and max values.
+     */
+    public TimeUnit timeUnit() {
+        return unit;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LatencyMetric{");
@@ -79,6 +89,7 @@ public class LatencyMetric {
         sb.append(", max=").append(max);
         sb.append(", count=").append(count);
         sb.append(", percentiles=").append(percentiles);
+        sb.append(", timeUnit=").append(unit);
         sb.append('}');
         return sb.toString();
     }
@@ -95,6 +106,7 @@ public class LatencyMetric {
         result.put("max", max());
         result.put("count", count());
         result.put("percentiles", percentiles());
+        result.put("timeUnit", timeUnit().toString());
         return result;
     }
 }

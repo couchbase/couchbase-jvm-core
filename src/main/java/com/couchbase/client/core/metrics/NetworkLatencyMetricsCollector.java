@@ -80,7 +80,8 @@ public class NetworkLatencyMetricsCollector
                 targetUnit.convert(histogram.getMinValue(), TimeUnit.NANOSECONDS),
                 targetUnit.convert(histogram.getMaxValue(), TimeUnit.NANOSECONDS),
                 histogram.getTotalCount(),
-                percentiles
+                percentiles,
+                targetUnit
             ));
         }
 
