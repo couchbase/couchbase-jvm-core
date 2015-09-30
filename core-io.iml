@@ -14,11 +14,11 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.0.14" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.30.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.32.Final" level="project" />
     <orderEntry type="library" name="Maven: com.lmax:disruptor:3.3.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.6.1" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.6.2" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.6.0" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.6.1" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.6.2" level="project" />
     <orderEntry type="library" name="Maven: org.latencyutils:LatencyUtils:2.0.2" level="project" />
     <orderEntry type="library" name="Maven: org.hdrhistogram:HdrHistogram:2.1.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.slf4j:slf4j-api:1.7.7" level="project" />
