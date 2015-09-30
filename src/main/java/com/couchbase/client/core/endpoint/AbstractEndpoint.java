@@ -60,6 +60,7 @@ import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -281,7 +282,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     } else {
                         if (future.cause() instanceof AuthenticationException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Authentication Failure.");
+                                + "Authentication Failure.");
+                            transitionState(LifecycleState.DISCONNECTED);
+                            observable.onError(future.cause());
+                        } else if (future.cause() instanceof SSLHandshakeException) {
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                + "SSL Handshake Failure during connect.");
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ClosedChannelException) {
