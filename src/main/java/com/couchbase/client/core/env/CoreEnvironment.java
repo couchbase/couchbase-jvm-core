@@ -324,4 +324,11 @@ public interface CoreEnvironment {
      */
     NetworkLatencyMetricsCollector networkLatencyMetricsCollector();
 
+    /**
+     * Returns the amount of time the SDK will wait on the socket connect until an error is raised and handled.
+     *
+     * @return the socket connect timeout in milliseconds.
+     */
+    int socketConnectTimeout();
+
 }

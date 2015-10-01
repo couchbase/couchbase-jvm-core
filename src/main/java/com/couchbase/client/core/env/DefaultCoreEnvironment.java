@@ -92,6 +92,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean BUFFER_POOLING_ENABLED = true;
     public static final boolean TCP_NODELAY_ENALED = true;
     public static final boolean MUTATION_TOKENS_ENABLED = false;
+    public static final int SOCKET_CONNECT_TIMEOUT = 1000;
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -179,6 +180,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean bufferPoolingEnabled;
     private final boolean tcpNodelayEnabled;
     private final boolean mutationTokensEnabled;
+    private final int socketConnectTimeout;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -230,6 +232,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         bufferPoolingEnabled = booleanPropertyOr("bufferPoolingEnabled", builder.bufferPoolingEnabled);
         tcpNodelayEnabled = booleanPropertyOr("tcpNodelayEnabled", builder.tcpNodelayEnabled);
         mutationTokensEnabled = booleanPropertyOr("mutationTokensEnabled", builder.mutationTokensEnabled);
+        socketConnectTimeout = intPropertyOr("socketConnectTimeout", builder.socketConnectTimeout);
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -535,6 +538,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return networkLatencyMetricsCollector;
     }
 
+    @Override
+    public int socketConnectTimeout() {
+        return socketConnectTimeout;
+    }
+
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -573,6 +581,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean bufferPoolingEnabled = BUFFER_POOLING_ENABLED;
         private boolean tcpNodelayEnabled = TCP_NODELAY_ENALED;
         private boolean mutationTokensEnabled = MUTATION_TOKENS_ENABLED;
+        private int socketConnectTimeout = SOCKET_CONNECT_TIMEOUT;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig = null;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
@@ -977,6 +986,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return defaultMetricsLoggingConsumer(enabled, level, LoggingConsumer.DEFAULT_FORMAT);
         }
 
+        /**
+         * Sets a custom socket connect timeout.
+         *
+         * @param socketConnectTimeout the socket connect timeout in milliseconds.
+         */
+        public Builder socketConnectTimeout(int socketConnectTimeout) {
+            this.socketConnectTimeout = socketConnectTimeout;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1029,6 +1048,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", bufferPoolingEnabled=").append(bufferPoolingEnabled);
         sb.append(", tcpNodelayEnabled=").append(tcpNodelayEnabled);
         sb.append(", mutationTokensEnabled=").append(mutationTokensEnabled);
+        sb.append(", socketConnectTimeout=").append(socketConnectTimeout);
         return sb;
     }
 
