@@ -86,6 +86,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int KEYVALUE_ENDPOINTS = 1;
     public static final int VIEW_ENDPOINTS = 1;
     public static final int QUERY_ENDPOINTS = 1;
+    public static final int SEARCH_ENDPOINTS = 1;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
     public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
     public static final Delay RETRY_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 100);
@@ -174,6 +175,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int kvServiceEndpoints;
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
+    private final int searchServiceEndpoints;
     private final Delay observeIntervalDelay;
     private final Delay reconnectDelay;
     private final Delay retryDelay;
@@ -229,6 +231,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         kvServiceEndpoints = intPropertyOr("kvEndpoints", builder.kvEndpoints);
         viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints);
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints);
+        searchServiceEndpoints = intPropertyOr("searchEndpoints", builder.searchEndpoints);
         packageNameAndVersion = stringPropertyOr("packageNameAndVersion", builder.packageNameAndVersion);
         userAgent = stringPropertyOr("userAgent", builder.userAgent);
         observeIntervalDelay = builder.observeIntervalDelay;
@@ -558,6 +561,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public int searchEndpoints() {
+        return searchServiceEndpoints;
+    }
+
+    @Override
     public String userAgent() {
         return userAgent;
     }
@@ -662,6 +670,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int kvEndpoints = KEYVALUE_ENDPOINTS;
         private int viewEndpoints = VIEW_ENDPOINTS;
         private int queryEndpoints = QUERY_ENDPOINTS;
+        private int searchEndpoints = SEARCH_ENDPOINTS;
         private Delay observeIntervalDelay = OBSERVE_INTERVAL_DELAY;
         private Delay reconnectDelay = RECONNECT_DELAY;
         private Delay retryDelay = RETRY_DELAY;
@@ -886,6 +895,17 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public Builder queryEndpoints(final int queryEndpoints) {
             this.queryEndpoints = queryEndpoints;
+            return this;
+        }
+
+        /**
+         * Sets the number of Search (CBFT) endpoints to open per node in the cluster
+         * (default value {@value #SEARCH_ENDPOINTS}).
+         *
+         * Setting this to a higher number is advised in heavy query workloads.
+         */
+        public Builder searchEndpoints(final int searchEndpoints) {
+            this.searchEndpoints = searchEndpoints;
             return this;
         }
 
@@ -1143,6 +1163,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", kvServiceEndpoints=").append(kvServiceEndpoints);
         sb.append(", viewServiceEndpoints=").append(viewServiceEndpoints);
         sb.append(", queryServiceEndpoints=").append(queryServiceEndpoints);
+        sb.append(", searchServiceEndpoints=").append(searchServiceEndpoints);
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());
         if (ioPoolShutdownHook == null || ioPoolShutdownHook instanceof  NoOpShutdownHook) {
             sb.append("!unmanaged");

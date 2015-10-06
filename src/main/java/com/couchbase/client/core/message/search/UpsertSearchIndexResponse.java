@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,53 +19,36 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-package com.couchbase.client.core.service;
+
+package com.couchbase.client.core.message.search;
+
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 
 /**
- * Represents the different {@link ServiceType}s and how they map onto buckets.
+ * Contains result of the create/update action on full text search index.
  *
- * @author Michael Nitschinger
- * @since 1.0
+ * @author Sergey Avseyev
+ * @since 1.2.4
  */
-public enum ServiceType {
+public class UpsertSearchIndexResponse extends AbstractCouchbaseResponse {
 
-    /**
-     * Views and Design Documents.
-     */
-    VIEW(BucketServiceMapping.ONE_FOR_ALL),
+    private final String payload;
 
-    /**
-     * Key/Value type operations.
-     */
-    BINARY(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Query (N1QL) operations.
-     */
-    QUERY(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * HTTP config operations.
-     */
-    CONFIG(BucketServiceMapping.ONE_FOR_ALL),
-
-    /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
-     * Search (CBFT) operations.
-     */
-    SEARCH(BucketServiceMapping.ONE_FOR_ALL);
-
-    private final BucketServiceMapping mapping;
-
-    private ServiceType(BucketServiceMapping mapping) {
-        this.mapping = mapping;
+    public UpsertSearchIndexResponse(String payload, ResponseStatus status) {
+        super(status, null);
+        this.payload = payload;
     }
 
-    public BucketServiceMapping mapping() {
-        return mapping;
+    public String payload() {
+        return payload;
+    }
+
+    @Override
+    public String toString() {
+        return "InsertSearchIndexResponse{"
+                + "status=" + status()
+                + ", payload='" + payload + '\''
+                + '}';
     }
 }

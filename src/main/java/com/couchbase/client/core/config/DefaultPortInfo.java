@@ -77,6 +77,8 @@ public class DefaultPortInfo implements PortInfo {
                 ports.put(ServiceType.QUERY, port);
             } else if (service.equals("n1qlSSL")) {
                 sslPorts.put(ServiceType.QUERY, port);
+            } else if (service.equals("fts")) {
+                ports.put(ServiceType.SEARCH, port);
             }
         }
     }
