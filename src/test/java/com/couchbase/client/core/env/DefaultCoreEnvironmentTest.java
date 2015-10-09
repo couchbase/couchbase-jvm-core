@@ -114,10 +114,11 @@ public class DefaultCoreEnvironmentTest {
             env.scheduler().createWorker().schedule(Actions.empty());
 
             LOGGER.info("===Created threads:");
-            Set<String> afterCreate = dump(threads(mx, ignore));
+            Set<String> afterCreate = dump(threads(mx, ignore, false));
 
-            env.shutdown().toBlocking().last();
-            Set<String> afterShutdown = threads(mx, ignore);
+            LOGGER.info("Shutdown result: " + env.shutdown().toBlocking().single());
+            //we only consider threads starting with cb- or containing Rx, minus the ones existing at startup
+            Set<String> afterShutdown = threads(mx, ignore, true);
 
             peaks[i] = afterShutdown.size();
             LOGGER.info("===Shutdown went from " + afterCreate.size() + " to " + afterShutdown.size() + " threads, remaining: ");
@@ -140,16 +141,30 @@ public class DefaultCoreEnvironmentTest {
         return threads;
     }
 
-    private Set<String> threads(ThreadMXBean mx, Set<String> ignore) {
+    private Set<String> threads(ThreadMXBean mx, Set<String> ignore, boolean ignoreNonCbRx) {
         Set<String> all = threads(mx);
         all.removeAll(ignore);
-        return all;
+        if (!ignoreNonCbRx) {
+            return all;
+        } else {
+            Set<String> result = new HashSet<String>(all.size());
+            for (String s : all) {
+                if (s.startsWith("cb-") || s.contains("Rx")) {
+                    result.add(s);
+                }
+            }
+            return result;
+        }
     }
 
     private Set<String> threads(ThreadMXBean mx) {
         ThreadInfo[] dump = mx.getThreadInfo(mx.getAllThreadIds());
         Set<String> names = new HashSet<String>(dump.length);
         for (ThreadInfo threadInfo : dump) {
+            if (threadInfo == null || threadInfo.getThreadName() == null) {
+                continue;
+            }
+
             names.add(threadInfo.getThreadName());
         }
         return names;
@@ -160,11 +175,11 @@ public class DefaultCoreEnvironmentTest {
         //create an environment with a custom IOPool and Scheduler that are not cleaned up on shutdown
         DefaultCoreEnvironment env = DefaultCoreEnvironment.builder()
                 .ioPool(new LocalEventLoopGroup())
-                .scheduler(Schedulers.trampoline()).build();
+                .scheduler(Schedulers.newThread()).build();
         String dump = env.dumpParameters(new StringBuilder()).toString();
 
         assertTrue(dump, dump.contains("LocalEventLoopGroup!unmanaged"));
-        assertTrue(dump, dump.contains("TrampolineScheduler!unmanaged"));
+        assertTrue(dump, dump.contains("NewThreadScheduler!unmanaged"));
     }
 
     @Test
