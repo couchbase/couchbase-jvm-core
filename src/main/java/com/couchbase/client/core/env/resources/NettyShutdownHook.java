@@ -19,61 +19,54 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
+
 package com.couchbase.client.core.env.resources;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.ThreadDeathWatcher;
 import rx.Observable;
 import rx.Subscriber;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link ShutdownHook} hook for an {@link EventLoopGroup}.
+ * {@link ShutdownHook} hook that attempts to terminate Netty threads gracefully.
+ * It won't report a failure if said threads cannot be terminated right away though.
  *
  * @author Simon Baslé
  * @since 2.2
  */
-public class IoPoolShutdownHook implements ShutdownHook {
+public class NettyShutdownHook implements ShutdownHook {
 
-    private final EventLoopGroup ioPool;
-    private volatile boolean shutdown;
+    private volatile boolean isReallyShutdown = false;
 
-    public IoPoolShutdownHook(EventLoopGroup ioPool) {
-        this.ioPool = ioPool;
-        this.shutdown = false;
-    }
-
+    @Override
     public Observable<Boolean> shutdown() {
         return Observable.create(new Observable.OnSubscribe<Boolean>() {
             @Override
             public void call(final Subscriber<? super Boolean> subscriber) {
-                ioPool.shutdownGracefully(0, 10, TimeUnit.MILLISECONDS)
-                    .addListener(new GenericFutureListener() {
+                new Thread(new Runnable() {
                     @Override
-                    public void operationComplete(final Future future) throws Exception {
-                        if (!subscriber.isUnsubscribed()) {
-                            try {
-                                if (future.isSuccess()) {
-                                    subscriber.onNext(true);
-                                    shutdown = true;
-                                    subscriber.onCompleted();
-                                } else {
-                                    subscriber.onError(future.cause());
-                                }
-                            } catch (Exception ex) {
-                                subscriber.onError(ex);
+                    public void run() {
+                        try {
+                            isReallyShutdown = ThreadDeathWatcher.awaitInactivity(3, TimeUnit.SECONDS);
+                            if (!subscriber.isUnsubscribed()) {
+                                subscriber.onNext(isReallyShutdown);
+                                subscriber.onCompleted();
+                            }
+                        } catch (Throwable e) {
+                            if (!subscriber.isUnsubscribed()) {
+                                subscriber.onError(e);
                             }
                         }
                     }
-                });
+                }).start();
             }
         });
     }
 
     @Override
     public boolean isShutdown() {
-        return shutdown;
+        return isReallyShutdown;
     }
+
 }

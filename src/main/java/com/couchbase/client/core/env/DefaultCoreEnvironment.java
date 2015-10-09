@@ -23,6 +23,7 @@ package com.couchbase.client.core.env;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.env.resources.IoPoolShutdownHook;
+import com.couchbase.client.core.env.resources.NettyShutdownHook;
 import com.couchbase.client.core.env.resources.NoOpShutdownHook;
 import com.couchbase.client.core.env.resources.ShutdownHook;
 import com.couchbase.client.core.event.CouchbaseEvent;
@@ -50,6 +51,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
+import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
@@ -190,6 +192,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final EventBus eventBus;
 
     private final ShutdownHook ioPoolShutdownHook;
+    private final ShutdownHook nettyShutdownHook;
     private final ShutdownHook coreSchedulerShutdownHook;
 
     private final MetricsCollector runtimeMetricsCollector;
@@ -259,11 +262,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                     : builder.ioPoolShutdownHook;
         }
 
+        if (!(this.ioPoolShutdownHook instanceof NoOpShutdownHook)) {
+            this.nettyShutdownHook = new NettyShutdownHook();
+        } else {
+            this.nettyShutdownHook = this.ioPoolShutdownHook;
+        }
+
         if (builder.scheduler == null) {
             CoreScheduler managed = new CoreScheduler(computationPoolSize());
             this.coreScheduler = managed;
-            this.coreSchedulerShutdownHook = managed
-            ;
+            this.coreSchedulerShutdownHook = managed;
         } else {
             this.coreScheduler = builder.scheduler;
             this.coreSchedulerShutdownHook = builder.schedulerShutdownHook == null
@@ -350,17 +358,74 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             metricsCollectorSubscription.unsubscribe();
         }
 
-        return Observable.mergeDelayError(
-            ioPoolShutdownHook.shutdown(),
-            coreSchedulerShutdownHook.shutdown(),
-            Observable.just(runtimeMetricsCollector.shutdown()),
-            Observable.just(networkLatencyMetricsCollector.shutdown())
-        ).reduce(true, new Func2<Boolean, Boolean, Boolean>() {
-            @Override
-            public Boolean call(Boolean a, Boolean b) {
-                return a && b;
-            }
-        });
+        Observable<Boolean> result = Observable.merge(
+                wrapShutdown(ioPoolShutdownHook.shutdown(), "IoPool"),
+                wrapBestEffortShutdown(nettyShutdownHook.shutdown(), "Netty"),
+                wrapShutdown(coreSchedulerShutdownHook.shutdown(), "Core Scheduler"),
+                wrapShutdown(Observable.just(runtimeMetricsCollector.shutdown()), "Runtime Metrics Collector"),
+                wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector"))
+                .reduce(true,
+                        new Func2<Boolean, ShutdownStatus, Boolean>() {
+                            @Override
+                            public Boolean call(Boolean previousStatus, ShutdownStatus currentStatus) {
+                                return previousStatus && currentStatus.success;
+                            }
+                        });
+        return result;
+    }
+
+    /**
+     * This method wraps an Observable of Boolean (for shutdown hook) into an Observable of ShutdownStatus.
+     * It will log each status with a short message indicating which target has been shut down, and the result of
+     * the call.
+     * Additionally it will ignore signals that shutdown status is false (as long as no exception is detected), logging that the target is "best effort" only.
+     */
+    private Observable<ShutdownStatus> wrapBestEffortShutdown(Observable<Boolean> source, final String target) {
+        return wrapShutdown(source, target)
+                .map(new Func1<ShutdownStatus, ShutdownStatus>() {
+                    @Override
+                    public ShutdownStatus call(ShutdownStatus original) {
+                        if (original.cause == null && !original.success) {
+                            LOGGER.info(target + " shutdown is best effort, ignoring failure");
+                            return new ShutdownStatus(target, true, null);
+                        } else {
+                            return original;
+                        }
+                    }
+                });
+    }
+
+    /**
+     * This method wraps an Observable of Boolean (for shutdown hook) into an Observable of ShutdownStatus.
+     * It will log each status with a short message indicating which target has been shut down, and the result of
+     * the call.
+     */
+    private Observable<ShutdownStatus> wrapShutdown(Observable<Boolean> source, final String target) {
+        return source.
+                reduce(true, new Func2<Boolean, Boolean, Boolean>() {
+                    @Override
+                    public Boolean call(Boolean previousStatus, Boolean currentStatus) {
+                        return previousStatus && currentStatus;
+                    }
+                })
+                .map(new Func1<Boolean, ShutdownStatus>() {
+                    @Override
+                    public ShutdownStatus call(Boolean status) {
+                        return new ShutdownStatus(target, status, null);
+                    }
+                })
+                .onErrorReturn(new Func1<Throwable, ShutdownStatus>() {
+                    @Override
+                    public ShutdownStatus call(Throwable throwable) {
+                        return new ShutdownStatus(target, false, throwable);
+                    }
+                })
+                .doOnNext(new Action1<ShutdownStatus>() {
+                    @Override
+                    public void call(ShutdownStatus shutdownStatus) {
+                        LOGGER.info(shutdownStatus.toString());
+                    }
+                });
     }
 
     @Override
@@ -1059,4 +1124,25 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return sb.toString();
     }
 
+    /**
+     * An internal class used to keep track of components being shut down and
+     * the result of their shutdown call / cause for failures.
+     */
+    private static final class ShutdownStatus {
+        public final String target;
+        public final boolean success;
+        public final Throwable cause;
+
+        public ShutdownStatus(String target, boolean success, Throwable cause) {
+            this.target = target;
+            this.success = success;
+            this.cause = cause;
+        }
+
+        @Override
+        public String toString() {
+            return "Shutdown " + target + ": " + (success ? "success " : "failure ") + (cause == null ? "" : " due to "
+                    + cause.toString());
+        }
+    }
 }

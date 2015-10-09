@@ -116,7 +116,7 @@ public class DefaultCoreEnvironmentTest {
             LOGGER.info("===Created threads:");
             Set<String> afterCreate = dump(threads(mx, ignore, false));
 
-            env.shutdown().toBlocking().last();
+            LOGGER.info("Shutdown result: " + env.shutdown().toBlocking().single());
             //we only consider threads starting with cb- or containing Rx, minus the ones existing at startup
             Set<String> afterShutdown = threads(mx, ignore, true);
 

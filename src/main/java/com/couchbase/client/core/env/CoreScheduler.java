@@ -24,67 +24,89 @@ package com.couchbase.client.core.env;
 import com.couchbase.client.core.env.resources.ShutdownHook;
 import rx.Observable;
 import rx.Scheduler;
-import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.internal.schedulers.NewThreadWorker;
 import rx.internal.schedulers.ScheduledAction;
 import rx.internal.util.RxThreadFactory;
+import rx.internal.util.SubscriptionList;
 import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The Core scheduler which is modeled after the Event Loops Scheduler (which is package private).
  *
  * @author Michael Nitschinger
+ * @author Simon Baslé
  */
+/*
+ * Modelled after EventLoopScheduler in RxJava 1.0.15. Main aim is to change the thread naming and to allow for
+ * a configurable size for the pool which is not capped at the number of CPUs.
+ * Also aims at not depending on 1.0.15 new interface right away.
+ */
+//TODO when depending on RxJava 1.0.15+, this would implement SchedulerLifecycle instead
 public class CoreScheduler extends Scheduler implements ShutdownHook {
 
     private static final String THREAD_NAME_PREFIX = "cb-computations-";
     private static final RxThreadFactory THREAD_FACTORY = new RxThreadFactory(THREAD_NAME_PREFIX);
 
-    final FixedSchedulerPool pool;
-    private volatile boolean shutdown;
 
-    public CoreScheduler(int poolSize) {
-        pool = new FixedSchedulerPool(poolSize);
+    final AtomicReference<FixedSchedulerPool> pool;
+    private final int poolSize;
+
+    /** This will indicate no pool is active. */
+    static final FixedSchedulerPool NONE = new FixedSchedulerPool(0);
+
+    static final PoolWorker SHUTDOWN_WORKER;
+    static {
+        SHUTDOWN_WORKER = new PoolWorker(new RxThreadFactory("cb-computationShutdown-"));
+        SHUTDOWN_WORKER.unsubscribe();
     }
 
-    public Observable<Boolean> shutdown() {
-        if (isShutdown()) {
-            return Observable.just(true);
-        }
+    /**
+     * Create a scheduler with specified pool size and using
+     * least-recent worker selection policy.
+     */
+    public CoreScheduler(int poolSize) {
+        this.poolSize = poolSize;
+        this.pool = new AtomicReference<FixedSchedulerPool>(NONE);
+        start();
+    }
 
-        return Observable.create(new Observable.OnSubscribe<Boolean>() {
-            @Override
-            public void call(Subscriber<? super Boolean> subscriber) {
-                try {
-                    for (PoolWorker worker : pool.eventLoops) {
-                        if (!worker.isUnsubscribed()) {
-                            worker.unsubscribe();
-                        }
-                    }
-                    shutdown = true;
-                    subscriber.onNext(true);
-                    subscriber.onCompleted();
-                } catch (Exception e) {
-                    subscriber.onError(e);
-                }
+    //TODO when depending on RxJava 1.0.15+, this would be an @Override
+    public void start() {
+        FixedSchedulerPool update = new FixedSchedulerPool(poolSize);
+        if (!pool.compareAndSet(NONE, update)) {
+            update.shutdown();
+        }
+    }
+
+    //TODO when depending on RxJava 1.0.15+, this would be an @Override of shutdown()
+    public Observable<Boolean> shutdown() {
+        for (;;) {
+            FixedSchedulerPool curr = pool.get();
+            if (curr == NONE) {
+                return Observable.just(true);
             }
-        });
+            if (pool.compareAndSet(curr, NONE)) {
+                curr.shutdown();
+                return Observable.just(true);
+            }
+        }
     }
 
     @Override
     public boolean isShutdown() {
-        return shutdown;
+        return pool.get() == NONE;
     }
 
     @Override
     public Worker createWorker() {
-        return new EventLoopWorker(pool.getEventLoop());
+        return new EventLoopWorker(pool.get().getEventLoop());
     }
 
     static final class FixedSchedulerPool {
@@ -94,6 +116,7 @@ public class CoreScheduler extends Scheduler implements ShutdownHook {
         long n;
 
         FixedSchedulerPool(int poolSize) {
+            // initialize event loops
             this.size = poolSize;
             this.eventLoops = new PoolWorker[size];
             for (int i = 0; i < size; i++) {
@@ -102,12 +125,36 @@ public class CoreScheduler extends Scheduler implements ShutdownHook {
         }
 
         public PoolWorker getEventLoop() {
-            return eventLoops[(int)(n++ % size)];
+            int c = size;
+            if (c == 0) {
+                return SHUTDOWN_WORKER;
+            }
+            // simple round robin, improvements to come
+            return eventLoops[(int)(n++ % c)];
+        }
+
+        public void shutdown() {
+            for (PoolWorker w : eventLoops) {
+                w.unsubscribe();
+            }
         }
     }
 
+    /**
+     * Schedules the action directly on one of the event loop workers
+     * without the additional infrastructure and checking.
+     * @param action the action to schedule
+     * @return the subscription
+     */
+    public Subscription scheduleDirect(Action0 action) {
+        PoolWorker pw = pool.get().getEventLoop();
+        return pw.scheduleActual(action, -1, TimeUnit.NANOSECONDS);
+    }
+
     private static class EventLoopWorker extends Scheduler.Worker {
-        private final CompositeSubscription innerSubscription = new CompositeSubscription();
+        private final SubscriptionList serial = new SubscriptionList();
+        private final CompositeSubscription timed = new CompositeSubscription();
+        private final SubscriptionList both = new SubscriptionList(serial, timed);
         private final PoolWorker poolWorker;
 
         EventLoopWorker(PoolWorker poolWorker) {
@@ -117,32 +164,32 @@ public class CoreScheduler extends Scheduler implements ShutdownHook {
 
         @Override
         public void unsubscribe() {
-            innerSubscription.unsubscribe();
+            both.unsubscribe();
         }
 
         @Override
         public boolean isUnsubscribed() {
-            return innerSubscription.isUnsubscribed();
+            return both.isUnsubscribed();
         }
 
         @Override
         public Subscription schedule(Action0 action) {
-            return schedule(action, 0, null);
-        }
-
-        @Override
-        public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
-            if (innerSubscription.isUnsubscribed()) {
-                return Subscriptions.empty();
+            if (isUnsubscribed()) {
+                return Subscriptions.unsubscribed();
             }
+            ScheduledAction s = poolWorker.scheduleActual(action, 0, null, serial);
 
-            ScheduledAction s = poolWorker.scheduleActual(action, delayTime, unit);
-            innerSubscription.add(s);
-            s.addParent(innerSubscription);
             return s;
         }
+        @Override
+        public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
+            if (isUnsubscribed()) {
+                return Subscriptions.unsubscribed();
+            }
+            ScheduledAction s = poolWorker.scheduleActual(action, delayTime, unit, timed);
 
-
+            return s;
+        }
     }
 
     private static final class PoolWorker extends NewThreadWorker {
