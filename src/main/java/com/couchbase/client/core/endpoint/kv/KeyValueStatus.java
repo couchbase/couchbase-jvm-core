@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,16 +19,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
 package com.couchbase.client.core.endpoint.kv;
 
 /**
  * Enum describing all known response status codes that could be seen on the KeyValue protocol.
- * <p/>
+ *
  * Based on include/memcached/protocol_binary.h from memcached repository.
  *
  * @author Sergey Avseyev
- * @since 1.2
+ * @author Michael Nitschinger
+ * @since 1.2.0
  */
 public enum KeyValueStatus {
 
@@ -117,7 +117,26 @@ public enum KeyValueStatus {
         this.description = description;
     }
 
+    /**
+     * Determine the right {@link KeyValueStatus} for the given status code.
+     *
+     * Certain status codes are checked upfront since they are most commonly converted (this avoids iterating
+     * through the full enum values list, especially in the non-corner or failure case variants).
+     *
+     * @param code the status code to check.
+     * @return the matched code, or unknown if none is found.
+     */
     public static KeyValueStatus valueOf(final short code) {
+        if (code == SUCCESS.code) {
+            return SUCCESS;
+        } else if (code == ERR_NOT_FOUND.code) {
+            return ERR_NOT_FOUND;
+        } else if (code == ERR_EXISTS.code) {
+            return ERR_EXISTS;
+        } else if (code == ERR_NOT_MY_VBUCKET.code) {
+            return ERR_NOT_MY_VBUCKET;
+        }
+
         for (KeyValueStatus keyValueStatus : values()) {
             if (keyValueStatus.code() == code) {
                 return keyValueStatus;
