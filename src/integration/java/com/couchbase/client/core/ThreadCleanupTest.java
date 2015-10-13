@@ -92,6 +92,8 @@ public class ThreadCleanupTest {
 
     @Test
     public void testSdkNettyRxJavaThreadsShutdownProperly() throws InterruptedException {
+        //FIXME differently improve the tolerance of this test to threads spawned by others
+        Thread.sleep(500);
         ThreadMXBean mx = ManagementFactory.getThreadMXBean();
         LOGGER.info("Threads at start");
         Set<String> ignore = dump(threads(mx));
