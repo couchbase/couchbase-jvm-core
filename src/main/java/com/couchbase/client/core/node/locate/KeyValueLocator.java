@@ -36,9 +36,11 @@ import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
+import com.couchbase.client.core.message.kv.StatRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 
+import java.net.InetAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -72,6 +74,9 @@ public class KeyValueLocator implements Locator {
         if (request instanceof GetBucketConfigRequest) {
             return handleBucketConfigRequest((GetBucketConfigRequest) request, nodes);
         }
+        if (request instanceof StatRequest) {
+            return handleStatRequest((StatRequest)request, nodes);
+        }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
@@ -95,9 +100,17 @@ public class KeyValueLocator implements Locator {
      * @return either the found node or an empty list indicating to retry later.
      */
     private static Node[] handleBucketConfigRequest(GetBucketConfigRequest request, Set<Node> nodes) {
+        return locateByHostname(request.hostname(), nodes);
+    }
+
+    private static Node[] handleStatRequest(StatRequest request, Set<Node> nodes) {
+        return locateByHostname(request.hostname(), nodes);
+    }
+
+    private static Node[] locateByHostname(final InetAddress hostname, Set<Node> nodes) {
         for (Node node : nodes) {
             if (node.isState(LifecycleState.CONNECTED)) {
-                if (!request.hostname().equals(node.hostname())) {
+                if (!hostname.equals(node.hostname())) {
                     continue;
                 }
                 return new Node[] { node };

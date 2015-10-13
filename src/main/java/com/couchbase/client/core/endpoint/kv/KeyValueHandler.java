@@ -59,6 +59,8 @@ import com.couchbase.client.core.message.kv.RemoveResponse;
 import com.couchbase.client.core.message.kv.ReplaceRequest;
 import com.couchbase.client.core.message.kv.ReplaceResponse;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
+import com.couchbase.client.core.message.kv.StatRequest;
+import com.couchbase.client.core.message.kv.StatResponse;
 import com.couchbase.client.core.message.kv.TouchRequest;
 import com.couchbase.client.core.message.kv.TouchResponse;
 import com.couchbase.client.core.message.kv.UnlockRequest;
@@ -116,6 +118,7 @@ public class KeyValueHandler
     public static final byte OP_APPEND = BinaryMemcacheOpcodes.APPEND;
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
     public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
+    public static final byte OP_STAT = BinaryMemcacheOpcodes.STAT;
 
     boolean seqOnMutation = false;
 
@@ -172,6 +175,8 @@ public class KeyValueHandler
             request = handlePrependRequest((PrependRequest) msg);
         } else if (msg instanceof KeepAliveRequest) {
             request = handleKeepAliveRequest((KeepAliveRequest) msg);
+        } else if (msg instanceof StatRequest) {
+            request = handleStatRequest((StatRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
                 + msg.getClass());
@@ -453,6 +458,17 @@ public class KeyValueHandler
         return request;
     }
 
+    private static BinaryMemcacheRequest handleStatRequest(StatRequest msg) {
+        String key = msg.key();
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
+        short keyLength = (short) msg.keyBytes().length;
+        request
+                .setOpcode(OP_STAT)
+                .setKeyLength(keyLength)
+                .setTotalBodyLength(keyLength);
+        return request;
+    }
+
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -471,7 +487,7 @@ public class KeyValueHandler
         CouchbaseResponse response = handleCommonResponseMessages(request, msg, ctx, status, seqOnMutation);
 
         if (response == null) {
-            response = handleOtherResponseMessages(request, msg, status, seqOnMutation);
+            response = handleOtherResponseMessages(request, msg, status, seqOnMutation, remoteHostname());
         }
 
         if (response == null) {
@@ -479,7 +495,19 @@ public class KeyValueHandler
                     + msg.getClass());
         }
 
-        finishedDecoding();
+        // STAT request produces multiple responses followed by response with NULL key,
+        // therefore it should be finished manually
+        if (request instanceof StatRequest) {
+            ((StatRequest)request).add((StatResponse) response);
+            if (((StatResponse) response).key() == null) {
+                finishedDecoding();
+            }
+            // Do not use default publish mechanism for STAT responses, instead accumulate
+            // them into List and publish all at once in {@link StatRequest#add()}
+            return null;
+        } else {
+            finishedDecoding();
+        }
         return response;
     }
 
@@ -539,7 +567,7 @@ public class KeyValueHandler
      * @return the decoded response or null if none did match.
      */
     private static CouchbaseResponse handleOtherResponseMessages(BinaryRequest request, FullBinaryMemcacheResponse msg,
-        ResponseStatus status, boolean seqOnMutation) {
+        ResponseStatus status, boolean seqOnMutation, String remoteHostname) {
         CouchbaseResponse response = null;
         ByteBuf content = msg.content();
         long cas = msg.getCAS();
@@ -565,6 +593,12 @@ public class KeyValueHandler
 
             MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new CounterResponse(status, statusCode, bucket, value, cas, descr, request);
+        } else if (request instanceof StatRequest) {
+            String key = msg.getKey();
+            String value = content.toString(CHARSET);
+            releaseContent(content);
+
+            response = new StatResponse(status, statusCode, remoteHostname, key, value, bucket, request);
         } else if (request instanceof ObserveRequest) {
             byte observed = ObserveResponse.ObserveStatus.UNKNOWN.value();
             long observedCas = 0;
