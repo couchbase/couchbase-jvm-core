@@ -38,16 +38,31 @@ import rx.Scheduler;
  * This interface defines the contract. How properties are loaded is chosen by the implementation. See the
  * {@link DefaultCoreEnvironment} class for the default implementation.
  *
- * Note that the {@link CoreEnvironment} is stateful, so be sure to call {@link #shutdown()} properly.
+ * Note that the {@link CoreEnvironment} is stateful, so be sure to call {@link #shutdown()} or
+ * {@link #shutdownAsync()} properly.
  */
 public interface CoreEnvironment {
 
     /**
      * Shutdown the {@link CoreEnvironment}.
      *
-     * @return eventually the success/failure of the shutdown without errors.
+     * @deprecated This method will be changed in 2.3.0 into a synchronous version. Please migrate
+     * to {@link #shutdownAsync()} right now to avoid breaking your code.
+     *
+     * @return an {@link Observable} eventually returning a boolean, indicating the success of the shutdown.
      */
+    @Deprecated
     Observable<Boolean> shutdown();
+
+    /**
+     * Shutdown the {@link CoreEnvironment} in an asynchronous fashion.
+     *
+     * Since this method is asynchronous and cold, it is important to subscribe to the observable to actually
+     * initiate the shutdown process.
+     *
+     * @return an {@link Observable} eventually returning a boolean, indicating the success of the shutdown.
+     */
+    Observable<Boolean> shutdownAsync();
 
     /**
      * Returns the IO pool for the underlying IO framework.

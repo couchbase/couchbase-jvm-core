@@ -50,7 +50,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(DefaultCoreEnvironment.KEYVALUE_ENDPOINTS, env.kvEndpoints());
-        assertTrue(env.shutdown().toBlocking().single());
+        assertTrue(env.shutdownAsync().toBlocking().single());
     }
 
     @Test
@@ -63,7 +63,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(3, env.kvEndpoints());
-        assertTrue(env.shutdown().toBlocking().single());
+        assertTrue(env.shutdownAsync().toBlocking().single());
     }
 
     @Test
@@ -79,7 +79,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(10, env.kvEndpoints());
-        assertTrue(env.shutdown().toBlocking().single());
+        assertTrue(env.shutdownAsync().toBlocking().single());
 
         System.clearProperty("com.couchbase.kvEndpoints");
     }
@@ -116,7 +116,7 @@ public class DefaultCoreEnvironmentTest {
             LOGGER.info("===Created threads:");
             Set<String> afterCreate = dump(threads(mx, ignore, false));
 
-            LOGGER.info("Shutdown result: " + env.shutdown().toBlocking().single());
+            LOGGER.info("Shutdown result: " + env.shutdownAsync().toBlocking().single());
             //we only consider threads starting with cb- or containing Rx, minus the ones existing at startup
             Set<String> afterShutdown = threads(mx, ignore, true);
 
