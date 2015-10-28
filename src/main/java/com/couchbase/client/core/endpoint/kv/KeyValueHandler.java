@@ -41,6 +41,8 @@ import com.couchbase.client.core.message.kv.BinaryStoreRequest;
 import com.couchbase.client.core.message.kv.CounterRequest;
 import com.couchbase.client.core.message.kv.CounterResponse;
 import com.couchbase.client.core.message.kv.FailoverObserveSeqnoResponse;
+import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
+import com.couchbase.client.core.message.kv.GetAllMutationTokensResponse;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
 import com.couchbase.client.core.message.kv.GetRequest;
@@ -119,6 +121,7 @@ public class KeyValueHandler
     public static final byte OP_PREPEND = BinaryMemcacheOpcodes.PREPEND;
     public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
     public static final byte OP_STAT = BinaryMemcacheOpcodes.STAT;
+    public static final byte OP_GET_ALL_MUTATION_TOKENS = (byte) 0x48;
 
     boolean seqOnMutation = false;
 
@@ -177,6 +180,8 @@ public class KeyValueHandler
             request = handleKeepAliveRequest((KeepAliveRequest) msg);
         } else if (msg instanceof StatRequest) {
             request = handleStatRequest((StatRequest) msg);
+        } else if (msg instanceof GetAllMutationTokensRequest) {
+            request = handleGetAllMutationTokensRequest(ctx, (GetAllMutationTokensRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
                 + msg.getClass());
@@ -469,6 +474,31 @@ public class KeyValueHandler
         return request;
     }
 
+    private static BinaryMemcacheRequest handleGetAllMutationTokensRequest(ChannelHandlerContext ctx, GetAllMutationTokensRequest msg) {
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest("");
+
+        ByteBuf extras;
+        switch (msg.partitionState()) {
+            case ANY:
+                extras = Unpooled.EMPTY_BUFFER;
+                break;
+            case ACTIVE:
+            case REPLICA:
+            case PENDING:
+            case DEAD:
+            default:
+                extras = ctx.alloc().buffer().writeInt(msg.partitionState().value());
+        }
+        byte extrasLength = (byte) extras.readableBytes();
+
+        request
+                .setOpcode(OP_GET_ALL_MUTATION_TOKENS)
+                .setExtras(extras)
+                .setExtrasLength(extrasLength)
+                .setTotalBodyLength(extrasLength);
+        return request;
+    }
+
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -599,6 +629,14 @@ public class KeyValueHandler
             releaseContent(content);
 
             response = new StatResponse(status, statusCode, remoteHostname, key, value, bucket, request);
+        } else if (request instanceof GetAllMutationTokensRequest) {
+            // 2 bytes for partition ID, and 8 bytes for sequence number
+            MutationToken[] mutationTokens = new MutationToken[content.readableBytes() / 10];
+            for (int i = 0; i < mutationTokens.length; i++) {
+                mutationTokens[i] = new MutationToken((long)content.readShort(), 0, content.readLong());
+            }
+            releaseContent(content);
+            response = new GetAllMutationTokensResponse(mutationTokens, status, statusCode, bucket, request);
         } else if (request instanceof ObserveRequest) {
             byte observed = ObserveResponse.ObserveStatus.UNKNOWN.value();
             long observedCas = 0;
