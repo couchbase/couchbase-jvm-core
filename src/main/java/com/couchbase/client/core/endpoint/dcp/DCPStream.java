@@ -22,9 +22,12 @@
 
 package com.couchbase.client.core.endpoint.dcp;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.dcp.DCPRequest;
-import rx.subjects.PublishSubject;
+import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import rx.subjects.Subject;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Represents stream of incoming DCP messages.
@@ -40,13 +43,15 @@ public class DCPStream {
     /**
      * Creates new {@link DCPStream} instance.
      *
+     * @param env    environment
      * @param id     stream identifier
      * @param bucket name of the bucket
      */
-    public DCPStream(int id, String bucket) {
+    public DCPStream(CoreEnvironment env, int id, String bucket) {
         this.id = id;
         this.bucket = bucket;
-        subject = PublishSubject.<DCPRequest>create().toSerialized();
+        subject = UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(), TimeUnit.MILLISECONDS, env.scheduler())
+                .toSerialized();
     }
 
     public Subject<DCPRequest, DCPRequest> subject() {
