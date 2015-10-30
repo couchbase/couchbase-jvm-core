@@ -153,17 +153,17 @@ public class CouchbaseCore implements ClusterFacade {
         responseDisruptor.handleExceptionsWith(new ExceptionHandler() {
             @Override
             public void handleEventException(Throwable ex, long sequence, Object event) {
-                LOGGER.warn("Exception while Handling Response Events {}, {}", event, ex);
+                LOGGER.warn("Exception while Handling Response Events {}", event, ex);
             }
 
             @Override
             public void handleOnStartException(Throwable ex) {
-                LOGGER.warn("Exception while Starting Response RingBuffer {}", ex);
+                LOGGER.warn("Exception while Starting Response RingBuffer", ex);
             }
 
             @Override
             public void handleOnShutdownException(Throwable ex) {
-                LOGGER.info("Exception while shutting down Response RingBuffer {}", ex);
+                LOGGER.info("Exception while shutting down Response RingBuffer", ex);
             }
         });
         responseDisruptor.handleEventsWith(new ResponseHandler(environment, this, configProvider));
@@ -179,17 +179,17 @@ public class CouchbaseCore implements ClusterFacade {
         requestDisruptor.handleExceptionsWith(new ExceptionHandler() {
             @Override
             public void handleEventException(Throwable ex, long sequence, Object event) {
-                LOGGER.warn("Exception while Handling Request Events {}, {}", event, ex);
+                LOGGER.warn("Exception while Handling Request Events {}", event, ex);
             }
 
             @Override
             public void handleOnStartException(Throwable ex) {
-                LOGGER.warn("Exception while Starting Request RingBuffer {}", ex);
+                LOGGER.warn("Exception while Starting Request RingBuffer", ex);
             }
 
             @Override
             public void handleOnShutdownException(Throwable ex) {
-                LOGGER.info("Exception while shutting down Request RingBuffer {}", ex);
+                LOGGER.info("Exception while shutting down Request RingBuffer", ex);
             }
         });
         requestDisruptor.handleEventsWith(requestHandler);
