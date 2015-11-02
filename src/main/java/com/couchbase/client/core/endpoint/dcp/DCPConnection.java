@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Couchbase, Inc.
+ * Copyright (c) 2015 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,40 +25,52 @@ package com.couchbase.client.core.endpoint.dcp;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
+import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Represents stream of incoming DCP messages.
- *
  * @author Sergey Avseyev
- * @since 1.1.0
  */
-public class DCPStream {
-    public final int id;
-    public final String bucket;
-    public final Subject<DCPRequest, DCPRequest> subject;
-
+public class DCPConnection {
+    private static final Map<Integer, String> streams = new ConcurrentHashMap<Integer, String>();
     /**
-     * Creates new {@link DCPStream} instance.
-     *
-     * @param env    environment
-     * @param id     stream identifier
-     * @param bucket name of the bucket
+     * Counter for stream identifiers.
      */
-    public DCPStream(CoreEnvironment env, int id, String bucket) {
-        this.id = id;
+    private static volatile int nextStreamId = 0;
+    private final String name;
+    private final SerializedSubject<DCPRequest, DCPRequest> subject;
+    private final String bucket;
+
+    public DCPConnection(final CoreEnvironment env, final String name, final String bucket) {
+        this.name = name;
         this.bucket = bucket;
         subject = UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(), TimeUnit.MILLISECONDS, env.scheduler())
                 .toSerialized();
     }
 
-    public Subject<DCPRequest, DCPRequest> subject() {
-        return subject;
+    public static int addStream(final String connectionName) {
+        int newStreamId = nextStreamId++;
+        streams.put(newStreamId, connectionName);
+        return newStreamId;
+    }
+
+    public static String connectionName(final int streamId) {
+        return streams.get(streamId);
+    }
+
+    public String name() {
+        return name;
     }
 
     public String bucket() {
         return bucket;
+    }
+
+    public Subject<DCPRequest, DCPRequest> subject() {
+        return subject;
     }
 }

@@ -73,17 +73,19 @@ public class DCPMessageTest extends ClusterDependentTest {
                 .toList()
                 .toBlocking()
                 .single();
+        assertEquals(1, open.size());
         for (OpenConnectionResponse response : open) {
             assertEquals(ResponseStatus.SUCCESS, response.status());
         }
+
         StreamRequestResponse addStream = cluster()
-                .<StreamRequestResponse>send(new StreamRequestRequest(calculateVBucketForKey("foo"), bucket()))
+                .<StreamRequestResponse>send(new StreamRequestRequest("hello", calculateVBucketForKey("foo"), bucket()))
                 .toBlocking()
                 .single();
         assertEquals(ResponseStatus.SUCCESS, addStream.status());
 
         TestSubscriber<DCPRequest> subscriber = new TestSubscriber<DCPRequest>();
-        addStream.stream().takeUntil(Observable.timer(2, TimeUnit.SECONDS)).subscribe((Subscriber) subscriber);
+        open.get(0).connection().subject().takeUntil(Observable.timer(2, TimeUnit.SECONDS)).subscribe((Subscriber) subscriber);
 
         UpsertResponse foo = cluster()
                 .<UpsertResponse>send(new UpsertRequest("foo", Unpooled.copiedBuffer("bar", CharsetUtil.UTF_8), 1, 0, bucket()))

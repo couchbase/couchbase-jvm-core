@@ -24,9 +24,9 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
-import rx.Observable;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ import java.util.List;
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
 public class StreamRequestResponse extends AbstractDCPResponse {
-    private final Observable<DCPRequest> stream;
+    private final DCPConnection connection;
     private final List<FailoverLogEntry> failoverLog;
     private final long rollbackToSequenceNumber;
 
@@ -45,30 +45,30 @@ public class StreamRequestResponse extends AbstractDCPResponse {
      * Sets the required properties for the response.
      *
      * @param status                   the status of the response.
-     * @param stream                   observable, emitting DCP messages from the server
+     * @param connection               reference to enclosing logical connection
      * @param failoverLog              the list of failover log entries or null if response status is not success
      * @param rollbackToSequenceNumber if server instruct to rollback client's state, this field contains sequence
      *                                 number to use
      * @param request
      */
-    public StreamRequestResponse(final ResponseStatus status, final Observable<DCPRequest> stream,
-                                 final List<FailoverLogEntry> failoverLog, final CouchbaseRequest request,
-                                 final long rollbackToSequenceNumber) {
+    public StreamRequestResponse(final ResponseStatus status, final List<FailoverLogEntry> failoverLog,
+                                 final long rollbackToSequenceNumber, final CouchbaseRequest request,
+                                 final DCPConnection connection) {
         super(status, request);
-        this.stream = stream;
         this.failoverLog = failoverLog;
         this.rollbackToSequenceNumber = rollbackToSequenceNumber;
+        this.connection = connection;
     }
 
-    public Observable<DCPRequest> stream() {
-        return stream;
+    public DCPConnection connection() {
+        return connection;
     }
 
     public List<FailoverLogEntry> failoverLog() {
         return failoverLog;
     }
 
-    public long getRollbackToSequenceNumber() {
+    public long rollbackToSequenceNumber() {
         return rollbackToSequenceNumber;
     }
 }
