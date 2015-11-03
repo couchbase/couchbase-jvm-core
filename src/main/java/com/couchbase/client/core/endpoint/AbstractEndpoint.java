@@ -411,6 +411,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * try to connect to a socket which has already been removed on a failover/rebalance out.
      *
      * Subsequent reconnect attempts are triggered from here.
+     *
+     * A config reload is only signalled if the current endpoint is not in a DISCONNECTED state, avoiding to signal
+     * a config reload under the case of a regular, intended channel close (in an unexpected socket close, the
+     * endpoint is in a connected or connecting state).
      */
     public void notifyChannelInactive() {
         LOGGER.debug(logIdent(channel, this) + "Got notified from Channel as inactive.");
@@ -418,7 +422,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             return;
         }
 
-        signalConfigReload();
+        if (state() != LifecycleState.DISCONNECTED && state() != LifecycleState.DISCONNECTING) {
+            signalConfigReload();
+        }
+
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
             connect();
