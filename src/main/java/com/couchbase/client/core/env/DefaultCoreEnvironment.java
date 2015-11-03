@@ -79,6 +79,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int BOOTSTRAP_CARRIER_SSL_PORT = 11207;
     public static final int REQUEST_BUFFER_SIZE = 16384;
     public static final int RESPONSE_BUFFER_SIZE = 16384;
+    public static final int DCP_CONNECTION_BUFFER_SIZE = 20971520; // 20MiB
+    public static final double DCP_CONNECTION_BUFFER_ACK_THRESHOLD = 0.2; // for 20Mib it is 4MiB
     public static final int IO_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     public static final int COMPUTATION_POOL_SIZE =  Runtime.getRuntime().availableProcessors();
     public static final int KEYVALUE_ENDPOINTS = 1;
@@ -167,6 +169,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int computationPoolSize;
     private final int responseBufferSize;
     private final int requestBufferSize;
+    private final int dcpConnectionBufferSize;
+    private final double dcpConnectionBufferAckThreshold;
     private final int kvServiceEndpoints;
     private final int viewServiceEndpoints;
     private final int queryServiceEndpoints;
@@ -220,6 +224,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         int computationPoolSize = intPropertyOr("computationPoolSize", builder.computationPoolSize);
         responseBufferSize = intPropertyOr("responseBufferSize", builder.responseBufferSize);
         requestBufferSize = intPropertyOr("requestBufferSize", builder.requestBufferSize);
+        dcpConnectionBufferSize = intPropertyOr("dcpConnectionBufferSize", builder.dcpConnectionBufferSize);
+        dcpConnectionBufferAckThreshold = doublePropertyOr("dcpConnectionBufferAckThreshold", builder.dcpConnectionBufferAckThreshold);
         kvServiceEndpoints = intPropertyOr("kvEndpoints", builder.kvEndpoints);
         viewServiceEndpoints = intPropertyOr("viewEndpoints", builder.viewEndpoints);
         queryServiceEndpoints = intPropertyOr("queryEndpoints", builder.queryEndpoints);
@@ -344,6 +350,14 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return def;
         }
         return Integer.parseInt(found);
+    }
+
+    protected static double doublePropertyOr(String path, double def) {
+        String found = System.getProperty(NAMESPACE + path);
+        if (found == null) {
+            return def;
+        }
+        return Double.parseDouble(found);
     }
 
     @Override
@@ -518,6 +532,15 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public int responseBufferSize() {
         return responseBufferSize;
     }
+    @Override
+    public int dcpConnectionBufferSize() {
+        return dcpConnectionBufferSize;
+    }
+
+    @Override
+    public double dcpConnectionBufferAckThreshold() {
+        return dcpConnectionBufferAckThreshold;
+    }
 
     @Override
     public int kvEndpoints() {
@@ -634,6 +657,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int computationPoolSize = COMPUTATION_POOL_SIZE;
         private int responseBufferSize = RESPONSE_BUFFER_SIZE;
         private int requestBufferSize = REQUEST_BUFFER_SIZE;
+        public int dcpConnectionBufferSize = DCP_CONNECTION_BUFFER_SIZE;
+        public double dcpConnectionBufferAckThreshold = DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
         private int kvEndpoints = KEYVALUE_ENDPOINTS;
         private int viewEndpoints = VIEW_ENDPOINTS;
         private int queryEndpoints = QUERY_ENDPOINTS;
@@ -808,6 +833,26 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public Builder responseBufferSize(final int responseBufferSize) {
             this.responseBufferSize = responseBufferSize;
+            return this;
+        }
+
+        /**
+         * Sets the size of the buffer to control speed of DCP producer. The server will stop emitting data if
+         * the current value of the buffer reach this limit. Set it to zero to disable DCP flow control.
+         * (default value {@value #DCP_CONNECTION_BUFFER_SIZE}).
+         */
+        public Builder dcpConnectionBufferSize(final int dcpConnectionBufferSize) {
+            this.dcpConnectionBufferSize = dcpConnectionBufferSize;
+            return this;
+        }
+
+        /**
+         * When a DCP connection read bytes reaches this percentage of the {@link #dcpConnectionBufferSize},
+         * a DCP Buffer Acknowledge message is sent to the server to signal producer how much data has been processed.
+         * (default value {@value #DCP_CONNECTION_BUFFER_ACK_THRESHOLD}).
+         */
+        public Builder dcpConnectionBufferAckThreshold(final int dcpConnectionBufferAckThreshold) {
+            this.dcpConnectionBufferAckThreshold = dcpConnectionBufferAckThreshold;
             return this;
         }
 

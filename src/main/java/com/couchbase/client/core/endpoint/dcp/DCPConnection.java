@@ -44,9 +44,11 @@ public class DCPConnection {
     private final String name;
     private final SerializedSubject<DCPRequest, DCPRequest> subject;
     private final String bucket;
+    private volatile int totalReceivedBytes;
 
     public DCPConnection(final CoreEnvironment env, final String name, final String bucket) {
         this.name = name;
+        this.totalReceivedBytes = 0;
         this.bucket = bucket;
         subject = UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(), TimeUnit.MILLISECONDS, env.scheduler())
                 .toSerialized();
@@ -72,5 +74,17 @@ public class DCPConnection {
 
     public Subject<DCPRequest, DCPRequest> subject() {
         return subject;
+    }
+
+    public int totalReceivedBytes() {
+        return totalReceivedBytes;
+    }
+
+    public void inc(int delta) {
+        totalReceivedBytes += delta;
+    }
+
+    public void reset() {
+        totalReceivedBytes = 0;
     }
 }
