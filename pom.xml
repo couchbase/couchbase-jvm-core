@@ -28,7 +28,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <rxjava.version>1.0.14</rxjava.version>
+        <rxjava.version>1.0.15</rxjava.version>
         <netty.version>4.0.32.Final</netty.version>
         <disruptor.version>3.3.2</disruptor.version>
         <jackson.version>2.6.2</jackson.version>
