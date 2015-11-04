@@ -37,8 +37,8 @@ import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import rx.Observable;
 import rx.functions.Func1;
+
 import java.net.InetAddress;
-import java.util.Set;
 
 /**
  * An {@link AbstractLoader} which provides common basic processing for all implementing loaders.
@@ -112,26 +112,15 @@ public abstract class AbstractLoader implements Loader {
     /**
      * Initiate the config loading process.
      *
-     *
-     * @param seedNodes the seed nodes.
+     * @param seedNode the seed node.
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
      * @return a valid {@link BucketConfig}.
      */
-    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes,
-        final String bucket, final String password) {
+    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final InetAddress seedNode, final String bucket,
+        final String password) {
         LOGGER.debug("Loading Config for bucket {}", bucket);
-
-        return Observable.mergeDelayError(Observable
-                .from(seedNodes)
-                .map(new Func1<InetAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
-                    @Override
-                    public Observable<Tuple2<LoaderType, BucketConfig>> call(InetAddress inetAddress) {
-                        return loadConfigAtAddr(inetAddress, bucket, password);
-                    }
-                })
-            )
-            .take(1);
+        return loadConfigAtAddr(seedNode, bucket, password);
     }
 
     /**

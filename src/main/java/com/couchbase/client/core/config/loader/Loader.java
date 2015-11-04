@@ -27,10 +27,9 @@ import com.couchbase.client.core.lang.Tuple2;
 import rx.Observable;
 
 import java.net.InetAddress;
-import java.util.Set;
 
 public interface Loader {
 
-    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final Set<InetAddress> seedNodes,
+     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final InetAddress seedNode,
         final String bucket, final String password);
 }
