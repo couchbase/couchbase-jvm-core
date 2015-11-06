@@ -40,6 +40,7 @@ import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.message.dcp.OpenConnectionResponse;
 import com.couchbase.client.core.message.dcp.RemoveMessage;
 import com.couchbase.client.core.message.dcp.SnapshotMarkerMessage;
+import com.couchbase.client.core.message.dcp.StreamEndMessage;
 import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -75,6 +76,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
 
     public static final byte OP_OPEN_CONNECTION = 0x50;
     public static final byte OP_STREAM_REQUEST = 0x53;
+    public static final byte OP_STREAM_END = 0x55;
     public static final byte OP_SNAPSHOT_MARKER = 0x56;
     public static final byte OP_MUTATION = 0x57;
     public static final byte OP_REMOVE = 0x58;
@@ -259,6 +261,15 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             case OP_REMOVE:
                 request = new RemoveMessage(msg.getStatus(), msg.getKey(), msg.getCAS(), connection.bucket());
                 break;
+            case OP_STREAM_END:
+                final ByteBuf extrasReleased = msg.getExtras();
+                final ByteBuf extras = ctx.alloc().buffer(msg.getExtrasLength());
+                extras.writeBytes(extrasReleased, extrasReleased.readerIndex(), extrasReleased.readableBytes());
+                flags = extras.readInt();
+                extras.release();
+                request = new StreamEndMessage(StreamEndMessage.Reason.valueOf(flags), connection.bucket());
+                connection.removeStream(msg.getOpaque());
+                break;
             default:
                 LOGGER.info("Unhandled DCP message: {}, {}", msg.getOpcode(), msg);
         }
@@ -266,6 +277,10 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             connection.subject().onNext(request);
         }
         updateConnectionStats(ctx, connection, msg);
+        if (connection.streamsCount() == 0) {
+            connection.subject().onCompleted();
+            connections.remove(connection.name());
+        }
     }
 
     private void updateConnectionStats(final ChannelHandlerContext ctx, final DCPConnection connection, final FullBinaryMemcacheResponse msg) {

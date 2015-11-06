@@ -28,6 +28,9 @@ import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * @author Sergey Avseyev
  */
 public class DCPConnection {
-    private static final Map<Integer, String> streams = new ConcurrentHashMap<Integer, String>();
+    private static final Map<Integer, String> streamRegistry = new ConcurrentHashMap<Integer, String>();
     /**
      * Counter for stream identifiers.
      */
@@ -45,6 +48,7 @@ public class DCPConnection {
     private final SerializedSubject<DCPRequest, DCPRequest> subject;
     private final String bucket;
     private volatile int totalReceivedBytes;
+    private List<Integer> streams = Collections.synchronizedList(new ArrayList<Integer>());
 
     public DCPConnection(final CoreEnvironment env, final String name, final String bucket) {
         this.name = name;
@@ -54,14 +58,24 @@ public class DCPConnection {
                 .toSerialized();
     }
 
-    public static int addStream(final String connectionName) {
-        int newStreamId = nextStreamId++;
-        streams.put(newStreamId, connectionName);
-        return newStreamId;
+    public static String connectionName(final int streamId) {
+        return streamRegistry.get(streamId);
     }
 
-    public static String connectionName(final int streamId) {
-        return streams.get(streamId);
+    public int addStream(final String connectionName) {
+        int streamId = nextStreamId++;
+        streams.add(streamId);
+        streamRegistry.put(streamId, connectionName);
+        return streamId;
+    }
+
+    public void removeStream(final int streamId) {
+        streams.remove((Integer) streamId);
+        streamRegistry.remove(streamId);
+    }
+
+    public int streamsCount() {
+        return streams.size();
     }
 
     public String name() {
