@@ -566,7 +566,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * @return
      */
     private static int findSectionClosingPosition(ByteBuf buf, char openingChar, char closingChar) {
-        return buf.forEachByte(new ClosingPositionBufProcessor(openingChar, closingChar));
+        return buf.forEachByte(new ClosingPositionBufProcessor(openingChar, closingChar, true));
     }
 
     @Override
