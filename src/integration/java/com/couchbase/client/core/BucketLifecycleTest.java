@@ -29,9 +29,11 @@ import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.util.TestProperties;
 import org.junit.Test;
 import rx.Observable;
+import rx.functions.Func0;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -92,6 +94,30 @@ public class BucketLifecycleTest {
         core.send(new SeedNodesRequest(Arrays.asList("certainlyInvalidHostname")));
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.password() + "asd");
         core.send(request).toBlocking().single();
+    }
+
+    @Test
+    public void shouldSucceedSubsequentlyAfterFailedAttempt() {
+        final CouchbaseCore core = new CouchbaseCore();
+
+        core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
+
+        OpenBucketRequest badAttempt = new OpenBucketRequest(TestProperties.bucket() + "asd", TestProperties.password());
+        final OpenBucketRequest goodAttempt = new OpenBucketRequest(TestProperties.bucket(), TestProperties.password());
+
+        OpenBucketResponse response = core
+            .<OpenBucketResponse>send(badAttempt)
+            .onErrorResumeNext(Observable.defer(new Func0<Observable<OpenBucketResponse>>() {
+                @Override
+                public Observable<OpenBucketResponse> call() {
+                    return core.send(goodAttempt);
+                }
+            }))
+            .timeout(10, TimeUnit.SECONDS)
+            .toBlocking()
+            .single();
+
+        assertEquals(ResponseStatus.SUCCESS, response.status());
     }
 
 }
