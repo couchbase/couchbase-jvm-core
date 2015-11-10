@@ -277,6 +277,13 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                     }
                 }
             })
+            .doOnError(new Action1<Throwable>() {
+                @Override
+                public void call(Throwable throwable) {
+                    LOGGER.debug("Explicitly closing bucket {} after failed open attempt to clean resources.", bucket);
+                    removeBucketConfig(bucket);
+                }
+            })
             .onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
                 @Override
                 public Observable<ClusterConfig> call(final Throwable throwable) {
