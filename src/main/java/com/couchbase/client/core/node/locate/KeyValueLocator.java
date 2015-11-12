@@ -61,6 +61,9 @@ public class KeyValueLocator implements Locator {
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueLocator.class);
 
+    private static final int MIN_KEY_BYTES = 1;
+    private static final int MAX_KEY_BYTES = 250;
+
     /**
      * An empty node array which can be reused and does not need to be re-created all the time.
      */
@@ -126,6 +129,10 @@ public class KeyValueLocator implements Locator {
      */
     private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
         final CouchbaseBucketConfig config) {
+
+        if (!keyIsValid(request)) {
+            return null;
+        }
 
         int partitionId = partitionForKey(request.keyBytes(), config.numberOfPartitions());
         request.partition((short) partitionId);
@@ -249,6 +256,11 @@ public class KeyValueLocator implements Locator {
      */
     private static Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
         final MemcachedBucketConfig config) {
+
+        if (!keyIsValid(request)) {
+            return null;
+        }
+
         InetAddress hostname = config.nodeForId(request.keyBytes());
         request.partition((short) 0);
 
@@ -267,6 +279,29 @@ public class KeyValueLocator implements Locator {
         }
 
         throw new IllegalStateException("Node not found for request" + request);
+    }
+
+    /**
+     * Helper method to check if the given request key is valid.
+     *
+     * If false is returned, the request observable is already failed.
+     *
+     * @param request the request to extract and validate the key from.
+     * @return true if valid, false otherwise.
+     */
+    private static boolean keyIsValid(final BinaryRequest request) {
+        if (request.keyBytes() == null || request.keyBytes().length < MIN_KEY_BYTES) {
+            request.observable().onError(new IllegalArgumentException("The Document ID must not be null or empty."));
+            return false;
+        }
+
+        if (request.keyBytes().length > MAX_KEY_BYTES) {
+            request.observable().onError(new IllegalArgumentException(
+                "The Document ID must not be longer than 250 bytes."));
+            return false;
+        }
+
+        return true;
     }
 
 }

@@ -47,6 +47,8 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -396,6 +398,23 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         GetResponse getResponse = cluster().<GetResponse>send(request).toBlocking().single();
         assertEquals(content, getResponse.content().toString(CharsetUtil.UTF_8));
         ReferenceCountUtil.releaseLater(getResponse.content());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectEmptyKey() {
+        cluster().<GetResponse>send(new GetRequest("", bucket())).toBlocking().single();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectNullKey() {
+        cluster().<GetResponse>send(new GetRequest(null, bucket())).toBlocking().single();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldRejectTooLongKey() {
+        char[] array = new char[251];
+        Arrays.fill(array, 'a');
+        cluster().<GetResponse>send(new GetRequest(new String(array), bucket())).toBlocking().single();
     }
 
     /**
