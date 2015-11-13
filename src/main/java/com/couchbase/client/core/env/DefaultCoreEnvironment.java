@@ -657,8 +657,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int computationPoolSize = COMPUTATION_POOL_SIZE;
         private int responseBufferSize = RESPONSE_BUFFER_SIZE;
         private int requestBufferSize = REQUEST_BUFFER_SIZE;
-        public int dcpConnectionBufferSize = DCP_CONNECTION_BUFFER_SIZE;
-        public double dcpConnectionBufferAckThreshold = DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
+        private int dcpConnectionBufferSize = DCP_CONNECTION_BUFFER_SIZE;
+        private double dcpConnectionBufferAckThreshold = DCP_CONNECTION_BUFFER_ACK_THRESHOLD;
         private int kvEndpoints = KEYVALUE_ENDPOINTS;
         private int viewEndpoints = VIEW_ENDPOINTS;
         private int queryEndpoints = QUERY_ENDPOINTS;
