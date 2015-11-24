@@ -114,7 +114,7 @@ public class BucketStreamAggregator {
                                                 return core.send(new StreamRequestRequest(connectionName,
                                                         feed.partition(), feed.vbucketUUID(),
                                                         rollbackSequenceNumber, feed.endSequenceNumber(),
-                                                        feed.snapshotStartSequenceNumber(), feed.snapshotEndSequenceNumber(),
+                                                        rollbackSequenceNumber, feed.snapshotEndSequenceNumber(),
                                                         bucket));
                                             }
                                         });
