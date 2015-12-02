@@ -46,8 +46,8 @@ public class DefaultMemcachedBucketConfigTest {
 
         assertEquals(4, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {
-            String hostname = node.getValue().hostname().getHostName();
-            assertTrue(hostname.equals("vnode1") || hostname.equals("vnode2"));
+            String hostname = node.getValue().hostname().getHostAddress();
+            assertTrue(hostname.equals("192.168.56.101") || hostname.equals("192.168.56.102"));
             assertTrue(node.getValue().services().containsKey(ServiceType.BINARY));
         }
     }
