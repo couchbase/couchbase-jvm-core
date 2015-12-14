@@ -32,6 +32,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
+import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
@@ -77,6 +78,9 @@ public class KeyValueLocator implements Locator {
         if (request instanceof StatRequest) {
             return handleStatRequest((StatRequest)request, nodes);
         }
+        if (request instanceof GetAllMutationTokensRequest) {
+            return firstConnectedNode(nodes);
+        }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
@@ -113,6 +117,21 @@ public class KeyValueLocator implements Locator {
                 if (!hostname.equals(node.hostname())) {
                     continue;
                 }
+                return new Node[] { node };
+            }
+        }
+        return EMPTY_NODES;
+    }
+
+    /**
+     * Returns first node in {@link LifecycleState#CONNECTED} state
+     *
+     * @param nodes the nodes to iterate
+     * @return either the found node or an empty list indicating to retry later.
+     */
+    private static Node[] firstConnectedNode(Set<Node> nodes) {
+        for (Node node : nodes) {
+            if (node.isState(LifecycleState.CONNECTED)) {
                 return new Node[] { node };
             }
         }

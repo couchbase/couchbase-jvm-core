@@ -67,6 +67,16 @@ public class BucketStreamState {
     private final long snapshotEndSequenceNumber;
 
 
+    /**
+     * Initialize BucketStreamState
+     *
+     * @param partition
+     * @param vbucketUUID
+     * @param startSequenceNumber
+     * @param endSequenceNumber
+     * @param snapshotStartSequenceNumber
+     * @param snapshotEndSequenceNumber
+     */
     public BucketStreamState(short partition, long vbucketUUID,
                              long startSequenceNumber, long endSequenceNumber,
                              long snapshotStartSequenceNumber, long snapshotEndSequenceNumber) {
@@ -76,6 +86,25 @@ public class BucketStreamState {
         this.endSequenceNumber = endSequenceNumber;
         this.snapshotStartSequenceNumber = snapshotStartSequenceNumber;
         this.snapshotEndSequenceNumber = snapshotEndSequenceNumber;
+    }
+
+    /**
+     * Initialize BucketStreamState
+     *
+     * This constructor is shortcut for immediate state representation, when start and
+     * end boundaries have the same sequence number.
+     *
+     * @param partition
+     * @param vbucketUUID
+     * @param sequenceNumber
+     */
+    public BucketStreamState(short partition, long vbucketUUID, long sequenceNumber) {
+        this.partition = partition;
+        this.vbucketUUID = vbucketUUID;
+        this.startSequenceNumber = sequenceNumber;
+        this.endSequenceNumber = sequenceNumber;
+        this.snapshotStartSequenceNumber = sequenceNumber;
+        this.snapshotEndSequenceNumber = sequenceNumber;
     }
 
     public short partition() {

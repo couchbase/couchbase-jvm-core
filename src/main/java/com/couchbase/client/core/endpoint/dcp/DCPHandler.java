@@ -35,6 +35,8 @@ import com.couchbase.client.core.message.dcp.ControlParameter;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.DCPResponse;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
+import com.couchbase.client.core.message.dcp.GetFailoverLogRequest;
+import com.couchbase.client.core.message.dcp.GetFailoverLogResponse;
 import com.couchbase.client.core.message.dcp.MutationMessage;
 import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.message.dcp.OpenConnectionResponse;
@@ -59,20 +61,13 @@ import rx.functions.Action1;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Sergey Avseyev
  * @since 1.1.0
  */
 public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheResponse, BinaryMemcacheRequest, DCPRequest> {
-
-    /**
-     * The Logger used in this handler.
-     */
-    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPHandler.class);
 
     public static final byte OP_OPEN_CONNECTION = 0x50;
     public static final byte OP_STREAM_REQUEST = 0x53;
@@ -82,8 +77,12 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     public static final byte OP_REMOVE = 0x58;
     public static final byte OP_CONTROL = 0x5e;
     public static final byte OP_BUFFER_ACK = 0x5d;
-
-    private final Map<String, DCPConnection> connections;
+    public static final byte OP_GET_FAILOVER_LOG = 0x54;
+    /**
+     * The Logger used in this handler.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPHandler.class);
+    private DCPConnection connection;
 
     /**
      * Creates a new {@link DCPHandler} with the default queue for requests.
@@ -104,7 +103,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
      */
     public DCPHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<DCPRequest> queue, boolean isTransient) {
         super(endpoint, responseBuffer, queue, isTransient);
-        connections = new ConcurrentHashMap<String, DCPConnection>();
     }
 
     @Override
@@ -114,10 +112,11 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         if (msg instanceof OpenConnectionRequest) {
             OpenConnectionRequest openConnection = (OpenConnectionRequest) msg;
             request = handleOpenConnectionRequest(ctx, openConnection);
-            DCPConnection connection = new DCPConnection(env(), openConnection.connectionName(), openConnection.bucket());
-            connections.put(connection.name(), connection);
+            connection = new DCPConnection(env(), openConnection.connectionName(), openConnection.bucket());
         } else if (msg instanceof StreamRequestRequest) {
             request = handleStreamRequestRequest(ctx, (StreamRequestRequest) msg);
+        } else if (msg instanceof GetFailoverLogRequest) {
+            request = handleFailoverLogsRequest(ctx, (GetFailoverLogRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming DCPRequest type " + msg.getClass());
         }
@@ -136,7 +135,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         DCPResponse response = null;
 
         if (msg.getOpcode() == OP_OPEN_CONNECTION && request instanceof OpenConnectionRequest) {
-            final DCPConnection connection = connections.get(((OpenConnectionRequest) request).connectionName());
             response = new OpenConnectionResponse(ResponseStatusConverter.fromBinary(msg.getStatus()), connection, request);
             if (env().dcpConnectionBufferSize() > 0) {
                 ctx.writeAndFlush(controlRequest(ctx, ControlParameter.CONNECTION_BUFFER_SIZE, env().dcpConnectionBufferSize()));
@@ -148,11 +146,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             KeyValueStatus status = KeyValueStatus.valueOf(msg.getStatus());
             switch (status) {
                 case SUCCESS:
-                    failoverLog = new ArrayList<FailoverLogEntry>(content.readableBytes() / 16);
-                    while (content.readableBytes() >= 16) {
-                        FailoverLogEntry entry = new FailoverLogEntry(content.readLong(), content.readLong());
-                        failoverLog.add(entry);
-                    }
+                    failoverLog = readFailoverLogs(content);
                     break;
                 case ERR_ROLLBACK:
                     rollbackToSequenceNumber = content.readLong();
@@ -161,9 +155,11 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
                     LOGGER.warn("Unexpected status of StreamRequestResponse: {} (0x{}, {})",
                             status, Integer.toHexString(status.code()), status.description());
             }
-            final DCPConnection connection = connections.get(DCPConnection.connectionName(msg.getOpaque()));
             response = new StreamRequestResponse(ResponseStatusConverter.fromBinary(msg.getStatus()),
                     failoverLog, rollbackToSequenceNumber, request, connection);
+        } else if (msg.getOpcode() == OP_GET_FAILOVER_LOG) {
+            response = new GetFailoverLogResponse(ResponseStatusConverter.fromBinary(msg.getStatus()),
+                    readFailoverLogs(msg.content()), request);
         } else if (msg.getOpcode() == OP_CONTROL || msg.getOpcode() == OP_BUFFER_ACK) {
             KeyValueStatus status = KeyValueStatus.valueOf(msg.getStatus());
             if (status != KeyValueStatus.SUCCESS) {
@@ -186,8 +182,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
              *    relevant to 'current request'
              */
             final DCPRequest oldRequest = currentRequest();
-            final String connectionName = DCPConnection.connectionName(msg.getOpaque());
-            final DCPConnection connection = connections.get(connectionName);
             final DCPRequest dummy = new AbstractDCPRequest(connection.bucket(), null) {
             };
             dummy.observable().subscribe(new Action1<CouchbaseResponse>() {
@@ -203,7 +197,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             });
             try {
                 currentRequest(dummy);
-                handleDCPRequest(ctx, connection, msg);
+                handleDCPRequest(ctx, msg);
             } finally {
                 currentRequest(oldRequest);
             }
@@ -221,7 +215,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     /**
      * Handles incoming stream of DCP messages.
      */
-    private void handleDCPRequest(final ChannelHandlerContext ctx, final DCPConnection connection, final FullBinaryMemcacheResponse msg) {
+    private void handleDCPRequest(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg) {
         DCPRequest request = null;
         int flags = 0;
 
@@ -279,8 +273,13 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         updateConnectionStats(ctx, connection, msg);
         if (connection.streamsCount() == 0) {
             connection.subject().onCompleted();
-            connections.remove(connection.name());
         }
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        connection.subject().onCompleted();
+        super.handlerRemoved(ctx);
     }
 
     private void updateConnectionStats(final ChannelHandlerContext ctx, final DCPConnection connection, final FullBinaryMemcacheResponse msg) {
@@ -361,7 +360,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
      */
     private BinaryMemcacheRequest handleStreamRequestRequest(final ChannelHandlerContext ctx,
                                                              final StreamRequestRequest msg) {
-        DCPConnection connection = connections.get(msg.connectionName());
         ByteBuf extras = ctx.alloc().buffer(48);
         extras
                 .writeInt(0) // flags
@@ -381,6 +379,23 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         request.setOpaque(connection.addStream(connection.name()));
 
         return request;
+    }
+
+    private BinaryMemcacheRequest handleFailoverLogsRequest(ChannelHandlerContext ctx, GetFailoverLogRequest msg) {
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest();
+        request.setOpcode(OP_GET_FAILOVER_LOG);
+        request.setReserved(msg.partition());
+
+        return request;
+    }
+
+    private List<FailoverLogEntry> readFailoverLogs(final ByteBuf content) {
+        List<FailoverLogEntry> failoverLog = new ArrayList<FailoverLogEntry>(content.readableBytes() / 16);
+        while (content.readableBytes() >= 16) {
+            FailoverLogEntry entry = new FailoverLogEntry(content.readLong(), content.readLong());
+            failoverLog.add(entry);
+        }
+        return failoverLog;
     }
 
     @Override

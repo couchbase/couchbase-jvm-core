@@ -31,15 +31,12 @@ import rx.subjects.Subject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author Sergey Avseyev
  */
 public class DCPConnection {
-    private static final Map<Integer, String> streamRegistry = new ConcurrentHashMap<Integer, String>();
     /**
      * Counter for stream identifiers.
      */
@@ -58,20 +55,14 @@ public class DCPConnection {
                 .toSerialized();
     }
 
-    public static String connectionName(final int streamId) {
-        return streamRegistry.get(streamId);
-    }
-
     public int addStream(final String connectionName) {
         int streamId = nextStreamId++;
         streams.add(streamId);
-        streamRegistry.put(streamId, connectionName);
         return streamId;
     }
 
     public void removeStream(final int streamId) {
         streams.remove((Integer) streamId);
-        streamRegistry.remove(streamId);
     }
 
     public int streamsCount() {

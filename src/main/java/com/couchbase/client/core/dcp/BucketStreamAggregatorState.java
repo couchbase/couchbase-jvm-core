@@ -34,7 +34,7 @@ import java.util.Map;
 
 /**
  * State of the stream aggregator.
- * <p/>
+ *
  * It contains list of the stream states.
  *
  * @author Sergey Avseyev
@@ -43,18 +43,14 @@ import java.util.Map;
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
 public class BucketStreamAggregatorState implements Iterable<BucketStreamState> {
-    private final String name;
     private final Subject<BucketStreamStateUpdatedEvent, BucketStreamStateUpdatedEvent> updates =
             PublishSubject.<BucketStreamStateUpdatedEvent>create().toSerialized();
     private final Map<Short, BucketStreamState> feeds = new HashMap<Short, BucketStreamState>(1024);
 
     /**
      * Creates a new {@link BucketStreamAggregatorState}.
-     *
-     * @param name name of the DCP connection.
      */
-    public BucketStreamAggregatorState(final String name) {
-        this.name = name;
+    public BucketStreamAggregatorState() {
     }
 
     /**
@@ -87,7 +83,7 @@ public class BucketStreamAggregatorState implements Iterable<BucketStreamState> 
     }
 
     /**
-     * Returns state for the vBucket
+     * Returns state for the partition
      *
      * @param partition vBucketID (partition number).
      * @return state or null if state of partition not tracked.
@@ -96,21 +92,18 @@ public class BucketStreamAggregatorState implements Iterable<BucketStreamState> 
         return feeds.get(partition);
     }
 
+    /**
+     * Removes state for the partition.
+     *
+     * @param partition vBucketID (partition number).
+     * @return state or null if state of partition not tracked.
+     */
     public BucketStreamState remove(short partition) {
         return feeds.remove(partition);
     }
 
     public int size() {
         return feeds.size();
-    }
-
-    /**
-     * Returns name of the DCP stream.
-     *
-     * @return name of the DCP stream.
-     */
-    public String name() {
-        return name;
     }
 
     @Override
