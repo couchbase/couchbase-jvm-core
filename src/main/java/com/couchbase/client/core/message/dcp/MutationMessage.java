@@ -41,13 +41,18 @@ public class MutationMessage extends AbstractDCPRequest {
     private final int flags;
     private final int lockTime;
     private final long cas;
+    private final long bySequenceNumber;
+    private final long revisionSequenceNumber;
 
     public MutationMessage(short partition, String key, ByteBuf content, int expiration,
+                           long bySequenceNumber, long revisionSequenceNumber,
                            int flags, int lockTime, long cas, String bucket) {
-        this(partition, key, content, expiration, flags, lockTime, cas, bucket, null);
+        this(partition, key, content, expiration, bySequenceNumber, revisionSequenceNumber,
+                flags, lockTime, cas, bucket, null);
     }
 
     public MutationMessage(short partition, String key, ByteBuf content, int expiration,
+                           long bySequenceNumber, long revisionSequenceNumber,
                            int flags, int lockTime, long cas, String bucket, String password) {
         super(bucket, password);
         this.partition(partition);
@@ -57,6 +62,8 @@ public class MutationMessage extends AbstractDCPRequest {
         this.flags = flags;
         this.lockTime = lockTime;
         this.cas = cas;
+        this.bySequenceNumber = bySequenceNumber;
+        this.revisionSequenceNumber = revisionSequenceNumber;
     }
 
     public String key() {
@@ -81,6 +88,14 @@ public class MutationMessage extends AbstractDCPRequest {
 
     public long cas() {
         return cas;
+    }
+
+    public long bySequenceNumber() {
+        return bySequenceNumber;
+    }
+
+    public long revisionSequenceNumber() {
+        return revisionSequenceNumber;
     }
 
     @Override

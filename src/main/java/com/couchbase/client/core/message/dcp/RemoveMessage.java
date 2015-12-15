@@ -36,16 +36,20 @@ import com.couchbase.client.core.annotations.InterfaceStability;
 public class RemoveMessage extends AbstractDCPRequest {
     private final String key;
     private final long cas;
+    private final long bySequenceNumber;
+    private final long revisionSequenceNumber;
 
-    public RemoveMessage(short partition, String key, long cas, String bucket) {
-        this(partition, key, cas, bucket, null);
+    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket) {
+        this(partition, key, cas, bySequenceNumber, revisionSequenceNumber, bucket, null);
     }
 
-    public RemoveMessage(short partition, String key, long cas, String bucket, String password) {
+    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String password) {
         super(bucket, password);
         this.partition(partition);
         this.key = key;
         this.cas = cas;
+        this.bySequenceNumber = bySequenceNumber;
+        this.revisionSequenceNumber = revisionSequenceNumber;
     }
 
     public String key() {
@@ -54,5 +58,13 @@ public class RemoveMessage extends AbstractDCPRequest {
 
     public long cas() {
         return cas;
+    }
+
+    public long bySequenceNumber() {
+        return bySequenceNumber;
+    }
+
+    public long revisionSequenceNumber() {
+        return revisionSequenceNumber;
     }
 }
