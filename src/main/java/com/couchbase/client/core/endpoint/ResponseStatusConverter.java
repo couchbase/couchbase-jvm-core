@@ -31,6 +31,8 @@ import com.couchbase.client.core.message.ResponseStatus;
  *
  * @author Michael Nitschinger
  * @since 1.1.2
+ * @see ResponseStatus
+ * @see KeyValueStatus
  */
 public class ResponseStatusConverter {
 
@@ -87,6 +89,34 @@ public class ResponseStatusConverter {
                 return ResponseStatus.RANGE_ERROR;
             case ERR_ROLLBACK:
                 return ResponseStatus.ROLLBACK;
+            //== the following codes are for subdocument API ==
+            case ERR_SUBDOC_PATH_NOT_FOUND:
+                return ResponseStatus.SUBDOC_PATH_NOT_FOUND;
+            case ERR_SUBDOC_PATH_MISMATCH:
+                return ResponseStatus.SUBDOC_PATH_MISMATCH;
+            case ERR_SUBDOC_PATH_INVALID:
+                return ResponseStatus.SUBDOC_PATH_INVALID;
+            case ERR_SUBDOC_PATH_TOO_BIG:
+                return ResponseStatus.SUBDOC_PATH_TOO_BIG;
+            case ERR_SUBDOC_DOC_TOO_DEEP:
+                return ResponseStatus.SUBDOC_DOC_TOO_DEEP;
+            case ERR_SUBDOC_VALUE_CANTINSERT:
+                return ResponseStatus.SUBDOC_VALUE_CANTINSERT;
+            case ERR_SUBDOC_DOC_NOT_JSON:
+                return ResponseStatus.SUBDOC_DOC_NOT_JSON;
+            case ERR_SUBDOC_NUM_RANGE:
+                return ResponseStatus.SUBDOC_NUM_RANGE;
+            case ERR_SUBDOC_DELTA_RANGE:
+                return ResponseStatus.SUBDOC_DELTA_RANGE;
+            case ERR_SUBDOC_PATH_EXISTS:
+                return ResponseStatus.SUBDOC_PATH_EXISTS;
+            case ERR_SUBDOC_VALUE_TOO_DEEP:
+                return ResponseStatus.SUBDOC_VALUE_TOO_DEEP;
+            case ERR_SUBDOC_INVALID_COMBO:
+                return ResponseStatus.SUBDOC_INVALID_COMBO;
+            case ERR_SUBDOC_MULTI_PATH_FAILURE:
+                return ResponseStatus.SUBDOC_MULTI_PATH_FAILURE;
+            //== end of subdocument API codes ==
             default:
                 LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
                         status, Integer.toHexString(status.code()), status.description());

@@ -69,6 +69,15 @@ import com.couchbase.client.core.message.kv.UnlockRequest;
 import com.couchbase.client.core.message.kv.UnlockResponse;
 import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.message.kv.UpsertResponse;
+import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiLookupRequest;
+import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiMutationRequest;
+import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMutationRequest;
+import com.couchbase.client.core.message.kv.subdoc.BinarySubdocRequest;
+import com.couchbase.client.core.message.kv.subdoc.multi.LookupCommand;
+import com.couchbase.client.core.message.kv.subdoc.multi.LookupResult;
+import com.couchbase.client.core.message.kv.subdoc.multi.MultiLookupResponse;
+import com.couchbase.client.core.message.kv.subdoc.multi.MultiMutationResponse;
+import com.couchbase.client.core.message.kv.subdoc.simple.SimpleSubdocResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
@@ -82,6 +91,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
 
 /**
@@ -122,6 +134,26 @@ public class KeyValueHandler
     public static final byte OP_NOOP = BinaryMemcacheOpcodes.NOOP;
     public static final byte OP_STAT = BinaryMemcacheOpcodes.STAT;
     public static final byte OP_GET_ALL_MUTATION_TOKENS = (byte) 0x48;
+
+    public static final byte OP_SUB_GET = (byte) 0xc5;
+    public static final byte OP_SUB_EXIST = (byte) 0xc6;
+    public static final byte OP_SUB_DICT_ADD = (byte) 0xc7;
+    public static final byte OP_SUB_DICT_UPSERT = (byte) 0xc8;
+    public static final byte OP_SUB_DELETE = (byte) 0xc9;
+    public static final byte OP_SUB_REPLACE = (byte) 0xca;
+    public static final byte OP_SUB_ARRAY_PUSH_LAST = (byte) 0xcb;
+    public static final byte OP_SUB_ARRAY_PUSH_FIRST = (byte) 0xcc;
+    public static final byte OP_SUB_ARRAY_INSERT = (byte) 0xcd;
+    public static final byte OP_SUB_ARRAY_ADD_UNIQUE = (byte) 0xce;
+    public static final byte OP_SUB_COUNTER = (byte) 0xcf;
+    public static final byte OP_SUB_MULTI_LOOKUP = (byte) 0xd0;
+    public static final byte OP_SUB_MULTI_MUTATION = (byte) 0xd1;
+
+    /**
+     * The bitmask for sub-document extras "command" section (third byte of the extras) that activates the
+     * creation of missing intermediate nodes in the JSON path.
+     */
+    public static final byte SUBDOC_BITMASK_MKDIR_P = 1;
 
     boolean seqOnMutation = false;
 
@@ -182,6 +214,12 @@ public class KeyValueHandler
             request = handleStatRequest((StatRequest) msg);
         } else if (msg instanceof GetAllMutationTokensRequest) {
             request = handleGetAllMutationTokensRequest(ctx, (GetAllMutationTokensRequest) msg);
+        } else if (msg instanceof BinarySubdocRequest) {
+            request = handleSubdocumentRequest(ctx, (BinarySubdocRequest) msg);
+        } else if (msg instanceof BinarySubdocMultiLookupRequest) {
+            request = handleSubdocumentMultiLookupRequest(ctx, (BinarySubdocMultiLookupRequest) msg);
+        } else if (msg instanceof BinarySubdocMultiMutationRequest) {
+            request = handleSubdocumentMultiMutationRequest(ctx, (BinarySubdocMultiMutationRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
                 + msg.getClass());
@@ -499,6 +537,80 @@ public class KeyValueHandler
         return request;
     }
 
+    private static BinaryMemcacheRequest handleSubdocumentRequest(ChannelHandlerContext ctx, BinarySubdocRequest msg) {
+        String key = msg.key();
+        short keyLength = (short) msg.keyBytes().length;
+
+        ByteBuf extras = ctx.alloc().buffer(3, 7); //extras can be 7 bytes if there is an expiry
+        byte extrasLength = 3; //by default 2 bytes for pathLength + 1 byte for "command" flags
+        extras.writeShort(msg.pathLength());
+
+        long cas = 0L;
+
+        if (msg instanceof BinarySubdocMutationRequest) {
+            BinarySubdocMutationRequest mut = (BinarySubdocMutationRequest) msg;
+            //for now only possible command flag is MKDIR_P (and it makes sense in mutations only)
+            if (mut.createIntermediaryPath()) {
+                extras.writeByte(0 | SUBDOC_BITMASK_MKDIR_P);
+            } else {
+                extras.writeByte(0);
+            }
+            if (mut.expiration() != 0L) {
+                extrasLength = 7;
+                extras.writeInt(mut.expiration());
+            }
+
+            cas = mut.cas();
+        } else {
+            extras.writeByte(0);
+        }
+
+        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
+        request.setOpcode(msg.opcode())
+                .setKeyLength(keyLength)
+                .setExtrasLength(extrasLength)
+                .setTotalBodyLength(keyLength + msg.content().readableBytes() + extrasLength)
+                .setCAS(cas);
+
+        return request;
+    }
+
+    private static BinaryMemcacheRequest handleSubdocumentMultiLookupRequest(ChannelHandlerContext ctx,
+                                                                             BinarySubdocMultiLookupRequest msg) {
+        String key = msg.key();
+        short keyLength = (short) msg.keyBytes().length;
+
+        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
+        request.setOpcode(OP_SUB_MULTI_LOOKUP)
+                .setKeyLength(keyLength)
+                .setExtrasLength((byte) 0)
+                .setTotalBodyLength(keyLength + msg.content().readableBytes());
+
+        return request;
+    }
+
+    private static BinaryMemcacheRequest handleSubdocumentMultiMutationRequest(ChannelHandlerContext ctx,
+                                                                             BinarySubdocMultiMutationRequest msg) {
+        String key = msg.key();
+        short keyLength = (short) msg.keyBytes().length;
+
+        byte extrasLength = 0;
+        ByteBuf extras = Unpooled.EMPTY_BUFFER;
+        if (msg.expiration() != 0L) {
+            extrasLength = 4;
+            extras = ctx.alloc().buffer(4, 4);
+            extras.writeInt(msg.expiration());
+        }
+
+        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
+        request.setOpcode(OP_SUB_MULTI_MUTATION)
+                .setKeyLength(keyLength)
+                .setExtrasLength(extrasLength)
+                .setTotalBodyLength(keyLength + msg.content().readableBytes() + extrasLength);
+
+        return request;
+    }
+
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -515,6 +627,18 @@ public class KeyValueHandler
 
         msg.content().retain();
         CouchbaseResponse response = handleCommonResponseMessages(request, msg, ctx, status, seqOnMutation);
+
+        if (response == null) {
+            response = handleSubdocumentResponseMessages(request, msg, ctx, status, seqOnMutation);
+        }
+
+        if (response == null) {
+            response = handleSubdocumentMultiLookupResponseMessages(request, msg, ctx, status);
+        }
+
+        if (response == null) {
+            response = handleSubdocumentMultiMutationResponseMessages(request, msg, ctx, status, seqOnMutation);
+        }
 
         if (response == null) {
             response = handleOtherResponseMessages(request, msg, status, seqOnMutation, remoteHostname());
@@ -578,6 +702,128 @@ public class KeyValueHandler
             response = new RemoveResponse(status, statusCode, cas, bucket, content, descr, request);
         }
 
+        return response;
+    }
+
+    /**
+     * Helper method to decode all simple subdocument response messages.
+     *
+     * @param request the current request.
+     * @param msg the current response message.
+     * @param ctx the handler context.
+     * @param status the response status code.
+     * @return the decoded response or null if none did match.
+     */
+    private static CouchbaseResponse handleSubdocumentResponseMessages(BinaryRequest request, FullBinaryMemcacheResponse msg,
+         ChannelHandlerContext ctx, ResponseStatus status, boolean seqOnMutation) {
+        if (!(request instanceof BinarySubdocRequest))
+            return null;
+        BinarySubdocRequest subdocRequest = (BinarySubdocRequest) request;
+        long cas = msg.getCAS();
+        short statusCode = msg.getStatus();
+        String bucket = request.bucket();
+
+        MutationToken mutationToken = null;
+        if (msg.getExtrasLength() > 0) {
+            mutationToken = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+        }
+
+        ByteBuf fragment;
+        if (msg.content() != null && msg.content().readableBytes() > 0) {
+            fragment = msg.content();
+        } else if (msg.content() != null) {
+            msg.content().release();
+            fragment = Unpooled.EMPTY_BUFFER;
+        } else {
+            fragment = Unpooled.EMPTY_BUFFER;
+        }
+
+        return new SimpleSubdocResponse(status, statusCode, bucket, fragment, subdocRequest, cas, mutationToken);
+    }
+
+    /**
+     * Helper method to decode all multi lookup response messages.
+     *
+     * @param request the current request.
+     * @param msg the current response message.
+     * @param ctx the handler context.
+     * @param status the response status code.
+     * @return the decoded response or null if it wasn't a subdocument multi lookup.
+     */
+    private static CouchbaseResponse handleSubdocumentMultiLookupResponseMessages(BinaryRequest request,
+            FullBinaryMemcacheResponse msg, ChannelHandlerContext ctx, ResponseStatus status) {
+        if (!(request instanceof BinarySubdocMultiLookupRequest))
+            return null;
+        BinarySubdocMultiLookupRequest subdocRequest = (BinarySubdocMultiLookupRequest) request;
+
+        short statusCode = msg.getStatus();
+        String bucket = request.bucket();
+
+        ByteBuf body = msg.content();
+        List<LookupResult> responses;
+        if (status.isSuccess() || ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
+            long bodyLength = body.readableBytes();
+            List<LookupCommand> commands = subdocRequest.commands();
+            responses = new ArrayList<LookupResult>(commands.size());
+            for (LookupCommand cmd : commands) {
+                if (msg.content().readableBytes() < 6) {
+                    body.release();
+                    throw new IllegalStateException("Expected " + commands.size() + " lookup responses, only got " +
+                            responses.size() + ", total of " + bodyLength + " bytes");
+                }
+                short cmdStatus = body.readShort();
+                int valueLength = body.readInt();
+                ByteBuf value = ctx.alloc().buffer(valueLength, valueLength);
+                value.writeBytes(body, valueLength);
+
+                responses.add(new LookupResult(cmdStatus, ResponseStatusConverter.fromBinary(cmdStatus),
+                        cmd.path(), cmd.lookup(), value));
+            }
+        } else {
+            responses = Collections.emptyList();
+        }
+        body.release();
+
+        return new MultiLookupResponse(status, statusCode, bucket, responses, subdocRequest);
+    }
+
+    /**
+     * Helper method to decode all multi mutation response messages.
+     *
+     * @param request the current request.
+     * @param msg the current response message.
+     * @param ctx the handler context.
+     * @param status the response status code.
+     * @return the decoded response or null if it wasn't a subdocument multi lookup.
+     */
+    private static CouchbaseResponse handleSubdocumentMultiMutationResponseMessages(BinaryRequest request,
+            FullBinaryMemcacheResponse msg, ChannelHandlerContext ctx, ResponseStatus status, boolean seqOnMutation) {
+        if (!(request instanceof BinarySubdocMultiMutationRequest))
+            return null;
+        BinarySubdocMultiMutationRequest subdocRequest = (BinarySubdocMultiMutationRequest) request;
+
+        long cas = msg.getCAS();
+        short statusCode = msg.getStatus();
+        String bucket = request.bucket();
+
+        MutationToken mutationToken = null;
+        if (msg.getExtrasLength() > 0) {
+            mutationToken = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+        }
+
+        ByteBuf body = msg.content();
+        MultiMutationResponse response;
+        if (status.isSuccess()) {
+            response = new MultiMutationResponse(bucket, subdocRequest, cas, mutationToken);
+        } else if (ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
+            short firstErrorCode = body.readShort();
+            byte firstErrorIndex = body.readByte();
+            response = new MultiMutationResponse(status, statusCode, bucket, firstErrorIndex, firstErrorCode,
+                    subdocRequest, cas, mutationToken);
+        } else {
+            response = new MultiMutationResponse(status, statusCode, bucket, subdocRequest, cas, mutationToken);
+        }
+        body.release();
         return response;
     }
 
@@ -708,6 +954,12 @@ public class KeyValueHandler
             content = ((AppendRequest) request).content();
         } else if (request instanceof PrependRequest) {
             content = ((PrependRequest) request).content();
+        } else if (request instanceof BinarySubdocRequest) {
+            content = ((BinarySubdocRequest) request).content();
+        } else if (request instanceof BinarySubdocMultiLookupRequest) {
+            content = ((BinarySubdocMultiLookupRequest) request).content();
+        } else if (request instanceof BinarySubdocMultiMutationRequest) {
+            content = ((BinarySubdocMultiMutationRequest) request).content();
         }
         releaseContent(content);
     }
