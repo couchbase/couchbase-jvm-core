@@ -44,7 +44,16 @@ public class ExponentialDelay extends Delay {
 
     @Override
     public long calculate(long attempt) {
-        long calc = Math.round((1 << (attempt - 1)) * growBy);
+        long step;
+        if (attempt <= 0) { //safeguard against underflow
+            step = 0;
+        } else if (attempt >= 32) { //safeguard against overflow
+            step = Long.MAX_VALUE;
+        } else {
+            step = (1 << (attempt - 1));
+        }
+        //round will cap at Long.MAX_VALUE
+        long calc = Math.round(step * growBy);
         if (calc < lower) {
             return lower;
         }

@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ExponentialDelayTest {
 
@@ -83,6 +84,19 @@ public class ExponentialDelayTest {
         assertEquals(64, exponentialDelay.calculate(6));
 
         assertEquals("ExponentialDelay{growBy 2.0 SECONDS; lower=0, upper=2147483647}", exponentialDelay.toString());
+    }
+
+    @Test
+    public void shouldNotOverflowIn100Retries() {
+        Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, Integer.MAX_VALUE, 0, 2d);
+
+        long previous = Long.MIN_VALUE;
+        //the bitwise operation in ExponentialDelay would overflow the step at i = 32
+        for(int i = 0; i < 100; i++) {
+            long now = exponentialDelay.calculate(i);
+            assertTrue("delay is at " + now + " down from " + previous + ", attempt " + i, now >= previous);
+            previous = now;
+        }
     }
 
 }
