@@ -37,12 +37,14 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import rx.Observable;
 import rx.functions.Func1;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Base test class for tests that need a working cluster reference.
@@ -110,37 +112,65 @@ public class ClusterDependentTest {
      * @return true if all nodes in the cluster are version 3 or later.
      */
     public static boolean isDCPEnabled() throws Exception {
-        ClusterConfigResponse response = cluster()
-            .<ClusterConfigResponse>send(new ClusterConfigRequest(adminUser, adminPassword))
-            .toBlocking()
-            .single();
-        return minNodeVersionFromConfig(response.config()) >= 3;
+        return minNodeVersion()[0] >= 3;
     }
 
     public static boolean isMutationMetadataEnabled() throws Exception {
+        return minNodeVersion()[0] >= 4;
+    }
+
+    /**
+     * Perform an {@link Assume assumption} in order to ignore a surrounding test if the cluster's lowest
+     * Couchbase version is under the provided major+minor.
+     */
+    public static void assumeMinimumVersionCompatible(int major, int minor) throws Exception {
+        int[] version = minNodeVersion();
+        Assume.assumeTrue("Detected Couchbase " + version[0] + "." + version[1] + ", needed " + major + "." + minor,
+               version[0] > major || (version[0] == major && version[1] >= minor));
+    }
+
+    /**
+     * @return the major.minor minimum version in the cluster, as an int[2].
+     * @throws Exception
+     */
+    public static int[] minNodeVersion() throws Exception {
         ClusterConfigResponse response = cluster()
                 .<ClusterConfigResponse>send(new ClusterConfigRequest(adminUser, adminPassword))
                 .toBlocking()
                 .single();
-        return minNodeVersionFromConfig(response.config()) >= 4;
+        return minNodeVersionFromConfig(response.config());
     }
 
-    private static Integer minNodeVersionFromConfig(String rawConfig) throws Exception {
+    /**
+     * @return the major.minor minimum version in the cluster, as an int[2].
+     */
+    private static int[] minNodeVersionFromConfig(String rawConfig) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
         JavaType type = mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
         Map<String, Object> result = mapper.readValue(rawConfig, type);
 
         List<Object> nodes = (List<Object>) result.get("nodes");
-        int min = 99;
+        int[] min = { 99, 99, 99 };
         for (Object n : nodes) {
             Map<String, Object> node = (Map<String, Object>) n;
-            String version = (String) node.get("version");
-            int major = Integer.parseInt(version.substring(0, 1));
-            if (major < min) {
-                min = major;
+            String stringVersion = (String) node.get("version");
+            int[] version = extractVersion(stringVersion);
+
+            if (version[0] < min[0]
+                    || (version[0] == min[0] && version[1] < min[1])) {
+                min = version;
             }
         }
         return min;
+    }
+
+    protected static int[] extractVersion(String stringVersion) {
+        String[] splitVersion = stringVersion.split("[^\\d]+");
+        int[] version = new int[2];
+
+        version[0] = Integer.parseInt(splitVersion[0]); //major
+        version[1] = splitVersion.length < 2 ? 0 : Integer.parseInt(splitVersion[1]); //minor
+        return version;
     }
 }
