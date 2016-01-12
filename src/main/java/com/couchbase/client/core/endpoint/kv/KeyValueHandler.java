@@ -604,6 +604,7 @@ public class KeyValueHandler
 
         FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
         request.setOpcode(OP_SUB_MULTI_MUTATION)
+                .setCAS(msg.cas())
                 .setKeyLength(keyLength)
                 .setExtrasLength(extrasLength)
                 .setTotalBodyLength(keyLength + msg.content().readableBytes() + extrasLength);
