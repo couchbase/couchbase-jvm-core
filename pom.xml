@@ -234,6 +234,13 @@
                             <pattern>com.lmax</pattern>
                             <shadedPattern>com.couchbase.client.deps.com.lmax</shadedPattern>
                         </relocation>
+                        <!-- This is a hack, it should actually be an exclusion pattern on io.netty
+                             but for some reason this doesn't work. This is a workaround to repair
+                             the renaming damage done by the earlier io.netty rule. -->
+                        <relocation>
+                            <pattern>com.couchbase.client.deps.com.couchbase.client</pattern>
+                            <shadedPattern>com.couchbase.client</shadedPattern>
+                        </relocation>
                     </relocations>
                     <createSourcesJar>true</createSourcesJar>
                     <shadeSourcesContent>true</shadeSourcesContent>
