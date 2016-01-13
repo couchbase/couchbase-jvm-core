@@ -1003,7 +1003,8 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
                 new MutationCommand(Mutation.ARRAY_INSERT, "sub.array[1]", arrayInsertedFragment),
                 new MutationCommand(Mutation.ARRAY_PUSH_FIRST, "sub.array", arrayFirstFragment),
                 new MutationCommand(Mutation.ARRAY_PUSH_LAST, "sub.array", arrayLastFragment),
-                new MutationCommand(Mutation.ARRAY_ADD_UNIQUE, "sub.array", uniqueFragment)
+                new MutationCommand(Mutation.ARRAY_ADD_UNIQUE, "sub.array", uniqueFragment),
+                new MutationCommand(Mutation.DELETE, "sub.value")
         );
         MultiMutationResponse response = cluster().<MultiMutationResponse>send(request).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
@@ -1020,7 +1021,7 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
 
         String expected = "{\"value\":\"mutated\"," +
                 "\"sub\":{" +
-                "\"value\":\"subStringValue\"," +
+//                "\"value\":\"subStringValue\"," + //DELETED
                 "\"array\":[\"first\",\"array1\",\"inserted\",2,true,\"last\",\"unique\"]" +
                 ",\"value2\":\"mutated\"" +
                 ",\"value3\":\"mutated\"}," +
@@ -1052,7 +1053,9 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
                 new MutationCommand(Mutation.ARRAY_INSERT, "sub.array[5]", arrayInsertedFragment),
                 new MutationCommand(Mutation.ARRAY_PUSH_FIRST, "sub.array", arrayFirstFragment),
                 new MutationCommand(Mutation.ARRAY_PUSH_LAST, "sub.array", arrayLastFragment),
-                new MutationCommand(Mutation.ARRAY_ADD_UNIQUE, "sub.array", uniqueFragment)
+                new MutationCommand(Mutation.ARRAY_ADD_UNIQUE, "sub.array", uniqueFragment),
+                //this one would also fail, but server stops at first failure
+                new MutationCommand(Mutation.DELETE, "path.not.found")
         );
         MultiMutationResponse response = cluster().<MultiMutationResponse>send(request).toBlocking().single();
         assertEquals(ResponseStatus.SUBDOC_MULTI_PATH_FAILURE, response.status());
@@ -1081,7 +1084,8 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
         SubMultiMutationRequest request = new SubMultiMutationRequest(testInsertionSubKey, bucket(),
                 new MutationCommand(Mutation.COUNTER, "counter", counterFragment, false),
                 new MutationCommand(Mutation.DICT_UPSERT, "sub.value3", stringFragment),
-                new MutationCommand(Mutation.ARRAY_PUSH_FIRST, "sub.array", arrayFirstFragment)
+                new MutationCommand(Mutation.ARRAY_PUSH_FIRST, "sub.array", arrayFirstFragment),
+                new MutationCommand(Mutation.DELETE, "some.paht")
         );
         MultiMutationResponse response = cluster().<MultiMutationResponse>send(request).toBlocking().single();
         assertEquals(ResponseStatus.NOT_EXISTS, response.status());
