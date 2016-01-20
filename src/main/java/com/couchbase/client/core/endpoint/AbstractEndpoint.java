@@ -250,6 +250,17 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     @Override
     public Observable<LifecycleState> connect() {
+        return connect(true);
+    }
+
+    /**
+     * An internal alternative to {@link #connect()} where signalling that this is
+     * post-bootstrapping can be done.
+     *
+     * @param bootstrapping is this connect attempt made during bootstrap or after (in
+     *                     which case more error cases are eligible for retries).
+     */
+    protected Observable<LifecycleState> connect(boolean bootstrapping) {
         if (state() != LifecycleState.DISCONNECTED) {
             return Observable.just(state());
         }
@@ -257,7 +268,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
         transitionState(LifecycleState.CONNECTING);
         hasWritten = false;
-        doConnect(observable);
+        doConnect(observable, bootstrapping);
         return observable;
     }
 
@@ -266,8 +277,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      *
      * @param observable the {@link Subject} which is eventually notified if the connect process
      *                   succeeded or failed.
+     * @param bootstrapping true if connection attempt is for bootstrapping phase and therefore be less forgiving of
+     *                      some errors (like socket connect timeout).
      */
-    protected void doConnect(final Subject<LifecycleState, LifecycleState> observable) {
+    protected void doConnect(final Subject<LifecycleState, LifecycleState> observable, final boolean bootstrapping) {
         bootstrap.connect().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(final ChannelFuture future) throws Exception {
@@ -307,37 +320,37 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
-                        } else {
-                            if (!disconnected) {
-                                long delay = env.reconnectDelay().calculate(reconnectAttempt++);
-                                TimeUnit delayUnit = env.reconnectDelay().unit();
-                                LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                        + "Could not connect to endpoint, retrying with delay " + delay + " "
-                                        + delayUnit + ": ", future.cause());
-                                if (responseBuffer != null) {
-                                    responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR,
+                        }
+
+                        if (!disconnected && !bootstrapping && !isTransient) {
+                            long delay = env.reconnectDelay().calculate(reconnectAttempt++);
+                            TimeUnit delayUnit = env.reconnectDelay().unit();
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                    + "Could not connect to endpoint, retrying with delay " + delay + " "
+                                    + delayUnit + ": ", future.cause());
+                            if (responseBuffer != null) {
+                                responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR,
                                         SignalConfigReload.INSTANCE, null);
-                                }
-                                transitionState(LifecycleState.CONNECTING);
-                                future.channel().eventLoop().schedule(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        // Make sure to avoid a race condition where the reconnect could override
-                                        // the disconnect phase. If this happens, explicitly break the retry loop
-                                        // and re-run the disconnect phase to make sure all is properly freed.
-                                        if (!disconnected) {
-                                            doConnect(observable);
-                                        } else {
-                                            LOGGER.debug("{}Explicitly breaking retry loop because already disconnected.",
-                                                    logIdent(channel, AbstractEndpoint.this));
-                                            disconnect();
-                                        }
-                                    }
-                                }, delay, delayUnit);
-                            } else {
-                                LOGGER.debug("{}Not retrying because already disconnected.",
-                                        logIdent(channel, AbstractEndpoint.this));
                             }
+                            transitionState(LifecycleState.CONNECTING);
+                            future.channel().eventLoop().schedule(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // Make sure to avoid a race condition where the reconnect could override
+                                    // the disconnect phase. If this happens, explicitly break the retry loop
+                                    // and re-run the disconnect phase to make sure all is properly freed.
+                                    if (!disconnected) {
+                                        doConnect(observable, bootstrapping);
+                                    } else {
+                                        LOGGER.debug("{}Explicitly breaking retry loop because already disconnected.",
+                                                logIdent(channel, AbstractEndpoint.this));
+                                        disconnect();
+                                    }
+                                }
+                            }, delay, delayUnit);
+                        } else {
+                            LOGGER.debug("{}Not retrying because already disconnected.",
+                                    logIdent(channel, AbstractEndpoint.this));
                         }
                     }
                 }
@@ -429,7 +442,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
-            connect();
+            connect(false);
         }
     }
 
