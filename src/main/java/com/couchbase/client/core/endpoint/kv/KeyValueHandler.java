@@ -690,16 +690,16 @@ public class KeyValueHandler
             response = new GetBucketConfigResponse(status, statusCode, bucket, content,
                     ((GetBucketConfigRequest) request).hostname());
         } else if (request instanceof InsertRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new InsertResponse(status, statusCode, cas, bucket, content, descr, request);
         } else if (request instanceof UpsertRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new UpsertResponse(status, statusCode, cas, bucket, content, descr, request);
         } else if (request instanceof ReplaceRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new ReplaceResponse(status, statusCode, cas, bucket, content, descr, request);
         } else if (request instanceof RemoveRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new RemoveResponse(status, statusCode, cas, bucket, content, descr, request);
         }
 
@@ -726,7 +726,7 @@ public class KeyValueHandler
 
         MutationToken mutationToken = null;
         if (msg.getExtrasLength() > 0) {
-            mutationToken = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
         }
 
         ByteBuf fragment;
@@ -809,7 +809,7 @@ public class KeyValueHandler
 
         MutationToken mutationToken = null;
         if (msg.getExtrasLength() > 0) {
-            mutationToken = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
         }
 
         ByteBuf body = msg.content();
@@ -828,9 +828,9 @@ public class KeyValueHandler
         return response;
     }
 
-    private static MutationToken extractToken(boolean seqOnMutation, boolean success, ByteBuf extras, long vbid) {
+    private static MutationToken extractToken(String bucket, boolean seqOnMutation, boolean success, ByteBuf extras, long vbid) {
         if (success && seqOnMutation) {
-            return new MutationToken(vbid, extras.readLong(), extras.readLong());
+            return new MutationToken(vbid, extras.readLong(), extras.readLong(), bucket);
         }
         return null;
     }
@@ -856,10 +856,10 @@ public class KeyValueHandler
         } else if (request instanceof TouchRequest) {
             response = new TouchResponse(status, statusCode, bucket, content, request);
         } else if (request instanceof AppendRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new AppendResponse(status, statusCode, cas, bucket, content, descr, request);
         } else if (request instanceof PrependRequest) {
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new PrependResponse(status, statusCode, cas, bucket, content, descr, request);
         } else if (request instanceof KeepAliveRequest) {
             releaseContent(content);
@@ -868,7 +868,7 @@ public class KeyValueHandler
             long value = status.isSuccess() ? content.readLong() : 0;
             releaseContent(content);
 
-            MutationToken descr = extractToken(seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+            MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new CounterResponse(status, statusCode, bucket, value, cas, descr, request);
         } else if (request instanceof StatRequest) {
             String key = msg.getKey();
@@ -880,7 +880,7 @@ public class KeyValueHandler
             // 2 bytes for partition ID, and 8 bytes for sequence number
             MutationToken[] mutationTokens = new MutationToken[content.readableBytes() / 10];
             for (int i = 0; i < mutationTokens.length; i++) {
-                mutationTokens[i] = new MutationToken((long)content.readShort(), 0, content.readLong());
+                mutationTokens[i] = new MutationToken((long)content.readShort(), 0, content.readLong(), request.bucket());
             }
             releaseContent(content);
             response = new GetAllMutationTokensResponse(mutationTokens, status, statusCode, bucket, request);

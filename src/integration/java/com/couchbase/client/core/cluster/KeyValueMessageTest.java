@@ -431,6 +431,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
             assertTrue(token.sequenceNumber() > 0);
             assertTrue(token.vbucketUUID() != 0);
             assertTrue(token.vbucketID() > 0);
+            assertTrue(token.bucket() != null && token.bucket().equals(bucket()));
         } else {
             assertNull(token);
         }
@@ -452,6 +453,8 @@ public class KeyValueMessageTest extends ClusterDependentTest {
             assertTrue(first.vbucketUUID() != 0);
             assertTrue(first.vbucketID() > 0);
             assertTrue(second.vbucketID() > 0);
+            assertTrue(first.bucket() != null && first.bucket().equals(bucket()));
+            assertEquals(first.bucket(), second.bucket());
             assertEquals(first.vbucketUUID(), second.vbucketUUID());
             assertTrue((first.sequenceNumber()+1) == second.sequenceNumber());
             assertEquals(first.vbucketID(), second.vbucketID());

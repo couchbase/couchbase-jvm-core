@@ -32,11 +32,13 @@ public class MutationToken {
     private final long vbucketID;
     private final long vbucketUUID;
     private final long sequenceNumber;
+    private final String bucket;
 
-    public MutationToken(long vbucketID, long vbucketUUID, long sequenceNumber) {
+    public MutationToken(long vbucketID, long vbucketUUID, long sequenceNumber, String bucket) {
         this.vbucketID = vbucketID;
         this.vbucketUUID = vbucketUUID;
         this.sequenceNumber = sequenceNumber;
+        this.bucket = bucket;
     }
 
     public long vbucketUUID() {
@@ -51,6 +53,10 @@ public class MutationToken {
         return vbucketID;
     }
 
+    public String bucket() {
+        return bucket;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -60,7 +66,9 @@ public class MutationToken {
 
         if (vbucketID != that.vbucketID) return false;
         if (vbucketUUID != that.vbucketUUID) return false;
-        return sequenceNumber == that.sequenceNumber;
+        if (sequenceNumber != that.sequenceNumber) return false;
+        return bucket != null ? bucket.equals(that.bucket) : that.bucket == null;
+
     }
 
     @Override
@@ -68,6 +76,7 @@ public class MutationToken {
         int result = (int) (vbucketID ^ (vbucketID >>> 32));
         result = 31 * result + (int) (vbucketUUID ^ (vbucketUUID >>> 32));
         result = 31 * result + (int) (sequenceNumber ^ (sequenceNumber >>> 32));
+        result = 31 * result + (bucket != null ? bucket.hashCode() : 0);
         return result;
     }
 
@@ -77,6 +86,7 @@ public class MutationToken {
         sb.append("vbID=").append(vbucketID);
         sb.append(", vbUUID=").append(vbucketUUID);
         sb.append(", seqno=").append(sequenceNumber);
+        sb.append(", bucket=").append(bucket);
         sb.append('}');
         return sb.toString();
     }
