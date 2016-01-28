@@ -132,27 +132,48 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
                 if (newState == LifecycleState.CONNECTED) {
                     if (!connected) {
-                        LOGGER.info("Connected to Node " + hostname.getHostName());
-
-                        if (eventBus != null && eventBus.hasSubscribers()) {
-                            eventBus.publish(new NodeConnectedEvent(hostname));
-                        }
+                        signalConnected();
                     }
                     connected = true;
                     LOGGER.debug("Connected (" + state() + ") to Node " + hostname);
                 } else if (newState == LifecycleState.DISCONNECTED) {
                     if (connected) {
-                        LOGGER.info("Disconnected from Node " + hostname.getHostName());
-                        if (eventBus != null && eventBus.hasSubscribers()) {
-                            eventBus.publish(new NodeDisconnectedEvent(hostname));
-                        }
+                        signalDisconnected();
                     }
                     connected = false;
                     LOGGER.debug("Disconnected (" + state() + ") from Node " + hostname);
+                } else if (newState == LifecycleState.CONNECTING) {
+                    if (connected) {
+                        // We've already been connected, so this is a reconnect phase for the node following a
+                        // complete disconnect (like a node restart).
+                        signalDisconnected();
+                        connected = false;
+                        LOGGER.debug("Reconnecting (" + state() + ") from Node " + hostname);
+                    }
                 }
                 transitionState(newState);
             }
         });
+    }
+
+    /**
+     * Log that this node is now connected and also inform all susbcribers on the event bus.
+     */
+    private void signalConnected() {
+        LOGGER.info("Connected to Node " + hostname.getHostName());
+        if (eventBus != null && eventBus.hasSubscribers()) {
+            eventBus.publish(new NodeConnectedEvent(hostname));
+        }
+    }
+
+    /**
+     * Log that this node is now disconnected and also inform all susbcribers on the event bus.
+     */
+    private void signalDisconnected() {
+        LOGGER.info("Disconnected from Node " + hostname.getHostName());
+        if (eventBus != null && eventBus.hasSubscribers()) {
+            eventBus.publish(new NodeDisconnectedEvent(hostname));
+        }
     }
 
     @Override
