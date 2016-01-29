@@ -626,7 +626,7 @@ public class KeyValueHandler
         }
 
         msg.content().retain();
-        CouchbaseResponse response = handleCommonResponseMessages(request, msg, ctx, status, seqOnMutation);
+        CouchbaseResponse response = handleCommonResponseMessages(request, msg, status, seqOnMutation);
 
         if (response == null) {
             response = handleSubdocumentResponseMessages(request, msg, ctx, status, seqOnMutation);
@@ -670,12 +670,11 @@ public class KeyValueHandler
      *
      * @param request the current request.
      * @param msg the current response message.
-     * @param ctx the handler context.
      * @param status the response status code.
      * @return the decoded response or null if none did match.
      */
     private static CouchbaseResponse handleCommonResponseMessages(BinaryRequest request, FullBinaryMemcacheResponse msg,
-         ChannelHandlerContext ctx, ResponseStatus status, boolean seqOnMutation) {
+        ResponseStatus status, boolean seqOnMutation) {
         CouchbaseResponse response = null;
         ByteBuf content = msg.content();
         long cas = msg.getCAS();
@@ -683,7 +682,7 @@ public class KeyValueHandler
         String bucket = request.bucket();
 
         if (request instanceof GetRequest || request instanceof ReplicaGetRequest) {
-            int flags = extractFlagsFromGetResponse(ctx, msg.getExtras(), msg.getExtrasLength());
+            int flags = msg.getExtrasLength() > 0 ? msg.getExtras().getInt(0) : 0;
             response = new GetResponse(status, statusCode, cas, flags, bucket, content, request);
         } else if (request instanceof GetBucketConfigRequest) {
             response = new GetBucketConfigResponse(status, statusCode, bucket, content,
@@ -977,26 +976,6 @@ public class KeyValueHandler
         if (content != null && content.refCnt() > 0) {
             content.release();
         }
-    }
-
-    /**
-     * Helper method to extract the flags from the extras buffer.
-     *
-     * @param ctx the handler context.
-     * @param extrasReleased the extras of the msg.
-     * @param extrasLength the extras length.
-     * @return the extracted flags.
-     */
-    private static int extractFlagsFromGetResponse(ChannelHandlerContext ctx, ByteBuf extrasReleased,
-        int extrasLength) {
-        int flags = 0;
-        if (extrasLength > 0) {
-            final ByteBuf extras = ctx.alloc().buffer(extrasLength);
-            extras.writeBytes(extrasReleased, extrasReleased.readerIndex(), extrasReleased.readableBytes());
-            flags = extras.getInt(0);
-            extras.release();
-        }
-        return flags;
     }
 
     /**
