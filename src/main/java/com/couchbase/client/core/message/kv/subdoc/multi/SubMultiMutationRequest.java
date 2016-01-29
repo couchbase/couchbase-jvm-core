@@ -44,7 +44,8 @@ import java.util.List;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-public class SubMultiMutationRequest extends AbstractKeyValueRequest implements BinarySubdocMultiMutationRequest {
+//TODO make public again once mutateIn protocol has been stabilized
+class SubMultiMutationRequest extends AbstractKeyValueRequest implements BinarySubdocMultiMutationRequest {
 
     private final List<MutationCommand> commands;
     private final ByteBuf encoded;

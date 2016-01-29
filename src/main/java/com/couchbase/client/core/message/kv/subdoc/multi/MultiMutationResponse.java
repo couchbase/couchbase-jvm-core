@@ -42,7 +42,8 @@ import io.netty.buffer.Unpooled;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-public class MultiMutationResponse extends AbstractKeyValueResponse {
+//TODO make public again once mutateIn protocol has been stabilized
+class MultiMutationResponse extends AbstractKeyValueResponse {
 
     private final long cas;
 

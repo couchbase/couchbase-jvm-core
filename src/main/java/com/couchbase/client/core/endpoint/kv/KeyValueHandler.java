@@ -76,7 +76,6 @@ import com.couchbase.client.core.message.kv.subdoc.BinarySubdocRequest;
 import com.couchbase.client.core.message.kv.subdoc.multi.LookupCommand;
 import com.couchbase.client.core.message.kv.subdoc.multi.LookupResult;
 import com.couchbase.client.core.message.kv.subdoc.multi.MultiLookupResponse;
-import com.couchbase.client.core.message.kv.subdoc.multi.MultiMutationResponse;
 import com.couchbase.client.core.message.kv.subdoc.simple.SimpleSubdocResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
@@ -801,31 +800,35 @@ public class KeyValueHandler
             FullBinaryMemcacheResponse msg, ChannelHandlerContext ctx, ResponseStatus status, boolean seqOnMutation) {
         if (!(request instanceof BinarySubdocMultiMutationRequest))
             return null;
-        BinarySubdocMultiMutationRequest subdocRequest = (BinarySubdocMultiMutationRequest) request;
 
-        long cas = msg.getCAS();
-        short statusCode = msg.getStatus();
-        String bucket = request.bucket();
-
-        MutationToken mutationToken = null;
-        if (msg.getExtrasLength() > 0) {
-            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
-        }
-
-        ByteBuf body = msg.content();
-        MultiMutationResponse response;
-        if (status.isSuccess()) {
-            response = new MultiMutationResponse(bucket, subdocRequest, cas, mutationToken);
-        } else if (ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
-            short firstErrorCode = body.readShort();
-            byte firstErrorIndex = body.readByte();
-            response = new MultiMutationResponse(status, statusCode, bucket, firstErrorIndex, firstErrorCode,
-                    subdocRequest, cas, mutationToken);
-        } else {
-            response = new MultiMutationResponse(status, statusCode, bucket, subdocRequest, cas, mutationToken);
-        }
-        body.release();
-        return response;
+        //TODO remove and uncomment/modify original code once mutateIn protocol has been stabilized
+        msg.release();
+        return null;
+//        BinarySubdocMultiMutationRequest subdocRequest = (BinarySubdocMultiMutationRequest) request;
+//
+//        long cas = msg.getCAS();
+//        short statusCode = msg.getStatus();
+//        String bucket = request.bucket();
+//
+//        MutationToken mutationToken = null;
+//        if (msg.getExtrasLength() > 0) {
+//            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+//        }
+//
+//        ByteBuf body = msg.content();
+//        MultiMutationResponse response;
+//        if (status.isSuccess()) {
+//            response = new MultiMutationResponse(bucket, subdocRequest, cas, mutationToken);
+//        } else if (ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
+//            short firstErrorCode = body.readShort();
+//            byte firstErrorIndex = body.readByte();
+//            response = new MultiMutationResponse(status, statusCode, bucket, firstErrorIndex, firstErrorCode,
+//                    subdocRequest, cas, mutationToken);
+//        } else {
+//            response = new MultiMutationResponse(status, statusCode, bucket, subdocRequest, cas, mutationToken);
+//        }
+//        body.release();
+//        return response;
     }
 
     private static MutationToken extractToken(String bucket, boolean seqOnMutation, boolean success, ByteBuf extras, long vbid) {
