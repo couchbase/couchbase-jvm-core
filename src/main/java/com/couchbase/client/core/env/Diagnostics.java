@@ -23,6 +23,7 @@ package com.couchbase.client.core.env;
 
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -57,6 +58,7 @@ public class Diagnostics {
      *
      * @param infos a map where the infos are passed in.
      */
+    @IgnoreJRERequirement //this method safely checks that the com.sun bean is available before attempting to use its methods
     public static void systemInfo(final Map<String, Object> infos) {
         infos.put("sys.os.name", OS_BEAN.getName());
         infos.put("sys.os.version", OS_BEAN.getVersion());
