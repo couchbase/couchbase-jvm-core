@@ -35,6 +35,7 @@ import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceFactory;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
@@ -98,6 +99,11 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     private final ServiceStateZipper serviceStates;
 
     private volatile boolean connected;
+
+    /**
+     * Contains the enabled {@link Service}s on a node level.
+     */
+    private volatile int enabledServices;
 
     public CouchbaseNode(final InetAddress hostname, final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
@@ -264,6 +270,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         serviceStates.register(service, service);
         LOGGER.debug(logIdent(hostname) + "Adding Service " + request.type() + " to registry and connecting it.");
         serviceRegistry.addService(service, request.bucket());
+        enabledServices |= 1 << service.type().ordinal();
         return service.connect().map(new Func1<LifecycleState, Service>() {
             @Override
             public Service call(LifecycleState state) {
@@ -279,6 +286,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
         serviceStates.deregister(service);
+        enabledServices &= ~(1 << service.type().ordinal());
         return Observable.just(service);
     }
 
@@ -315,5 +323,10 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     @Override
     public int hashCode() {
         return hostname.hashCode();
+    }
+
+    @Override
+    public boolean serviceEnabled(ServiceType type) {
+        return (enabledServices & (1 << type.ordinal())) != 0;
     }
 }

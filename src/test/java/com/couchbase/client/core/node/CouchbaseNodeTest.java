@@ -44,7 +44,9 @@ import rx.subjects.BehaviorSubject;
 import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -203,6 +205,7 @@ public class CouchbaseNodeTest {
     public void shouldRemoveGlobalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
+        when(serviceMock.type()).thenReturn(ServiceType.CONFIG);
         when(registryMock.serviceBy(ServiceType.CONFIG, null)).thenReturn(serviceMock);
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
 
@@ -215,6 +218,7 @@ public class CouchbaseNodeTest {
     public void shouldRemoveLocalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
+        when(serviceMock.type()).thenReturn(ServiceType.BINARY);
         when(registryMock.serviceBy(ServiceType.BINARY, "bucket")).thenReturn(serviceMock);
         when(serviceMock.states()).thenReturn(Observable.<LifecycleState>empty());
         CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
@@ -241,5 +245,54 @@ public class CouchbaseNodeTest {
         node.send(request);
 
         response.toBlocking().single();
+    }
+
+    @Test
+    public void shouldCacheEnabledServices() {
+        ServiceRegistry registryMock = mock(ServiceRegistry.class);
+
+        CouchbaseNode node = new CouchbaseNode(host, registryMock, environment, null);
+
+        assertFalse(node.serviceEnabled(ServiceType.BINARY));
+        assertFalse(node.serviceEnabled(ServiceType.CONFIG));
+        assertFalse(node.serviceEnabled(ServiceType.QUERY));
+
+        node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, host))
+                .toBlocking().single();
+
+        assertTrue(node.serviceEnabled(ServiceType.BINARY));
+        assertFalse(node.serviceEnabled(ServiceType.CONFIG));
+        assertFalse(node.serviceEnabled(ServiceType.QUERY));
+
+        node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, 0, host))
+                .toBlocking().single();
+
+        assertTrue(node.serviceEnabled(ServiceType.BINARY));
+        assertTrue(node.serviceEnabled(ServiceType.CONFIG));
+        assertFalse(node.serviceEnabled(ServiceType.QUERY));
+
+        // Pretend services are properly stored in the registry before removal
+        Service binaryServiceMock = mock(Service.class);
+        when(binaryServiceMock.type()).thenReturn(ServiceType.BINARY);
+        when(registryMock.serviceBy(ServiceType.BINARY, "bucket")).thenReturn(binaryServiceMock);
+        Service configServiceMock = mock(Service.class);
+        when(configServiceMock.type()).thenReturn(ServiceType.CONFIG);
+        when(registryMock.serviceBy(ServiceType.CONFIG, null)).thenReturn(configServiceMock);
+
+        node.removeService(new RemoveServiceRequest(ServiceType.BINARY, "bucket", host))
+                .toBlocking().single();
+
+        assertFalse(node.serviceEnabled(ServiceType.BINARY));
+        assertTrue(node.serviceEnabled(ServiceType.CONFIG));
+        assertFalse(node.serviceEnabled(ServiceType.QUERY));
+
+
+        node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, null, host))
+                .toBlocking().single();
+
+        assertFalse(node.serviceEnabled(ServiceType.BINARY));
+        assertFalse(node.serviceEnabled(ServiceType.CONFIG));
+        assertFalse(node.serviceEnabled(ServiceType.QUERY));
+
     }
 }
