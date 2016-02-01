@@ -31,12 +31,12 @@ import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
+
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -60,7 +60,7 @@ public class KeyValueLocatorTest {
 
         GetRequest getRequestMock = mock(GetRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
-        Set<Node> nodes = new HashSet<Node>();
+        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);
@@ -84,7 +84,7 @@ public class KeyValueLocatorTest {
     public void shouldPickTheRightNodeForGetBucketConfigRequest() throws Exception {
         Locator locator = new KeyValueLocator();
 
-        Set<Node> nodes = new LinkedHashSet<Node>();
+        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         when(node1Mock.isState(LifecycleState.CONNECTED)).thenReturn(true);

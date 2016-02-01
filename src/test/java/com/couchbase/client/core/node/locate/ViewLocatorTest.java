@@ -33,13 +33,12 @@ import org.junit.Test;
 import rx.observers.TestSubscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
+
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -68,7 +67,7 @@ public class ViewLocatorTest {
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
         when(bucketConfigMock.hasPrimaryPartitionsOnNode(any(InetAddress.class))).thenReturn(true);
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
-        Set<Node> nodes = new HashSet<Node>();
+        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);
@@ -103,7 +102,7 @@ public class ViewLocatorTest {
         when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.102"))).thenReturn(true);
 
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
-        Set<Node> nodes = new LinkedHashSet<Node>();
+        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);
@@ -138,7 +137,7 @@ public class ViewLocatorTest {
         TestSubscriber<CouchbaseResponse> subscriber = new TestSubscriber<CouchbaseResponse>();
         response.subscribe(subscriber);
 
-        Node[] located = locator.locate(request, Collections.<Node>emptySet(), config);
+        Node[] located = locator.locate(request, Collections.<Node>emptyList(), config);
 
         assertNull(located);
 

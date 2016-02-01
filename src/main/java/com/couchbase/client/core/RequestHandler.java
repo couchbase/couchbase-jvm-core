@@ -65,7 +65,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The {@link RequestHandler} handles the overall concept of {@link Node}s and manages them concurrently.
@@ -113,7 +113,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * The list of currently managed nodes against the cluster.
      */
-    private final Set<Node> nodes;
+    private final CopyOnWriteArrayList<Node> nodes;
 
     /**
      * The shared couchbase environment.
@@ -140,7 +140,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     public RequestHandler(CoreEnvironment environment, Observable<ClusterConfig> configObservable,
         RingBuffer<ResponseEvent> responseBuffer) {
-        this(new CopyOnWriteArraySet<Node>(), environment, configObservable, responseBuffer);
+        this(new CopyOnWriteArrayList<Node>(), environment, configObservable, responseBuffer);
     }
 
     /**
@@ -149,7 +149,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    RequestHandler(Set<Node> nodes, CoreEnvironment environment, Observable<ClusterConfig> configObservable,
+    RequestHandler(CopyOnWriteArrayList<Node> nodes, CoreEnvironment environment, Observable<ClusterConfig> configObservable,
         RingBuffer<ResponseEvent> responseBuffer) {
         this.nodes = nodes;
         this.environment = environment;
@@ -277,7 +277,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             @Override
             public LifecycleState call(LifecycleState lifecycleState) {
                 LOGGER.debug("Connect finished, registering for use.");
-                nodes.add(node);
+                nodes.addIfAbsent(node);
                 return lifecycleState;
             }
         });
@@ -382,9 +382,9 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             LOGGER.debug("No open bucket found in config, disconnecting all nodes.");
             //JVMCBC-231: a race condition can happen where the nodes set is seen as
             // not empty, while the subsequent Observable.from is not, failing in calling last()
-            Set<Node> snapshotNodes;
+            List<Node> snapshotNodes;
             synchronized (nodes) {
-                snapshotNodes = new HashSet<Node>(nodes);
+                snapshotNodes = new ArrayList<Node>(nodes);
             }
             if (snapshotNodes.isEmpty()) {
                 return Observable.just(config);

@@ -28,9 +28,9 @@ import com.couchbase.client.core.node.Node;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -51,7 +51,7 @@ public class QueryLocatorTest {
 
         QueryRequest request = mock(GenericQueryRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
-        Set<Node> nodes = new HashSet<Node>();
+        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);

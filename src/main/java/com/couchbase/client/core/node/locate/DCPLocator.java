@@ -26,7 +26,6 @@ import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.config.NodeInfo;
-import com.couchbase.client.core.config.Partition;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -37,7 +36,6 @@ import com.couchbase.client.core.service.ServiceType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * This {@link Locator} finds the proper {@link Node}s for every incoming {@link DCPRequest}.
@@ -53,7 +51,7 @@ public class DCPLocator implements Locator {
 
 
     @Override
-    public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
+    public Node[] locate(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig cluster) {
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (!(bucket instanceof CouchbaseBucketConfig && request instanceof DCPRequest)) {
             throw new IllegalStateException("Unsupported Bucket Type: for request " + request);

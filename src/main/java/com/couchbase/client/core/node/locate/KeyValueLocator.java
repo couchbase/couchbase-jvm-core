@@ -42,7 +42,7 @@ import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 
 import java.net.InetAddress;
-import java.util.Set;
+import java.util.List;
 import java.util.zip.CRC32;
 
 /**
@@ -71,7 +71,7 @@ public class KeyValueLocator implements Locator {
     private static final Node[] EMPTY_NODES = new Node[] { };
 
     @Override
-    public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig cluster) {
+    public Node[] locate(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig cluster) {
         if (request instanceof GetBucketConfigRequest) {
             return handleBucketConfigRequest((GetBucketConfigRequest) request, nodes);
         }
@@ -103,15 +103,15 @@ public class KeyValueLocator implements Locator {
      * @param nodes the nodes to iterate
      * @return either the found node or an empty list indicating to retry later.
      */
-    private static Node[] handleBucketConfigRequest(GetBucketConfigRequest request, Set<Node> nodes) {
+    private static Node[] handleBucketConfigRequest(GetBucketConfigRequest request, List<Node> nodes) {
         return locateByHostname(request.hostname(), nodes);
     }
 
-    private static Node[] handleStatRequest(StatRequest request, Set<Node> nodes) {
+    private static Node[] handleStatRequest(StatRequest request, List<Node> nodes) {
         return locateByHostname(request.hostname(), nodes);
     }
 
-    private static Node[] locateByHostname(final InetAddress hostname, Set<Node> nodes) {
+    private static Node[] locateByHostname(final InetAddress hostname, List<Node> nodes) {
         for (Node node : nodes) {
             if (node.isState(LifecycleState.CONNECTED)) {
                 if (!hostname.equals(node.hostname())) {
@@ -129,7 +129,7 @@ public class KeyValueLocator implements Locator {
      * @param nodes the nodes to iterate
      * @return either the found node or an empty list indicating to retry later.
      */
-    private static Node[] firstConnectedNode(Set<Node> nodes) {
+    private static Node[] firstConnectedNode(List<Node> nodes) {
         for (Node node : nodes) {
             if (node.isState(LifecycleState.CONNECTED)) {
                 return new Node[] { node };
@@ -146,7 +146,7 @@ public class KeyValueLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final Set<Node> nodes,
+    private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final List<Node> nodes,
         final CouchbaseBucketConfig config) {
 
         if (!keyIsValid(request)) {
@@ -273,7 +273,7 @@ public class KeyValueLocator implements Locator {
      * @param config the bucket configuration.
      * @return an observable with one or more nodes to send the request to.
      */
-    private static Node[] locateForMemcacheBucket(final BinaryRequest request, final Set<Node> nodes,
+    private static Node[] locateForMemcacheBucket(final BinaryRequest request, final List<Node> nodes,
         final MemcachedBucketConfig config) {
 
         if (!keyIsValid(request)) {

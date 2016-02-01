@@ -27,14 +27,14 @@ import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.node.Node;
 
 import java.net.InetAddress;
-import java.util.Set;
+import java.util.List;
 
 public class ConfigLocator implements Locator {
 
     private long counter = 0;
 
     @Override
-    public Node[] locate(final CouchbaseRequest request, final Set<Node> nodes, final ClusterConfig config) {
+    public Node[] locate(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig config) {
         if (request instanceof BucketConfigRequest) {
             BucketConfigRequest req = (BucketConfigRequest) request;
             InetAddress hostname = req.hostname();
