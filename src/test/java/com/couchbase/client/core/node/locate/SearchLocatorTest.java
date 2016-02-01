@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Couchbase, Inc.
+ * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ package com.couchbase.client.core.node.locate;
 
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
-import com.couchbase.client.core.message.query.QueryRequest;
+import com.couchbase.client.core.message.search.SearchQueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
 import org.junit.Test;
@@ -39,26 +39,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the functionality of the {@link QueryLocator}.
+ * Verifies the functionality of the {@link SearchLocator}.
  *
  * @author Michael Nitschinger
  * @since 1.0.2
  */
-public class QueryLocatorTest {
+public class SearchLocatorTest {
 
     @Test
     public void shouldSelectNextNode() throws Exception {
-        Locator locator = new QueryLocator();
+        Locator locator = new SearchLocator();
 
-        QueryRequest request = mock(GenericQueryRequest.class);
+        SearchQueryRequest request = mock(SearchQueryRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
         List<Node> nodes = new ArrayList<Node>();
 
         Node node1Mock = mock(Node.class);
-        when(node1Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
+        when(node1Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
         Node node2Mock = mock(Node.class);
-        when(node2Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
+        when(node2Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
@@ -80,7 +80,7 @@ public class QueryLocatorTest {
 
     @Test
     public void shouldSkipNodeWithoutServiceEnabled() throws Exception {
-        Locator locator = new QueryLocator();
+        Locator locator = new SearchLocator();
 
         GenericQueryRequest request = mock(GenericQueryRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -89,13 +89,13 @@ public class QueryLocatorTest {
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
-        when(node1Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
+        when(node1Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node2Mock = mock(Node.class);
         when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
-        when(node2Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
+        when(node2Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node3Mock = mock(Node.class);
         when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
-        when(node3Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
+        when(node3Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
         Node[] located = locator.locate(request, nodes, configMock);
@@ -114,10 +114,10 @@ public class QueryLocatorTest {
         assertEquals(1, located.length);
         InetAddress foundFourth = located[0].hostname();
 
-        assertEquals(foundFirst, InetAddress.getByName("192.168.56.102"));
-        assertEquals(foundSecond, InetAddress.getByName("192.168.56.102"));
-        assertEquals(foundThird, InetAddress.getByName("192.168.56.102"));
-        assertEquals(foundFourth, InetAddress.getByName("192.168.56.102"));
+        assertEquals(foundFirst, InetAddress.getByName("192.168.56.103"));
+        assertEquals(foundSecond, InetAddress.getByName("192.168.56.103"));
+        assertEquals(foundThird, InetAddress.getByName("192.168.56.103"));
+        assertEquals(foundFourth, InetAddress.getByName("192.168.56.103"));
     }
 
 }

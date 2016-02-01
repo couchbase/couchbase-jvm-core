@@ -24,6 +24,7 @@ package com.couchbase.client.core.node.locate;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.node.Node;
+import com.couchbase.client.core.service.ServiceType;
 
 import java.util.List;
 
@@ -33,13 +34,27 @@ public class QueryLocator implements Locator {
 
     @Override
     public Node[] locate(CouchbaseRequest request, List<Node> nodes, ClusterConfig config) {
-        int item = (int) counter++ % nodes.size();
-        int i = 0;
-        for (Node node : nodes) {
-            if (i++ == item) {
+        int nodeSize = nodes.size();
+        int offset = (int) counter++ % nodeSize;
+
+        for (int i = offset; i < nodeSize; i++) {
+            Node node = nodes.get(i);
+            if (checkNode(node)) {
                 return new Node[] { node };
             }
         }
-        throw new IllegalStateException("Node not found for request" + request);
+
+        for (int i = 0; i < offset; i++) {
+            Node node = nodes.get(i);
+            if (checkNode(node)) {
+                return new Node[] { node };
+            }
+        }
+
+        return new Node[] {};
+    }
+
+    protected boolean checkNode(final Node node) {
+        return node.serviceEnabled(ServiceType.QUERY);
     }
 }

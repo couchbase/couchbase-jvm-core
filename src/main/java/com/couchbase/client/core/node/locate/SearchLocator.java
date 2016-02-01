@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,11 +19,22 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALING
  * IN THE SOFTWARE.
  */
-
 package com.couchbase.client.core.node.locate;
 
+import com.couchbase.client.core.node.Node;
+import com.couchbase.client.core.service.ServiceType;
+
 /**
+ * Round robin node locator for CBFT.
+ *
  * @author Sergey Avseyev
+ * @since 1.2.4
  */
 public class SearchLocator extends QueryLocator {
+
+    @Override
+    protected boolean checkNode(Node node) {
+        return node.serviceEnabled(ServiceType.SEARCH);
+    }
+
 }
