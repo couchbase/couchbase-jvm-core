@@ -41,9 +41,9 @@ import java.util.List;
 @InterfaceAudience.Public
 public class MultiLookupResponse extends AbstractKeyValueResponse {
 
-    private final List<LookupResult> responses;
+    private final List<MultiResult<Lookup>> responses;
 
-    public MultiLookupResponse(ResponseStatus status, short serverStatusCode, String bucket, List<LookupResult> responses,
+    public MultiLookupResponse(ResponseStatus status, short serverStatusCode, String bucket, List<MultiResult<Lookup>> responses,
                                BinarySubdocMultiLookupRequest request) {
         super(status, serverStatusCode, bucket, Unpooled.EMPTY_BUFFER, request);
         this.responses = responses;
@@ -55,9 +55,9 @@ public class MultiLookupResponse extends AbstractKeyValueResponse {
     }
 
     /**
-     * @return a list of {@link LookupResult}, giving the individual result of each {@link LookupCommand}.
+     * @return a list of {@link MultiResult MultiResult&lt;Lookup&gt;}, giving the individual result of each {@link LookupCommand}.
      */
-    public List<LookupResult> responses() {
+    public List<MultiResult<Lookup>> responses() {
         return responses;
     }
 }

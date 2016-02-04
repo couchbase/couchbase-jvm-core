@@ -30,29 +30,32 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.kv.AbstractKeyValueResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiMutationRequest;
-import com.couchbase.client.core.message.kv.subdoc.BinarySubdocRequest;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
- * The response for a {@link BinarySubdocMultiMutationRequest}.
+ * The response for a {@link BinarySubdocMultiMutationRequest}. Error status other than
+ * {@link ResponseStatus#SUBDOC_MULTI_PATH_FAILURE} denote an error at document level, while the later denotes
+ * an error at sub-document level. In this case, look at {@link #firstErrorStatus()} to determine which sub-document
+ * error happened.
  *
  * @author Simon Baslé
  * @since 1.2
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-//TODO make public again once mutateIn protocol has been stabilized
-class MultiMutationResponse extends AbstractKeyValueResponse {
+public class MultiMutationResponse extends AbstractKeyValueResponse {
 
     private final long cas;
-
     private final MutationToken mutationToken;
+    private final List<MultiResult<Mutation>> responses;
     private final int firstErrorIndex;
     private final ResponseStatus firstErrorStatus;
 
     /**
-     * Creates a partially successful {@link MultiMutationResponse}. The status, expected to be
+     * Creates a {@link MultiMutationResponse} that failed at subdocument level. The status, expected to be
      * {@link ResponseStatus#SUBDOC_MULTI_PATH_FAILURE}, denotes that at least one {@link MutationCommand} failed.
      *
      * @param status the status of the request (SUBDOC_MULTI_PATH_FAILURE).
@@ -77,10 +80,11 @@ class MultiMutationResponse extends AbstractKeyValueResponse {
         } else {
             this.firstErrorStatus = ResponseStatusConverter.fromBinary(firstErrorStatusCode);
         }
+        this.responses = Collections.emptyList();
     }
 
     /**
-     * Creates a unsuccessful {@link MultiMutationResponse}.
+     * Creates a unsuccessful {@link MultiMutationResponse} that failed at document level.
      *
      * First error index is set to -1 and first error status is set to {@link ResponseStatus#FAILURE}.
      *
@@ -98,6 +102,7 @@ class MultiMutationResponse extends AbstractKeyValueResponse {
         this.mutationToken = mutationToken;
         this.firstErrorIndex = -1;
         this.firstErrorStatus = ResponseStatus.FAILURE;
+        this.responses = Collections.emptyList();
     }
 
     /**
@@ -107,13 +112,16 @@ class MultiMutationResponse extends AbstractKeyValueResponse {
      * @param request the original {@link BinarySubdocMultiMutationRequest}.
      * @param cas the CAS value of the document after mutations.
      * @param token the {@link MutationToken} of the document after mutations, if available. Null otherwise.
+     * @param responses the list of {@link MultiResult MultiResult&lt;Mutation&gt;} for each command. Some may include a value.
      */
-    public MultiMutationResponse(String bucket, BinarySubdocMultiMutationRequest request, long cas, MutationToken token) {
+    public MultiMutationResponse(String bucket, BinarySubdocMultiMutationRequest request, long cas, MutationToken token,
+                                 List<MultiResult<Mutation>> responses) {
         super(ResponseStatus.SUCCESS, KeyValueStatus.SUCCESS.code(), bucket, Unpooled.EMPTY_BUFFER, request);
         this.cas = cas;
         this.mutationToken = token;
         this.firstErrorIndex = -1;
         this.firstErrorStatus = ResponseStatus.SUCCESS;
+        this.responses = responses;
     }
 
     @Override
@@ -150,5 +158,12 @@ class MultiMutationResponse extends AbstractKeyValueResponse {
      */
     public ResponseStatus firstErrorStatus() {
         return firstErrorStatus;
+    }
+
+    /**
+     * @return a list of {@link MultiResult MultiResult&lt;Mutation&gt;}, giving the individual result of each {@link MutationCommand}.
+     */
+    public List<MultiResult<Mutation>> responses() {
+        return responses;
     }
 }

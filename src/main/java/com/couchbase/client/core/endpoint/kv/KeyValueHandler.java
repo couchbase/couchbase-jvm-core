@@ -73,9 +73,13 @@ import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiLookupReques
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiMutationRequest;
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMutationRequest;
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocRequest;
+import com.couchbase.client.core.message.kv.subdoc.multi.Lookup;
 import com.couchbase.client.core.message.kv.subdoc.multi.LookupCommand;
-import com.couchbase.client.core.message.kv.subdoc.multi.LookupResult;
 import com.couchbase.client.core.message.kv.subdoc.multi.MultiLookupResponse;
+import com.couchbase.client.core.message.kv.subdoc.multi.MultiMutationResponse;
+import com.couchbase.client.core.message.kv.subdoc.multi.MultiResult;
+import com.couchbase.client.core.message.kv.subdoc.multi.Mutation;
+import com.couchbase.client.core.message.kv.subdoc.multi.MutationCommand;
 import com.couchbase.client.core.message.kv.subdoc.simple.SimpleSubdocResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
@@ -93,6 +97,7 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Queue;
 
 /**
@@ -759,11 +764,11 @@ public class KeyValueHandler
         String bucket = request.bucket();
 
         ByteBuf body = msg.content();
-        List<LookupResult> responses;
+        List<MultiResult<Lookup>> responses;
         if (status.isSuccess() || ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
             long bodyLength = body.readableBytes();
             List<LookupCommand> commands = subdocRequest.commands();
-            responses = new ArrayList<LookupResult>(commands.size());
+            responses = new ArrayList<MultiResult<Lookup>>(commands.size());
             for (LookupCommand cmd : commands) {
                 if (msg.content().readableBytes() < 6) {
                     body.release();
@@ -775,7 +780,7 @@ public class KeyValueHandler
                 ByteBuf value = ctx.alloc().buffer(valueLength, valueLength);
                 value.writeBytes(body, valueLength);
 
-                responses.add(new LookupResult(cmdStatus, ResponseStatusConverter.fromBinary(cmdStatus),
+                responses.add(MultiResult.create(cmdStatus, ResponseStatusConverter.fromBinary(cmdStatus),
                         cmd.path(), cmd.lookup(), value));
             }
         } else {
@@ -800,34 +805,89 @@ public class KeyValueHandler
         if (!(request instanceof BinarySubdocMultiMutationRequest))
             return null;
 
-        //TODO remove and uncomment/modify original code once mutateIn protocol has been stabilized
-        msg.release();
-        return null;
-//        BinarySubdocMultiMutationRequest subdocRequest = (BinarySubdocMultiMutationRequest) request;
-//
-//        long cas = msg.getCAS();
-//        short statusCode = msg.getStatus();
-//        String bucket = request.bucket();
-//
-//        MutationToken mutationToken = null;
-//        if (msg.getExtrasLength() > 0) {
-//            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
-//        }
-//
-//        ByteBuf body = msg.content();
-//        MultiMutationResponse response;
-//        if (status.isSuccess()) {
-//            response = new MultiMutationResponse(bucket, subdocRequest, cas, mutationToken);
-//        } else if (ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
-//            short firstErrorCode = body.readShort();
-//            byte firstErrorIndex = body.readByte();
-//            response = new MultiMutationResponse(status, statusCode, bucket, firstErrorIndex, firstErrorCode,
-//                    subdocRequest, cas, mutationToken);
-//        } else {
-//            response = new MultiMutationResponse(status, statusCode, bucket, subdocRequest, cas, mutationToken);
-//        }
-//        body.release();
-//        return response;
+        BinarySubdocMultiMutationRequest subdocRequest = (BinarySubdocMultiMutationRequest) request;
+
+        long cas = msg.getCAS();
+        short statusCode = msg.getStatus();
+        String bucket = request.bucket();
+
+        MutationToken mutationToken = null;
+        if (msg.getExtrasLength() > 0) {
+            mutationToken = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
+        }
+
+        MultiMutationResponse response;
+        ByteBuf body = msg.content();
+        List<MultiResult<Mutation>> responses;
+        if (status.isSuccess()) {
+            List<MutationCommand> commands = subdocRequest.commands();
+            responses = new ArrayList<MultiResult<Mutation>>(commands.size());
+            //MB-17842: Mutations can have a value, so there could be individual results
+            //but only mutation commands that provide a value will have an explicit result in the binary response.
+            //However, we still want MutationResult for all of the commands
+            ListIterator<MutationCommand> it = commands.listIterator();
+            int explicitResultSize = 0;
+            //as long as there is an explicit response to read...
+            while(msg.content().readableBytes() >= 7) {
+                explicitResultSize++;
+                //...read the data
+                byte responseIndex = body.readByte();
+                short responseStatus = body.readShort(); //will this always be SUCCESS?
+                int responseLength = body.readInt();
+                ByteBuf responseValue;
+                if (responseLength > 0) {
+                    responseValue = ctx.alloc().buffer(responseLength, responseLength);
+                    responseValue.writeBytes(body, responseLength);
+                } else {
+                    responseValue = Unpooled.EMPTY_BUFFER; //can an explicit response be 0-length (empty)?
+                }
+
+                //...sanity check response so subsequent loop don't run forever
+                if (it.nextIndex() > responseIndex) {
+                    body.release();
+                    throw new IllegalStateException("Unable to interpret multi mutation response, responseIndex = " +
+                        responseIndex + " while next available command was #" + it.nextIndex());
+                }
+
+                ///...catch up on all commands before current one that didn't get an explicit response
+                while(it.nextIndex() < responseIndex) {
+                    MutationCommand noResultCommand = it.next();
+                    responses.add(MultiResult.create(KeyValueStatus.SUCCESS.code(), ResponseStatus.SUCCESS,
+                            noResultCommand.path(), noResultCommand.mutation(),
+                            Unpooled.EMPTY_BUFFER));
+                }
+
+                //...then process the one that did get an explicit response
+                MutationCommand cmd = it.next();
+                responses.add(MultiResult.create(responseStatus, ResponseStatusConverter.fromBinary(responseStatus),
+                        cmd.path(), cmd.mutation(), responseValue));
+            }
+            //...and finally the remainder of commands after the last one that got an explicit response:
+            while(it.hasNext()) {
+                MutationCommand noResultCommand = it.next();
+                responses.add(MultiResult.create(KeyValueStatus.SUCCESS.code(), ResponseStatus.SUCCESS,
+                        noResultCommand.path(), noResultCommand.mutation(),
+                        Unpooled.EMPTY_BUFFER));
+            }
+
+            if (responses.size() != commands.size()) {
+                body.release();
+                throw new IllegalStateException("Multi mutation spec size and result size differ: " + commands.size() +
+                    " vs " + responses.size() + ", including " + explicitResultSize + " explicit results");
+            }
+
+            response = new MultiMutationResponse(bucket, subdocRequest, cas, mutationToken, responses);
+        } else if (ResponseStatus.SUBDOC_MULTI_PATH_FAILURE.equals(status)) {
+            //MB-17842: order of index and status has been swapped
+            byte firstErrorIndex = body.readByte();
+            short firstErrorCode = body.readShort();
+            response = new MultiMutationResponse(status, statusCode, bucket, firstErrorIndex, firstErrorCode,
+                    subdocRequest, cas, mutationToken);
+        } else {
+            response = new MultiMutationResponse(status, statusCode, bucket, subdocRequest, cas, mutationToken);
+        }
+        body.release();
+        return response;
     }
 
     private static MutationToken extractToken(String bucket, boolean seqOnMutation, boolean success, ByteBuf extras, long vbid) {
