@@ -34,11 +34,15 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
 import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.EventSink;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.handler.codec.base64.Base64;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
@@ -504,4 +508,28 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             onKeepAliveResponse(this.ctx, couchbaseResponse);
         }
     }
+
+    /**
+     * Add basic authentication headers to a {@link HttpRequest}.
+     *
+     * The given information is Base64 encoded and the authorization header is set appropriately. Since this needs
+     * to be done for every request, it is refactored out.
+     *
+     * @param ctx the handler context.
+     * @param request the request where the header should be added.
+     * @param user the username for auth.
+     * @param password the password for auth.
+     */
+    public static void addHttpBasicAuth(final ChannelHandlerContext ctx, final HttpRequest request, final String user,
+        final String password) {
+        final String pw = password == null ? "" : password;
+
+        ByteBuf raw = ctx.alloc().buffer(user.length() + pw.length() + 1);
+        raw.writeBytes((user + ":" + pw).getBytes(CHARSET));
+        ByteBuf encoded = Base64.encode(raw, false);
+        request.headers().add(HttpHeaders.Names.AUTHORIZATION, "Basic " + encoded.toString(CHARSET));
+        encoded.release();
+        raw.release();
+    }
+
 }
