@@ -67,10 +67,10 @@ public class ExponentialDelay extends Delay {
         long step;
         if (attempt <= 0) { //safeguard against underflow
             step = 0;
-        } else if (attempt >= 32) { //safeguard against overflow
+        } else if (attempt >= 64) { //safeguard against overflow
             step = Long.MAX_VALUE;
         } else {
-            step = (1 << (attempt - 1));
+            step = (1L << (attempt - 1));
         }
         //round will cap at Long.MAX_VALUE
         long calc = Math.round(step * growBy);
