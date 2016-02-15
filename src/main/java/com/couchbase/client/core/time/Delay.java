@@ -127,7 +127,7 @@ public abstract class Delay {
     }
 
     /**
-     * Creates a new {@link ExponentialDelay} with default boundaries and factor.
+     * Creates a new {@link ExponentialDelay} with default boundaries and factor (1, 2, 4, 8, 16, 32...).
      *
      * @param unit the unit of the delay.
      * @return a created {@link ExponentialDelay}.
@@ -137,7 +137,8 @@ public abstract class Delay {
     }
 
     /**
-     * Creates a new {@link ExponentialDelay} with custom upper boundary and default factor.
+     * Creates a new {@link ExponentialDelay} with custom upper boundary and default factor (eg. with upper 8: 1, 2, 4,
+     * 8, 8, 8...).
      *
      * @param unit the unit of the delay.
      * @param upper the upper boundary.
@@ -148,7 +149,8 @@ public abstract class Delay {
     }
 
     /**
-     * Creates a new {@link ExponentialDelay} with custom boundaries and default factor.
+     * Creates a new {@link ExponentialDelay} with custom boundaries and default factor (eg. with upper 8, lower 3: 3,
+     * 3, 4, 8, 8, 8...).
      *
      * @param unit the unit of the delay.
      * @param upper the upper boundary.
@@ -160,7 +162,8 @@ public abstract class Delay {
     }
 
     /**
-     * Creates a new {@link ExponentialDelay} with custom boundaries and factor.
+     * Creates a new {@link ExponentialDelay} with custom boundaries and factor (eg. with upper 300, lower 0, growBy 10:
+     * 10, 20, 40, 80, 160, 300, ...).
      *
      * @param unit the unit of the delay.
      * @param upper the upper boundary.

@@ -33,6 +33,7 @@ public class ExponentialDelayTest {
     public void shouldCalculateExponentially() {
         Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, Integer.MAX_VALUE, 0, 1);
 
+        assertEquals(0, exponentialDelay.calculate(0));
         assertEquals(1, exponentialDelay.calculate(1));
         assertEquals(2, exponentialDelay.calculate(2));
         assertEquals(4, exponentialDelay.calculate(3));
@@ -48,6 +49,7 @@ public class ExponentialDelayTest {
     public void shouldRespectLowerBound() {
         Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, Integer.MAX_VALUE, 10, 1);
 
+        assertEquals(10, exponentialDelay.calculate(0));
         assertEquals(10, exponentialDelay.calculate(1));
         assertEquals(10, exponentialDelay.calculate(2));
         assertEquals(10, exponentialDelay.calculate(3));
@@ -62,6 +64,7 @@ public class ExponentialDelayTest {
     public void shouldRespectUpperBound() {
         Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, 9, 0, 1);
 
+        assertEquals(0, exponentialDelay.calculate(0));
         assertEquals(1, exponentialDelay.calculate(1));
         assertEquals(2, exponentialDelay.calculate(2));
         assertEquals(4, exponentialDelay.calculate(3));
@@ -74,16 +77,17 @@ public class ExponentialDelayTest {
 
     @Test
     public void shouldApplyFactor() {
-        Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, Integer.MAX_VALUE, 0, 2);
+        Delay exponentialDelay = new ExponentialDelay(TimeUnit.SECONDS, Integer.MAX_VALUE, 0, 10);
 
-        assertEquals(2, exponentialDelay.calculate(1));
-        assertEquals(4, exponentialDelay.calculate(2));
-        assertEquals(8, exponentialDelay.calculate(3));
-        assertEquals(16, exponentialDelay.calculate(4));
-        assertEquals(32, exponentialDelay.calculate(5));
-        assertEquals(64, exponentialDelay.calculate(6));
+        assertEquals(0, exponentialDelay.calculate(0));
+        assertEquals(10, exponentialDelay.calculate(1));
+        assertEquals(20, exponentialDelay.calculate(2));
+        assertEquals(40, exponentialDelay.calculate(3));
+        assertEquals(80, exponentialDelay.calculate(4));
+        assertEquals(160, exponentialDelay.calculate(5));
+        assertEquals(320, exponentialDelay.calculate(6));
 
-        assertEquals("ExponentialDelay{growBy 2.0 SECONDS; lower=0, upper=2147483647}", exponentialDelay.toString());
+        assertEquals("ExponentialDelay{growBy 10.0 SECONDS; lower=0, upper=2147483647}", exponentialDelay.toString());
     }
 
     @Test
