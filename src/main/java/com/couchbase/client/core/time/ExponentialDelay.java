@@ -44,7 +44,10 @@ import java.util.concurrent.TimeUnit;
  *
  * This yields the following delays: <code>0ms, 500ms, 1s, 2s, 4s, 4s, 4s,...</code>
  *
- * In detail : <code>0, 500 * 2^0, 500 * 2^1, 500 * 2^2, 500 * 2^3, max(4000, 500 * 2^4), max(4000, 500 * 2^5),...</code>
+ * In detail : <code>0, 500 * 2^0, 500 * 2^1, 500 * 2^2, 500 * 2^3, max(4000, 500 * 2^4), max(4000, 500 * 2^5),...</code>.
+ *
+ * Finally, the powers used in the computation can be changed from powers of two by default to another base using the
+ * powersOf parameter.
  *
  * @author Michael Nitschinger
  * @since 1.1.0
@@ -54,33 +57,56 @@ public class ExponentialDelay extends Delay {
     private final long lower;
     private final long upper;
     private final double growBy;
+    private final int powersOf;
 
-    ExponentialDelay(TimeUnit unit, long upper, long lower, double growBy) {
+    ExponentialDelay(TimeUnit unit, long upper, long lower, double growBy, int powersOf) {
         super(unit);
         this.lower = lower;
         this.upper = upper;
         this.growBy = growBy;
+        this.powersOf = powersOf <= 2 ? 2 : powersOf;
     }
 
     @Override
     public long calculate(long attempt) {
-        long step;
+        long calc;
         if (attempt <= 0) { //safeguard against underflow
-            step = 0;
-        } else if (attempt >= 64) { //safeguard against overflow
+            calc = 0;
+        } else if (powersOf == 2) {
+            calc = calculatePowerOfTwo(attempt);
+        } else {
+            calc = calculateAlternatePower(attempt);
+        }
+
+        return applyBounds(calc);
+    }
+
+    protected long calculateAlternatePower(long attempt) {
+        //round will cap at Long.MAX_VALUE and pow should prevent overflows
+        double step = Math.pow(this.powersOf, attempt - 1); //attempt > 0
+        return Math.round(step * growBy);
+    }
+
+    //fastpath with bitwise operator
+    protected long calculatePowerOfTwo(long attempt) {
+        long step;
+        if (attempt >= 64) { //safeguard against overflow in the bitshift operation
             step = Long.MAX_VALUE;
         } else {
             step = (1L << (attempt - 1));
         }
         //round will cap at Long.MAX_VALUE
-        long calc = Math.round(step * growBy);
-        if (calc < lower) {
+        return Math.round(step * growBy);
+    }
+
+    private long applyBounds(long calculatedValue) {
+        if (calculatedValue < lower) {
             return lower;
         }
-        if (calc > upper) {
+        if (calculatedValue > upper) {
             return upper;
         }
-        return calc;
+        return calculatedValue;
     }
 
     @Override
@@ -88,6 +114,7 @@ public class ExponentialDelay extends Delay {
         final StringBuilder sb = new StringBuilder("ExponentialDelay{");
         sb.append("growBy ").append(growBy);
         sb.append(" " + unit());
+        sb.append(", powers of ").append(powersOf);
         sb.append("; lower=").append(lower);
         sb.append(", upper=").append(upper);
         sb.append('}');

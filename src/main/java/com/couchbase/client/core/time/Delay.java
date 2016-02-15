@@ -172,7 +172,22 @@ public abstract class Delay {
      * @return a created {@link ExponentialDelay}.
      */
     public static Delay exponential(TimeUnit unit, long upper, long lower, long growBy) {
-        return new ExponentialDelay(unit, upper, lower, growBy);
+        return exponential(unit, upper, lower, growBy, 2);
+    }
+
+    /**
+     * Creates a new {@link ExponentialDelay} on a base different from powers of two, with custom boundaries and factor
+     * (eg. with upper 9000, lower 0, growBy 3, powerOf 10: 3, 30, 300, 3000, 9000, 9000, 9000, ...).
+     *
+     * @param unit the unit of the delay.
+     * @param upper the upper boundary.
+     * @param lower the lower boundary.
+     * @param growBy the multiplication factor (or basis for the size of each delay).
+     * @param powersOf the base for exponential growth (eg. powers of 2, powers of 10, etc...)
+     * @return a created {@link ExponentialDelay}.
+     */
+    public static Delay exponential(TimeUnit unit, long upper, long lower, long growBy, int powersOf) {
+        return new ExponentialDelay(unit, upper, lower, growBy, powersOf);
     }
 
 }
