@@ -59,7 +59,9 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventTranslatorOneArg;
 import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.YieldingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.functions.Func1;
@@ -173,8 +175,11 @@ public class CouchbaseCore implements ClusterFacade {
         requestDisruptor = new Disruptor<RequestEvent>(
             new RequestEventFactory(),
             environment.requestBufferSize(),
-            disruptorExecutor
+            disruptorExecutor,
+            ProducerType.MULTI,
+            new YieldingWaitStrategy()
         );
+
         requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);
         requestDisruptor.handleExceptionsWith(new ExceptionHandler() {
             @Override
