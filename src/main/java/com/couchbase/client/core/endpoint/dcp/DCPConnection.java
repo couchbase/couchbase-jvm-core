@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
  * @author Sergey Avseyev
  */
 public class DCPConnection {
+    private static final int MINIMUM_HEADER_SIZE = 24;
+
     /**
      * Counter for stream identifiers.
      */
@@ -86,7 +88,7 @@ public class DCPConnection {
     }
 
     public void inc(int delta) {
-        totalReceivedBytes += delta;
+        totalReceivedBytes += MINIMUM_HEADER_SIZE + delta;
     }
 
     public void reset() {
