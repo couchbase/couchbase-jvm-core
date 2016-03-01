@@ -37,6 +37,8 @@ import com.couchbase.client.core.message.dcp.DCPResponse;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
 import com.couchbase.client.core.message.dcp.GetFailoverLogRequest;
 import com.couchbase.client.core.message.dcp.GetFailoverLogResponse;
+import com.couchbase.client.core.message.dcp.GetLastCheckpointRequest;
+import com.couchbase.client.core.message.dcp.GetLastCheckpointResponse;
 import com.couchbase.client.core.message.dcp.MutationMessage;
 import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.message.dcp.OpenConnectionResponse;
@@ -78,6 +80,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     public static final byte OP_CONTROL = 0x5e;
     public static final byte OP_BUFFER_ACK = 0x5d;
     public static final byte OP_GET_FAILOVER_LOG = 0x54;
+    public static final byte OP_GET_LAST_CHECKPOINT = (byte) 0x97;
     /**
      * The Logger used in this handler.
      */
@@ -117,6 +120,8 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             request = handleStreamRequestRequest(ctx, (StreamRequestRequest) msg);
         } else if (msg instanceof GetFailoverLogRequest) {
             request = handleFailoverLogsRequest(ctx, (GetFailoverLogRequest) msg);
+        } else if (msg instanceof GetLastCheckpointRequest) {
+            request = handleGetLastCheckpointRequest(ctx, (GetLastCheckpointRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming DCPRequest type " + msg.getClass());
         }
@@ -161,6 +166,10 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
         } else if (msg.getOpcode() == OP_GET_FAILOVER_LOG) {
             response = new GetFailoverLogResponse(ResponseStatusConverter.fromBinary(msg.getStatus()),
                     readFailoverLogs(msg.content()), request);
+        } else if (msg.getOpcode() == OP_GET_LAST_CHECKPOINT) {
+            long sequenceNumber = msg.content().readLong();
+            response = new GetLastCheckpointResponse(ResponseStatusConverter.fromBinary(msg.getStatus()),
+                    sequenceNumber, request);
         } else if (msg.getOpcode() == OP_CONTROL || msg.getOpcode() == OP_BUFFER_ACK) {
             KeyValueStatus status = KeyValueStatus.valueOf(msg.getStatus());
             if (status != KeyValueStatus.SUCCESS) {
@@ -405,6 +414,14 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             failoverLog.add(entry);
         }
         return failoverLog;
+    }
+
+    private BinaryMemcacheRequest handleGetLastCheckpointRequest(ChannelHandlerContext ctx, GetLastCheckpointRequest msg) {
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest();
+        request.setOpcode(OP_GET_LAST_CHECKPOINT);
+        request.setReserved(msg.partition());
+
+        return request;
     }
 
     @Override
