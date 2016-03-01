@@ -336,10 +336,14 @@ public class KeyValueMessageTest extends ClusterDependentTest {
     }
 
     /**
-     * Verificiation for MB-15727
+     * Verificiation for MB-15727.
+     *
+     * This test is ignored in versions lower than 4.5 since thats the version where it has been fixed.
      */
     @Test
-    public void shouldGetAndLockWithAppend() {
+    public void shouldGetAndLockWithAppend() throws Exception {
+        assumeMinimumVersionCompatible(4, 5);
+
         String key = "get-and-lock-append";
 
         UpsertRequest request = new UpsertRequest(key, Unpooled.copiedBuffer("foo", CharsetUtil.UTF_8), bucket());
