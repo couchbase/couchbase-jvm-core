@@ -43,11 +43,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -77,20 +78,17 @@ public class ViewLocatorTest {
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
-        Node[] located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFirst = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, never()).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundSecond = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, times(1)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundLast = located[0].hostname();
-
-        assertEquals(foundFirst, foundLast);
-        assertNotEquals(foundFirst, foundSecond);
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(2)).send(request);
+        verify(node2Mock, times(1)).send(request);
     }
 
     @Test
@@ -114,21 +112,17 @@ public class ViewLocatorTest {
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
-        Node[] located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFirst = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, times(1)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundSecond = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, times(2)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundThird = located[0].hostname();
-
-        assertEquals(foundFirst, InetAddress.getByName("192.168.56.102"));
-        assertEquals(foundSecond, InetAddress.getByName("192.168.56.102"));
-        assertEquals(foundThird, InetAddress.getByName("192.168.56.102"));
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, times(3)).send(request);
     }
 
     @Test
@@ -156,26 +150,25 @@ public class ViewLocatorTest {
         when(node3Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
-        Node[] located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFirst = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, never()).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundSecond = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(1)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundThird = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(2)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFourth = located[0].hostname();
-
-        assertEquals(foundFirst, InetAddress.getByName("192.168.56.101"));
-        assertEquals(foundSecond, InetAddress.getByName("192.168.56.103"));
-        assertEquals(foundThird, InetAddress.getByName("192.168.56.103"));
-        assertEquals(foundFourth, InetAddress.getByName("192.168.56.101"));
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(2)).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(2)).send(request);
     }
 
     @Test
@@ -193,9 +186,7 @@ public class ViewLocatorTest {
         TestSubscriber<CouchbaseResponse> subscriber = new TestSubscriber<CouchbaseResponse>();
         response.subscribe(subscriber);
 
-        Node[] located = locator.locate(request, Collections.<Node>emptyList(), config);
-
-        assertNull(located);
+        locator.locateAndDispatch(request, Collections.<Node>emptyList(), config, null, null);
 
         subscriber.awaitTerminalEvent(1, TimeUnit.SECONDS);
         List<Throwable> errors = subscriber.getOnErrorEvents();

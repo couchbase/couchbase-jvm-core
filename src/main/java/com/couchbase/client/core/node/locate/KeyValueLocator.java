@@ -23,11 +23,13 @@ package com.couchbase.client.core.node.locate;
 
 import com.couchbase.client.core.ReplicaNotAvailableException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
+import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.config.MemcachedBucketConfig;
 import com.couchbase.client.core.config.NodeInfo;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -39,7 +41,9 @@ import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
 import com.couchbase.client.core.message.kv.StatRequest;
 import com.couchbase.client.core.node.Node;
+import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.state.LifecycleState;
+import com.lmax.disruptor.RingBuffer;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -65,77 +69,61 @@ public class KeyValueLocator implements Locator {
     private static final int MIN_KEY_BYTES = 1;
     private static final int MAX_KEY_BYTES = 250;
 
-    /**
-     * An empty node array which can be reused and does not need to be re-created all the time.
-     */
-    private static final Node[] EMPTY_NODES = new Node[] { };
-
     @Override
-    public Node[] locate(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig cluster) {
+    public void locateAndDispatch(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig cluster,
+        CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         if (request instanceof GetBucketConfigRequest) {
-            return handleBucketConfigRequest((GetBucketConfigRequest) request, nodes);
+            locateByHostname(request, ((GetBucketConfigRequest) request).hostname(), nodes, env, responseBuffer);
+            return;
         }
         if (request instanceof StatRequest) {
-            return handleStatRequest((StatRequest)request, nodes);
+            locateByHostname(request, ((StatRequest) request).hostname(), nodes, env, responseBuffer);
+            return;
         }
         if (request instanceof GetAllMutationTokensRequest) {
-            return firstConnectedNode(nodes);
+            firstConnectedNode(request, nodes, env, responseBuffer);
+            return;
         }
 
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (bucket instanceof CouchbaseBucketConfig) {
-            return locateForCouchbaseBucket((BinaryRequest) request, nodes, (CouchbaseBucketConfig) bucket);
+            locateForCouchbaseBucket((BinaryRequest) request, nodes, (CouchbaseBucketConfig) bucket, env, responseBuffer);
         } else if (bucket instanceof MemcachedBucketConfig) {
-            return locateForMemcacheBucket((BinaryRequest) request, nodes, (MemcachedBucketConfig) bucket);
+            locateForMemcacheBucket((BinaryRequest) request, nodes, (MemcachedBucketConfig) bucket, env, responseBuffer);
         } else {
             throw new IllegalStateException("Unsupported Bucket Type: " + bucket + " for request " + request);
         }
     }
 
-    /**
-     * Special node handling for the get bucket config request.
-     *
-     * This is necessary to properly bootstrap the driver. if the hostnames are not equal, it is not the node where
-     * the service has been enabled, so the code looks for the next one until it finds one. If none is found, the
-     * operation is rescheduled.
-     *
-     * @param request the request to check
-     * @param nodes the nodes to iterate
-     * @return either the found node or an empty list indicating to retry later.
-     */
-    private static Node[] handleBucketConfigRequest(GetBucketConfigRequest request, List<Node> nodes) {
-        return locateByHostname(request.hostname(), nodes);
-    }
 
-    private static Node[] handleStatRequest(StatRequest request, List<Node> nodes) {
-        return locateByHostname(request.hostname(), nodes);
-    }
-
-    private static Node[] locateByHostname(final InetAddress hostname, List<Node> nodes) {
+    private static void locateByHostname(final CouchbaseRequest request, final InetAddress hostname, List<Node> nodes,
+        CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         for (Node node : nodes) {
             if (node.isState(LifecycleState.CONNECTED)) {
                 if (!hostname.equals(node.hostname())) {
                     continue;
                 }
-                return new Node[] { node };
+                node.send(request);
+                return;
             }
         }
-        return EMPTY_NODES;
+        RetryHelper.retryOrCancel(env, request, responseBuffer);
     }
 
     /**
      * Returns first node in {@link LifecycleState#CONNECTED} state
      *
      * @param nodes the nodes to iterate
-     * @return either the found node or an empty list indicating to retry later.
      */
-    private static Node[] firstConnectedNode(List<Node> nodes) {
+    private static void firstConnectedNode(CouchbaseRequest request, List<Node> nodes, CoreEnvironment env,
+        RingBuffer<ResponseEvent> responseBuffer) {
         for (Node node : nodes) {
             if (node.isState(LifecycleState.CONNECTED)) {
-                return new Node[] { node };
+                node.send(request);
+                return;
             }
         }
-        return EMPTY_NODES;
+        RetryHelper.retryOrCancel(env, request, responseBuffer);
     }
 
     /**
@@ -144,13 +132,12 @@ public class KeyValueLocator implements Locator {
      * @param request the request.
      * @param nodes the managed nodes.
      * @param config the bucket configuration.
-     * @return an observable with one or more nodes to send the request to.
      */
-    private static Node[] locateForCouchbaseBucket(final BinaryRequest request, final List<Node> nodes,
-        final CouchbaseBucketConfig config) {
+    private static void locateForCouchbaseBucket(final BinaryRequest request, final List<Node> nodes,
+        final CouchbaseBucketConfig config, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
 
         if (!keyIsValid(request)) {
-            return null;
+            return;
         }
 
         int partitionId = partitionForKey(request.keyBytes(), config.numberOfPartitions());
@@ -158,23 +145,22 @@ public class KeyValueLocator implements Locator {
 
         int nodeId = calculateNodeId(partitionId, request, config);
         if (nodeId < 0) {
-            return errorObservables(nodeId, request, config.name());
+            errorObservables(nodeId, request, config.name(), env, responseBuffer);
+            return;
         }
 
         NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
 
         for (Node node : nodes) {
             if (node.hostname().equals(nodeInfo.hostname())) {
-                return new Node[] { node };
+                node.send(request);
+                return;
             }
         }
 
-        if (config.nodes().size() != nodes.size()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
-                    nodes.size(), config.nodes().size());
-            }
-            return EMPTY_NODES;
+        if(handleNotEqualNodeSizes(config.nodes().size(), nodes.size())) {
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
         }
 
         throw new IllegalStateException("Node not found for request" + request);
@@ -212,9 +198,9 @@ public class KeyValueLocator implements Locator {
      * @param nodeId the current node id of the partition
      * @param request the request to error
      * @param name the name of the bucket
-     * @return A node array indicating to retry or move on.
      */
-    private static Node[] errorObservables(int nodeId, BinaryRequest request, String name) {
+    private static void errorObservables(int nodeId, BinaryRequest request, String name, CoreEnvironment env,
+        RingBuffer<ResponseEvent> responseBuffer) {
         if (nodeId == -2) {
             if (request instanceof ReplicaGetRequest) {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
@@ -226,29 +212,29 @@ public class KeyValueLocator implements Locator {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
                         + ((ObserveSeqnoRequest) request).replica() + " not configured for bucket " + name));
             }
-
-            return null;
+            return;
         }
 
         if (nodeId == -1) {
             if (request instanceof ObserveRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
                         + ((ObserveRequest) request).replica() + " not available for bucket " + name));
-                return null;
+                return;
             } else if (request instanceof ReplicaGetRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
                         + ((ReplicaGetRequest) request).replica() + " not available for bucket " + name));
-                return null;
+                return;
             } else if (request instanceof ObserveSeqnoRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
                         + ((ObserveSeqnoRequest) request).replica() + " not available for bucket " + name));
-                return null;
+                return;
             }
 
-            return EMPTY_NODES;
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
         }
 
-        return EMPTY_NODES;
+        throw new IllegalStateException("Unknown NodeId: " + nodeId + ", request: " + request);
     }
 
     /**
@@ -271,13 +257,12 @@ public class KeyValueLocator implements Locator {
      * @param request the request.
      * @param nodes the managed nodes.
      * @param config the bucket configuration.
-     * @return an observable with one or more nodes to send the request to.
      */
-    private static Node[] locateForMemcacheBucket(final BinaryRequest request, final List<Node> nodes,
-        final MemcachedBucketConfig config) {
+    private static void locateForMemcacheBucket(final BinaryRequest request, final List<Node> nodes,
+        final MemcachedBucketConfig config, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
 
         if (!keyIsValid(request)) {
-            return null;
+            return;
         }
 
         InetAddress hostname = config.nodeForId(request.keyBytes());
@@ -285,19 +270,33 @@ public class KeyValueLocator implements Locator {
 
         for (Node node : nodes) {
             if (node.hostname().equals(hostname)) {
-                return new Node[] { node };
+                node.send(request);
+                return;
             }
         }
 
-        if (config.nodes().size() != nodes.size()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
-                    nodes.size(), config.nodes().size());
-            }
-            return EMPTY_NODES;
+        if(handleNotEqualNodeSizes(config.nodes().size(), nodes.size())) {
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
         }
 
         throw new IllegalStateException("Node not found for request" + request);
+    }
+
+    /**
+     * Helper method to handle potentially different node sizes in the actual list and in the config.
+     *
+     * @return true if they are not equal, false if they are.
+     */
+    private static boolean handleNotEqualNodeSizes(int configNodeSize, int actualNodeSize) {
+        if (configNodeSize != actualNodeSize) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
+                        actualNodeSize, configNodeSize);
+            }
+            return true;
+        }
+        return false;
     }
 
     /**

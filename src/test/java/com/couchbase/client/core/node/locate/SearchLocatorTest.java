@@ -33,9 +33,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -62,20 +63,17 @@ public class SearchLocatorTest {
         when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
-        Node[] located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFirst = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, never()).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundSecond = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(request);
+        verify(node2Mock, times(1)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundLast = located[0].hostname();
-
-        assertEquals(foundFirst, foundLast);
-        assertNotEquals(foundFirst, foundSecond);
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, times(2)).send(request);
+        verify(node2Mock, times(1)).send(request);
     }
 
     @Test
@@ -98,26 +96,25 @@ public class SearchLocatorTest {
         when(node3Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
-        Node[] located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFirst = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(1)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundSecond = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(2)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundThird = located[0].hostname();
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(3)).send(request);
 
-        located = locator.locate(request, nodes, configMock);
-        assertEquals(1, located.length);
-        InetAddress foundFourth = located[0].hostname();
-
-        assertEquals(foundFirst, InetAddress.getByName("192.168.56.103"));
-        assertEquals(foundSecond, InetAddress.getByName("192.168.56.103"));
-        assertEquals(foundThird, InetAddress.getByName("192.168.56.103"));
-        assertEquals(foundFourth, InetAddress.getByName("192.168.56.103"));
+        locator.locateAndDispatch(request, nodes, configMock, null, null);
+        verify(node1Mock, never()).send(request);
+        verify(node2Mock, never()).send(request);
+        verify(node3Mock, times(4)).send(request);
     }
 
 }

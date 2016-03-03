@@ -38,8 +38,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -76,8 +78,9 @@ public class KeyValueLocatorTest {
         when(bucketMock.nodeIndexForMaster(656)).thenReturn((short) 0);
         when(bucketMock.nodeAtIndex(0)).thenReturn(nodeInfo1);
 
-        Node[] foundNodes = locator.locate(getRequestMock, nodes, configMock);
-        assertEquals(node1Mock, foundNodes[0]);
+        locator.locateAndDispatch(getRequestMock, nodes, configMock, null, null);
+        verify(node1Mock, times(1)).send(getRequestMock);
+        verify(node2Mock, never()).send(getRequestMock);
     }
 
     @Test
@@ -96,8 +99,9 @@ public class KeyValueLocatorTest {
         GetBucketConfigRequest requestMock = mock(GetBucketConfigRequest.class);
         when(requestMock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
 
-        Node[] foundNodes = locator.locate(requestMock, nodes, mock(ClusterConfig.class));
-        assertEquals(node2Mock.hostname(), foundNodes[0].hostname());
+        locator.locateAndDispatch(requestMock, nodes, mock(ClusterConfig.class), null, null);
+        verify(node1Mock, never()).send(requestMock);
+        verify(node2Mock, times(1)).send(requestMock);
     }
 
 }

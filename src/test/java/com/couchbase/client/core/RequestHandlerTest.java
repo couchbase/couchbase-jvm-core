@@ -35,8 +35,10 @@ import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
+import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
+import com.lmax.disruptor.RingBuffer;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
@@ -362,13 +364,15 @@ public class RequestHandlerTest {
 
         class DummyLocator implements Locator {
             @Override
-            public Node[] locate(CouchbaseRequest request, List<Node> nodes, ClusterConfig config) {
+            public void locateAndDispatch(CouchbaseRequest request, List<Node> nodes, ClusterConfig config,
+                CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
                 for (Node node : nodes) {
                     if (node.state() == LifecycleState.CONNECTED) {
-                        return new Node[] { node };
+                        node.send(request);
+                        return;
                     }
                 }
-                return new Node[] {};
+                RetryHelper.retryOrCancel(env, request, responseBuffer);
             }
         }
     }
