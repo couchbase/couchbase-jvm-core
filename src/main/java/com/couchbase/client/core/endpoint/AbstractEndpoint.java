@@ -54,15 +54,12 @@ import io.netty.channel.socket.oio.OioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import rx.Observable;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -92,11 +89,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Pre-created not connected exception for performance reasons.
      */
     private static final NotConnectedException NOT_CONNECTED_EXCEPTION = new NotConnectedException();
-
-    /**
-     * A static listener which logs failed writes.
-     */
-    private static final WriteLogListener WRITE_LOG_LISTENER = new WriteLogListener();
 
     /**
      * The netty bootstrap adapter.
@@ -404,7 +396,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 }
             } else {
                 if (channel.isActive() && channel.isWritable()) {
-                    channel.write(request).addListener(WRITE_LOG_LISTENER);
+                    channel.write(request, channel.voidPromise());
                     hasWritten = true;
                 } else {
                     responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, request, request.observable());
@@ -499,25 +491,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     protected static String logIdent(final Channel chan, final Endpoint endpoint) {
         SocketAddress addr = chan != null ? chan.remoteAddress() : null;
         return "[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ";
-    }
-
-    /**
-     * A generic future listener which logs unsuccessful writes.
-     *
-     * Note that {@link ClosedChannelException}s are ignored because they are handled
-     * gracefully by the {@link AbstractGenericHandler}.
-     */
-    static class WriteLogListener implements GenericFutureListener<Future<Void>> {
-
-        @Override
-        public void operationComplete(Future<Void> future) throws Exception {
-            if (!future.isSuccess() &&
-                !(future.cause() instanceof ClosedChannelException) &&
-                !(future.cause() instanceof IOException)) {
-                LOGGER.warn("Error during IO write phase.", future.cause());
-            }
-        }
-
     }
 
 }

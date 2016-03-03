@@ -50,7 +50,7 @@ public class ViewEndpoint extends AbstractEndpoint {
     @Override
     protected void customEndpointHandlers(final ChannelPipeline pipeline) {
         if (environment().keepAliveInterval() > 0) {
-            pipeline.addLast(new IdleStateHandler(0, 0, environment().keepAliveInterval(), TimeUnit.MILLISECONDS));
+            pipeline.addLast(new IdleStateHandler(environment().keepAliveInterval(), 0, 0, TimeUnit.MILLISECONDS));
         }
         pipeline
             .addLast(new HttpClientCodec())
