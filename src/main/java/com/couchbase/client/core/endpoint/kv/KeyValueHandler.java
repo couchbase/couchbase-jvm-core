@@ -186,47 +186,10 @@ public class KeyValueHandler
     @Override
     protected BinaryMemcacheRequest encodeRequest(final ChannelHandlerContext ctx, final BinaryRequest msg)
         throws Exception {
-        BinaryMemcacheRequest request;
+        BinaryMemcacheRequest request = encodeCommonRequest(ctx, msg);
 
-        if (msg instanceof GetRequest) {
-            request = handleGetRequest(ctx, (GetRequest) msg);
-        } else if (msg instanceof BinaryStoreRequest) {
-            request = handleStoreRequest(ctx, (BinaryStoreRequest) msg);
-        } else if (msg instanceof ReplicaGetRequest) {
-            request = handleReplicaGetRequest((ReplicaGetRequest) msg);
-        } else if (msg instanceof RemoveRequest) {
-            request = handleRemoveRequest((RemoveRequest) msg);
-        } else if (msg instanceof CounterRequest) {
-            request = handleCounterRequest(ctx, (CounterRequest) msg);
-        } else if (msg instanceof TouchRequest) {
-            request = handleTouchRequest(ctx, (TouchRequest) msg);
-        } else if (msg instanceof UnlockRequest) {
-            request = handleUnlockRequest((UnlockRequest) msg);
-        } else if (msg instanceof ObserveRequest) {
-            request = handleObserveRequest(ctx, (ObserveRequest) msg);
-        } else if (msg instanceof ObserveSeqnoRequest) {
-            request = handleObserveSeqnoRequest(ctx, (ObserveSeqnoRequest) msg);
-        } else if (msg instanceof GetBucketConfigRequest) {
-            request = handleGetBucketConfigRequest();
-        } else if (msg instanceof AppendRequest) {
-            request = handleAppendRequest((AppendRequest) msg);
-        } else if (msg instanceof PrependRequest) {
-            request = handlePrependRequest((PrependRequest) msg);
-        } else if (msg instanceof KeepAliveRequest) {
-            request = handleKeepAliveRequest((KeepAliveRequest) msg);
-        } else if (msg instanceof StatRequest) {
-            request = handleStatRequest((StatRequest) msg);
-        } else if (msg instanceof GetAllMutationTokensRequest) {
-            request = handleGetAllMutationTokensRequest(ctx, (GetAllMutationTokensRequest) msg);
-        } else if (msg instanceof BinarySubdocRequest) {
-            request = handleSubdocumentRequest(ctx, (BinarySubdocRequest) msg);
-        } else if (msg instanceof BinarySubdocMultiLookupRequest) {
-            request = handleSubdocumentMultiLookupRequest(ctx, (BinarySubdocMultiLookupRequest) msg);
-        } else if (msg instanceof BinarySubdocMultiMutationRequest) {
-            request = handleSubdocumentMultiMutationRequest(ctx, (BinarySubdocMultiMutationRequest) msg);
-        } else {
-            throw new IllegalArgumentException("Unknown incoming BinaryRequest type "
-                + msg.getClass());
+        if (request == null) {
+            request = encodeOtherRequest(ctx, msg);
         }
 
         if (msg.partition() >= 0) {
@@ -245,6 +208,53 @@ public class KeyValueHandler
         }
 
         return request;
+    }
+
+    private BinaryMemcacheRequest encodeCommonRequest(final ChannelHandlerContext ctx, final BinaryRequest msg) {
+        if (msg instanceof GetRequest) {
+            return handleGetRequest(ctx, (GetRequest) msg);
+        } else if (msg instanceof BinaryStoreRequest) {
+            return handleStoreRequest(ctx, (BinaryStoreRequest) msg);
+        } else if (msg instanceof ReplicaGetRequest) {
+            return handleReplicaGetRequest((ReplicaGetRequest) msg);
+        } else if (msg instanceof RemoveRequest) {
+            return handleRemoveRequest((RemoveRequest) msg);
+        } else if (msg instanceof CounterRequest) {
+            return handleCounterRequest(ctx, (CounterRequest) msg);
+        } else if (msg instanceof TouchRequest) {
+            return handleTouchRequest(ctx, (TouchRequest) msg);
+        } else if (msg instanceof UnlockRequest) {
+            return handleUnlockRequest((UnlockRequest) msg);
+        }
+        return null;
+    }
+
+    private BinaryMemcacheRequest encodeOtherRequest(final ChannelHandlerContext ctx, final BinaryRequest msg) {
+        if (msg instanceof ObserveRequest) {
+            return handleObserveRequest(ctx, (ObserveRequest) msg);
+        } else if (msg instanceof ObserveSeqnoRequest) {
+            return handleObserveSeqnoRequest(ctx, (ObserveSeqnoRequest) msg);
+        } else if (msg instanceof GetBucketConfigRequest) {
+            return handleGetBucketConfigRequest();
+        } else if (msg instanceof AppendRequest) {
+            return handleAppendRequest((AppendRequest) msg);
+        } else if (msg instanceof PrependRequest) {
+            return handlePrependRequest((PrependRequest) msg);
+        } else if (msg instanceof KeepAliveRequest) {
+            return handleKeepAliveRequest((KeepAliveRequest) msg);
+        } else if (msg instanceof StatRequest) {
+            return handleStatRequest((StatRequest) msg);
+        } else if (msg instanceof GetAllMutationTokensRequest) {
+            return handleGetAllMutationTokensRequest(ctx, (GetAllMutationTokensRequest) msg);
+        } else if (msg instanceof BinarySubdocRequest) {
+            return handleSubdocumentRequest(ctx, (BinarySubdocRequest) msg);
+        } else if (msg instanceof BinarySubdocMultiLookupRequest) {
+            return handleSubdocumentMultiLookupRequest(ctx, (BinarySubdocMultiLookupRequest) msg);
+        } else if (msg instanceof BinarySubdocMultiMutationRequest) {
+            return handleSubdocumentMultiMutationRequest(ctx, (BinarySubdocMultiMutationRequest) msg);
+        } else {
+            throw new IllegalArgumentException("Unknown incoming BinaryRequest type " + msg.getClass());
+        }
     }
 
     /**

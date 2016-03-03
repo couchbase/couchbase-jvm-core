@@ -211,46 +211,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     protected void decode(ChannelHandlerContext ctx, RESPONSE msg, List<Object> out) throws Exception {
         if (currentDecodingState == DecodingState.INITIAL) {
-            currentRequest = sentRequestQueue.poll();
-            currentDecodingState = DecodingState.STARTED;
-            if (currentRequest != null) {
-                Long st = sentRequestTimings.poll();
-                if (st != null) {
-                    currentOpTime = System.nanoTime() - st;
-                } else {
-                    currentOpTime = -1;
-                }
-            }
-
-            if (traceEnabled) {
-                LOGGER.trace("{}Started decoding of {}", logIdent(ctx, endpoint), currentRequest);
-            }
+            initialDecodeTasks(ctx);
         }
 
         try {
             CouchbaseResponse response = decodeResponse(ctx, msg);
             if (response != null) {
                 publishResponse(response, currentRequest.observable());
-
                 if (currentDecodingState == DecodingState.FINISHED) {
-                    if (currentRequest != null && currentOpTime >= 0 && env() != null && env().networkLatencyMetricsCollector().isEnabled()) {
-                        Class<? extends CouchbaseRequest> requestClass = currentRequest.getClass();
-                        String simpleName = classNameCache.get(requestClass);
-                        if (simpleName == null) {
-                            simpleName = requestClass.getSimpleName();
-                            classNameCache.put(requestClass, simpleName);
-                        }
-
-                        NetworkLatencyMetricsIdentifier identifier = new NetworkLatencyMetricsIdentifier(
-                            remoteHostname,
-                            serviceType().toString(),
-                            simpleName,
-                            response.status().toString()
-                        );
-                        env().networkLatencyMetricsCollector().record(identifier, currentOpTime);
-                    }
+                    writeMetrics(response);
                 }
-
             }
         } catch (CouchbaseException e) {
             currentRequest.observable().onError(e);
@@ -259,11 +229,69 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         }
 
         if (currentDecodingState == DecodingState.FINISHED) {
-            if (traceEnabled) {
-                LOGGER.trace("{}Finished decoding of {}", logIdent(ctx, endpoint), currentRequest);
+            resetStatesAfterDecode(ctx);
+        }
+    }
+
+    /**
+     * Helper method which creates the metrics for the current response and publishes them if enabled.
+     *
+     * @param response the response which is needed as context.
+     */
+    private void writeMetrics(final CouchbaseResponse response) {
+        if (currentRequest != null && currentOpTime >= 0 && env() != null
+            && env().networkLatencyMetricsCollector().isEnabled()) {
+
+            Class<? extends CouchbaseRequest> requestClass = currentRequest.getClass();
+            String simpleName = classNameCache.get(requestClass);
+            if (simpleName == null) {
+                simpleName = requestClass.getSimpleName();
+                classNameCache.put(requestClass, simpleName);
             }
-            currentRequest = null;
-            currentDecodingState = DecodingState.INITIAL;
+
+            NetworkLatencyMetricsIdentifier identifier = new NetworkLatencyMetricsIdentifier(
+                    remoteHostname,
+                    serviceType().toString(),
+                    simpleName,
+                    response.status().toString()
+            );
+            env().networkLatencyMetricsCollector().record(identifier, currentOpTime);
+        }
+    }
+
+    /**
+     * Helper method which performs the final tasks in the decoding process.
+     *
+     * @param ctx the channel handler context for logging purposes.
+     */
+    private void resetStatesAfterDecode(final ChannelHandlerContext ctx) {
+        if (traceEnabled) {
+            LOGGER.trace("{}Finished decoding of {}", logIdent(ctx, endpoint), currentRequest);
+        }
+        currentRequest = null;
+        currentDecodingState = DecodingState.INITIAL;
+    }
+
+    /**
+     * Helper method which performs the initial decoding process.
+     *
+     * @param ctx the channel handler context for logging purposes.
+     */
+    private void initialDecodeTasks(final ChannelHandlerContext ctx) {
+        currentRequest = sentRequestQueue.poll();
+        currentDecodingState = DecodingState.STARTED;
+
+        if (currentRequest != null) {
+            Long st = sentRequestTimings.poll();
+            if (st != null) {
+                currentOpTime = System.nanoTime() - st;
+            } else {
+                currentOpTime = -1;
+            }
+        }
+
+        if (traceEnabled) {
+            LOGGER.trace("{}Started decoding of {}", logIdent(ctx, endpoint), currentRequest);
         }
     }
 
