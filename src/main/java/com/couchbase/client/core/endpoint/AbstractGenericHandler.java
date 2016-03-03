@@ -26,6 +26,7 @@ import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.CoreScheduler;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -275,24 +276,59 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     protected void publishResponse(final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
         if (response.status() != ResponseStatus.RETRY && observable != null) {
-            final Scheduler.Worker worker = env().scheduler().createWorker();
-            worker.schedule(new Action0() {
-                @Override
-                public void call() {
-                    try {
-                        observable.onNext(response);
-                        observable.onCompleted();
-                    } catch(Exception ex) {
-                        LOGGER.warn("Caught exception while onNext on observable", ex);
-                        observable.onError(ex);
-                    } finally {
-                        worker.unsubscribe();
-                    }
-                }
-            });
+            Scheduler scheduler = env().scheduler();
+            if (scheduler instanceof CoreScheduler) {
+                scheduleDirect((CoreScheduler) scheduler, response, observable);
+            } else {
+                scheduleWorker(scheduler, response, observable);
+            }
         } else {
             responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR, response, observable);
         }
+    }
+
+    /**
+     * Optimized version of dispatching onto the core scheduler through direct scheduling.
+     *
+     * This method has less GC overhead compared to {@link #scheduleWorker(Scheduler, CouchbaseResponse, Subject)}
+     * since no worker needs to be generated explicitly (but is not part of the public Scheduler interface).
+     */
+    private static void scheduleDirect(CoreScheduler scheduler, final CouchbaseResponse response,
+        final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        scheduler.scheduleDirect(new Action0() {
+            @Override
+            public void call() {
+                try {
+                    observable.onNext(response);
+                    observable.onCompleted();
+                } catch (Exception ex) {
+                    LOGGER.warn("Caught exception while onNext on observable", ex);
+                    observable.onError(ex);
+                }
+            }
+        });
+    }
+
+    /**
+     * Dispatches the response on a generic scheduler through creating a worker.
+     */
+    private static void scheduleWorker(Scheduler scheduler, final CouchbaseResponse response,
+        final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        final Scheduler.Worker worker = scheduler.createWorker();
+        worker.schedule(new Action0() {
+            @Override
+            public void call() {
+                try {
+                    observable.onNext(response);
+                    observable.onCompleted();
+                } catch (Exception ex) {
+                    LOGGER.warn("Caught exception while onNext on observable", ex);
+                    observable.onError(ex);
+                } finally {
+                    worker.unsubscribe();
+                }
+            }
+        });
     }
 
     /**
