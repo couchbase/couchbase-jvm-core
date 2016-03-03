@@ -56,7 +56,9 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -109,6 +111,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     private final boolean traceEnabled;
 
     /**
+     * A cache to avoid consistent string conversions for the request simple names.
+     */
+    private final Map<Class<? extends CouchbaseRequest>, String> classNameCache;
+
+    /**
      * The request which is expected to return next.
      */
     private REQUEST currentRequest;
@@ -156,6 +163,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         this.isTransient = isTransient;
         this.traceEnabled = LOGGER.isTraceEnabled();
         this.sentRequestTimings = new ArrayDeque<Long>();
+        this.classNameCache = new IdentityHashMap<Class<? extends CouchbaseRequest>, String>();
     }
 
     /**
@@ -225,10 +233,17 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
                 if (currentDecodingState == DecodingState.FINISHED) {
                     if (currentRequest != null && currentOpTime >= 0 && env() != null && env().networkLatencyMetricsCollector().isEnabled()) {
+                        Class<? extends CouchbaseRequest> requestClass = currentRequest.getClass();
+                        String simpleName = classNameCache.get(requestClass);
+                        if (simpleName == null) {
+                            simpleName = requestClass.getSimpleName();
+                            classNameCache.put(requestClass, simpleName);
+                        }
+
                         NetworkLatencyMetricsIdentifier identifier = new NetworkLatencyMetricsIdentifier(
                             remoteHostname,
                             serviceType().toString(),
-                            currentRequest.getClass().getSimpleName(),
+                            simpleName,
                             response.status().toString()
                         );
                         env().networkLatencyMetricsCollector().record(identifier, currentOpTime);
