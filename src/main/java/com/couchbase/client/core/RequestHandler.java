@@ -68,7 +68,9 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The {@link RequestHandler} handles the overall concept of {@link Node}s and manages them concurrently.
+ * The {@link RequestHandler} is responsible for adding and removing {@link Node}s as well as dispatching
+ * {@link Service} management operations. Its main purpose though is to receive incoming {@link CouchbaseRequest}s
+ * and dispatch them to the appropriate {@link Node}s.
  *
  * @author Michael Nitschinger
  * @since 1.0
@@ -138,8 +140,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * Create a new {@link RequestHandler}.
      */
-    public RequestHandler(CoreEnvironment environment, Observable<ClusterConfig> configObservable,
-        RingBuffer<ResponseEvent> responseBuffer) {
+    public RequestHandler(final CoreEnvironment environment, final Observable<ClusterConfig> configObservable,
+        final RingBuffer<ResponseEvent> responseBuffer) {
         this(new CopyOnWriteArrayList<Node>(), environment, configObservable, responseBuffer);
     }
 
@@ -149,8 +151,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    RequestHandler(CopyOnWriteArrayList<Node> nodes, CoreEnvironment environment, Observable<ClusterConfig> configObservable,
-        RingBuffer<ResponseEvent> responseBuffer) {
+    RequestHandler(final CopyOnWriteArrayList<Node> nodes, final CoreEnvironment environment,
+        final Observable<ClusterConfig> configObservable, final RingBuffer<ResponseEvent> responseBuffer) {
         this.nodes = nodes;
         this.environment = environment;
         this.responseBuffer = responseBuffer;
@@ -164,7 +166,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     LOGGER.debug("Got notified of a new configuration arriving.");
                     configuration = config;
                     reconfigure(config).subscribe();
-                    if (eventBus != null && eventBus.hasSubscribers()) {
+
+                    if (eventBus != null) {
                         eventBus.publish(new ConfigUpdatedEvent(config));
                     }
                 } catch (Exception ex) {
@@ -175,50 +178,67 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     }
 
     @Override
-    public void onEvent(final RequestEvent event, long sequence, final boolean endOfBatch) throws Exception {
+    public void onEvent(final RequestEvent event, final long sequence, final boolean endOfBatch) throws Exception {
         try {
-            final CouchbaseRequest request = event.getRequest();
-
-            ClusterConfig config = configuration;
-            //prevent non-bootstrap requests to go through if bucket not part of config
-            if (!(request instanceof BootstrapMessage)) {
-                BucketConfig bucketConfig = config == null ? null : config.bucketConfig(request.bucket());
-                if (config == null || (request.bucket() != null  && bucketConfig == null)) {
-                    request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
-                    return;
-                }
-
-                //short-circuit some kind of requests for which we know there won't be any handler to respond.
-                try {
-                    checkFeaturesForRequest(request, bucketConfig);
-                } catch (ServiceNotAvailableException e) {
-                    request.observable().onError(e);
-                    return;
-                }
+            dispatchRequest(event.getRequest());
+        } finally {
+            event.setRequest(null);
+            if (endOfBatch && nodes != null) {
+                flush();
             }
+        }
+    }
 
-            Node[] found = locator(request).locate(request, nodes, config);
+    /**
+     * Helper method to send the flush signal to all of the nodes available.
+     */
+    private void flush() {
+        for (Node node : nodes) {
+            node.send(SignalFlush.INSTANCE);
+        }
+    }
 
-            if (found == null) {
+    /**
+     * Helper method to dispatch the incoming {@link CouchbaseRequest} to one or more nodes.
+     *
+     * @param request the request to dispatch.
+     */
+    private void dispatchRequest(final CouchbaseRequest request) {
+        ClusterConfig config = configuration;
+
+        //prevent non-bootstrap requests to go through if bucket not part of config
+        if (!(request instanceof BootstrapMessage)) {
+            BucketConfig bucketConfig = config == null ? null : config.bucketConfig(request.bucket());
+            if (config == null || (request.bucket() != null  && bucketConfig == null)) {
+                request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
                 return;
             }
-            if (found.length == 0) {
-                RetryHelper.retryOrCancel(environment, request, responseBuffer);
+
+            //short-circuit some kind of requests for which we know there won't be any handler to respond.
+            try {
+                checkFeaturesForRequest(request, bucketConfig);
+            } catch (ServiceNotAvailableException e) {
+                request.observable().onError(e);
+                return;
             }
-            for (int i = 0; i < found.length; i++) {
+        }
+
+        Node[] locatedNodes = locator(request).locate(request, nodes, config);
+
+        if (locatedNodes == null) {
+            return;
+        }
+
+        if (locatedNodes.length > 0) {
+            for (Node locatedNode : locatedNodes) {
                 try {
-                    found[i].send(request);
+                    locatedNode.send(request);
                 } catch (Exception ex) {
                     request.observable().onError(ex);
                 }
             }
-        } finally {
-            event.setRequest(null);
-            if (endOfBatch && nodes != null) {
-                for (Node node : nodes) {
-                    node.send(SignalFlush.INSTANCE);
-                }
-            }
+        } else {
+            RetryHelper.retryOrCancel(environment, request, responseBuffer);
         }
     }
 
@@ -229,17 +249,24 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param request the request to check.
      * @throws ServiceNotAvailableException if the request type needs a particular feature which isn't activated.
      */
-    protected void checkFeaturesForRequest(CouchbaseRequest request, BucketConfig config) {
+    protected void checkFeaturesForRequest(final CouchbaseRequest request, final BucketConfig config) {
         if (request instanceof BinaryRequest && !config.serviceEnabled(ServiceType.BINARY)) {
-            throw new ServiceNotAvailableException("The KeyValue service is not enabled or no node in the cluster supports it.");
+            throw new ServiceNotAvailableException("The KeyValue service is not enabled or no node in the cluster "
+                + "supports it.");
         } else if (request instanceof ViewRequest && !config.serviceEnabled(ServiceType.VIEW)) {
-            throw new ServiceNotAvailableException("The View service is not enabled or no node in the cluster supports it.");
-        } else if (request instanceof QueryRequest && !(environment.queryEnabled() || config.serviceEnabled(ServiceType.QUERY))) {
-            throw new ServiceNotAvailableException("The Query service is not enabled or no node in the cluster supports it.");
+            throw new ServiceNotAvailableException("The View service is not enabled or no node in the cluster "
+                + "supports it.");
+        } else if (request instanceof QueryRequest && !(environment.queryEnabled()
+            || config.serviceEnabled(ServiceType.QUERY))) {
+            throw new ServiceNotAvailableException("The Query service is not enabled or no node in the "
+                + "cluster supports it.");
         } else if (request instanceof SearchRequest && !config.serviceEnabled(ServiceType.SEARCH)) {
-            throw new ServiceNotAvailableException("The Search service is not enabled or no node in the cluster supports it.");
-        } else if (request instanceof DCPRequest && !(environment.dcpEnabled() || config.serviceEnabled(ServiceType.DCP))) {
-            throw new ServiceNotAvailableException("The DCP service is not enabled or no node in the cluster supports it.");
+            throw new ServiceNotAvailableException("The Search service is not enabled or no node in the "
+                + "cluster supports it.");
+        } else if (request instanceof DCPRequest && !(environment.dcpEnabled()
+            || config.serviceEnabled(ServiceType.DCP))) {
+            throw new ServiceNotAvailableException("The DCP service is not enabled or no node in the cluster "
+                + "supports it.");
         }
     }
 
