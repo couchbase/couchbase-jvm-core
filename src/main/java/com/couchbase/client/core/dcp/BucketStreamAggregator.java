@@ -33,13 +33,12 @@ import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
 import com.couchbase.client.core.message.dcp.GetFailoverLogRequest;
 import com.couchbase.client.core.message.dcp.GetFailoverLogResponse;
+import com.couchbase.client.core.message.dcp.GetLastCheckpointRequest;
+import com.couchbase.client.core.message.dcp.GetLastCheckpointResponse;
 import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.message.dcp.OpenConnectionResponse;
 import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
-import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
-import com.couchbase.client.core.message.kv.GetAllMutationTokensResponse;
-import com.couchbase.client.core.message.kv.MutationToken;
 import rx.Observable;
 import rx.functions.Action2;
 import rx.functions.Func0;
@@ -74,7 +73,7 @@ public class BucketStreamAggregator {
      * Create BucketStreamAggregator instance
      *
      * @param name   name for DCP connection
-     * @param core
+     * @param core   core
      * @param bucket bucket name
      */
     public BucketStreamAggregator(final String name, final ClusterFacade core, final String bucket) {
@@ -163,49 +162,47 @@ public class BucketStreamAggregator {
      * @return state object
      */
     public Observable<BucketStreamAggregatorState> getCurrentState() {
-        return open()
-                .flatMap(new Func1<DCPConnection, Observable<GetAllMutationTokensResponse>>() {
+        return open().flatMap(new Func1<DCPConnection, Observable<BucketStreamAggregatorState>>() {
+            @Override
+            public Observable<BucketStreamAggregatorState> call(DCPConnection dcpConnection) {
+                return partitionSize().flatMap(new Func1<Integer, Observable<BucketStreamAggregatorState>>() {
                     @Override
-                    public Observable<GetAllMutationTokensResponse> call(final DCPConnection response) {
-                        return core.send(new GetAllMutationTokensRequest(bucket));
-                    }
-                })
-                .flatMap(new Func1<GetAllMutationTokensResponse, Observable<BucketStreamAggregatorState>>() {
-                    @Override
-                    public Observable<BucketStreamAggregatorState> call(final GetAllMutationTokensResponse response) {
-                        BucketStreamAggregatorState state = new BucketStreamAggregatorState();
-                        for (MutationToken token : response.mutationTokens()) {
-                            state.put(new BucketStreamState((short) token.vbucketID(), token.vbucketUUID(), token.sequenceNumber()));
-                        }
-                        return Observable.just(state);
-                    }
-                })
-                .flatMap(new Func1<BucketStreamAggregatorState, Observable<BucketStreamAggregatorState>>() {
-                    @Override
-                    public Observable<BucketStreamAggregatorState> call(final BucketStreamAggregatorState aggregatorState) {
-                        return Observable
-                                .from(aggregatorState)
-                                .flatMap(new Func1<BucketStreamState, Observable<GetFailoverLogResponse>>() {
-                                    @Override
-                                    public Observable<GetFailoverLogResponse> call(BucketStreamState streamState) {
-                                        return core.send(new GetFailoverLogRequest(streamState.partition(), bucket));
-                                    }
-                                })
-                                .collect(new Func0<BucketStreamAggregatorState>() {
-                                    @Override
-                                    public BucketStreamAggregatorState call() {
-                                        return aggregatorState;
-                                    }
-                                }, new Action2<BucketStreamAggregatorState, GetFailoverLogResponse>() {
-                                    @Override
-                                    public void call(BucketStreamAggregatorState state, GetFailoverLogResponse response) {
-                                        final FailoverLogEntry entry = response.failoverLog().get(0);
-                                        state.put(new BucketStreamState(response.partition(), entry.vbucketUUID(),
-                                                state.get(response.partition()).startSequenceNumber()));
-                                    }
-                                });
+                    public Observable<BucketStreamAggregatorState> call(final Integer numPartitions) {
+                        return Observable.range(0, numPartitions).flatMap(new Func1<Integer, Observable<GetFailoverLogResponse>>() {
+                            @Override
+                            public Observable<GetFailoverLogResponse> call(final Integer partition) {
+                                return core.send(new GetFailoverLogRequest(partition.shortValue(), bucket));
+                            }
+                        }).flatMap(new Func1<GetFailoverLogResponse, Observable<BucketStreamState>>() {
+                            @Override
+                            public Observable<BucketStreamState> call(final GetFailoverLogResponse failoverLogsResponse) {
+                                final FailoverLogEntry entry = failoverLogsResponse.failoverLog().get(0);
+                                return core.<GetLastCheckpointResponse>send(new GetLastCheckpointRequest(failoverLogsResponse.partition(), bucket))
+                                        .map(new Func1<GetLastCheckpointResponse, BucketStreamState>() {
+                                            @Override
+                                            public BucketStreamState call(GetLastCheckpointResponse lastCheckpointResponse) {
+                                                return new BucketStreamState(
+                                                        failoverLogsResponse.partition(),
+                                                        entry.vbucketUUID(),
+                                                        lastCheckpointResponse.sequenceNumber());
+                                            }
+                                        });
+                            }
+                        }).collect(new Func0<BucketStreamAggregatorState>() {
+                            @Override
+                            public BucketStreamAggregatorState call() {
+                                return new BucketStreamAggregatorState();
+                            }
+                        }, new Action2<BucketStreamAggregatorState, BucketStreamState>() {
+                            @Override
+                            public void call(BucketStreamAggregatorState aggregatorState, BucketStreamState streamState) {
+                                aggregatorState.put(streamState);
+                            }
+                        });
                     }
                 });
+            }
+        });
     }
 
     private Observable<DCPConnection> open() {
