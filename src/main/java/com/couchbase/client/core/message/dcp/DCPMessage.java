@@ -25,7 +25,6 @@ package com.couchbase.client.core.message.dcp;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.endpoint.dcp.DCPConnection;
-import com.couchbase.client.core.message.CouchbaseRequest;
 
 /**
  * @author Sergey Avseyev
@@ -35,7 +34,14 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 @InterfaceAudience.Private
 public interface DCPMessage {
     /**
+     * @return total payload size of the message.
+     */
+    int totalBodyLength();
+
+    /**
      * @return key associated with event
      */
     String key();
+
+    DCPConnection connection();
 }

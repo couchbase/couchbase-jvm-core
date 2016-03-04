@@ -23,8 +23,14 @@
 package com.couchbase.client.core.endpoint.dcp;
 
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.message.dcp.DCPMessage;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
@@ -46,12 +52,15 @@ public class DCPConnection {
     private final String name;
     private final SerializedSubject<DCPRequest, DCPRequest> subject;
     private final String bucket;
+    private final CoreEnvironment env;
     private volatile int totalReceivedBytes;
     private List<Integer> streams = Collections.synchronizedList(new ArrayList<Integer>());
+    private ChannelHandlerContext lastCtx;
 
     public DCPConnection(final CoreEnvironment env, final String name, final String bucket) {
         this.name = name;
         this.totalReceivedBytes = 0;
+        this.env = env;
         this.bucket = bucket;
         subject = UnicastAutoReleaseSubject.<DCPRequest>create(env.autoreleaseAfter(), TimeUnit.MILLISECONDS, env.scheduler())
                 .toSerialized();
@@ -83,15 +92,40 @@ public class DCPConnection {
         return subject;
     }
 
-    public int totalReceivedBytes() {
-        return totalReceivedBytes;
+    public void consumed(final DCPMessage event) {
+        consumed(event.totalBodyLength());
     }
 
-    public void inc(int delta) {
-        totalReceivedBytes += MINIMUM_HEADER_SIZE + delta;
+    /*package*/ void consumed(final FullBinaryMemcacheResponse response) {
+        consumed(response.getTotalBodyLength());
     }
 
-    public void reset() {
-        totalReceivedBytes = 0;
+    private void consumed(int delta) {
+        if (env.dcpConnectionBufferSize() > 0 && lastCtx != null) {
+            totalReceivedBytes += MINIMUM_HEADER_SIZE + delta;
+            if (totalReceivedBytes >= env.dcpConnectionBufferSize() * env.dcpConnectionBufferAckThreshold()) {
+                lastCtx.writeAndFlush(createBufferAcknowledgmentRequest(totalReceivedBytes));
+                totalReceivedBytes = 0;
+            }
+        }
+    }
+
+    /**
+     * FIXME: At the moment, we cannot use send() to schedule BufferAcknowledgmentRequest,
+     *        because requests and responses will interleave in DCPHandler. Instead the handler
+     *        store context object here, and DCPConnection can send acknowledgment as soon as
+     *        consumer signals about processed events.
+     */
+    /*package*/ void setLastContext(ChannelHandlerContext ctx) {
+        lastCtx = ctx;
+    }
+
+    private BinaryMemcacheRequest createBufferAcknowledgmentRequest(int bufferBytes) {
+        ByteBuf extras = lastCtx.alloc().buffer(4).writeInt(bufferBytes);
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest("", extras);
+        request.setOpcode(DCPHandler.OP_BUFFER_ACK);
+        request.setExtrasLength((byte) extras.readableBytes());
+        request.setTotalBodyLength(extras.readableBytes());
+        return request;
     }
 }

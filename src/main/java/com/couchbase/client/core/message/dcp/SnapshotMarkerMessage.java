@@ -24,6 +24,7 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 
 /**
  * Snapshot marker.
@@ -72,14 +73,14 @@ public class SnapshotMarkerMessage extends AbstractDCPMessage {
      */
     private final boolean ack;
 
-    public SnapshotMarkerMessage(short partition, long startSequenceNumber, long endSequenceNumber,
+    public SnapshotMarkerMessage(DCPConnection connection, int totalBodyLength, short partition, long startSequenceNumber, long endSequenceNumber,
                                  int flags, String bucket) {
-        this(partition, startSequenceNumber, endSequenceNumber, flags, bucket, null);
+        this(connection, totalBodyLength, partition, startSequenceNumber, endSequenceNumber, flags, bucket, null);
     }
 
-    public SnapshotMarkerMessage(short partition, long startSequenceNumber, long endSequenceNumber,
+    public SnapshotMarkerMessage(DCPConnection connection, int totalBodyLength, short partition, long startSequenceNumber, long endSequenceNumber,
                                  int flags, String bucket, String password) {
-        super(partition, null, bucket, password);
+        super(connection, totalBodyLength, partition, null, bucket, password);
         partition(partition);
         this.startSequenceNumber = startSequenceNumber;
         this.endSequenceNumber = endSequenceNumber;

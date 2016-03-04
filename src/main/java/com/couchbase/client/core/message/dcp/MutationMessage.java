@@ -24,6 +24,7 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -43,17 +44,17 @@ public class MutationMessage extends AbstractDCPMessage {
     private final long bySequenceNumber;
     private final long revisionSequenceNumber;
 
-    public MutationMessage(short partition, String key, ByteBuf content, int expiration,
+    public MutationMessage(DCPConnection connection, int totalBodyLength, short partition, String key, ByteBuf content, int expiration,
                            long bySequenceNumber, long revisionSequenceNumber,
                            int flags, int lockTime, long cas, String bucket) {
-        this(partition, key, content, expiration, bySequenceNumber, revisionSequenceNumber,
+        this(connection, totalBodyLength, partition, key, content, expiration, bySequenceNumber, revisionSequenceNumber,
                 flags, lockTime, cas, bucket, null);
     }
 
-    public MutationMessage(short partition, String key, ByteBuf content, int expiration,
+    public MutationMessage(DCPConnection connection, int totalBodyLength, short partition, String key, ByteBuf content, int expiration,
                            long bySequenceNumber, long revisionSequenceNumber,
                            int flags, int lockTime, long cas, String bucket, String password) {
-        super(partition, key, bucket, password);
+        super(connection, totalBodyLength, partition, key, bucket, password);
         this.content = content;
         this.expiration = expiration;
         this.flags = flags;
