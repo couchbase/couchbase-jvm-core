@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Couchbase, Inc.
+ * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,40 +24,43 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.message.CouchbaseResponse;
+import rx.subjects.Subject;
 
 /**
- * A message representing event that removes or expires a document.
+ * Default implementation of {@link DCPRequest}.
  *
  * @author Sergey Avseyev
- * @since 1.1.0
+ * @since 1.2.6
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
-public class RemoveMessage extends AbstractDCPMessage {
-    private final long cas;
-    private final long bySequenceNumber;
-    private final long revisionSequenceNumber;
+public abstract class AbstractDCPMessage extends AbstractDCPRequest implements DCPMessage {
+    private final String key;
 
-    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket) {
-        this(partition, key, cas, bySequenceNumber, revisionSequenceNumber, bucket, null);
+    /**
+     * Creates a new {@link AbstractDCPMessage}.
+     *
+     * @param partition
+     * @param key
+     * @param bucket   the bucket of the document.
+     * @param password the optional password of the bucket.
+     */
+    public AbstractDCPMessage(short partition, String key, final String bucket, final String password) {
+        super(bucket, password);
+        this.partition(partition);
+        this.key = key;
     }
 
-    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String password) {
-        super(partition, key, bucket, password);
-        this.cas = cas;
-        this.bySequenceNumber = bySequenceNumber;
-        this.revisionSequenceNumber = revisionSequenceNumber;
+    public AbstractDCPMessage(short partition, String key, final String bucket, final String password,
+                              final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+        super(bucket, password, observable);
+        this.partition(partition);
+        this.key = key;
     }
 
-    public long cas() {
-        return cas;
-    }
-
-    public long bySequenceNumber() {
-        return bySequenceNumber;
-    }
-
-    public long revisionSequenceNumber() {
-        return revisionSequenceNumber;
+    @Override
+    public String key() {
+        return key;
     }
 }

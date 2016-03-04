@@ -37,7 +37,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
-public class SnapshotMarkerMessage extends AbstractDCPRequest {
+public class SnapshotMarkerMessage extends AbstractDCPMessage {
     public static final int MEMORY = 0x01;
     public static final int DISK = 0x02;
     public static final int CHECKPOINT = 0x04;
@@ -48,7 +48,7 @@ public class SnapshotMarkerMessage extends AbstractDCPRequest {
 
     /**
      * Specifies binary representation of flags.
-     * <p/>
+     *
      * Note: use boolean accessors for clarity and readability
      */
     private final int flags;
@@ -79,7 +79,7 @@ public class SnapshotMarkerMessage extends AbstractDCPRequest {
 
     public SnapshotMarkerMessage(short partition, long startSequenceNumber, long endSequenceNumber,
                                  int flags, String bucket, String password) {
-        super(bucket, password);
+        super(partition, null, bucket, password);
         partition(partition);
         this.startSequenceNumber = startSequenceNumber;
         this.endSequenceNumber = endSequenceNumber;

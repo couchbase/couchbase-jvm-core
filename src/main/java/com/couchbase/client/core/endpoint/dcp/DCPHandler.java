@@ -34,6 +34,7 @@ import com.couchbase.client.core.message.dcp.AbstractDCPRequest;
 import com.couchbase.client.core.message.dcp.ControlParameter;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.DCPResponse;
+import com.couchbase.client.core.message.dcp.ExpirationMessage;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
 import com.couchbase.client.core.message.dcp.GetFailoverLogRequest;
 import com.couchbase.client.core.message.dcp.GetFailoverLogResponse;
@@ -77,6 +78,7 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
     public static final byte OP_SNAPSHOT_MARKER = 0x56;
     public static final byte OP_MUTATION = 0x57;
     public static final byte OP_REMOVE = 0x58;
+    public static final byte OP_EXPIRATION = 0x59;
     public static final byte OP_CONTROL = 0x5e;
     public static final byte OP_BUFFER_ACK = 0x5d;
     public static final byte OP_GET_FAILOVER_LOG = 0x54;
@@ -272,13 +274,23 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
                 updateConnectionStats(ctx, connection, msg);
                 break;
 
+            case OP_EXPIRATION:
+                if (msg.getExtrasLength() > 0) {
+                    final ByteBuf extras = msg.getExtras();
+                    bySeqno = extras.readLong();
+                    revSeqno = extras.readLong();
+                }
+                request = new ExpirationMessage(msg.getStatus(), msg.getKey(),
+                        msg.getCAS(), bySeqno, revSeqno, connection.bucket());
+                break;
+
             case OP_STREAM_END:
                 final ByteBuf extrasReleased = msg.getExtras();
                 final ByteBuf extras = ctx.alloc().buffer(msg.getExtrasLength());
                 extras.writeBytes(extrasReleased, extrasReleased.readerIndex(), extrasReleased.readableBytes());
                 flags = extras.readInt();
                 extras.release();
-                request = new StreamEndMessage(StreamEndMessage.Reason.valueOf(flags), connection.bucket());
+                request = new StreamEndMessage(msg.getStatus(), StreamEndMessage.Reason.valueOf(flags), connection.bucket());
                 connection.removeStream(msg.getOpaque());
                 updateConnectionStats(ctx, connection, msg);
                 break;

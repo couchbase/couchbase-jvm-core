@@ -25,11 +25,15 @@ package com.couchbase.client.core.message.dcp;
 /**
  * @author Sergey Avseyev
  */
-public class StreamEndMessage extends AbstractDCPRequest {
+public class StreamEndMessage extends AbstractDCPMessage {
     private final Reason reason;
 
-    public StreamEndMessage(final Reason reason, final String bucket) {
-        super(bucket, null);
+    public StreamEndMessage(short partition, final Reason reason, String bucket) {
+        this(partition, reason, bucket, null);
+    }
+
+    public StreamEndMessage(short partition, final Reason reason, final String bucket, final String password) {
+        super(partition, null, bucket, password);
         this.reason = reason;
     }
 

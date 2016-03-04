@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Couchbase, Inc.
+ * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,20 +29,20 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  * A message representing event that removes or expires a document.
  *
  * @author Sergey Avseyev
- * @since 1.1.0
+ * @since 1.2.6
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
-public class RemoveMessage extends AbstractDCPMessage {
+public class ExpirationMessage extends AbstractDCPMessage {
     private final long cas;
     private final long bySequenceNumber;
     private final long revisionSequenceNumber;
 
-    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket) {
+    public ExpirationMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket) {
         this(partition, key, cas, bySequenceNumber, revisionSequenceNumber, bucket, null);
     }
 
-    public RemoveMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String password) {
+    public ExpirationMessage(short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String password) {
         super(partition, key, bucket, password);
         this.cas = cas;
         this.bySequenceNumber = bySequenceNumber;
