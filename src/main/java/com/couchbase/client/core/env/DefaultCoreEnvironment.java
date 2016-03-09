@@ -98,6 +98,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean TCP_NODELAY_ENALED = true;
     public static final boolean MUTATION_TOKENS_ENABLED = false;
     public static final int SOCKET_CONNECT_TIMEOUT = 1000;
+    public static final boolean CALLBACKS_ON_IO_POOL = false;
 
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
@@ -189,6 +190,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean tcpNodelayEnabled;
     private final boolean mutationTokensEnabled;
     private final int socketConnectTimeout;
+    private final boolean callbacksOnIoPool;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -245,6 +247,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         tcpNodelayEnabled = booleanPropertyOr("tcpNodelayEnabled", builder.tcpNodelayEnabled);
         mutationTokensEnabled = booleanPropertyOr("mutationTokensEnabled", builder.mutationTokensEnabled);
         socketConnectTimeout = intPropertyOr("socketConnectTimeout", builder.socketConnectTimeout);
+        callbacksOnIoPool = booleanPropertyOr("callbacksOnIoPool", builder.callbacksOnIoPool);
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -645,6 +648,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return socketConnectTimeout;
     }
 
+    @Override
+    public boolean callbacksOnIoPool() {
+        return callbacksOnIoPool;
+    }
+
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -687,6 +695,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean tcpNodelayEnabled = TCP_NODELAY_ENALED;
         private boolean mutationTokensEnabled = MUTATION_TOKENS_ENABLED;
         private int socketConnectTimeout = SOCKET_CONNECT_TIMEOUT;
+        private boolean callbacksOnIoPool = CALLBACKS_ON_IO_POOL;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig = null;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig = null;
@@ -1132,6 +1141,20 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        /**
+         * Set to true if the {@link Observable} callbacks should be completed on the IO event loops.
+         *
+         * Note: this is an advanced option and must be used with care. It can be used to improve performance since it
+         * removes additional scheduling overhead on the response path, but any blocking calls in the callbacks will
+         * lead to more work on the event loops itself and eventually stall them.
+         *
+         * USE WITH CARE!
+         */
+        public Builder callbacksOnIoPool(boolean callbacksOnIoPool) {
+            this.callbacksOnIoPool = callbacksOnIoPool;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1188,6 +1211,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", socketConnectTimeout=").append(socketConnectTimeout);
         sb.append(", dcpConnectionBufferSize=").append(dcpConnectionBufferSize);
         sb.append(", dcpConnectionBufferAckThreshold=").append(dcpConnectionBufferAckThreshold);
+        sb.append(", callbacksOnIoPool=").append(callbacksOnIoPool);
 
         return sb;
     }

@@ -364,4 +364,15 @@ public interface CoreEnvironment {
      */
     int socketConnectTimeout();
 
+    /**
+     * Returns true if the {@link Observable} callbacks are completed on the IO event loops.
+     *
+     * Note: this is an advanced option and must be used with care. It can be used to improve performance since it
+     * removes additional scheduling overhead on the response path, but any blocking calls in the callbacks will
+     * lead to more work on the event loops itself and eventually stall them.
+     *
+     * @return true if callbacks are scheduled on the IO event loops.
+     */
+    boolean callbacksOnIoPool();
+
 }
