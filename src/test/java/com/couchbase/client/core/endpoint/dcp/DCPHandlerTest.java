@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.CharsetUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -88,7 +89,7 @@ public class DCPHandlerTest {
         channel.writeOutbound(request);
         BinaryMemcacheRequest outbound = (BinaryMemcacheRequest) channel.readOutbound();
         assertNotNull(outbound);
-        assertEquals(connectionName, outbound.getKey());
+        assertEquals(connectionName, new String(outbound.getKey(), CharsetUtil.UTF_8));
         assertEquals(connectionName.length(), outbound.getKeyLength());
         assertEquals(connectionName.length() + 8, outbound.getTotalBodyLength());
         assertEquals(1, outbound.getReserved());

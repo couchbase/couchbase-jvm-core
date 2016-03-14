@@ -201,7 +201,7 @@ public class KeyValueAuthHandler
         ByteBuf payload = bytePayload != null ? ctx.alloc().buffer().writeBytes(bytePayload) : Unpooled.EMPTY_BUFFER;
 
         FullBinaryMemcacheRequest initialRequest = new DefaultFullBinaryMemcacheRequest(
-            selectedMechanism,
+            selectedMechanism.getBytes(CharsetUtil.UTF_8),
             Unpooled.EMPTY_BUFFER,
             payload
         );
@@ -255,7 +255,7 @@ public class KeyValueAuthHandler
             }
 
             FullBinaryMemcacheRequest stepRequest = new DefaultFullBinaryMemcacheRequest(
-                selectedMechanism,
+                selectedMechanism.getBytes(CharsetUtil.UTF_8),
                 Unpooled.EMPTY_BUFFER,
                 content
             );

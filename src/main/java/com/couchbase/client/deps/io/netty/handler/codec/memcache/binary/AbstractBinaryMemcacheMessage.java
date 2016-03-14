@@ -28,7 +28,7 @@ public abstract class AbstractBinaryMemcacheMessage
     /**
      * Contains the optional key.
      */
-    private String key;
+    private byte[] key;
 
     /**
      * Contains the optional extras.
@@ -50,13 +50,13 @@ public abstract class AbstractBinaryMemcacheMessage
      * @param key    the message key.
      * @param extras the message extras.
      */
-    protected AbstractBinaryMemcacheMessage(String key, ByteBuf extras) {
+    protected AbstractBinaryMemcacheMessage(byte[] key, ByteBuf extras) {
         this.key = key;
         this.extras = extras;
     }
 
     @Override
-    public String getKey() {
+    public byte[] getKey() {
         return key;
     }
 
@@ -66,7 +66,7 @@ public abstract class AbstractBinaryMemcacheMessage
     }
 
     @Override
-    public BinaryMemcacheMessage setKey(String key) {
+    public BinaryMemcacheMessage setKey(byte[] key) {
         this.key = key;
         return this;
     }

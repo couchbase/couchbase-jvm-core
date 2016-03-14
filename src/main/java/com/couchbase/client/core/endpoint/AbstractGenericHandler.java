@@ -82,6 +82,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(AbstractGenericHandler.class);
 
     /**
+     * Empty bytes to reuse.
+     */
+    protected static final byte[] EMPTY_BYTES = new byte[] {};
+
+    /**
      * The response buffer to push response events into.
      */
     private final EventSink<ResponseEvent> responseBuffer;

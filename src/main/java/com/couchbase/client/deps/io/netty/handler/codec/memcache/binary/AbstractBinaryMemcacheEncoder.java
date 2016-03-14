@@ -15,11 +15,10 @@
  */
 package com.couchbase.client.deps.io.netty.handler.codec.memcache.binary;
 
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.AbstractMemcacheObjectEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-import com.couchbase.client.deps.io.netty.handler.codec.memcache.AbstractMemcacheObjectEncoder;
-import io.netty.util.CharsetUtil;
 
 /**
  * A {@link MessageToByteEncoder} that encodes binary memache messages into bytes.
@@ -63,12 +62,12 @@ public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMess
      * @param buf the {@link ByteBuf} to write into.
      * @param key the key to encode.
      */
-    private static void encodeKey(ByteBuf buf, String key) {
-        if (key == null || key.isEmpty()) {
+    private static void encodeKey(ByteBuf buf, byte[] key) {
+        if (key == null || key.length == 0) {
             return;
         }
 
-        buf.writeBytes(key.getBytes(CharsetUtil.UTF_8));
+        buf.writeBytes(key);
     }
 
     /**

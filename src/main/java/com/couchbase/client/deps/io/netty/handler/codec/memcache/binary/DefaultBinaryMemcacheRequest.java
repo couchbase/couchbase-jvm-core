@@ -41,7 +41,7 @@ public class DefaultBinaryMemcacheRequest extends AbstractBinaryMemcacheMessage 
      *
      * @param key    the key to use.
      */
-    public DefaultBinaryMemcacheRequest(String key) {
+    public DefaultBinaryMemcacheRequest(byte[] key) {
         this(key, null);
     }
 
@@ -60,7 +60,7 @@ public class DefaultBinaryMemcacheRequest extends AbstractBinaryMemcacheMessage 
      * @param key    the key to use.
      * @param extras the extras to use.
      */
-    public DefaultBinaryMemcacheRequest(String key, ByteBuf extras) {
+    public DefaultBinaryMemcacheRequest(byte[] key, ByteBuf extras) {
         super(key, extras);
         setMagic(REQUEST_MAGIC_BYTE);
     }

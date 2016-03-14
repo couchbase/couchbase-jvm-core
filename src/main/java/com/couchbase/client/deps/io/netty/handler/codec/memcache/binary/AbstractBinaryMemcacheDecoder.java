@@ -15,16 +15,15 @@
  */
 package com.couchbase.client.deps.io.netty.handler.codec.memcache.binary;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderResult;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.AbstractMemcacheObjectDecoder;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.DefaultLastMemcacheContent;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.DefaultMemcacheContent;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.LastMemcacheContent;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.MemcacheContent;
-import io.netty.util.CharsetUtil;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderResult;
 
 import java.util.List;
 
@@ -109,8 +108,9 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                             return;
                         }
 
-                        currentMessage.setKey(in.toString(in.readerIndex(), keyLength, CharsetUtil.UTF_8));
-                        in.skipBytes(keyLength);
+                        byte[] key = new byte[keyLength];
+                        in.readBytes(key);
+                        currentMessage.setKey(key);
                     }
 
                     out.add(currentMessage);

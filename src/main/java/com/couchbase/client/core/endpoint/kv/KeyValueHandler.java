@@ -282,8 +282,8 @@ public class KeyValueHandler
             extras = Unpooled.EMPTY_BUFFER;
         }
 
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request
@@ -312,8 +312,8 @@ public class KeyValueHandler
      * @return a ready {@link BinaryMemcacheRequest}.
      */
     private static BinaryMemcacheRequest handleReplicaGetRequest(final ReplicaGetRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
 
         request.setOpcode(OP_GET_REPLICA)
@@ -340,8 +340,8 @@ public class KeyValueHandler
         extras.writeInt(msg.flags());
         extras.writeInt(msg.expiration());
 
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         byte extrasLength = (byte) extras.readableBytes();
         FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
 
@@ -369,8 +369,8 @@ public class KeyValueHandler
      * @return a ready {@link BinaryMemcacheRequest}.
      */
     private static BinaryMemcacheRequest handleRemoveRequest(final RemoveRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
 
         request.setOpcode(OP_REMOVE);
@@ -395,8 +395,8 @@ public class KeyValueHandler
         extras.writeLong(msg.initial());
         extras.writeInt(msg.expiry());
 
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key, extras);
         request.setOpcode(msg.delta() < 0 ? OP_COUNTER_DECR : OP_COUNTER_INCR);
@@ -412,8 +412,8 @@ public class KeyValueHandler
      * @return a ready {@link BinaryMemcacheRequest}.
      */
     private static BinaryMemcacheRequest handleUnlockRequest(final UnlockRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request.setOpcode(OP_UNLOCK);
         request.setKeyLength(keyLength);
@@ -431,8 +431,8 @@ public class KeyValueHandler
         ByteBuf extras = ctx.alloc().buffer();
         extras.writeInt(msg.expiry());
 
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         byte extrasLength = (byte) extras.readableBytes();
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
         request.setExtras(extras);
@@ -457,7 +457,7 @@ public class KeyValueHandler
         content.writeShort(keyLength);
         content.writeBytes(key.getBytes(CHARSET));
 
-        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest("", Unpooled.EMPTY_BUFFER, content);
+        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(EMPTY_BYTES, Unpooled.EMPTY_BUFFER, content);
         request.setOpcode(OP_OBSERVE);
         request.setTotalBodyLength(content.readableBytes());
         return request;
@@ -468,15 +468,15 @@ public class KeyValueHandler
         ByteBuf content = ctx.alloc().buffer();
         content.writeLong(msg.vbucketUUID());
 
-        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest("", Unpooled.EMPTY_BUFFER, content);
+        BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(EMPTY_BYTES, Unpooled.EMPTY_BUFFER, content);
         request.setOpcode(OP_OBSERVE_SEQ);
         request.setTotalBodyLength(content.readableBytes());
         return request;
     }
 
     private static BinaryMemcacheRequest handleAppendRequest(final AppendRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
 
         request.setOpcode(OP_APPEND);
@@ -487,8 +487,8 @@ public class KeyValueHandler
     }
 
     private static BinaryMemcacheRequest handlePrependRequest(final PrependRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
 
         request.setOpcode(OP_PREPEND);
@@ -516,9 +516,9 @@ public class KeyValueHandler
     }
 
     private static BinaryMemcacheRequest handleStatRequest(StatRequest msg) {
-        String key = msg.key();
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
         BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(key);
-        short keyLength = (short) msg.keyBytes().length;
         request
                 .setOpcode(OP_STAT)
                 .setKeyLength(keyLength)
@@ -527,7 +527,7 @@ public class KeyValueHandler
     }
 
     private static BinaryMemcacheRequest handleGetAllMutationTokensRequest(ChannelHandlerContext ctx, GetAllMutationTokensRequest msg) {
-        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest("");
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest(EMPTY_BYTES);
 
         ByteBuf extras;
         switch (msg.partitionState()) {
@@ -552,8 +552,8 @@ public class KeyValueHandler
     }
 
     private static BinaryMemcacheRequest handleSubdocumentRequest(ChannelHandlerContext ctx, BinarySubdocRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
 
         ByteBuf extras = ctx.alloc().buffer(3, 7); //extras can be 7 bytes if there is an expiry
         byte extrasLength = 3; //by default 2 bytes for pathLength + 1 byte for "command" flags
@@ -591,8 +591,8 @@ public class KeyValueHandler
 
     private static BinaryMemcacheRequest handleSubdocumentMultiLookupRequest(ChannelHandlerContext ctx,
                                                                              BinarySubdocMultiLookupRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
 
         FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
         request.setOpcode(OP_SUB_MULTI_LOOKUP)
@@ -605,8 +605,8 @@ public class KeyValueHandler
 
     private static BinaryMemcacheRequest handleSubdocumentMultiMutationRequest(ChannelHandlerContext ctx,
                                                                              BinarySubdocMultiMutationRequest msg) {
-        String key = msg.key();
-        short keyLength = (short) msg.keyBytes().length;
+        byte[] key = msg.keyBytes();
+        short keyLength = (short) key.length;
 
         byte extrasLength = 0;
         ByteBuf extras = Unpooled.EMPTY_BUFFER;
@@ -943,7 +943,7 @@ public class KeyValueHandler
             MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new CounterResponse(status, statusCode, bucket, value, cas, descr, request);
         } else if (request instanceof StatRequest) {
-            String key = msg.getKey();
+            String key = new String(msg.getKey(), CHARSET);
             String value = content.toString(CHARSET);
             releaseContent(content);
 

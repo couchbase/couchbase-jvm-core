@@ -160,14 +160,14 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
      *
      * @return the key of the document.
      */
-    String getKey();
+    byte[] getKey();
 
     /**
      * Sets the key of the document.
      *
      * @param key the key of the message.
      */
-    BinaryMemcacheMessage setKey(String key);
+    BinaryMemcacheMessage setKey(byte[] key);
 
     /**
      * Returns a {@link ByteBuf} representation of the optional extras.
