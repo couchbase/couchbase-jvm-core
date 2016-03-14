@@ -39,10 +39,15 @@ import com.couchbase.client.core.state.LifecycleState;
  */
 public class PartitionSelectionStrategy implements SelectionStrategy {
 
+    public static final PartitionSelectionStrategy INSTANCE = new PartitionSelectionStrategy();
+
+    private PartitionSelectionStrategy() {
+        // singleton.
+    }
+
     @Override
     public Endpoint select(final CouchbaseRequest request, final Endpoint[] endpoints) {
-        int numEndpoints = endpoints.length;
-        if (numEndpoints == 0) {
+        if (endpoints.length == 0) {
             return null;
         }
 
@@ -50,23 +55,31 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
             if (request instanceof GetBucketConfigRequest) {
                 return selectFirstConnected(endpoints);
             } else {
-                BinaryRequest binaryRequest = (BinaryRequest) request;
-                short partition = binaryRequest.partition();
-                if (partition > 0) {
-                    int id = partition % numEndpoints;
-                    Endpoint endpoint = endpoints[id];
-                    if (endpoint != null && endpoint.isState(LifecycleState.CONNECTED)) {
-                        return endpoint;
-                    }
-                } else {
-                    return selectFirstConnected(endpoints);
-                }
+                return selectByPartition(endpoints, ((BinaryRequest) request).partition());
             }
         } else {
             throw new IllegalStateException("The PartitionSelectionStrategy does not understand: " + request);
         }
+    }
 
-        return null;
+    /**
+     * Helper method to select the proper target endpoint by partition.
+     *
+     * @param endpoints the list of currently available endpoints.
+     * @param partition the partition of the incoming request.
+     * @return the selected endpoint, or null if no acceptable one found.
+     */
+    private static Endpoint selectByPartition(final Endpoint[] endpoints, final short partition) {
+        if (partition >= 0) {
+            int numEndpoints = endpoints.length;
+            Endpoint endpoint = numEndpoints == 1 ? endpoints[0] : endpoints[partition % numEndpoints];
+            if (endpoint != null && endpoint.isState(LifecycleState.CONNECTED)) {
+                return endpoint;
+            }
+            return null;
+        } else {
+            return selectFirstConnected(endpoints);
+        }
     }
 
     /**
@@ -75,7 +88,7 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
      * @param endpoints the list of endpoints.
      * @return the first connected or null if none found.
      */
-    private static final Endpoint selectFirstConnected(final Endpoint[] endpoints) {
+    private static Endpoint selectFirstConnected(final Endpoint[] endpoints) {
         for (Endpoint endpoint : endpoints) {
             if (endpoint.isState(LifecycleState.CONNECTED)) {
                 return endpoint;

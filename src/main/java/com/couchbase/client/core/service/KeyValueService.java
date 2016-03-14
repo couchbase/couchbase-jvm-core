@@ -35,7 +35,7 @@ public class KeyValueService extends AbstractPoolingService {
     /**
      * The endpoint selection strategy.
      */
-    private static final SelectionStrategy STRATEGY = new PartitionSelectionStrategy();
+    private static final SelectionStrategy STRATEGY = PartitionSelectionStrategy.INSTANCE;
 
     /**
      * The endpoint factory.

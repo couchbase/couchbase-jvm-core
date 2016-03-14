@@ -42,7 +42,7 @@ public class PartitionSelectionStrategyTest {
 
     @Test
     public void shouldSelectFirstConnectedForBucketConfigRequest() throws Exception {
-        SelectionStrategy strategy = new PartitionSelectionStrategy();
+        SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
@@ -61,7 +61,7 @@ public class PartitionSelectionStrategyTest {
 
     @Test
     public void shouldSelectFirstConnectedForRequestWithoutPartition() throws Exception {
-        SelectionStrategy strategy = new PartitionSelectionStrategy();
+        SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
@@ -81,7 +81,7 @@ public class PartitionSelectionStrategyTest {
 
     @Test
     public void shouldSelectPinnedForBinaryWithKey() throws Exception {
-        SelectionStrategy strategy = new PartitionSelectionStrategy();
+        SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(true);
@@ -103,7 +103,7 @@ public class PartitionSelectionStrategyTest {
 
     @Test
     public void shouldSelectNullIfPinedIsNotConnected() throws Exception {
-        SelectionStrategy strategy = new PartitionSelectionStrategy();
+        SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
@@ -124,7 +124,7 @@ public class PartitionSelectionStrategyTest {
 
     @Test
     public void shouldReturnIfEmptyArrayPassedIn() {
-        SelectionStrategy strategy = new PartitionSelectionStrategy();
+        SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
         Endpoint selected = strategy.select(mock(CouchbaseRequest.class),  new Endpoint[] {});
         assertNull(selected);
