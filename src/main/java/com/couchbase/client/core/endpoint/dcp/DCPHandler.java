@@ -291,7 +291,6 @@ public class DCPHandler extends AbstractGenericHandler<FullBinaryMemcacheRespons
             case OP_STREAM_END:
                 final ByteBuf extras = msg.getExtras();
                 flags = extras.readInt();
-                extras.release();
                 request = new StreamEndMessage(connection, msg.getTotalBodyLength(), msg.getStatus(),
                         StreamEndMessage.Reason.valueOf(flags), connection.bucket());
                 connection.removeStream(msg.getOpaque());
