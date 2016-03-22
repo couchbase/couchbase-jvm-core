@@ -24,13 +24,11 @@ package com.couchbase.client.core.endpoint.dcp;
 
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
-import com.couchbase.client.core.message.dcp.ConnectionType;
 import com.couchbase.client.core.message.dcp.DCPRequest;
-import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
+import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.CharsetUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -80,23 +78,32 @@ public class DCPHandlerTest {
     }
 
     @Test
-    public void shouldEncodeOpenConnectionRequest() {
-        String connectionName = "foobar";
-        OpenConnectionRequest request = new OpenConnectionRequest(connectionName,
-                ConnectionType.CONSUMER, 42, BUCKET, null);
-        request.partition((short) 1);
+    public void shouldEncodeStreamRequestRequest() {
+        StreamRequestRequest request = new StreamRequestRequest(
+                (short) 1234,
+                (long) 5678,
+                (long) 9012,
+                (long) 3456,
+                (long) 7890,
+                (long) 12345,
+                null, null, null
+        );
 
         channel.writeOutbound(request);
         BinaryMemcacheRequest outbound = (BinaryMemcacheRequest) channel.readOutbound();
         assertNotNull(outbound);
-        assertEquals(connectionName, new String(outbound.getKey(), CharsetUtil.UTF_8));
-        assertEquals(connectionName.length(), outbound.getKeyLength());
-        assertEquals(connectionName.length() + 8, outbound.getTotalBodyLength());
-        assertEquals(1, outbound.getReserved());
-        assertEquals(DCPHandler.OP_OPEN_CONNECTION, outbound.getOpcode());
-        assertEquals(8, outbound.getExtrasLength());
-        assertEquals(42, outbound.getExtras().readInt());
-        assertEquals(1, outbound.getExtras().readInt());
+        assertEquals(DCPHandler.OP_STREAM_REQUEST, outbound.getOpcode());
+        assertEquals(0, outbound.getKeyLength());
+        assertEquals(48, outbound.getTotalBodyLength());
+        assertEquals(1234, outbound.getReserved());
+        assertEquals(48, outbound.getExtrasLength());
+        assertEquals(0, outbound.getExtras().readInt());        // flags
+        assertEquals(0, outbound.getExtras().readInt());        // reserved
+        assertEquals(9012, outbound.getExtras().readLong());    // start sequence number
+        assertEquals(3456, outbound.getExtras().readLong());    // end sequence number
+        assertEquals(5678, outbound.getExtras().readLong());    // vbucket UUID
+        assertEquals(7890, outbound.getExtras().readLong());    // snapshot start sequence number
+        assertEquals(12345, outbound.getExtras().readLong());   // snapshot end sequence number
     }
 
 }

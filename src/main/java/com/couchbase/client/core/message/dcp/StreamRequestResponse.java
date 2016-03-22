@@ -24,7 +24,6 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.ResponseStatus;
 
@@ -37,7 +36,6 @@ import java.util.List;
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
 public class StreamRequestResponse extends AbstractDCPResponse {
-    private final DCPConnection connection;
     private final List<FailoverLogEntry> failoverLog;
     private final long rollbackToSequenceNumber;
 
@@ -45,23 +43,16 @@ public class StreamRequestResponse extends AbstractDCPResponse {
      * Sets the required properties for the response.
      *
      * @param status                   the status of the response.
-     * @param connection               reference to enclosing logical connection
      * @param failoverLog              the list of failover log entries or null if response status is not success
      * @param rollbackToSequenceNumber if server instruct to rollback client's state, this field contains sequence
      *                                 number to use
      * @param request
      */
     public StreamRequestResponse(final ResponseStatus status, final List<FailoverLogEntry> failoverLog,
-                                 final long rollbackToSequenceNumber, final CouchbaseRequest request,
-                                 final DCPConnection connection) {
+                                 final long rollbackToSequenceNumber, final CouchbaseRequest request) {
         super(status, request);
         this.failoverLog = failoverLog;
         this.rollbackToSequenceNumber = rollbackToSequenceNumber;
-        this.connection = connection;
-    }
-
-    public DCPConnection connection() {
-        return connection;
     }
 
     public List<FailoverLogEntry> failoverLog() {

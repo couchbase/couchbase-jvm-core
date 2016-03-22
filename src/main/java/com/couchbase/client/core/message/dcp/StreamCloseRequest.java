@@ -22,19 +22,18 @@
 
 package com.couchbase.client.core.message.dcp;
 
-import com.couchbase.client.core.endpoint.dcp.DCPConnection;
-import com.couchbase.client.core.message.AbstractCouchbaseResponse;
-import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
 
-public class OpenConnectionResponse extends AbstractCouchbaseResponse {
-    private final DCPConnection connection;
-
-    public OpenConnectionResponse(DCPConnection connection, ResponseStatus status) {
-        super(status, null);
-        this.connection = connection;
-    }
-
-    public DCPConnection connection() {
-        return connection;
+/**
+ * @author Sergey Avseyev
+ * @since 1.2.6
+ */
+@InterfaceStability.Experimental
+@InterfaceAudience.Private
+public class StreamCloseRequest extends AbstractDCPRequest {
+    public StreamCloseRequest(short partition, String bucket, String password) {
+        super(bucket, password);
+        this.partition(partition);
     }
 }

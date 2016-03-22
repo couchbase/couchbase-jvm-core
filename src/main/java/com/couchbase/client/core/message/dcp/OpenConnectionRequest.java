@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014 Couchbase, Inc.
+/*
+ * Copyright (c) 2016 Couchbase, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,67 +22,18 @@
 
 package com.couchbase.client.core.message.dcp;
 
-import com.couchbase.client.core.annotations.InterfaceAudience;
-import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.message.cluster.ClusterRequest;
 
-/**
- * Initiate logical DCP channel.
- *
- * @author Sergey Avseyev
- * @since 1.1.0
- */
-@InterfaceStability.Experimental
-@InterfaceAudience.Private
-public class OpenConnectionRequest extends AbstractDCPRequest {
-    /**
-     * Type of connection the server have to initiate for the client.
-     * For example, if the client wants to pull the data from server, it need to
-     * choose {@link ConnectionType#CONSUMER}.
-     */
-    private final ConnectionType type;
-
-    /**
-     * The connection name can be used to get statistics about the connection state
-     * as well as other useful debugging information. If a connection already exists
-     * on the Producer with the same name then the old connection is closed and
-     * a new one is opened.
-     */
+public class OpenConnectionRequest extends AbstractCouchbaseRequest implements ClusterRequest {
     private final String connectionName;
-    private final int sequenceNumber;
 
     public OpenConnectionRequest(String connectionName, String bucket) {
-        this(connectionName, ConnectionType.CONSUMER, 0, bucket, null);
-    }
-
-    public OpenConnectionRequest(String connectionName, String bucket, String password) {
-        this(connectionName, ConnectionType.CONSUMER, 0, bucket, password);
-    }
-
-    public OpenConnectionRequest(String connectionName, ConnectionType type, String bucket) {
-        this(connectionName, type, 0, bucket, null);
-    }
-
-    public OpenConnectionRequest(String connectionName, ConnectionType type, String bucket, String password) {
-        this(connectionName, type, 0, bucket, password);
-    }
-
-    public OpenConnectionRequest(String connectionName, ConnectionType type, int sequenceNumber, String bucket, String password) {
-        super(bucket, password);
-        this.type = type;
-        this.sequenceNumber = sequenceNumber;
+        super(bucket, null);
         this.connectionName = connectionName;
-    }
-
-    public int sequenceNumber() {
-        return sequenceNumber;
     }
 
     public String connectionName() {
         return connectionName;
     }
-
-    public ConnectionType type() {
-        return type;
-    }
-
 }

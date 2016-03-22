@@ -21,6 +21,8 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.message.observe.Observe;
 import com.couchbase.client.core.metrics.MetricsCollector;
@@ -375,4 +377,10 @@ public interface CoreEnvironment {
      */
     boolean callbacksOnIoPool();
 
+    /**
+     * @return Default DCP connection name.
+     */
+    @InterfaceStability.Experimental
+    @InterfaceAudience.Public
+    String dcpConnectionName();
 }

@@ -50,6 +50,7 @@ public class DCPEndpoint extends AbstractEndpoint {
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
             .addLast(new KeyValueAuthHandler(bucket(), password()))
+            .addLast(new DCPConnectionHandler(environment()))
             .addLast(new DCPHandler(this, responseBuffer(), false));
     }
 }

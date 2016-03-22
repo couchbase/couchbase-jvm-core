@@ -24,6 +24,7 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 
 /**
  * Stream request.
@@ -66,22 +67,12 @@ public class StreamRequestRequest extends AbstractDCPRequest {
      * use the end sequence of the last partial snapshot that was received.
      */
     private final long snapshotEndSequenceNumber;
+    private final DCPConnection connection;
 
-
-    public StreamRequestRequest(short partition, String bucket) {
-        this(partition, 0, 0, 0xffffffff, 0, 0, bucket, null);
-    }
 
     public StreamRequestRequest(short partition, long vbucketUUID, long startSequenceNumber, long endSequenceNumber,
                                 long snapshotStartSequenceNumber, long snapshotEndSequenceNumber,
-                                String bucket) {
-        this(partition, vbucketUUID, startSequenceNumber, endSequenceNumber,
-                snapshotStartSequenceNumber, snapshotEndSequenceNumber, bucket, null);
-    }
-
-    public StreamRequestRequest(short partition, long vbucketUUID, long startSequenceNumber, long endSequenceNumber,
-                                long snapshotStartSequenceNumber, long snapshotEndSequenceNumber,
-                                String bucket, String password) {
+                                String bucket, String password, DCPConnection connection) {
         super(bucket, password);
         this.partition(partition);
         this.vbucketUUID = vbucketUUID;
@@ -89,6 +80,7 @@ public class StreamRequestRequest extends AbstractDCPRequest {
         this.endSequenceNumber = endSequenceNumber;
         this.snapshotStartSequenceNumber = snapshotStartSequenceNumber;
         this.snapshotEndSequenceNumber = snapshotEndSequenceNumber;
+        this.connection = connection;
     }
 
     public long vbucketUUID() {
@@ -109,5 +101,9 @@ public class StreamRequestRequest extends AbstractDCPRequest {
 
     public long snapshotEndSequenceNumber() {
         return snapshotEndSequenceNumber;
+    }
+
+    public DCPConnection connection() {
+        return connection;
     }
 }

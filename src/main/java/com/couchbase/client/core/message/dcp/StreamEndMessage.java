@@ -22,20 +22,18 @@
 
 package com.couchbase.client.core.message.dcp;
 
-import com.couchbase.client.core.endpoint.dcp.DCPConnection;
-
 /**
  * @author Sergey Avseyev
  */
 public class StreamEndMessage extends AbstractDCPMessage {
     private final Reason reason;
 
-    public StreamEndMessage(DCPConnection connection, int totalBodyLength, short partition, final Reason reason, String bucket) {
-        this(connection, totalBodyLength, partition, reason, bucket, null);
+    public StreamEndMessage(int totalBodyLength, short partition, final Reason reason, String bucket) {
+        this(totalBodyLength, partition, reason, bucket, null);
     }
 
-    public StreamEndMessage(DCPConnection connection, int totalBodyLength, short partition, final Reason reason, final String bucket, final String password) {
-        super(connection, totalBodyLength, partition, null, bucket, password);
+    public StreamEndMessage(int totalBodyLength, short partition, final Reason reason, final String bucket, final String password) {
+        super(totalBodyLength, partition, null, bucket, password);
         this.reason = reason;
     }
 

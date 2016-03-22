@@ -23,9 +23,12 @@ package com.couchbase.client.core.util;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.CouchbaseCore;
+import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.cluster.DisconnectRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
@@ -42,9 +45,11 @@ import org.junit.BeforeClass;
 import rx.Observable;
 import rx.functions.Func1;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
 
 /**
  * Base test class for tests that need a working cluster reference.
@@ -66,6 +71,8 @@ public class ClusterDependentTest {
     private static final CoreEnvironment env = DefaultCoreEnvironment
             .builder()
             .dcpEnabled(true)
+            .dcpConnectionBufferSize(1024)          // 1 kilobyte
+            .dcpConnectionBufferAckThreshold(0.5)   // should trigger BUFFER_ACK after 512 bytes
             .mutationTokensEnabled(true)
             .build();
 
@@ -172,5 +179,23 @@ public class ClusterDependentTest {
         version[0] = Integer.parseInt(splitVersion[0]); //major
         version[1] = splitVersion.length < 2 ? 0 : Integer.parseInt(splitVersion[1]); //minor
         return version;
+    }
+
+
+    protected int numberOfPartitions() {
+        GetClusterConfigResponse res = cluster().<GetClusterConfigResponse>send(new GetClusterConfigRequest()).toBlocking().single();
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig) res.config().bucketConfig(bucket());
+        return config.numberOfPartitions();
+    }
+
+    protected short calculateVBucketForKey(String key) {
+        CRC32 crc32 = new CRC32();
+        try {
+            crc32.update(key.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        long rv = (crc32.getValue() >> 16) & 0x7fff;
+        return (short) ((int) rv & numberOfPartitions() - 1);
     }
 }

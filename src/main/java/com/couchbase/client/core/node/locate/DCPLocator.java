@@ -32,19 +32,14 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.dcp.DCPRequest;
-import com.couchbase.client.core.message.dcp.OpenConnectionRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.retry.RetryHelper;
-import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.RingBuffer;
 
 import java.util.List;
 
 /**
  * This {@link Locator} finds the proper {@link Node}s for every incoming {@link DCPRequest}.
- *
- * In general it relies upon partition number to select nodes, but some commands like
- * {@link OpenConnectionRequest} have to be broad casted.
  *
  * @author Sergey Avseyev
  * @since 1.1.0
@@ -55,7 +50,7 @@ public class DCPLocator implements Locator {
 
     @Override
     public void locateAndDispatch(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig cluster,
-        CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
+                                  CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         BucketConfig bucket = cluster.bucketConfig(request.bucket());
         if (!(bucket instanceof CouchbaseBucketConfig && request instanceof DCPRequest)) {
             throw new IllegalStateException("Unsupported Bucket Type: for request " + request);
@@ -63,48 +58,30 @@ public class DCPLocator implements Locator {
         CouchbaseBucketConfig config = (CouchbaseBucketConfig) bucket;
         DCPRequest dcpRequest = (DCPRequest) request;
 
-        if (dcpRequest instanceof OpenConnectionRequest) {
-            boolean found = false;
-            for (NodeInfo nodeInfo : config.nodes()) {
-                if (nodeInfo.services().containsKey(ServiceType.DCP)) {
-                    for (Node node : nodes) {
-                        if (node.hostname().equals(nodeInfo.hostname())) {
-                            node.send(request);
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (found) {
-                return;
-            }
-        } else {
-            int nodeId = config.nodeIndexForMaster(dcpRequest.partition());
-            if (nodeId == -2) {
-                return;
-            }
-            if (nodeId == -1) {
-                RetryHelper.retryOrCancel(env, request, responseBuffer);
-                return;
-            }
+        int nodeId = config.nodeIndexForMaster(dcpRequest.partition());
+        if (nodeId == -2) {
+            return;
+        }
+        if (nodeId == -1) {
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
+        }
 
-            NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
+        NodeInfo nodeInfo = config.nodeAtIndex(nodeId);
 
-            if (config.nodes().size() != nodes.size()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
-                            nodes.size(), config.nodes().size());
-                }
-                RetryHelper.retryOrCancel(env, request, responseBuffer);
-                return;
+        if (config.nodes().size() != nodes.size()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Node list and configuration's partition hosts sizes : {} <> {}, rescheduling",
+                        nodes.size(), config.nodes().size());
             }
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
+        }
 
-            for (Node node : nodes) {
-                if (node.hostname().equals(nodeInfo.hostname())) {
-                    node.send(request);
-                    return;
-                }
+        for (Node node : nodes) {
+            if (node.hostname().equals(nodeInfo.hostname())) {
+                node.send(request);
+                return;
             }
         }
 

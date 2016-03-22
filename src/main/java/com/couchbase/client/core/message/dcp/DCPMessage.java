@@ -24,7 +24,6 @@ package com.couchbase.client.core.message.dcp;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 
 /**
  * @author Sergey Avseyev
@@ -43,5 +42,10 @@ public interface DCPMessage {
      */
     String key();
 
-    DCPConnection connection();
+    /**
+     * The partition (vBucket) to use for this request.
+     *
+     * @return the partition to use.
+     */
+    short partition();
 }
