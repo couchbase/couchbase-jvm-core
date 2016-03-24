@@ -869,7 +869,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * a DCP Buffer Acknowledge message is sent to the server to signal producer how much data has been processed.
          * (default value {@value #DCP_CONNECTION_BUFFER_ACK_THRESHOLD}).
          */
-        public Builder dcpConnectionBufferAckThreshold(final int dcpConnectionBufferAckThreshold) {
+        public Builder dcpConnectionBufferAckThreshold(final double dcpConnectionBufferAckThreshold) {
             this.dcpConnectionBufferAckThreshold = dcpConnectionBufferAckThreshold;
             return this;
         }
