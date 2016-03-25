@@ -153,6 +153,14 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } catch (Exception ex) {
             LOGGER.info("Could not set up user agent and packages, defaulting.", ex);
         }
+
+        try {
+            if (System.getProperty("com.couchbase.client.deps.io.netty.packagePrefix") == null) {
+                System.setProperty("com.couchbase.client.deps.io.netty.packagePrefix", "com.couchbase.client.deps.");
+            }
+        } catch (Exception ex) {
+            LOGGER.warn("Could not configure bundled netty's package prefix", ex);
+        }
     }
 
     private final boolean dcpEnabled;
