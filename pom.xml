@@ -29,10 +29,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <rxjava.version>1.0.15</rxjava.version>
-        <netty.version>4.0.32.Final</netty.version>
-        <disruptor.version>3.3.2</disruptor.version>
-        <jackson.version>2.6.2</jackson.version>
-        <latency-utils.version>2.0.2</latency-utils.version>
+        <netty.version>4.0.35.Final</netty.version>
+        <disruptor.version>3.3.4</disruptor.version>
+        <jackson.version>2.6.5</jackson.version>
+        <latency-utils.version>2.0.3</latency-utils.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
         <slf4j.version>1.7.7</slf4j.version>
