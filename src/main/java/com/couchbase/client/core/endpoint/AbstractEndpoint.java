@@ -55,6 +55,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslHandler;
 import rx.Observable;
+import rx.Subscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
@@ -434,7 +435,18 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         if (state() == LifecycleState.CONNECTED || state() == LifecycleState.CONNECTING) {
             transitionState(LifecycleState.DISCONNECTED);
-            connect(false);
+            connect(false).subscribe(new Subscriber<LifecycleState>() {
+                @Override
+                public void onCompleted() {}
+
+                @Override
+                public void onNext(LifecycleState lifecycleState) {}
+
+                @Override
+                public void onError(Throwable e) {
+                    LOGGER.warn("Error during reconnect: ", e);
+                }
+            });
         }
     }
 
