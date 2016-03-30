@@ -39,7 +39,6 @@ import com.couchbase.client.core.message.kv.RemoveRequest;
 import com.couchbase.client.core.message.kv.RemoveResponse;
 import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.message.kv.UpsertResponse;
-import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -62,7 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class DCPConnectionTest extends ClusterDependentTest {
+public class DCPConnectionTest extends DCPTest {
 
     @Before
     public void checkIfDCPEnabled() throws Exception {
