@@ -84,7 +84,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int DCP_CONNECTION_BUFFER_SIZE = 20971520; // 20MiB
     public static final double DCP_CONNECTION_BUFFER_ACK_THRESHOLD = 0.2; // for 20Mib it is 4MiB
     public static final String DCP_CONNECTION_NAME = "dcp/core-io";
-    public static final int IO_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+    public static final int IO_POOL_SIZE = 3;
     public static final int COMPUTATION_POOL_SIZE =  Runtime.getRuntime().availableProcessors();
     public static final int KEYVALUE_ENDPOINTS = 1;
     public static final int VIEW_ENDPOINTS = 1;
