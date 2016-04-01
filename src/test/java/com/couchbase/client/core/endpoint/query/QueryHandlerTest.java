@@ -150,7 +150,8 @@ public class QueryHandlerTest {
     }
 
     @After
-    public void clear() {
+    public void clear() throws Exception {
+        channel.pipeline().remove(handler);
         responseBuffer.shutdown();
     }
 
@@ -296,6 +297,7 @@ public class QueryHandlerTest {
                 new Action1<ByteBuf>() {
                     @Override
                     public void call(ByteBuf byteBuf) {
+                        ReferenceCountUtil.releaseLater(byteBuf);
                         fail("no result expected");
                     }
                 },
@@ -303,6 +305,7 @@ public class QueryHandlerTest {
                     @Override
                     public void call(ByteBuf buf) {
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        ReferenceCountUtil.releaseLater(buf);
                         try {
                             Map error = mapper.readValue(response, Map.class);
                             assertEquals(5, error.size());
@@ -368,6 +371,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         invokeCounter1.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        buf.release();
                         try {
                             Map found = mapper.readValue(response, Map.class);
                             assertEquals(12, found.size());
@@ -385,7 +389,9 @@ public class QueryHandlerTest {
                 new Action1<ByteBuf>() {
                     @Override
                     public void call(ByteBuf buf) {
-                        fail("no error expected");
+                        String error = buf.toString(CharsetUtil.UTF_8);
+                        buf.release();
+                        fail("no error expected, got " + error);
                     }
                 },
                 expectedMetricsCounts(0, 1)
@@ -512,6 +518,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         invokeCounter1.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        ReferenceCountUtil.releaseLater(buf);
                         try {
                             Map found = mapper.readValue(response, Map.class);
                             assertEquals(12, found.size());
@@ -558,6 +565,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         invokeCounter1.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
+                        ReferenceCountUtil.releaseLater(buf);
                         try {
                             Map found = mapper.readValue(response, Map.class);
                             assertEquals(12, found.size());
@@ -760,18 +768,17 @@ public class QueryHandlerTest {
         QueryHandler.KeepAliveRequest keepAliveRequest = (QueryHandler.KeepAliveRequest) queue.peek();
 
         //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
-        HttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
         LastHttpContent responseEnd = new DefaultLastHttpContent();
         channel.writeInbound(response, responseEnd);
         QueryHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(QueryHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
 
-        ReferenceCountUtil.releaseLater(response);
-        ReferenceCountUtil.releaseLater(responseEnd);
-
+        channel.pipeline().remove(testHandler);
         assertEquals(2, keepAliveEventCounter.get());
         assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
+        assertEquals(0, responseEnd.refCnt());
     }
 
     @Test
@@ -799,14 +806,18 @@ public class QueryHandlerTest {
     }
 
     @Test
-    public void shouldDecodeChunkedResponseSplitAtEveryPosition() throws Exception {
+    public void shouldDecodeChunkedResponseSplitAtEveryPosition() throws Throwable {
         String response = Resources.read("chunked.json", this.getClass());
         for (int i = 1; i < response.length() - 1; i++) {
             String chunk1 = response.substring(0, i);
             String chunk2 = response.substring(i);
 
-            shouldDecodeChunked(chunk1, chunk2);
-            LOGGER.info("Decoded response with chunk at position " + i);
+            try {
+                shouldDecodeChunked(chunk1, chunk2);
+            } catch (Throwable t) {
+                LOGGER.info("Test failed in decoding response with chunk at position " + i);
+                throw t;
+            }
         }
     }
 
