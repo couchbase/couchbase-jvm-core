@@ -25,6 +25,8 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
@@ -69,6 +71,7 @@ import rx.subjects.BehaviorSubject;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Queue;
+import java.util.concurrent.RejectedExecutionException;
 
 
 /**
@@ -80,6 +83,11 @@ import java.util.Queue;
  * @since 1.0
  */
 public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpRequest, ConfigRequest> {
+
+    /**
+     * The logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ConfigHandler.class);
 
     /**
      * Contains the current pending response header if set.
@@ -275,7 +283,14 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
         if (streamingConfigObservable != null) {
-            streamingConfigObservable.onCompleted();
+            try {
+                streamingConfigObservable.onCompleted();
+            } catch (RejectedExecutionException ex) {
+                // this can happen during shutdown, so log it but don't let it
+                // bubble up the event loop.
+                LOGGER.info(logIdent(ctx, endpoint()) + "Could not complete config stream, scheduler shut "
+                    + "down already.");
+            }
         }
         super.handlerRemoved(ctx);
         releaseResponseContent();
