@@ -938,7 +938,10 @@ public class KeyValueHandler
             MutationToken descr = extractToken(bucket, seqOnMutation, status.isSuccess(), msg.getExtras(), request.partition());
             response = new CounterResponse(status, statusCode, bucket, value, cas, descr, request);
         } else if (request instanceof StatRequest) {
-            String key = new String(msg.getKey(), CHARSET);
+            String key = null;
+            if (msg.getKey() != null) {
+                key = new String(msg.getKey(), CHARSET);
+            }
             String value = content.toString(CHARSET);
             releaseContent(content);
 
