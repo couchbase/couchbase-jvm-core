@@ -262,6 +262,28 @@ public interface CoreEnvironment {
     int searchEndpoints();
 
     /**
+     * Returns version information on the core. Version number is in the form
+     * MAJOR.MINOR.PATCH, and is the one for the core-io layer.
+     *
+     * @return the version string for the core.
+     * @see #coreBuild() for a more specific build information (relevant for tracking
+     * the exact version of the code the core was built from)
+     */
+    String coreVersion();
+
+    /**
+     * Returns build information on the Couchbase Java SDK core. This has a better
+     * granularity than {@link #coreVersion()} and thus is more relevant to track
+     * the exact version of the code the core was built from.
+     *
+     * Build information can contain VCS information like commit numbers, tags, etc...
+     *
+     * @return the build string for the core.
+     * @see #coreVersion() for more generic version information.
+     */
+    String coreBuild();
+
+    /**
      * Library identification string, which can be used as User-Agent header in HTTP requests.
      *
      * @return identification string

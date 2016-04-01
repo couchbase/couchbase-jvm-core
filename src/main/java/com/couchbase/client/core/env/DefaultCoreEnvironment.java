@@ -103,6 +103,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int SOCKET_CONNECT_TIMEOUT = 1000;
     public static final boolean CALLBACKS_ON_IO_POOL = false;
 
+    public static String CORE_VERSION;
+    public static String CORE_GIT_VERSION;
     public static String PACKAGE_NAME_AND_VERSION = "couchbase-jvm-core";
     public static String USER_AGENT = PACKAGE_NAME_AND_VERSION;
 
@@ -118,6 +120,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     static final int MIN_POOL_SIZE = 3;
 
     private static final String VERSION_PROPERTIES = "com.couchbase.client.core.properties";
+
 
     /**
      * Sets up the package version and user agent.
@@ -140,10 +143,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 version = versionProp.getProperty("specificationVersion");
                 gitVersion = versionProp.getProperty("implementationVersion");
             } catch (Exception e) {
-                LOGGER.info("Could not retrieve version properties, defaulting.", e);
+                LOGGER.info("Could not retrieve core version properties, defaulting.", e);
             }
+
+            CORE_VERSION = version == null ? "unknown" : version;
+            CORE_GIT_VERSION = gitVersion == null ? "unknown" : gitVersion;
             PACKAGE_NAME_AND_VERSION = String.format("couchbase-jvm-core/%s (git: %s)",
-                version == null ? "unknown" : version, gitVersion == null ? "unknown" : gitVersion);
+                CORE_VERSION, CORE_GIT_VERSION);
 
             USER_AGENT = String.format("%s (%s/%s %s; %s %s)",
                 PACKAGE_NAME_AND_VERSION,
@@ -586,6 +592,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     public int searchEndpoints() {
         return searchServiceEndpoints;
+    }
+
+    @Override
+    public String coreVersion() {
+        return CORE_VERSION;
+    }
+
+    @Override
+    public String coreBuild() {
+        return CORE_GIT_VERSION;
     }
 
     @Override
