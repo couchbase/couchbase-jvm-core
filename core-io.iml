@@ -13,8 +13,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.0.15" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.35.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.0.17" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.36.Final" level="project" />
     <orderEntry type="library" name="Maven: com.lmax:disruptor:3.3.4" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.6.5" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.6.0" level="project" />
