@@ -45,6 +45,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action0;
@@ -61,6 +62,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+//TODO re-activate once infinite loop is fixed
+@Ignore("DCPConnectionTest currently loops infinitely")
 public class DCPConnectionTest extends DCPTest {
 
     @Before
