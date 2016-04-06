@@ -29,6 +29,7 @@ import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -104,6 +105,8 @@ public class DCPHandlerTest {
         assertEquals(5678, outbound.getExtras().readLong());    // vbucket UUID
         assertEquals(7890, outbound.getExtras().readLong());    // snapshot start sequence number
         assertEquals(12345, outbound.getExtras().readLong());   // snapshot end sequence number
+
+        ReferenceCountUtil.releaseLater(outbound);
     }
 
 }
