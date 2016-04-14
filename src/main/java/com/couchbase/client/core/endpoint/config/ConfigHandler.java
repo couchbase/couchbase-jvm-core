@@ -150,6 +150,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/x-www-form-urlencoded");
         }
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
+        request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
 
         addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
         return request;
