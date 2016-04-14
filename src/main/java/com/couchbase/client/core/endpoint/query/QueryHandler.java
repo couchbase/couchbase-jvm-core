@@ -179,11 +179,13 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             ByteBuf query = ctx.alloc().buffer(((GenericQueryRequest) msg).query().length());
             query.writeBytes(((GenericQueryRequest) msg).query().getBytes(CHARSET));
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
+            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
             request.content().writeBytes(query);
             query.release();
         } else if (msg instanceof KeepAliveRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
             return request;
         } else {
             throw new IllegalArgumentException("Unknown incoming QueryRequest type "

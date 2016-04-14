@@ -135,6 +135,7 @@ public class ConfigHandlerTest {
         assertEquals(HttpVersion.HTTP_1_1, outbound.getProtocolVersion());
         assertEquals("/path/bucket", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
+        assertTrue(outbound.headers().contains(HttpHeaders.Names.HOST));
         assertEquals("Basic YnVja2V0OnBhc3N3b3Jk", outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
@@ -206,6 +207,7 @@ public class ConfigHandlerTest {
         assertEquals(HttpVersion.HTTP_1_1, outbound.getProtocolVersion());
         assertEquals("/pools/default/buckets/bucket/controller/doFlush", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
+        assertTrue(outbound.headers().contains(HttpHeaders.Names.HOST));
         assertEquals("Basic YnVja2V0OnBhc3N3b3Jk", outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
@@ -477,6 +479,7 @@ public class ConfigHandlerTest {
         assertEquals("/path/bucket", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertNotNull(outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
+        assertTrue(outbound.headers().contains(HttpHeaders.Names.HOST));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
     }
 

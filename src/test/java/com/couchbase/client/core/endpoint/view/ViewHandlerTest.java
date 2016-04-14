@@ -157,6 +157,7 @@ public class ViewHandlerTest {
         assertEquals("/bucket/_design/dev_name", outbound.getUri());
         assertTrue(outbound.headers().contains(HttpHeaders.Names.AUTHORIZATION));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
+        assertTrue(outbound.headers().contains(HttpHeaders.Names.HOST));
         ReferenceCountUtil.releaseLater(outbound); //for consistency, but it uses Unpooled
     }
 
