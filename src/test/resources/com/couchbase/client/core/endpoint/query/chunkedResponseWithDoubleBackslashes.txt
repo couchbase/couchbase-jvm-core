@@ -1,0 +1,98 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; version=1.0.0
+Date: Tue, 01 Apr 2016 01:02:03 GMT
+Transfer-Encoding: chunked
+
+235
+{
+    "requestID": "d841a130-c9b6-4197-b6a8-098517bb820d",
+    "signature": {
+        "avgResults": "number",
+        "avgViewed": "number",
+        "count": "number",
+        "nav": "json",
+        "term": "json"
+    },
+    "results": [
+        {
+            "avgResults": 1,
+            "avgViewed": 1,
+            "count": 1,
+            "nav": "0",
+            "term": "couchbase"
+        },
+        {
+            "avgResults": 2,
+            "avgViewed": 2,
+            "count": 1,
+            "nav": "0",
+            "term": "distributed software"
+        },
+
+9b
+{
+            "avgResults": 10,
+            "avgViewed": 10,
+            "count": 1,
+            "nav": "0",
+            "term": "nosql database"
+        }
+2
+,
+
+8
+
+9c
+{
+            "avgResults": 20,
+            "avgViewed": 20,
+            "count": 1,
+            "nav": "0",
+            "term": "databasenosql\\"
+        }
+2
+,
+
+8
+
+a3
+{
+            "avgResults": 30,
+            "avgViewed": 30,
+            "count": 1,
+            "nav": "0",
+            "term": "nosqldatabase backuped"
+        }
+6
+
+    ]
+19
+,
+    "status": "success"
+12
+,
+    "metrics": {
+27
+
+        "elapsedTime": "14.617031517s"
+2a
+,
+        "executionTime": "14.616805191s"
+1a
+,
+        "resultCount": 5
+1e
+,
+        "resultSize": 727141
+18
+,
+        "sortCount": 5
+6
+
+    }
+3
+
+}
+
+0
+
