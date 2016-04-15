@@ -73,4 +73,13 @@ public class StringClosingPositionBufProcessorTest {
         assertEquals(-1, closingPos);
         assertEquals(0, source.readerIndex());
     }
+
+    @Test
+    public void testClosingPosFoundInStringWithEscapedBackslashLast() {
+        ByteBuf source = Unpooled.copiedBuffer("\"abc\\\\\"", CharsetUtil.UTF_8);
+        int closingPos = source.forEachByte(new StringClosingPositionBufProcessor());
+
+        assertEquals(6, closingPos);
+        assertEquals(0, source.readerIndex());
+    }
 }
