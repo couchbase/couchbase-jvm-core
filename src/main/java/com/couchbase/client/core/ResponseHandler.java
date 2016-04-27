@@ -23,6 +23,8 @@ package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -37,11 +39,16 @@ import rx.Scheduler;
 import rx.functions.Action0;
 import rx.subjects.Subject;
 
+import java.util.concurrent.TimeUnit;
+
 public class ResponseHandler implements EventHandler<ResponseEvent> {
+
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ResponseHandler.class);
 
     private final ClusterFacade cluster;
     private final ConfigurationProvider configurationProvider;
     private final CoreEnvironment environment;
+    private final boolean traceLoggingEnabled;
 
     /**
      * Creates a new {@link ResponseHandler}.
@@ -54,6 +61,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         this.cluster = cluster;
         this.configurationProvider = provider;
         this.environment = environment;
+        traceLoggingEnabled = LOGGER.isTraceEnabled();
     }
 
     /**
@@ -151,9 +159,21 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         }
     }
 
+    /**
+     * Helper method which schedules the given {@link CouchbaseRequest} with a delay for further retry.
+     *
+     * @param request the request to retry.
+     */
     private void scheduleForRetry(final CouchbaseRequest request) {
         CoreEnvironment env = environment;
         Delay delay = env.retryDelay();
+
+        long delayTime = delay.calculate(request.incrementRetryCount());
+        TimeUnit delayUnit = delay.unit();
+
+        if (traceLoggingEnabled) {
+            LOGGER.trace("Retrying {} with a delay of {} {}", request, delayTime, delayUnit);
+        }
 
         final Scheduler.Worker worker = env.scheduler().createWorker();
         worker.schedule(new Action0() {
@@ -165,6 +185,6 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                     worker.unsubscribe();
                 }
             }
-        }, delay.calculate(request.incrementRetryCount()), delay.unit());
+        }, delayTime, delayUnit);
     }
 }
