@@ -52,6 +52,12 @@ public abstract class AbstractLatencyMetricsCollector<I extends LatencyMetricsId
 
     static {
         LatencyStats.setDefaultPauseDetector(PAUSE_DETECTOR);
+        Runtime.getRuntime().addShutdownHook(new Thread("cb-shutdown-pd") {
+            @Override
+            public void run() {
+                PAUSE_DETECTOR.shutdown();
+            }
+        });
     }
 
     private final Map<I, LatencyStats> latencyMetrics;
@@ -83,12 +89,6 @@ public abstract class AbstractLatencyMetricsCollector<I extends LatencyMetricsId
             latencyMetrics.put(identifier, metric);
         }
         metric.recordLatency(latency);
-    }
-
-    @Override
-    public boolean shutdown() {
-        PAUSE_DETECTOR.shutdown();
-        return super.shutdown();
     }
 
     @Override
