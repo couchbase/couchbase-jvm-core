@@ -55,4 +55,12 @@ public interface CouchbaseRequest extends CouchbaseMessage {
      */
     int incrementRetryCount();
 
+
+    /**
+     * Returns the current retry count.
+     *
+     * @return the current retry count.
+     */
+    int retryCount();
+
 }

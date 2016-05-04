@@ -109,6 +109,11 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     }
 
     @Override
+    public int retryCount() {
+        return retryCount;
+    }
+
+    @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder(this.getClass().getSimpleName() + "{");
         sb.append("observable=").append(observable);
