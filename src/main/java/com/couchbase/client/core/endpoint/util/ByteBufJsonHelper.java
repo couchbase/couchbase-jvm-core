@@ -98,6 +98,20 @@ public class ByteBufJsonHelper {
     }
 
     /**
+     * Finds the position of the split character, taking into account the fact that the character
+     * could be found escaped in strings (such occurrences are ignored).
+     *
+     * This implementation starts for the current {@link ByteBuf#readerIndex() readerIndex}.
+     *
+     * @param buf the {@link ByteBuf} where to search for the split character.
+     * @param splitChar the split character to detect.
+     * @return the split character position or -1 if not found.
+     */
+    public static final int findSplitPosition(ByteBuf buf, char splitChar) {
+        return buf.forEachByte(new SplitPositionBufProcessor(splitChar, true));
+    }
+
+    /**
      * Finds the position of the correct closing character, taking into account the fact that before the correct one,
      * other sub section with same opening and closing characters can be encountered.
      *

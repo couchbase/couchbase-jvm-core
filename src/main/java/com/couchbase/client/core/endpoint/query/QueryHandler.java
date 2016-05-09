@@ -63,6 +63,7 @@ import java.util.concurrent.TimeUnit;
 import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findNextChar;
 import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findNextCharNotPrefixedBy;
 import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findSectionClosingPosition;
+import static com.couchbase.client.core.endpoint.util.ByteBufJsonHelper.findSplitPosition;
 
 /**
  * The {@link QueryHandler} is responsible for encoding {@link QueryRequest}s into lower level
@@ -79,6 +80,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private static final byte QUERY_STATE_INITIAL = 0;
     private static final byte QUERY_STATE_SIGNATURE = 1;
     private static final byte QUERY_STATE_ROWS = 2;
+    private static final byte QUERY_STATE_ROWS_RAW = 20;
+    private static final byte QUERY_STATE_ROWS_DECIDE = 29;
     private static final byte QUERY_STATE_ERROR = 3;
     private static final byte QUERY_STATE_WARNING = 4;
     private static final byte QUERY_STATE_STATUS = 5;
@@ -369,8 +372,13 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             parseQuerySignature(lastChunk);
         }
 
+        if (queryParsingState == QUERY_STATE_ROWS_DECIDE) {
+            decideBetweenRawAndObjects(lastChunk);
+        }
         if (queryParsingState == QUERY_STATE_ROWS) {
             parseQueryRows(lastChunk);
+        } else if (queryParsingState == QUERY_STATE_ROWS_RAW) {
+            parseQueryRowsRaw(lastChunk);
         }
 
         if (queryParsingState == QUERY_STATE_ERROR) {
@@ -419,7 +427,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         if (peek.contains("\"signature\":")) {
             newState = QUERY_STATE_SIGNATURE;
         } else if (peek.endsWith("\"results\":")) {
-            newState = QUERY_STATE_ROWS;
+            newState = QUERY_STATE_ROWS_DECIDE;
         } else if (peek.endsWith("\"status\":")) {
             newState = QUERY_STATE_STATUS;
         } else if (peek.endsWith("\"errors\":")) {
@@ -444,6 +452,36 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
 
         sectionDone = false;
         return newState;
+    }
+
+    private void decideBetweenRawAndObjects(boolean lastChunk) {
+        responseContent.markReaderIndex();
+        int openArrayPos = findNextChar(responseContent, '[');
+        if (openArrayPos > -1) {
+            responseContent.skipBytes(openArrayPos + 1);
+        } else {
+            responseContent.resetReaderIndex();
+            return; //more data
+        }
+
+        int spaceToSkip = responseContent.forEachByte(new WhitespaceSkipper());
+        if (spaceToSkip > -1) {
+            responseContent.readerIndex(spaceToSkip);
+        }
+
+        if (responseContent.isReadable()) {
+            byte first = responseContent.getByte(responseContent.readerIndex());
+            if (first == '{') {
+                queryParsingState = QUERY_STATE_ROWS;
+            } else if (first == ']') {
+                //empty result section!
+                queryParsingState = transitionToNextToken(lastChunk);
+            } else {
+                queryParsingState = QUERY_STATE_ROWS_RAW;
+            }
+        } else {
+            responseContent.resetReaderIndex();
+        }
     }
 
     private void sectionDone() {
@@ -515,6 +553,38 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             ByteBuf resultSlice = responseContent.readSlice(length);
             queryRowObservable.onNext(resultSlice.copy());
             responseContent.discardSomeReadBytes();
+        }
+    }
+
+    /**
+     * Parses the query raw results from the content stream as long as there is data to be found.
+     */
+    private void parseQueryRowsRaw(boolean lastChunk) {
+        while (responseContent.isReadable()) {
+            int splitPos = findSplitPosition(responseContent, ',');
+            int arrayEndPos = findSplitPosition(responseContent, ']');
+
+            boolean doSectionDone = false;
+
+            if (splitPos == -1 && arrayEndPos == -1) {
+                //need more data
+                break;
+            } else if (arrayEndPos > 0 && (arrayEndPos < splitPos || splitPos == -1)) {
+                splitPos = arrayEndPos;
+                doSectionDone = true;
+            }
+
+            int length = splitPos - responseContent.readerIndex();
+            ByteBuf resultSlice = responseContent.readSlice(length);
+            queryRowObservable.onNext(resultSlice.copy());
+            responseContent.skipBytes(1);
+            responseContent.discardReadBytes();
+
+            if (doSectionDone) {
+                sectionDone();
+                queryParsingState = transitionToNextToken(lastChunk);
+                break;
+            }
         }
     }
 
