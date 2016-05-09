@@ -15,6 +15,8 @@
  */
 package com.couchbase.client.core;
 
+import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
@@ -43,6 +45,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
     private final ConfigurationProvider configurationProvider;
     private final CoreEnvironment environment;
     private final boolean traceLoggingEnabled;
+    private final int nmvbRetryDelay;
 
     /**
      * Creates a new {@link ResponseHandler}.
@@ -55,6 +58,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         this.cluster = cluster;
         this.configurationProvider = provider;
         this.environment = environment;
+        this.nmvbRetryDelay = Integer.parseInt(System.getProperty("com.couchbase.nmvbRetryDelay", "100"));
         traceLoggingEnabled = LOGGER.isTraceEnabled();
     }
 
@@ -95,7 +99,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                 final CouchbaseResponse response = (CouchbaseResponse) message;
                 ResponseStatus status = response.status();
                 if (status == ResponseStatus.RETRY) {
-                    retry(event);
+                    retry(event, true);
                 } else {
                     final Scheduler.Worker worker = environment.scheduler().createWorker();
                     final Subject<CouchbaseResponse, CouchbaseResponse> obs = event.getObservable();
@@ -114,7 +118,7 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                     });
                 }
             } else if (message instanceof CouchbaseRequest) {
-                retry(event);
+                retry(event, false);
             } else {
                 throw new IllegalStateException("Got message type I do not understand: " + message);
             }
@@ -124,15 +128,15 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
         }
     }
 
-    private void retry(final ResponseEvent event) {
+    private void retry(final ResponseEvent event, final boolean isNotMyVbucket) {
         final CouchbaseMessage message = event.getMessage();
         if (message instanceof CouchbaseRequest) {
-            scheduleForRetry((CouchbaseRequest) message);
+            scheduleForRetry((CouchbaseRequest) message, isNotMyVbucket);
         } else {
 
             CouchbaseRequest request = ((CouchbaseResponse) message).request();
             if (request != null) {
-                scheduleForRetry(request);
+                scheduleForRetry(request, isNotMyVbucket);
             } else {
                 event.getObservable().onError(new CouchbaseException("Operation failed because it does not "
                     + "support cloning."));
@@ -158,12 +162,20 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
      *
      * @param request the request to retry.
      */
-    private void scheduleForRetry(final CouchbaseRequest request) {
+    private void scheduleForRetry(final CouchbaseRequest request, final boolean isNotMyVbucket) {
         CoreEnvironment env = environment;
         Delay delay = env.retryDelay();
 
-        long delayTime = delay.calculate(request.incrementRetryCount());
-        TimeUnit delayUnit = delay.unit();
+        long delayTime;
+        TimeUnit delayUnit;
+        if (isNotMyVbucket) {
+            boolean hasFastForward = bucketHasFastForwardMap(request.bucket(), configurationProvider.config());
+            delayTime = request.incrementRetryCount() == 0 && hasFastForward ? 0 : nmvbRetryDelay;
+            delayUnit = TimeUnit.MILLISECONDS;
+        } else {
+            delayTime = delay.calculate(request.incrementRetryCount());
+            delayUnit = delay.unit();
+        }
 
         if (traceLoggingEnabled) {
             LOGGER.trace("Retrying {} with a delay of {} {}", request, delayTime, delayUnit);
@@ -180,5 +192,20 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                 }
             }
         }, delayTime, delayUnit);
+    }
+
+    /**
+     * Helper method to check if the current given bucket contains a fast forward map.
+     *
+     * @param bucketName the name of the bucket.
+     * @param clusterConfig the current cluster configuration.
+     * @return true if it has a ffwd-map, false otherwise.
+     */
+    private static boolean bucketHasFastForwardMap(String bucketName, ClusterConfig clusterConfig) {
+        if (bucketName == null) {
+            return false;
+        }
+        BucketConfig bucketConfig = clusterConfig.bucketConfig(bucketName);
+        return bucketConfig != null && bucketConfig.hasFastForwardMap();
     }
 }

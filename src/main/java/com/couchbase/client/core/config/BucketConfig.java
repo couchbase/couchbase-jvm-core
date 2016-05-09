@@ -113,4 +113,11 @@ public interface BucketConfig {
      */
     boolean serviceEnabled(ServiceType type);
 
+    /**
+     * If this config instance contains a fast forward map.
+     *
+     * @return true if it does, false otherwise.
+     */
+    boolean hasFastForwardMap();
+
 }

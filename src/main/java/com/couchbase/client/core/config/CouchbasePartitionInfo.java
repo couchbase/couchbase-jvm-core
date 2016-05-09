@@ -33,6 +33,7 @@ public class CouchbasePartitionInfo {
     private final int numberOfReplicas;
     private final String[] partitionHosts;
     private final List<Partition> partitions;
+    private final List<Partition> forwardPartitions;
     private final boolean tainted;
 
     CouchbasePartitionInfo(
@@ -44,7 +45,17 @@ public class CouchbasePartitionInfo {
         trimPort(partitionHosts);
         this.partitionHosts = partitionHosts.toArray(new String[partitionHosts.size()]);
         this.partitions = fromPartitionList(partitions);
-        this.tainted = forwardPartitions != null && !forwardPartitions.isEmpty();
+        if (forwardPartitions != null && !forwardPartitions.isEmpty()) {
+            this.forwardPartitions = fromPartitionList(forwardPartitions);
+            this.tainted = true;
+        } else {
+            this.forwardPartitions = null;
+            this.tainted = false;
+        }
+    }
+
+    public boolean hasFastForwardMap() {
+        return forwardPartitions != null;
     }
 
     public int numberOfReplicas() {
@@ -57,6 +68,10 @@ public class CouchbasePartitionInfo {
 
     public List<Partition> partitions() {
         return partitions;
+    }
+
+    public List<Partition> forwardPartitions() {
+        return forwardPartitions;
     }
 
     public boolean tainted() {

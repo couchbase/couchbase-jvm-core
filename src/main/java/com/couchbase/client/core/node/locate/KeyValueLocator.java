@@ -169,14 +169,16 @@ public class KeyValueLocator implements Locator {
      * @return the calculated node id.
      */
     private static int calculateNodeId(int partitionId, BinaryRequest request, CouchbaseBucketConfig config) {
+        boolean useFastForward = request.retryCount() > 0 && config.hasFastForwardMap();
+
         if (request instanceof ReplicaGetRequest) {
-            return config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1);
+            return config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1, useFastForward);
         } else if (request instanceof ObserveRequest && ((ObserveRequest) request).replica() > 0) {
-            return config.nodeIndexForReplica(partitionId, ((ObserveRequest) request).replica() - 1);
+            return config.nodeIndexForReplica(partitionId, ((ObserveRequest) request).replica() - 1, useFastForward);
         } else if (request instanceof ObserveSeqnoRequest && ((ObserveSeqnoRequest) request).replica() > 0) {
-            return config.nodeIndexForReplica(partitionId, ((ObserveSeqnoRequest) request).replica() - 1);
+            return config.nodeIndexForReplica(partitionId, ((ObserveSeqnoRequest) request).replica() - 1, useFastForward);
         } else {
-            return config.nodeIndexForMaster(partitionId);
+            return config.nodeIndexForMaster(partitionId, useFastForward);
         }
     }
 

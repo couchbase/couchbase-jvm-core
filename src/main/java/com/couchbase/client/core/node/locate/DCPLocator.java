@@ -52,7 +52,8 @@ public class DCPLocator implements Locator {
         CouchbaseBucketConfig config = (CouchbaseBucketConfig) bucket;
         DCPRequest dcpRequest = (DCPRequest) request;
 
-        int nodeId = config.nodeIndexForMaster(dcpRequest.partition());
+        boolean useFastForward = request.retryCount() > 0 && config.hasFastForwardMap();
+        int nodeId = config.nodeIndexForMaster(dcpRequest.partition(), useFastForward);
         if (nodeId == -2) {
             return;
         }

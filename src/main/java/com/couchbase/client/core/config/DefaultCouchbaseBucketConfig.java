@@ -126,13 +126,23 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     }
 
     @Override
-    public short nodeIndexForMaster(int partition) {
-        return partitionInfo.partitions().get(partition).master();
+    public short nodeIndexForMaster(int partition, boolean useFastForward) {
+        if (useFastForward && !hasFastForwardMap()) {
+            throw new IllegalStateException("Could not get index from FF-Map, none found in this config.");
+        }
+
+        List<Partition> partitions = useFastForward ? partitionInfo.forwardPartitions() : partitionInfo.partitions();
+        return partitions.get(partition).master();
     }
 
     @Override
-    public short nodeIndexForReplica(int partition, int replica) {
-        return partitionInfo.partitions().get(partition).replica(replica);
+    public short nodeIndexForReplica(int partition, int replica, boolean useFastForward) {
+        if (useFastForward && !hasFastForwardMap()) {
+            throw new IllegalStateException("Could not get index from FF-Map, none found in this config.");
+        }
+
+        List<Partition> partitions = useFastForward ? partitionInfo.forwardPartitions() : partitionInfo.partitions();
+        return partitions.get(partition).replica(replica);
     }
 
     @Override
@@ -153,6 +163,11 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     @Override
     public BucketType type() {
         return BucketType.COUCHBASE;
+    }
+
+    @Override
+    public boolean hasFastForwardMap() {
+        return partitionInfo.hasFastForwardMap();
     }
 
     @Override
