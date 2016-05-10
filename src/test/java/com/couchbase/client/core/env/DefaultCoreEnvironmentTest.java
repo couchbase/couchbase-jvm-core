@@ -33,6 +33,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +51,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(DefaultCoreEnvironment.KEYVALUE_ENDPOINTS, env.kvEndpoints());
-        assertTrue(env.shutdownAsync().toBlocking().single());
+        assertTrue(env.shutdown());
     }
 
     @Test
@@ -63,7 +64,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(3, env.kvEndpoints());
-        assertTrue(env.shutdownAsync().toBlocking().single());
+        assertTrue(env.shutdown());
     }
 
     @Test
@@ -79,7 +80,7 @@ public class DefaultCoreEnvironmentTest {
         assertNotNull(env.scheduler());
 
         assertEquals(10, env.kvEndpoints());
-        assertTrue(env.shutdownAsync().toBlocking().single());
+        assertTrue(env.shutdown());
 
         System.clearProperty("com.couchbase.kvEndpoints");
     }
@@ -116,7 +117,7 @@ public class DefaultCoreEnvironmentTest {
             LOGGER.info("===Created threads:");
             Set<String> afterCreate = dump(threads(mx, ignore, false));
 
-            LOGGER.info("Shutdown result: " + env.shutdownAsync().toBlocking().single());
+            LOGGER.info("Shutdown result: " + env.shutdown());
             //we only consider threads starting with cb- or containing Rx, minus the ones existing at startup
             Set<String> afterShutdown = threads(mx, ignore, true);
 
