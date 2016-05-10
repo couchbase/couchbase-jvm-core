@@ -72,8 +72,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean SSL_ENABLED = false;
     public static final String SSL_KEYSTORE_FILE = null;
     public static final String SSL_KEYSTORE_PASSWORD = null;
-    public static final boolean QUERY_ENABLED = false;
-    public static final int QUERY_PORT = 8093;
     public static final boolean BOOTSTRAP_HTTP_ENABLED = true;
     public static final boolean BOOTSTRAP_CARRIER_ENABLED = true;
     public static final int BOOTSTRAP_HTTP_DIRECT_PORT = 8091;
@@ -178,8 +176,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean sslEnabled;
     private final String sslKeystoreFile;
     private final String sslKeystorePassword;
-    private final boolean queryEnabled;
-    private final int queryPort;
     private final boolean bootstrapHttpEnabled;
     private final boolean bootstrapCarrierEnabled;
     private final int bootstrapHttpDirectPort;
@@ -237,8 +233,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled);
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile);
         sslKeystorePassword = stringPropertyOr("sslKeystorePassword", builder.sslKeystorePassword);
-        queryEnabled = booleanPropertyOr("queryEnabled", builder.queryEnabled);
-        queryPort = intPropertyOr("queryPort", builder.queryPort);
         bootstrapHttpEnabled = booleanPropertyOr("bootstrapHttpEnabled", builder.bootstrapHttpEnabled);
         bootstrapHttpDirectPort = intPropertyOr("bootstrapHttpDirectPort", builder.bootstrapHttpDirectPort);
         bootstrapHttpSslPort = intPropertyOr("bootstrapHttpSslPort", builder.bootstrapHttpSslPort);
@@ -507,16 +501,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public boolean queryEnabled() {
-        return queryEnabled;
-    }
-
-    @Override
-    public int queryPort() {
-        return queryPort;
-    }
-
-    @Override
     public boolean bootstrapHttpEnabled() {
         return bootstrapHttpEnabled;
     }
@@ -710,8 +694,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private String sslKeystorePassword = SSL_KEYSTORE_PASSWORD;
         private String userAgent = USER_AGENT;
         private String packageNameAndVersion = PACKAGE_NAME_AND_VERSION;
-        private boolean queryEnabled = QUERY_ENABLED;
-        private int queryPort = QUERY_PORT;
         private boolean bootstrapHttpEnabled = BOOTSTRAP_HTTP_ENABLED;
         private boolean bootstrapCarrierEnabled = BOOTSTRAP_CARRIER_ENABLED;
         private int bootstrapHttpDirectPort = BOOTSTRAP_HTTP_DIRECT_PORT;
@@ -786,28 +768,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public Builder sslKeystorePassword(final String sslKeystorePassword) {
             this.sslKeystorePassword = sslKeystorePassword;
-            return this;
-        }
-
-        /**
-         * Toggles the N1QL Query feature (default value {@value #QUERY_ENABLED}).
-         * This parameter will be deprecated once N1QL is in General Availability and shipped with the server.
-         *
-         * If not bundled with the server, the N1QL service must run on all the cluster's nodes.
-         */
-        public Builder queryEnabled(final boolean queryEnabled) {
-            this.queryEnabled = queryEnabled;
-            return this;
-        }
-
-        /**
-         * Defines the port for N1QL Query (default value {@value #QUERY_PORT}).
-         * This parameter will be deprecated once N1QL is in General Availability and shipped with the server.
-         *
-         * If not bundled with the server, the N1QL service must run on all the cluster's nodes.
-         */
-        public Builder queryPort(final int queryPort) {
-            this.queryPort = queryPort;
             return this;
         }
 
@@ -1243,8 +1203,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append("sslEnabled=").append(sslEnabled);
         sb.append(", sslKeystoreFile='").append(sslKeystoreFile).append('\'');
         sb.append(", sslKeystorePassword='").append(sslKeystorePassword).append('\'');
-        sb.append(", queryEnabled=").append(queryEnabled);
-        sb.append(", queryPort=").append(queryPort);
         sb.append(", bootstrapHttpEnabled=").append(bootstrapHttpEnabled);
         sb.append(", bootstrapCarrierEnabled=").append(bootstrapCarrierEnabled);
         sb.append(", bootstrapHttpDirectPort=").append(bootstrapHttpDirectPort);

@@ -239,8 +239,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         } else if (request instanceof ViewRequest && !config.serviceEnabled(ServiceType.VIEW)) {
             throw new ServiceNotAvailableException("The View service is not enabled or no node in the cluster "
                 + "supports it.");
-        } else if (request instanceof QueryRequest && !(environment.queryEnabled()
-            || config.serviceEnabled(ServiceType.QUERY))) {
+        } else if (request instanceof QueryRequest && !config.serviceEnabled(ServiceType.QUERY)) {
             throw new ServiceNotAvailableException("The Query service is not enabled or no node in the "
                 + "cluster supports it.");
         } else if (request instanceof SearchRequest && !config.serviceEnabled(ServiceType.SEARCH)) {
@@ -471,9 +470,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                         Map<ServiceType, Integer> services =
                                 environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
-                        if (!services.containsKey(ServiceType.QUERY) && environment.queryEnabled()) {
-                            services.put(ServiceType.QUERY, environment.queryPort());
-                        }
                         if (services.containsKey(ServiceType.BINARY) && environment.dcpEnabled()) {
                             services.put(ServiceType.DCP, services.get(ServiceType.BINARY));
                         }
