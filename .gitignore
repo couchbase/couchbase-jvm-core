@@ -13,5 +13,6 @@ classes
 .idea/workspace.xml
 .idea/misc.xml
 .idea/uiDesigner.xml
+.idea/inspectionProfiles
 target
 dependency-reduced-pom.xml
