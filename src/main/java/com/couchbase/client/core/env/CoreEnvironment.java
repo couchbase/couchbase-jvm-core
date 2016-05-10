@@ -33,6 +33,7 @@ import io.netty.channel.EventLoopGroup;
 import rx.Observable;
 import rx.Scheduler;
 
+import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -126,6 +127,13 @@ public interface CoreEnvironment {
      * @return the keystore password.
      */
     String sslKeystorePassword();
+
+    /**
+     * Allows to directly configure a {@link KeyStore}.
+     *
+     * @return the keystore to use.
+     */
+    KeyStore sslKeystore();
 
     /**
      * If bootstrapping through HTTP is enabled.

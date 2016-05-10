@@ -61,12 +61,16 @@ public class SSLEngineFactory {
         try {
             String pass = env.sslKeystorePassword();
             char[] password = pass == null || pass.isEmpty() ? null : pass.toCharArray();
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            String ksFile = env.sslKeystoreFile();
-            if (ksFile == null || ksFile.isEmpty()) {
-                throw new IllegalArgumentException("Path to Keystore File must not be null or empty.");
+
+            KeyStore ks = env.sslKeystore();
+            if (ks == null) {
+                ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                String ksFile = env.sslKeystoreFile();
+                if (ksFile == null || ksFile.isEmpty()) {
+                    throw new IllegalArgumentException("Path to Keystore File must not be null or empty.");
+                }
+                ks.load(new FileInputStream(ksFile), password);
             }
-            ks.load(new FileInputStream(ksFile), password);
 
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
             TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
