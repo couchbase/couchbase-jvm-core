@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,6 +96,8 @@ public class NetworkMetricsTest extends ClusterDependentTest {
         boolean hasUpsert = false;
         boolean hasGet = false;
         for (Map.Entry<NetworkLatencyMetricsIdentifier, LatencyMetric> metric : event.latencies().entrySet()) {
+            assertFalse(metric.getKey().host().contains(":"));
+
             if (metric.getKey().request().equals("InsertRequest")) {
                 hasInsert = true;
                 assertTrue(metric.getValue().count() >= 1);

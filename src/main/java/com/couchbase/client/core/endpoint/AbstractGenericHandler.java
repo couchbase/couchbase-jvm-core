@@ -411,7 +411,15 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.debug(logIdent(ctx, endpoint) + "Channel Active.");
-        remoteHostname = ctx.channel().remoteAddress().toString();
+
+        SocketAddress addr = ctx.channel().remoteAddress();
+        if (addr instanceof InetSocketAddress) {
+            // Avoid lookup, so just use the address
+            remoteHostname = ((InetSocketAddress) addr).getAddress().getHostAddress();
+        } else {
+            // Should not happen in production, but in testing it might be different
+            remoteHostname = addr.toString();
+        }
         ctx.fireChannelActive();
     }
 
