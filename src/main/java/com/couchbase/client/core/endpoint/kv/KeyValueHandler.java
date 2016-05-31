@@ -765,6 +765,7 @@ public class KeyValueHandler
         BinarySubdocMultiLookupRequest subdocRequest = (BinarySubdocMultiLookupRequest) request;
 
         short statusCode = msg.getStatus();
+        long cas = msg.getCAS();
         String bucket = request.bucket();
 
         ByteBuf body = msg.content();
@@ -792,7 +793,7 @@ public class KeyValueHandler
         }
         body.release();
 
-        return new MultiLookupResponse(status, statusCode, bucket, responses, subdocRequest);
+        return new MultiLookupResponse(status, statusCode, bucket, responses, subdocRequest, cas);
     }
 
     /**

@@ -953,6 +953,7 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
             ReferenceCountUtil.release(r.value());
         }
 
+        assertTrue(response.cas() != 0);
         assertEquals(ResponseStatus.SUBDOC_MULTI_PATH_FAILURE, response.status());
         assertEquals(expected, body.toString());
     }
@@ -974,6 +975,7 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
             ReferenceCountUtil.release(r.value());
         }
 
+        assertTrue(response.cas() != 0);
         assertEquals(ResponseStatus.SUCCESS, response.status());
         assertEquals(expected, body.toString());
     }
