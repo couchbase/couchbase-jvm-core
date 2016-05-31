@@ -180,6 +180,19 @@ public class QueryHandlerTest {
         assertGenericQueryRequest(request, true);
     }
 
+    /**
+     *
+     * @param inbound
+     * @param expectedSuccess
+     * @param expectedStatus
+     * @param expectedRequestId
+     * @param expectedClientId
+     * @param expectedFinalStatus
+     * @param expectedSignature
+     * @param assertRows
+     * @param assertErrors
+     * @param metricsToCheck null to expect no metrics
+     */
     private void assertResponse(GenericQueryResponse inbound,
             boolean expectedSuccess, ResponseStatus expectedStatus,
             String expectedRequestId, String expectedClientId,
@@ -198,19 +211,23 @@ public class QueryHandlerTest {
                .forEach(assertRows);
 
         List<ByteBuf> metricList = inbound.info().timeout(1, TimeUnit.SECONDS).toList().toBlocking().single();
-        assertEquals(1, metricList.size());
-        String metricsJson = metricList.get(0).toString(CharsetUtil.UTF_8);
-        metricList.get(0).release();
-        try {
-            Map metrics = mapper.readValue(metricsJson, Map.class);
-            assertEquals(7, metrics.size());
+        if (metricsToCheck == null) {
+            assertEquals(0, metricList.size());
+        } else {
+            assertEquals(1, metricList.size());
+            String metricsJson = metricList.get(0).toString(CharsetUtil.UTF_8);
+            metricList.get(0).release();
+            try {
+                Map metrics = mapper.readValue(metricsJson, Map.class);
+                assertEquals(7, metrics.size());
 
-            for (Map.Entry<String, Object> entry : metricsToCheck.entrySet()) {
-                assertNotNull(metrics.get(entry.getKey()));
-                assertEquals(entry.getKey(), entry.getValue(), metrics.get(entry.getKey()));
+                for (Map.Entry<String, Object> entry : metricsToCheck.entrySet()) {
+                    assertNotNull(metrics.get(entry.getKey()));
+                    assertEquals(entry.getKey(), entry.getValue(), metrics.get(entry.getKey()));
+                }
+            } catch (IOException e) {
+                fail(e.toString());
             }
-        } catch (IOException e) {
-            fail(e.toString());
         }
 
         inbound.errors().timeout(1, TimeUnit.SECONDS).toBlocking()
@@ -799,7 +816,7 @@ public class QueryHandlerTest {
         }
         LOGGER.info(sb.toString());
 
-        shouldDecodeChunked(chunks);
+        shouldDecodeChunked(true, chunks);
     }
 
     @Test
@@ -810,7 +827,7 @@ public class QueryHandlerTest {
             String chunk2 = response.substring(i);
 
             try {
-                shouldDecodeChunked(chunk1, chunk2);
+                shouldDecodeChunked(true, chunk1, chunk2);
             } catch (Throwable t) {
                 LOGGER.info("Test failed in decoding response with chunk at position " + i);
                 throw t;
@@ -818,7 +835,23 @@ public class QueryHandlerTest {
         }
     }
 
-    private void shouldDecodeChunked(String... chunks) throws Exception {
+    @Test
+    public void shouldDecodeChunkedResponseSplitAtEveryPositionNoMetrics() throws Throwable {
+        String response = Resources.read("chunkedNoMetrics.json", this.getClass());
+        for (int i = 1; i < response.length() - 1; i++) {
+            String chunk1 = response.substring(0, i);
+            String chunk2 = response.substring(i);
+
+            try {
+                shouldDecodeChunked(false, chunk1, chunk2);
+            } catch (Throwable t) {
+                LOGGER.info("Test failed in decoding response with chunk and no metrics at position " + i);
+                throw t;
+            }
+        }
+    }
+
+    private void shouldDecodeChunked(boolean metrics, String... chunks) throws Exception {
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
         Object[] httpChunks = new Object[chunks.length + 1];
         httpChunks[0] = responseHeader;
@@ -837,6 +870,12 @@ public class QueryHandlerTest {
         queue.add(requestMock);
         channel.writeInbound(httpChunks);
         GenericQueryResponse inbound = (GenericQueryResponse) obs.timeout(1, TimeUnit.SECONDS).toBlocking().last();
+        Map<String, Object> expectedMetrics;
+        if (metrics) {
+            expectedMetrics = expectedMetricsCounts(5678, 1234); //these are the numbers parsed from metrics object, not real count
+        } else {
+            expectedMetrics = null;
+        }
 
         final AtomicInteger found = new AtomicInteger(0);
         final AtomicInteger errors = new AtomicInteger(0);
@@ -866,7 +905,7 @@ public class QueryHandlerTest {
                         errors.incrementAndGet();
                     }
                 },
-                expectedMetricsCounts(5678, 1234) //these are the numbers parsed from metrics object, not real count
+                expectedMetrics
         );
         assertEquals(5, found.get());
         assertEquals(4, errors.get());
@@ -961,7 +1000,6 @@ public class QueryHandlerTest {
                         fail("no error expected");
                     }
                 },
-                //no metrics in this json sample
                 expectedMetricsCounts(0, 1)
         );
         List<String> expectedItems = Arrays.asList("\"u,s,e,r,t,a,\\\"b,l,e:userBBB\\\\\"");

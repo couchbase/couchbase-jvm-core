@@ -80,7 +80,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private static final byte QUERY_STATE_WARNING = 4;
     private static final byte QUERY_STATE_STATUS = 5;
     private static final byte QUERY_STATE_INFO = 6;
-    private static final byte QUERY_STATE_DONE = 7;
+    private static final byte QUERY_STATE_NO_INFO = 7; //alternate case where there's nothing after status
+    private static final byte QUERY_STATE_DONE = 8;
 
     /**
      * This is the number of characters expected to be present to be able to read
@@ -389,6 +390,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
 
         if (queryParsingState == QUERY_STATE_INFO) {
             parseQueryInfo(lastChunk);
+        } else if (queryParsingState == QUERY_STATE_NO_INFO) {
+            finishInfo();
         }
 
         if (queryParsingState == QUERY_STATE_DONE) {
@@ -415,6 +418,11 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         if (endNextToken < 0 && !lastChunk) {
             return queryParsingState;
         }
+
+        if (endNextToken < 0 && lastChunk && queryParsingState >= QUERY_STATE_STATUS) {
+            return QUERY_STATE_NO_INFO;
+        }
+
         byte newState;
         ByteBuf peekSlice = responseContent.readSlice(endNextToken + 1);
         String peek = peekSlice.toString(CHARSET);
@@ -588,7 +596,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private void parseQueryError(boolean lastChunk) {
         while (true) {
             int openBracketPos = findNextChar(responseContent, '{');
-            if (isEmptySection(openBracketPos)) {
+            if (isEmptySection(openBracketPos) || (openBracketPos < 0 && lastChunk)) {
                 sectionDone();
                 queryParsingState = transitionToNextToken(lastChunk); //warnings or status
                 break;
@@ -655,6 +663,12 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         queryInfoObservable.onNext(responseContent.slice(from, to).copy());
         responseContent.readerIndex(to + openBracketPos);
 
+        //has to be here rather than in parseQueryResponse, as when there is a split
+        //(and thus not enough data) it could finish the metrics too early
+        finishInfo();
+    }
+
+    private void finishInfo() {
         queryInfoObservable.onCompleted();
         sectionDone();
         queryParsingState = QUERY_STATE_DONE;
