@@ -1,0 +1,14 @@
+{
+  "requestID": "ff226b49-9d4c-415b-8428-263cb080e184",
+  "signature": {
+        "*": "*"
+    },
+    "results": [
+        {
+            "adHoc_N1qlQuery492841478131758": {
+                "item": "value"
+            }
+        }
+    ],
+    "status": "success"
+}
