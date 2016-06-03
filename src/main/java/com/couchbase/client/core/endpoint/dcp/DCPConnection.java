@@ -20,7 +20,10 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
@@ -29,13 +32,13 @@ import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.dcp.FailoverLogEntry;
 import com.couchbase.client.core.message.dcp.GetFailoverLogRequest;
 import com.couchbase.client.core.message.dcp.GetFailoverLogResponse;
-import com.couchbase.client.core.message.dcp.GetLastCheckpointRequest;
-import com.couchbase.client.core.message.dcp.GetLastCheckpointResponse;
 import com.couchbase.client.core.message.dcp.StreamCloseRequest;
 import com.couchbase.client.core.message.dcp.StreamCloseResponse;
 import com.couchbase.client.core.message.dcp.StreamEndMessage;
 import com.couchbase.client.core.message.dcp.StreamRequestRequest;
 import com.couchbase.client.core.message.dcp.StreamRequestResponse;
+import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
+import com.couchbase.client.core.message.kv.GetAllMutationTokensResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
@@ -46,12 +49,14 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.ConcurrentSet;
 import rx.Observable;
+import rx.functions.Action2;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -66,6 +71,8 @@ import java.util.concurrent.TimeUnit;
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
 public class DCPConnection {
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DCPConnection.class);
+
     private static final AttributeKey<Integer> CONSUMED_BYTES = AttributeKey.newInstance("CONSUMED_BYTES");
     private static final int MINIMUM_HEADER_SIZE = 24;
 
@@ -173,33 +180,67 @@ public class DCPConnection {
     }
 
     public Observable<MutationToken> getCurrentState() {
-        return partitionSize().flatMap(new Func1<Integer, Observable<MutationToken>>() {
-            @Override
-            public Observable<MutationToken> call(final Integer numPartitions) {
-                return Observable.range(0, numPartitions).flatMap(new Func1<Integer, Observable<GetFailoverLogResponse>>() {
+        return core
+                .<GetClusterConfigResponse>send(new GetClusterConfigRequest())
+                .flatMap(new Func1<GetClusterConfigResponse, Observable<NodeInfo>>() {
                     @Override
-                    public Observable<GetFailoverLogResponse> call(final Integer partition) {
-                        return core.send(new GetFailoverLogRequest(partition.shortValue(), bucket));
+                    public Observable<NodeInfo> call(GetClusterConfigResponse response) {
+                        CouchbaseBucketConfig cfg = (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
+                        return Observable.from(cfg.nodes());
                     }
-                }).flatMap(new Func1<GetFailoverLogResponse, Observable<MutationToken>>() {
+                })
+                .flatMap(new Func1<NodeInfo, Observable<GetAllMutationTokensResponse>>() {
                     @Override
-                    public Observable<MutationToken> call(final GetFailoverLogResponse failoverLogsResponse) {
-                        final FailoverLogEntry entry = failoverLogsResponse.failoverLog().get(0);
-                        return core.<GetLastCheckpointResponse>send(new GetLastCheckpointRequest(failoverLogsResponse.partition(), bucket))
-                                .map(new Func1<GetLastCheckpointResponse, MutationToken>() {
+                    public Observable<GetAllMutationTokensResponse> call(NodeInfo node) {
+                        return core.send(new GetAllMutationTokensRequest(node.hostname(), bucket));
+                    }
+                })
+                .collect(new Func0<Map<Integer, MutationToken>>() {
+                    @Override
+                    public Map<Integer, MutationToken> call() {
+                        return new HashMap<Integer, MutationToken>(1024);
+                    }
+                }, new Action2<Map<Integer, MutationToken>, GetAllMutationTokensResponse>() {
+                    @Override
+                    public void call(Map<Integer, MutationToken> collector, GetAllMutationTokensResponse response) {
+                        for (MutationToken token : response.mutationTokens()) {
+                            int key = (int) token.vbucketID();
+                            MutationToken prev = collector.get(key);
+                            MutationToken current = token;
+                            if (prev != null && prev.sequenceNumber() != token.sequenceNumber()) {
+                                if (current.sequenceNumber() < prev.sequenceNumber()) {
+                                    current = prev;
+                                }
+                                LOGGER.debug("nodes are not agree on sequence number for vbucket {}: old={}, new={}, selected={}",
+                                        token.vbucketID(), prev.sequenceNumber(), token.sequenceNumber(), current.sequenceNumber());
+                            }
+                            collector.put(key, current);
+                        }
+                    }
+                })
+                .flatMap(new Func1<Map<Integer, MutationToken>, Observable<MutationToken>>() {
+                    @Override
+                    public Observable<MutationToken> call(Map<Integer, MutationToken> sequenceNumbers) {
+                        return Observable.from(sequenceNumbers.values());
+                    }
+                })
+                .flatMap(new Func1<MutationToken, Observable<MutationToken>>() {
+                    @Override
+                    public Observable<MutationToken> call(final MutationToken token) {
+                        return core.<GetFailoverLogResponse>send(new GetFailoverLogRequest((short) token.vbucketID(), bucket))
+                                .map(new Func1<GetFailoverLogResponse, MutationToken>() {
                                     @Override
-                                    public MutationToken call(GetLastCheckpointResponse lastCheckpointResponse) {
+                                    public MutationToken call(GetFailoverLogResponse failoverLogsResponse) {
+                                        final FailoverLogEntry entry = failoverLogsResponse.failoverLog().get(0);
                                         return new MutationToken(
                                                 failoverLogsResponse.partition(),
                                                 entry.vbucketUUID(),
-                                                lastCheckpointResponse.sequenceNumber(),
+                                                token.sequenceNumber(),
                                                 bucket);
                                     }
                                 });
                     }
                 });
-            }
-        });
     }
 
     public void consumed(final DCPMessage event) {
