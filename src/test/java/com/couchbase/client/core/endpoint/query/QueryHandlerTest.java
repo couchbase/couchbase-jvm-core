@@ -775,7 +775,7 @@ public class QueryHandlerTest {
         EmbeddedChannel channel = new EmbeddedChannel(testHandler);
 
         //test idle event triggers a query keepAlive request and hook is called
-        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT);
+        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
 
         assertEquals(1, keepAliveEventCounter.get());
         assertTrue(queue.peek() instanceof QueryHandler.KeepAliveRequest);
