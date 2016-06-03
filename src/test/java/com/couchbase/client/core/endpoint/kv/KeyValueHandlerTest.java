@@ -901,7 +901,7 @@ public class KeyValueHandlerTest {
         EmbeddedChannel channel = new EmbeddedChannel(testHandler);
 
         //test idle event triggers a k/v keepAlive request and hook is called
-        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT);
+        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
 
         assertEquals(1, keepAliveEventCounter.get());
         assertTrue(requestQueue.peek() instanceof KeyValueHandler.KeepAliveRequest);
