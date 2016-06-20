@@ -23,7 +23,6 @@ import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
-import com.lmax.disruptor.WaitStrategy;
 import io.netty.channel.EventLoopGroup;
 import rx.Observable;
 import rx.Scheduler;
@@ -406,9 +405,12 @@ public interface CoreEnvironment {
     String dcpConnectionName();
 
     /**
-     * Waiting strategy used by request {@link com.lmax.disruptor.EventProcessor}s to wait for data from {@link com.lmax.disruptor.RingBuffer}
+     * Waiting strategy used by request {@link com.lmax.disruptor.EventProcessor}s to wait for data from
+     * {@link com.lmax.disruptor.RingBuffer}
      *
      * @return waiting strategy
      */
-    WaitStrategy requestBufferWaitStrategy();
+    @InterfaceStability.Experimental
+    @InterfaceAudience.Public
+    WaitStrategyFactory requestBufferWaitStrategy();
 }

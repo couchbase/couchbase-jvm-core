@@ -207,7 +207,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final int socketConnectTimeout;
     private final boolean callbacksOnIoPool;
     private final long disconnectTimeout;
-    private final WaitStrategy requestBufferWaitStrategy;
+    private final WaitStrategyFactory requestBufferWaitStrategy;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -337,7 +337,17 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } else {
             metricsCollectorSubscription = null;
         }
-        requestBufferWaitStrategy = builder.requestBufferWaitStrategy == null ? new BlockingWaitStrategy() : builder.requestBufferWaitStrategy;
+
+        if (builder.requestBufferWaitStrategy == null) {
+            requestBufferWaitStrategy = new WaitStrategyFactory() {
+                @Override
+                public WaitStrategy newWaitStrategy() {
+                    return new BlockingWaitStrategy();
+                }
+            };
+        } else {
+            requestBufferWaitStrategy = builder.requestBufferWaitStrategy;
+        }
     }
 
     public static DefaultCoreEnvironment create() {
@@ -694,7 +704,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public WaitStrategy requestBufferWaitStrategy() {
+    public WaitStrategyFactory requestBufferWaitStrategy() {
         return requestBufferWaitStrategy;
     }
 
@@ -742,7 +752,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int socketConnectTimeout = SOCKET_CONNECT_TIMEOUT;
         private boolean callbacksOnIoPool = CALLBACKS_ON_IO_POOL;
         private long disconnectTimeout = DISCONNECT_TIMEOUT;
-        private WaitStrategy requestBufferWaitStrategy;
+        private WaitStrategyFactory requestBufferWaitStrategy;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1223,7 +1233,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param waitStrategy waiting strategy
          */
-        public Builder requestBufferWaitStrategy(WaitStrategy waitStrategy) {
+        @InterfaceStability.Experimental
+        @InterfaceAudience.Public
+        public Builder requestBufferWaitStrategy(WaitStrategyFactory waitStrategy) {
             this.requestBufferWaitStrategy = waitStrategy;
             return this;
         }
