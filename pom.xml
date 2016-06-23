@@ -33,9 +33,9 @@
         <native.renamed>libcom-couchbase-client-deps-netty-transport-native-epoll.so</native.renamed>
 
         <rxjava.version>1.1.5</rxjava.version>
-        <netty.version>4.0.36.Final</netty.version>
+        <netty.version>4.0.37.Final</netty.version>
         <disruptor.version>3.3.4</disruptor.version>
-        <jackson.version>2.6.6</jackson.version>
+        <jackson.version>2.6.7</jackson.version>
         <latency-utils.version>2.0.3</latency-utils.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
