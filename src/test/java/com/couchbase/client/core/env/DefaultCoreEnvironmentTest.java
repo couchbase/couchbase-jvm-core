@@ -15,10 +15,13 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.event.CouchbaseEvent;
+import com.couchbase.client.core.event.system.TooManyEnvironmentsEvent;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import io.netty.channel.local.LocalEventLoopGroup;
 import org.junit.Test;
+import rx.functions.Action1;
 import rx.functions.Actions;
 import rx.schedulers.Schedulers;
 
@@ -28,6 +31,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -184,6 +188,33 @@ public class DefaultCoreEnvironmentTest {
         String dump = env.dumpParameters(new StringBuilder()).toString();
 
         assertFalse(dump, dump.contains("!unmanaged"));
+    }
+
+    /**
+     * Note that since this test doesn't run in isolation and other tests heavily alter the number
+     * of currently outstanding environments (which is okay), the only thing we can assert is that the
+     * message got emitted and that there are more than one environments found.
+     */
+    @Test
+    public void shouldEmitEvent() {
+        CoreEnvironment env = DefaultCoreEnvironment.create();
+
+        final AtomicInteger evtCount = new AtomicInteger(0);
+        env.eventBus().get().forEach(new Action1<CouchbaseEvent>() {
+            @Override
+            public void call(CouchbaseEvent couchbaseEvent) {
+                if (couchbaseEvent instanceof TooManyEnvironmentsEvent) {
+                    evtCount.set(((TooManyEnvironmentsEvent) couchbaseEvent).numEnvs());
+                }
+            }
+        });
+
+        CoreEnvironment env2 = DefaultCoreEnvironment.builder().eventBus(env.eventBus()).build();
+
+        env.shutdown();
+        env2.shutdown();
+
+        assertTrue(evtCount.get() > 1);
     }
 
 }

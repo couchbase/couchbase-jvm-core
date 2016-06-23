@@ -27,6 +27,7 @@ import com.couchbase.client.core.event.DefaultEventBus;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.event.EventType;
 import com.couchbase.client.core.event.consumers.LoggingConsumer;
+import com.couchbase.client.core.event.system.TooManyEnvironmentsEvent;
 import com.couchbase.client.core.logging.CouchbaseLogLevel;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
@@ -49,6 +50,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -225,10 +227,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final Subscription metricsCollectorSubscription;
 
     protected DefaultCoreEnvironment(final Builder builder) {
+        boolean emitEnvWarnMessage = false;
         if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
             LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found (" + instanceCounter
                 + "), this can have severe impact on performance and stability. Reuse environments!");
+            emitEnvWarnMessage = true;
         }
+
         dcpEnabled = booleanPropertyOr("dcpEnabled", builder.dcpEnabled);
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled);
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile);
@@ -348,6 +353,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } else {
             requestBufferWaitStrategy = builder.requestBufferWaitStrategy;
         }
+
+        if (emitEnvWarnMessage) {
+            eventBus.publish(new TooManyEnvironmentsEvent(instanceCounter));
+        }
     }
 
     public static DefaultCoreEnvironment create() {
@@ -429,7 +438,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                             public Boolean call(Boolean previousStatus, ShutdownStatus currentStatus) {
                                 return previousStatus && currentStatus.success;
                             }
-                        });
+                        })
+                .doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        instanceCounter--;
+                    }
+                });
         return result;
     }
 
@@ -706,6 +721,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     public WaitStrategyFactory requestBufferWaitStrategy() {
         return requestBufferWaitStrategy;
+    }
+
+    public static int instanceCounter() {
+        return instanceCounter;
     }
 
     public static class Builder {
