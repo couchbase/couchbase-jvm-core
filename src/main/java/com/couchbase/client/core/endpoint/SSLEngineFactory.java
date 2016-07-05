@@ -66,8 +66,8 @@ public class SSLEngineFactory {
                 ks.load(new FileInputStream(ksFile), password);
             }
 
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("X509");
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(ks, password);
             tmf.init(ks);
 
