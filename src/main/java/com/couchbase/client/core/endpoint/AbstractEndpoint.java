@@ -55,6 +55,7 @@ import rx.subjects.Subject;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
+import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -300,13 +301,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ConnectTimeoutException) {
                             LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                + "Socket connect took longer than specified timeout.");
+                                    + "Socket connect took longer than specified timeout.");
+                            transitionState(LifecycleState.DISCONNECTED);
+                            observable.onError(future.cause());
+                        } else if (future.cause() instanceof ConnectException) {
+                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
+                                    + "Could not connect to remote socket.");
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (isTransient) {
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
+                        } else {
+                            LOGGER.debug("Unhandled exception during channel connect, ignoring.", future.cause());
                         }
 
                         if (!disconnected && !bootstrapping && !isTransient) {
