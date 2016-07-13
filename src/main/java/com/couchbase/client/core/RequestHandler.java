@@ -49,6 +49,7 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
@@ -158,7 +159,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 try {
                     LOGGER.debug("Got notified of a new configuration arriving.");
                     configuration = config;
-                    reconfigure(config).subscribe();
+                    reconfigure(config).subscribe(new Subscriber<ClusterConfig>() {
+                        @Override
+                        public void onCompleted() {}
+
+                        @Override
+                        public void onError(Throwable e) {
+                            LOGGER.warn("Received Error during Reconfiguration.", e);
+                        }
+
+                        @Override
+                        public void onNext(ClusterConfig clusterConfig) {}
+                    });
 
                     if (eventBus != null) {
                         eventBus.publish(new ConfigUpdatedEvent(config));
@@ -397,7 +409,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                 @Override
                 public void call(Node node) {
                     removeNode(node);
-                    node.disconnect().subscribe();
+                    node.disconnect().subscribe(new Subscriber<LifecycleState>() {
+                        @Override
+                        public void onCompleted() {}
+
+                        @Override
+                        public void onError(Throwable e) {
+                            LOGGER.warn("Got error during node disconnect.", e);
+                        }
+
+                        @Override
+                        public void onNext(LifecycleState lifecycleState) {}
+                    });
                 }
             }).last().map(new Func1<Node, ClusterConfig>() {
                 @Override
@@ -435,7 +458,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                         if (!configNodes.contains(node.hostname())) {
                             LOGGER.debug("Removing and disconnecting node {}.", node.hostname());
                             removeNode(node);
-                            node.disconnect().subscribe();
+                            node.disconnect().subscribe(new Subscriber<LifecycleState>() {
+                                @Override
+                                public void onCompleted() {}
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    LOGGER.warn("Got error during node disconnect.", e);
+                                }
+
+                                @Override
+                                public void onNext(LifecycleState lifecycleState) {}
+                            });
                         }
                     }
                 }
