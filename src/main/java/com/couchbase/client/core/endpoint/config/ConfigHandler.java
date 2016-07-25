@@ -40,6 +40,8 @@ import com.couchbase.client.core.message.config.InsertBucketRequest;
 import com.couchbase.client.core.message.config.InsertBucketResponse;
 import com.couchbase.client.core.message.config.RemoveBucketRequest;
 import com.couchbase.client.core.message.config.RemoveBucketResponse;
+import com.couchbase.client.core.message.config.RestApiRequest;
+import com.couchbase.client.core.message.config.RestApiResponse;
 import com.couchbase.client.core.message.config.UpdateBucketRequest;
 import com.couchbase.client.core.message.config.UpdateBucketResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -64,6 +66,7 @@ import rx.subjects.BehaviorSubject;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -121,6 +124,9 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
 
     @Override
     protected HttpRequest encodeRequest(final ChannelHandlerContext ctx, final ConfigRequest msg) throws Exception {
+        if (msg instanceof RestApiRequest) {
+            return encodeRestApiRequest(ctx, (RestApiRequest) msg);
+        }
         HttpMethod httpMethod = HttpMethod.GET;
         if (msg instanceof FlushRequest || msg instanceof InsertBucketRequest || msg instanceof UpdateBucketRequest) {
             httpMethod = HttpMethod.POST;
@@ -145,6 +151,27 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         }
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
         request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+
+        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        return request;
+    }
+
+    private HttpRequest encodeRestApiRequest(ChannelHandlerContext ctx, RestApiRequest msg) {
+        HttpMethod httpMethod = msg.method();
+        ByteBuf content = Unpooled.copiedBuffer(msg.body(), CharsetUtil.UTF_8);
+        String path = msg.pathWithParameters();
+
+        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, path, content);
+        //these headers COULD be overridden
+        request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+        request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+
+        for (Map.Entry<String, Object> header : msg.headers().entrySet()) {
+            request.headers().set(header.getKey(), header.getValue());
+        }
+
+        //these headers should always be computed from the msg
+        request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
 
         addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
         return request;
@@ -207,6 +234,9 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             } else if (request instanceof FlushRequest) {
                 boolean done = responseHeader.getStatus().code() != 201;
                 response = new FlushResponse(done, body, status);
+            } else if (request instanceof RestApiRequest) {
+                response = new RestApiResponse((RestApiRequest) request, responseHeader.getStatus(),
+                        responseHeader.headers(), body);
             }
 
             finishedDecoding();
