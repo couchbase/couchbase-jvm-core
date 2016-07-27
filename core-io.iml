@@ -14,7 +14,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: io.reactivex:rxjava:1.1.8" level="project" />
-    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.39.Final" level="project" />
+    <orderEntry type="library" name="Maven: io.netty:netty-all:4.0.40.Final" level="project" />
     <orderEntry type="library" name="Maven: com.lmax:disruptor:3.3.5" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.6.7" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.6.0" level="project" />
