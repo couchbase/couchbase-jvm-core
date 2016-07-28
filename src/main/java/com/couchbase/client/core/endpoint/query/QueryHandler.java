@@ -469,6 +469,10 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         int spaceToSkip = responseContent.forEachByte(new WhitespaceSkipper());
         if (spaceToSkip > -1) {
             responseContent.readerIndex(spaceToSkip);
+        } else {
+            //there's only whitespace! need more info
+            responseContent.resetReaderIndex();
+            return;
         }
 
         if (responseContent.isReadable()) {
