@@ -324,6 +324,11 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
         viewInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         viewErrorObservable = AsyncSubject.create();
 
+        //set up trace ids on all these UnicastAutoReleaseSubjects, so that if they get in a bad state
+        // (multiple subscribers or subscriber coming in too late) we can trace back to here
+        viewRowObservable.withTraceIdentifier("viewRow");
+        viewInfoObservable.withTraceIdentifier("viewInfo");
+
         return new ViewQueryResponse(
             viewRowObservable.onBackpressureBuffer().observeOn(scheduler),
             viewInfoObservable.onBackpressureBuffer().observeOn(scheduler),

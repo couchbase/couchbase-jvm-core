@@ -339,6 +339,14 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         queryInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         querySignatureObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
 
+        //set up trace ids on all these UnicastAutoReleaseSubjects, so that if they get in a bad state
+        // (multiple subscribers or subscriber coming in too late) we can trace back to here
+        String rid = clientId == null ? requestId : clientId + " / " + requestId;
+        queryRowObservable.withTraceIdentifier("queryRow." + rid);
+        queryErrorObservable.withTraceIdentifier("queryError." + rid);
+        queryInfoObservable.withTraceIdentifier("queryInfo." + rid);
+        querySignatureObservable.withTraceIdentifier("querySignature." + rid);
+
         return new GenericQueryResponse(
                 queryErrorObservable.onBackpressureBuffer().observeOn(scheduler),
                 queryRowObservable.onBackpressureBuffer().observeOn(scheduler),

@@ -126,6 +126,11 @@ public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
         return new UnicastAutoReleaseSubject<T>(state, noSubscriptionTimeout, timeUnit, timeoutScheduler);
     }
 
+    public UnicastAutoReleaseSubject<T> withTraceIdentifier(String id) {
+        this.state.traceId = id;
+        return this;
+    }
+
     /**
      * This will eagerly dispose this {@link Subject} without waiting for the no subscription timeout period,
      * if configured.
@@ -145,6 +150,12 @@ public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
 
     /** The common state. */
     private static final class State<T> {
+
+        /**
+         * An ID field only used to ease identification of the source of the associated
+         * {@link UnicastAutoReleaseSubject}. See {@link UnicastAutoReleaseSubject#withTraceIdentifier(String)}.
+         */
+        private String traceId;
 
         /**
          * Following are the only possible state transitions:
@@ -218,10 +229,18 @@ public final class UnicastAutoReleaseSubject<T> extends Subject<T, T> {
                 state.unsubscribeTimeoutSubscription();
 
             } else if(State.STATES.SUBSCRIBED.ordinal() == state.state) {
-                subscriber.onError(new IllegalStateException("This Observable can only have one subscription. "
+                String thisObservable = "This Observable ";
+                if (state.traceId != null) {
+                    thisObservable = "This Observable (" + state.traceId + ") ";
+                }
+                subscriber.onError(new IllegalStateException(thisObservable + "can only have one subscription. "
                     + "Use Observable.publish() if you want to multicast."));
             } else if(State.STATES.DISPOSED.ordinal() == state.state) {
-                subscriber.onError(new IllegalStateException("The Content of this Observable is already released. "
+                String thisObservable = "The content of this Observable ";
+                if (state.traceId != null) {
+                    thisObservable = "The content of this Observable (" + state.traceId + ") ";
+                }
+                subscriber.onError(new IllegalStateException(thisObservable + "is already released. "
                     + "Subscribe earlier or tune the CouchbaseEnvironment#autoreleaseAfter() setting."));
             }
         }
