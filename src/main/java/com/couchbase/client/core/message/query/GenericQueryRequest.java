@@ -32,7 +32,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
     private final boolean jsonFormat;
     private final InetAddress targetNode;
 
-    private GenericQueryRequest(String query, boolean jsonFormat, String bucket, String password, InetAddress targetNode) {
+    protected GenericQueryRequest(String query, boolean jsonFormat, String bucket, String password, InetAddress targetNode) {
         super(bucket, password);
         this.query = query;
         this.jsonFormat = jsonFormat;
