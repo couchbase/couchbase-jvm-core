@@ -451,6 +451,8 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             info.setByte(closingPointer, '}');
             viewInfoObservable.onNext(info);
         } else {
+            //JVMCBC-360 don't forget to release the now unused info ByteBuf
+            info.release();
             viewInfoObservable.onNext(Unpooled.EMPTY_BUFFER);
         }
         viewInfoObservable.onCompleted();
