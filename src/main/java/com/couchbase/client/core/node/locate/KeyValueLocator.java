@@ -93,7 +93,7 @@ public class KeyValueLocator implements Locator {
     private static void locateByHostname(final CouchbaseRequest request, final InetAddress hostname, List<Node> nodes,
         CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         for (Node node : nodes) {
-            if (node.isState(LifecycleState.CONNECTED)) {
+            if (node.isState(LifecycleState.CONNECTED) || node.isState(LifecycleState.DEGRADED)) {
                 if (!hostname.equals(node.hostname())) {
                     continue;
                 }
