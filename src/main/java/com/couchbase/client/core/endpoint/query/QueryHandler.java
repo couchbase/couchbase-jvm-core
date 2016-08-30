@@ -73,17 +73,17 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
 
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(QueryHandler.class);
 
-    private static final byte QUERY_STATE_INITIAL = 0;
-    private static final byte QUERY_STATE_SIGNATURE = 1;
-    private static final byte QUERY_STATE_ROWS = 2;
-    private static final byte QUERY_STATE_ROWS_RAW = 20;
-    private static final byte QUERY_STATE_ROWS_DECIDE = 29;
-    private static final byte QUERY_STATE_ERROR = 3;
-    private static final byte QUERY_STATE_WARNING = 4;
-    private static final byte QUERY_STATE_STATUS = 5;
-    private static final byte QUERY_STATE_INFO = 6;
-    private static final byte QUERY_STATE_NO_INFO = 7; //alternate case where there's nothing after status
-    private static final byte QUERY_STATE_DONE = 8;
+    protected static final byte QUERY_STATE_INITIAL = 0;
+    protected static final byte QUERY_STATE_SIGNATURE = 1;
+    protected static final byte QUERY_STATE_ROWS = 2;
+    protected static final byte QUERY_STATE_ROWS_RAW = 20;
+    protected static final byte QUERY_STATE_ROWS_DECIDE = 29;
+    protected static final byte QUERY_STATE_ERROR = 3;
+    protected static final byte QUERY_STATE_WARNING = 4;
+    protected static final byte QUERY_STATE_STATUS = 5;
+    protected static final byte QUERY_STATE_INFO = 6;
+    protected static final byte QUERY_STATE_NO_INFO = 7; //alternate case where there's nothing after status
+    protected static final byte QUERY_STATE_DONE = 8;
 
     /**
      * This is the number of characters expected to be present to be able to read
@@ -490,6 +490,9 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             responseContent.skipBytes(openArrayPos + 1);
         } else {
             responseContent.resetReaderIndex();
+            if (lastChunk == true) {
+                throw new IllegalStateException("Unable to decide between raw and objects with content " + responseContent.toString(CHARSET));
+            }
             return; //more data
         }
 
@@ -508,6 +511,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
                 queryParsingState = QUERY_STATE_ROWS;
             } else if (first == ']') {
                 //empty result section!
+                sectionDone();
                 queryParsingState = transitionToNextToken(lastChunk);
             } else {
                 queryParsingState = QUERY_STATE_ROWS_RAW;
@@ -762,5 +766,9 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     @Override
     protected ServiceType serviceType() {
         return ServiceType.QUERY;
+    }
+
+    public int getQueryParsingState() {
+        return this.queryParsingState;
     }
 }

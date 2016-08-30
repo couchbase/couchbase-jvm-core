@@ -666,4 +666,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         return remoteHttpHost;
     }
 
+    public DecodingState getDecodingState() {
+        return this.currentDecodingState;
+    }
+
 }
