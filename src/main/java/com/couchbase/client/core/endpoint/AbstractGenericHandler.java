@@ -42,6 +42,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import rx.Scheduler;
+import rx.Subscriber;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.subjects.Subject;
@@ -614,12 +615,22 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         return "[" + ctx.channel().remoteAddress() + "][" + endpoint.getClass().getSimpleName() + "]: ";
     }
 
-    private class KeepAliveResponseAction implements Action1<CouchbaseResponse> {
+    private class KeepAliveResponseAction extends Subscriber<CouchbaseResponse> {
         private final ChannelHandlerContext ctx;
-        public KeepAliveResponseAction(ChannelHandlerContext ctx) { this.ctx = ctx; }
+        KeepAliveResponseAction(ChannelHandlerContext ctx) { this.ctx = ctx; }
 
         @Override
-        public void call(CouchbaseResponse couchbaseResponse) {
+        public void onCompleted() {
+            // ignored on purpose.
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            LOGGER.warn(logIdent(ctx, endpoint) + "Got error while consuming KeepAliveResponse.", e);
+        }
+
+        @Override
+        public void onNext(CouchbaseResponse couchbaseResponse) {
             onKeepAliveResponse(this.ctx, couchbaseResponse);
         }
     }
