@@ -55,7 +55,6 @@ import rx.functions.Func1;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -169,7 +168,15 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                         }
 
                         @Override
-                        public void onNext(ClusterConfig clusterConfig) {}
+                        public void onNext(final ClusterConfig clusterConfig) {
+                            int logicalNodes = nodes.size();
+                            int configNodes = clusterConfig.allNodeAddresses().size();
+
+                            if (logicalNodes != configNodes) {
+                                LOGGER.debug("Number of logical Nodes does not match the number of nodes in the "
+                                    + "current configuration! logical: {}, config: {}", logicalNodes, configNodes);
+                            }
+                        }
                     });
 
                     if (eventBus != null) {
@@ -447,12 +454,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             .doOnNext(new Action1<Boolean>() {
                 @Override
                 public void call(Boolean aBoolean) {
-                    Set<InetAddress> configNodes = new HashSet<InetAddress>();
-                    for (Map.Entry<String, BucketConfig> bucket : config.bucketConfigs().entrySet()) {
-                        for (final NodeInfo node : bucket.getValue().nodes()) {
-                            configNodes.add(node.hostname());
-                        }
-                    }
+                    Set<InetAddress> configNodes = config.allNodeAddresses();
 
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {

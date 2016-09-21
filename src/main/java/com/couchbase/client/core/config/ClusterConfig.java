@@ -15,7 +15,9 @@
  */
 package com.couchbase.client.core.config;
 
+import java.net.InetAddress;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a Couchbase Cluster Configuration.
@@ -54,4 +56,10 @@ public interface ClusterConfig {
     boolean hasBucket(String bucketName);
 
     Map<String, BucketConfig> bucketConfigs();
+
+    /**
+     * Returns the addresses of all nodes in the cluster, accumulated from all
+     * open buckets.
+     */
+    Set<InetAddress> allNodeAddresses();
 }
