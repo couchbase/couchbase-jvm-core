@@ -216,21 +216,20 @@ public class ShaSaslClient implements SaslClient {
      * Generate the HMAC with the given SHA algorithm
      */
     private byte[] hmac(byte[] key, byte[] data) {
-        final Mac mac;
-
         try {
-            mac = Mac.getInstance(hmacAlgorithm);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-
-        final SecretKeySpec secretKey = new SecretKeySpec(key, mac.getAlgorithm());
-        try {
-            mac.init(secretKey);
+            final Mac mac = Mac.getInstance(hmacAlgorithm);
+            mac.init(new SecretKeySpec(key, mac.getAlgorithm()));
+            return mac.doFinal(data);
         } catch (InvalidKeyException e) {
-            throw new RuntimeException(e);
+            if (key.length == 0) {
+                throw new UnsupportedOperationException("This JVM does not support empty HMAC keys (empty passwords). "
+                        + "Please set a bucket password or upgrade your JVM.");
+            } else {
+                throw new RuntimeException("Failed to generate HMAC hash for password", e);
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
-        return mac.doFinal(data);
     }
 
     /**
@@ -269,6 +268,13 @@ public class ShaSaslClient implements SaslClient {
             }
 
             return un;
+        } catch (InvalidKeyException e) {
+            if (password == null || password.isEmpty()) {
+                throw new UnsupportedOperationException("This JVM does not support empty HMAC keys (empty passwords). "
+                    + "Please set a bucket password or upgrade your JVM.");
+            } else {
+                throw new RuntimeException("Failed to generate HMAC hash for password", e);
+            }
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
