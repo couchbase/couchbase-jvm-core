@@ -18,28 +18,43 @@ package com.couchbase.client.core.node.locate;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.PrelocatedRequest;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.MathUtils;
 import com.lmax.disruptor.RingBuffer;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class QueryLocator implements Locator {
 
-    private long counter = 0;
+    /**
+     * The Logger used.
+     */
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(QueryLocator.class);
+
+    private volatile long counter = 0;
 
     @Override
     public void locateAndDispatch(CouchbaseRequest request, List<Node> nodes, ClusterConfig config, CoreEnvironment env,
         RingBuffer<ResponseEvent> responseBuffer) {
+
+        nodes = filterNodes(nodes);
+        if (nodes.isEmpty()) {
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+            return;
+        }
+
         if (request instanceof PrelocatedRequest && ((PrelocatedRequest) request).sendTo() != null) {
             InetAddress target = ((PrelocatedRequest) request).sendTo();
             for (Node node : nodes) {
-                if (node.hostname().equals(target)
-                        && checkNode(node)) {
+                if (node.hostname().equals(target)) {
                     node.send(request);
                     return;
                 }
@@ -50,25 +65,24 @@ public class QueryLocator implements Locator {
         }
 
         int nodeSize = nodes.size();
-        int offset = (int) counter++ % nodeSize;
+        int offset = (int) MathUtils.floorMod(counter++, nodeSize);
+        Node node = nodes.get(offset);
+        if (node != null) {
+            node.send(request);
+        } else {
+            LOGGER.warn("Locator found selected node to be null, this is a bug. {}, {}", request, nodes);
+            RetryHelper.retryOrCancel(env, request, responseBuffer);
+        }
+    }
 
-        for (int i = offset; i < nodeSize; i++) {
-            Node node = nodes.get(i);
-            if (checkNode(node)) {
-                node.send(request);
-                return;
+    private List<Node> filterNodes(final List<Node> allNodes) {
+        List<Node> result = new ArrayList<Node>(allNodes.size());
+        for (Node n : allNodes) {
+            if (checkNode(n)) {
+                result.add(n);
             }
         }
-
-        for (int i = 0; i < offset; i++) {
-            Node node = nodes.get(i);
-            if (checkNode(node)) {
-                node.send(request);
-                return;
-            }
-        }
-
-        RetryHelper.retryOrCancel(env, request, responseBuffer);
+        return result;
     }
 
     protected boolean checkNode(final Node node) {
