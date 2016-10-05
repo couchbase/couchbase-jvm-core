@@ -40,6 +40,7 @@ import com.couchbase.client.core.message.dcp.StreamRequestResponse;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.UnicastAutoReleaseSubject;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
@@ -189,6 +190,12 @@ public class DCPConnection {
                     public Observable<NodeInfo> call(GetClusterConfigResponse response) {
                         CouchbaseBucketConfig cfg = (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
                         return Observable.from(cfg.nodes());
+                    }
+                })
+                .filter(new Func1<NodeInfo, Boolean>() {
+                    @Override
+                    public Boolean call(NodeInfo node) {
+                        return node.services().containsKey(ServiceType.DCP);
                     }
                 })
                 .flatMap(new Func1<NodeInfo, Observable<GetAllMutationTokensResponse>>() {
