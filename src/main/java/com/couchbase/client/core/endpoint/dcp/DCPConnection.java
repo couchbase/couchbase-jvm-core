@@ -195,7 +195,7 @@ public class DCPConnection {
                 .filter(new Func1<NodeInfo, Boolean>() {
                     @Override
                     public Boolean call(NodeInfo node) {
-                        return node.services().containsKey(ServiceType.DCP);
+                        return node.services().containsKey(ServiceType.DCP) || node.sslServices().containsKey(ServiceType.DCP);
                     }
                 })
                 .flatMap(new Func1<NodeInfo, Observable<GetAllMutationTokensResponse>>() {
