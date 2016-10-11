@@ -27,9 +27,11 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
+import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.EventSink;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -149,6 +151,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     private String remoteHttpHost;
 
+    private final int sentQueueLimit;
+
     /**
      * Creates a new {@link AbstractGenericHandler} with the default queue.
      *
@@ -177,6 +181,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         this.sentRequestTimings = new ArrayDeque<Long>();
         this.classNameCache = new IdentityHashMap<Class<? extends CouchbaseRequest>, String>();
         this.moveResponseOut = env() == null || !env().callbacksOnIoPool();
+        this.sentQueueLimit = Integer.parseInt(System.getProperty("com.couchbase.sentRequestQueueLimit", "5120"));
     }
 
     /**
@@ -211,6 +216,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @return the service type.
      */
     protected abstract ServiceType serviceType();
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (sentRequestQueue.size() < sentQueueLimit) {
+            super.write(ctx, msg, promise);
+        } else {
+            LOGGER.debug("Rescheduling {} because sentRequestQueueLimit reached.", msg);
+            RetryHelper.retryOrCancel(env(), (CouchbaseRequest) msg, responseBuffer);
+        }
+    }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, REQUEST msg, List<Object> out) throws Exception {
