@@ -24,10 +24,12 @@ import com.couchbase.client.core.state.NotConnectedException;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
+import rx.observers.TestSubscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
@@ -65,7 +67,7 @@ public class AbstractEndpointTest {
     public void shouldConnectToItsChannel() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         when(bootstrap.connect()).thenReturn(channel.newSucceededFuture());
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         Observable<LifecycleState> observable = endpoint.connect();
         assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
@@ -76,7 +78,7 @@ public class AbstractEndpointTest {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         final ChannelPromise promise = channel.newPromise();
         when(bootstrap.connect()).thenReturn(promise);
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         final CountDownLatch latch = new CountDownLatch(1);
         new Thread(new Runnable() {
@@ -102,7 +104,7 @@ public class AbstractEndpointTest {
     public void shouldSwallowConnectIfConnected() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         when(bootstrap.connect()).thenReturn(channel.newSucceededFuture());
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         Observable<LifecycleState> observable = endpoint.connect();
         assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
@@ -115,7 +117,7 @@ public class AbstractEndpointTest {
     public void shouldDisconnectIfInstructed() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         when(bootstrap.connect()).thenReturn(channel.newSucceededFuture());
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         Observable<LifecycleState> observable = endpoint.connect();
         assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
@@ -129,7 +131,7 @@ public class AbstractEndpointTest {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         final ChannelPromise promise = channel.newPromise();
         when(bootstrap.connect()).thenReturn(promise);
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         final CountDownLatch latch = new CountDownLatch(1);
         new Thread(new Runnable() {
@@ -154,7 +156,7 @@ public class AbstractEndpointTest {
     public void shouldSendMessageToChannelIfConnected() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         when(bootstrap.connect()).thenReturn(channel.newSucceededFuture());
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         Observable<LifecycleState> observable = endpoint.connect();
         assertEquals(LifecycleState.CONNECTED, observable.toBlocking().single());
@@ -170,7 +172,7 @@ public class AbstractEndpointTest {
     @Test(expected = NotConnectedException.class)
     public void shouldRejectMessageIfNotConnected() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         CouchbaseRequest mockRequest = mock(CouchbaseRequest.class);
         Subject<CouchbaseResponse, CouchbaseResponse> subject = AsyncSubject.create();
@@ -183,7 +185,7 @@ public class AbstractEndpointTest {
     public void shouldStreamLifecycleToObservers() {
         BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
         when(bootstrap.connect()).thenReturn(channel.newSucceededFuture());
-        Endpoint endpoint = new DummyEndpoint(bootstrap);
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
 
         final List<LifecycleState> states = Collections.synchronizedList(new ArrayList<LifecycleState>());
         endpoint.states().subscribe(new Action1<LifecycleState>() {
@@ -206,9 +208,26 @@ public class AbstractEndpointTest {
         assertEquals(LifecycleState.DISCONNECTED, states.get(4));
     }
 
+    @Test
+    public void shouldForceTimeoutOfSocketConnectDoesNotReturn() {
+        BootstrapAdapter bootstrap = mock(BootstrapAdapter.class);
+        when(bootstrap.connect()).thenReturn(channel.newPromise()); // this promise never completes
+        Endpoint endpoint = new DummyEndpoint(bootstrap, environment);
+
+        Observable<LifecycleState> observable = endpoint.connect();
+
+        TestSubscriber<LifecycleState> testSubscriber = new TestSubscriber<LifecycleState>();
+        observable.subscribe(testSubscriber);
+        testSubscriber.awaitTerminalEvent();
+
+        List<Throwable> errors = testSubscriber.getOnErrorEvents();
+        assertEquals(1, errors.size());
+        assertEquals(ConnectTimeoutException.class, errors.get(0).getClass());
+    }
+
     static class DummyEndpoint extends AbstractEndpoint {
-        DummyEndpoint(BootstrapAdapter adapter) {
-            super("default", null, adapter, false);
+        DummyEndpoint(BootstrapAdapter adapter, CoreEnvironment environment) {
+            super("default", null, adapter, false, environment);
         }
 
         DummyEndpoint(String hostname, CoreEnvironment environment) {
