@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Note that the {@link CoreEnvironment} is stateful, so be sure to call {@link #shutdown()} or
  * {@link #shutdownAsync()} properly.
  */
-public interface CoreEnvironment {
+public interface CoreEnvironment extends SecureEnvironment {
 
     /**
      * Shutdown the {@link CoreEnvironment} with the default timeout.
@@ -100,34 +100,6 @@ public interface CoreEnvironment {
      * @return true if DCP is enabled, false otherwise.
      */
     boolean dcpEnabled();
-
-    /**
-     * Identifies if SSL should be enabled.
-     *
-     * @return true if SSL is enabled, false otherwise.
-     */
-    boolean sslEnabled();
-
-    /**
-     * Identifies the filepath to the ssl keystore.
-     *
-     * @return the path to the keystore file.
-     */
-    String sslKeystoreFile();
-
-    /**
-     * The password which is used to protect the keystore.
-     *
-     * @return the keystore password.
-     */
-    String sslKeystorePassword();
-
-    /**
-     * Allows to directly configure a {@link KeyStore}.
-     *
-     * @return the keystore to use.
-     */
-    KeyStore sslKeystore();
 
     /**
      * If bootstrapping through HTTP is enabled.

@@ -16,6 +16,7 @@
 package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.SecureEnvironment;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -35,14 +36,14 @@ public class SSLEngineFactory {
     /**
      * The global environment which is shared.
      */
-    private final CoreEnvironment env;
+    private final SecureEnvironment env;
 
     /**
      * Create a new engine factory.
      *
      * @param env the config environment.
      */
-    public SSLEngineFactory(CoreEnvironment env) {
+    public SSLEngineFactory(SecureEnvironment env) {
         this.env = env;
     }
 
