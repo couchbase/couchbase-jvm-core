@@ -21,6 +21,7 @@ import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.message.observe.Observe;
 import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
+import com.couchbase.client.core.node.MemcachedHashingStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
@@ -385,4 +386,14 @@ public interface CoreEnvironment extends SecureEnvironment {
     @InterfaceStability.Experimental
     @InterfaceAudience.Public
     WaitStrategyFactory requestBufferWaitStrategy();
+
+    /**
+     * Allows to specify a custom strategy to hash memcached bucket documents.
+     *
+     * If you want to use this SDK side by side with 1.x SDKs on memcached buckets, configure the
+     * environment to use the {@link com.couchbase.client.core.node.LegacyMemcachedHashingStrategy} instead.
+     *
+     * @return the memcached hashing strategy.
+     */
+    MemcachedHashingStrategy memcachedHashingStrategy();
 }

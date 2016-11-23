@@ -16,7 +16,9 @@
 
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.service.ServiceType;
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,6 +36,7 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
 
     private final long rev;
     private final TreeMap<Long, NodeInfo> ketamaNodes;
+    private final CoreEnvironment env;
 
     /**
      * Creates a new {@link MemcachedBucketConfig}.
@@ -47,13 +50,15 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
      */
     @JsonCreator
     public DefaultMemcachedBucketConfig(
-        @JsonProperty("rev") long rev,
-        @JsonProperty("name") String name,
-        @JsonProperty("uri") String uri,
-        @JsonProperty("streamingUri") String streamingUri,
-        @JsonProperty("nodes") List<NodeInfo> nodeInfos,
-        @JsonProperty("nodesExt") List<PortInfo> portInfos) {
+            @JacksonInject("env")CoreEnvironment env,
+            @JsonProperty("rev") long rev,
+            @JsonProperty("name") String name,
+            @JsonProperty("uri") String uri,
+            @JsonProperty("streamingUri") String streamingUri,
+            @JsonProperty("nodes") List<NodeInfo> nodeInfos,
+            @JsonProperty("nodesExt") List<PortInfo> portInfos) {
         super(name, BucketNodeLocator.KETAMA, uri, streamingUri, nodeInfos, portInfos);
+        this.env = env;
         this.rev = rev;
         this.ketamaNodes = new TreeMap<Long, NodeInfo>();
         populateKetamaNodes();
@@ -89,7 +94,7 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
                 MessageDigest md5;
                 try {
                     md5 = MessageDigest.getInstance("MD5");
-                    md5.update(keyForNode(node.hostname(), i).getBytes(CharsetUtil.UTF_8));
+                    md5.update(env.memcachedHashingStrategy().hash(node, i).getBytes(CharsetUtil.UTF_8));
                     byte[] digest = md5.digest();
                     for (int j = 0; j < 4; j++) {
                         Long key = ((long) (digest[3 + j * 4] & 0xFF) << 24)
@@ -103,10 +108,6 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
                 }
             }
         }
-    }
-
-    private static String keyForNode(InetAddress hostname, int repetition) {
-        return hostname.getHostName() + "-" + repetition;
     }
 
     @Override

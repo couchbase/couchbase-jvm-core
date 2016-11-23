@@ -163,7 +163,7 @@ public abstract class AbstractLoader implements Loader {
                 @Override
                 public Tuple2<LoaderType, BucketConfig> call(final String rawConfig) {
                     LOGGER.debug("Got configuration from Service, attempting to parse.");
-                    BucketConfig config = BucketConfigParser.parse(rawConfig);
+                    BucketConfig config = BucketConfigParser.parse(rawConfig, env());
                     config.password(password);
                     return Tuple.create(loaderType, config);
                 }

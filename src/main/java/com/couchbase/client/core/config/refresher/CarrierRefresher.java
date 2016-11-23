@@ -65,7 +65,7 @@ public class CarrierRefresher extends AbstractRefresher {
      * @param cluster the cluster reference.
      */
     public CarrierRefresher(final CoreEnvironment environment, final ClusterFacade cluster) {
-        super(cluster);
+        super(environment, cluster);
         subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
 

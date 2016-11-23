@@ -15,8 +15,11 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
@@ -29,6 +32,8 @@ public class DefaultMemcachedBucketConfigTest {
 
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+
     /**
      * The config loaded has 4 nodes, but only two are data nodes. This tests checks that the ketama
      * nodes are only populated for those two nodes which include the binary service type.
@@ -36,7 +41,9 @@ public class DefaultMemcachedBucketConfigTest {
     @Test
     public void shouldOnlyUseDataNodesForKetama() throws Exception {
         String raw = Resources.read("memcached_mixed_sherlock.json", getClass());
-        MemcachedBucketConfig config = JSON_MAPPER.readValue(raw, MemcachedBucketConfig.class);
+        InjectableValues inject = new InjectableValues.Std()
+            .addValue("env", environment);
+        MemcachedBucketConfig config = JSON_MAPPER.readerFor(MemcachedBucketConfig.class).with(inject).readValue(raw);
 
         assertEquals(4, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {

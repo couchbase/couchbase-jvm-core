@@ -17,6 +17,8 @@ package com.couchbase.client.core.config.refresher;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
@@ -46,6 +48,9 @@ import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
  */
 public class HttpRefresherTest {
 
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+
+
     @Test
     public void shouldPublishNewBucketConfiguration() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
@@ -61,7 +66,7 @@ public class HttpRefresherTest {
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(response);
 
-        HttpRefresher refresher = new HttpRefresher(cluster);
+        HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs().subscribe(new Action1<BucketConfig>() {
@@ -96,7 +101,7 @@ public class HttpRefresherTest {
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(failingResponse, successResponse);
 
-        HttpRefresher refresher = new HttpRefresher(cluster);
+        HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs().subscribe(new Action1<BucketConfig>() {
@@ -134,7 +139,7 @@ public class HttpRefresherTest {
 
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(failingResponse, successResponse);
 
-        HttpRefresher refresher = new HttpRefresher(cluster);
+        HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs().subscribe(new Action1<BucketConfig>() {
@@ -167,7 +172,7 @@ public class HttpRefresherTest {
         );
         when(cluster.send(isA(BucketStreamingRequest.class))).thenReturn(response);
 
-        HttpRefresher refresher = new HttpRefresher(cluster);
+        HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs().subscribe(new Action1<BucketConfig>() {

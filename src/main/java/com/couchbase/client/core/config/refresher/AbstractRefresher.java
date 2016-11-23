@@ -20,6 +20,7 @@ import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import rx.Observable;
@@ -56,12 +57,16 @@ public abstract  class AbstractRefresher implements Refresher {
 
     private final Map<String, String> registrations;
 
+    private final CoreEnvironment env;
+
     /**
      * Creates a new {@link AbstractRefresher}.
      *
+     * @param env the environment
      * @param cluster the cluster reference.
      */
-    protected AbstractRefresher(final ClusterFacade cluster) {
+    protected AbstractRefresher(final CoreEnvironment env, final ClusterFacade cluster) {
+        this.env = env;
         this.configStream = PublishSubject.<BucketConfig>create().toSerialized();
         this.cluster = cluster;
         registrations = new ConcurrentHashMap<String, String>();
@@ -100,7 +105,7 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     protected void pushConfig(final String config) {
         try {
-            configStream.onNext(BucketConfigParser.parse(config));
+            configStream.onNext(BucketConfigParser.parse(config, env));
         } catch (CouchbaseException e) {
             LOGGER.warn("Exception while pushing new configuration - ignoring.", e);
         }

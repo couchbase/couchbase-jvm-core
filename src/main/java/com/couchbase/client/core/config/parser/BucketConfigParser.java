@@ -17,16 +17,21 @@ package com.couchbase.client.core.config.parser;
 
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
 /**
- * .
+ * An abstraction over the bucket parser which takes a raw config as a string and turns it into a
+ * {@link BucketConfig}.
  *
  * @author Michael Nitschinger
+ * @since 2.0.0
  */
 public final class BucketConfigParser {
+
     /**
      * Jackson object mapper for JSON parsing.
      */
@@ -38,9 +43,11 @@ public final class BucketConfigParser {
      * @param input the raw string input.
      * @return the parsed bucket configuration.
      */
-    public static BucketConfig parse(final String input) {
+    public static BucketConfig parse(final String input, final CoreEnvironment env) {
         try {
-            return OBJECT_MAPPER.readValue(input, BucketConfig.class);
+            InjectableValues inject = new InjectableValues.Std()
+                    .addValue("env", env);
+            return OBJECT_MAPPER.readerFor(BucketConfig.class).with(inject).readValue(input);
         } catch (IOException e) {
             throw new CouchbaseException("Could not parse configuration", e);
         }

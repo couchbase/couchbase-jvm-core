@@ -136,7 +136,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             new HashMap<LoaderType, Refresher>() {
                 {
                     put(LoaderType.Carrier, new CarrierRefresher(environment, cluster));
-                    put(LoaderType.HTTP, new HttpRefresher(cluster));
+                    put(LoaderType.HTTP, new HttpRefresher(environment, cluster));
                 }
             }
         );
@@ -334,7 +334,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             LOGGER.trace("Proposed raw config is {}", rawConfig);
         }
 
-        BucketConfig config = BucketConfigParser.parse(rawConfig);
+        BucketConfig config = BucketConfigParser.parse(rawConfig, environment);
         upsertBucketConfig(config);
     }
 

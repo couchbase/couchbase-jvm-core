@@ -39,6 +39,8 @@ import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.MetricsCollectorConfig;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.metrics.RuntimeMetricsCollector;
+import com.couchbase.client.core.node.DefaultMemcachedHashingStrategy;
+import com.couchbase.client.core.node.MemcachedHashingStrategy;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
@@ -102,6 +104,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int SOCKET_CONNECT_TIMEOUT = 1000;
     public static final boolean CALLBACKS_ON_IO_POOL = false;
     public static final long DISCONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(25);
+    public static final MemcachedHashingStrategy MEMCACHED_HASHING_STRATEGY =
+        DefaultMemcachedHashingStrategy.INSTANCE;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -210,6 +214,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean callbacksOnIoPool;
     private final long disconnectTimeout;
     private final WaitStrategyFactory requestBufferWaitStrategy;
+    private final MemcachedHashingStrategy memcachedHashingStrategy;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -271,6 +276,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         callbacksOnIoPool = booleanPropertyOr("callbacksOnIoPool", builder.callbacksOnIoPool);
         disconnectTimeout = longPropertyOr("disconnectTimeout", builder.disconnectTimeout);
         sslKeystore = builder.sslKeystore;
+        memcachedHashingStrategy = builder.memcachedHashingStrategy;
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -723,6 +729,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return requestBufferWaitStrategy;
     }
 
+    @Override
+    public MemcachedHashingStrategy memcachedHashingStrategy() {
+        return memcachedHashingStrategy;
+    }
+
     public static int instanceCounter() {
         return instanceCounter;
     }
@@ -772,6 +783,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean callbacksOnIoPool = CALLBACKS_ON_IO_POOL;
         private long disconnectTimeout = DISCONNECT_TIMEOUT;
         private WaitStrategyFactory requestBufferWaitStrategy;
+        private MemcachedHashingStrategy memcachedHashingStrategy = MEMCACHED_HASHING_STRATEGY;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1259,6 +1271,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        /**
+         * Sets a custom memcached node hashing strategy, mainly used for compatibility with other clients.
+         *
+         * @param memcachedHashingStrategy the strategy to use.
+         */
+        public Builder memcachedHashingStrategy(MemcachedHashingStrategy memcachedHashingStrategy) {
+            this.memcachedHashingStrategy = memcachedHashingStrategy;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1298,6 +1320,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         if (coreSchedulerShutdownHook == null || coreSchedulerShutdownHook instanceof NoOpShutdownHook) {
             sb.append("!unmanaged");
         }
+        sb.append(", memcachedHashingStrategy=").append(memcachedHashingStrategy.getClass().getSimpleName());
         sb.append(", eventBus=").append(eventBus.getClass().getSimpleName());
         sb.append(", packageNameAndVersion=").append(packageNameAndVersion);
         sb.append(", dcpEnabled=").append(dcpEnabled);
