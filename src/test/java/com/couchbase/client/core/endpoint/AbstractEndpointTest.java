@@ -231,7 +231,7 @@ public class AbstractEndpointTest {
         }
 
         DummyEndpoint(String hostname, CoreEnvironment environment) {
-            super(hostname, "default", null, 0, environment, null, false);
+            super(hostname, "default", null, 0, environment, null, false, environment.ioPool());
         }
 
         @Override

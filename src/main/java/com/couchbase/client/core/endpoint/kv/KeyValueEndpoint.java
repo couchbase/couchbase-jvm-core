@@ -42,7 +42,8 @@ public class KeyValueEndpoint extends AbstractEndpoint {
      */
     public KeyValueEndpoint(final String hostname, final String bucket, final String password, int port,
         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, responseBuffer, false);
+        super(hostname, bucket, password, port, env, responseBuffer, false,
+                env.kvIoPool() == null ? env.ioPool() : env.kvIoPool());
     }
 
 

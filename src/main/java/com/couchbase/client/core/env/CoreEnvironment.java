@@ -81,11 +81,40 @@ public interface CoreEnvironment extends SecureEnvironment {
     Observable<Boolean> shutdownAsync();
 
     /**
-     * Returns the IO pool for the underlying IO framework.
+     * Returns the IO pool for the underlying IO framework, used as the default pool if not overridden
+     * for the individual services.
      *
-     * @return the IO pool, shared across resources.
+     * @return the default IO pool, shared across resources.
      */
     EventLoopGroup ioPool();
+
+    /**
+     * If set returns the IO Pool for the KV service, if not returns null.
+     *
+     * @return the KV IO pool if set, null otherwise.
+     */
+    EventLoopGroup kvIoPool();
+
+    /**
+     * If set returns the IO Pool for the View service, if not returns null.
+     *
+     * @return the view IO pool if set, null otherwise.
+     */
+    EventLoopGroup viewIoPool();
+
+    /**
+     * If set returns the IO Pool for the query service, if not returns null.
+     *
+     * @return the query IO pool if set, null otherwise.
+     */
+    EventLoopGroup queryIoPool();
+
+    /**
+     * If set returns the IO Pool for the search service, if not returns null.
+     *
+     * @return the search IO pool if set, null otherwise.
+     */
+    EventLoopGroup searchIoPool();
 
     /**
      * Returns the scheduler which should be used for all core actions that need to happen

@@ -15,11 +15,14 @@
  */
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.env.resources.NoOpShutdownHook;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.system.TooManyEnvironmentsEvent;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalEventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Test;
 import rx.functions.Action1;
 import rx.functions.Actions;
@@ -36,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultCoreEnvironmentTest {
@@ -215,6 +219,32 @@ public class DefaultCoreEnvironmentTest {
         env2.shutdown();
 
         assertTrue(evtCount.get() > 1);
+    }
+
+    @Test
+    public void shouldNullServicePoolsIfNotOverridden() {
+        CoreEnvironment env = DefaultCoreEnvironment.create();
+        assertNull(env.kvIoPool());
+        assertNull(env.viewIoPool());
+        assertNull(env.searchIoPool());
+        assertNull(env.queryIoPool());
+        env.shutdown();
+    }
+
+    @Test
+    public void shouldOverrideAndShutdownServicePools() {
+        EventLoopGroup elg = new NioEventLoopGroup();
+        CoreEnvironment env = DefaultCoreEnvironment.builder()
+            .kvIoPool(elg, new NoOpShutdownHook())
+            .viewIoPool(elg, new NoOpShutdownHook())
+            .searchIoPool(elg, new NoOpShutdownHook())
+            .queryIoPool(elg, new NoOpShutdownHook())
+            .build();
+
+        env.shutdown();
+        assertFalse(elg.isShutdown());
+        elg.shutdownGracefully().awaitUninterruptibly(3000);
+        assertTrue(elg.isShutdown());
     }
 
 }

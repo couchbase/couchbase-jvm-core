@@ -38,7 +38,8 @@ public class ViewEndpoint extends AbstractEndpoint {
      */
     public ViewEndpoint(final String hostname, String bucket, String password, int port, final CoreEnvironment env,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, responseBuffer, false);
+        super(hostname, bucket, password, port, env, responseBuffer, false,
+                env.viewIoPool() == null ? env.ioPool() : env.viewIoPool());
     }
 
     @Override
