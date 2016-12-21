@@ -24,6 +24,7 @@ package com.couchbase.client.core;
 public class DocumentConcurrentlyModifiedException extends CouchbaseException {
 
     public DocumentConcurrentlyModifiedException() {
+        super();
     }
 
     public DocumentConcurrentlyModifiedException(String message) {

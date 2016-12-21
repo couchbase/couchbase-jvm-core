@@ -25,6 +25,7 @@ package com.couchbase.client.core;
 public class ServiceNotAvailableException extends CouchbaseException {
 
     public ServiceNotAvailableException() {
+        super();
     }
 
     public ServiceNotAvailableException(String message) {
