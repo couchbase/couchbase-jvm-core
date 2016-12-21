@@ -20,6 +20,7 @@ import com.couchbase.client.core.CouchbaseException;
 public class ConfigurationException extends CouchbaseException {
 
     public ConfigurationException() {
+        super();
     }
 
     public ConfigurationException(String message) {
