@@ -503,10 +503,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * endpoint is in a connected or connecting state).
      */
     public void notifyChannelInactive() {
-        LOGGER.debug(logIdent(channel, this) + "Got notified from Channel as inactive.");
         if (isTransient) {
             return;
         }
+        LOGGER.info(logIdent(channel, this) + "Got notified from Channel as inactive, " +
+                "attempting reconnect.");
 
         if (state() != LifecycleState.DISCONNECTED && state() != LifecycleState.DISCONNECTING) {
             signalConfigReload();
