@@ -60,6 +60,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.couchbase.client.core.utils.Observables.failSafe;
+
 /**
  * The {@link RequestHandler} is responsible for adding and removing {@link Node}s as well as dispatching
  * {@link Service} management operations. Its main purpose though is to receive incoming {@link CouchbaseRequest}s
@@ -222,7 +224,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         if (!(request instanceof BootstrapMessage)) {
             BucketConfig bucketConfig = config == null ? null : config.bucketConfig(request.bucket());
             if (config == null || (request.bucket() != null  && bucketConfig == null)) {
-                request.observable().onError(new BucketClosedException(request.bucket() + " has been closed"));
+                failSafe(environment.scheduler(), true, request.observable(),
+                        new BucketClosedException(request.bucket() + " has been closed"));
                 return;
             }
 
@@ -230,7 +233,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             try {
                 checkFeaturesForRequest(request, bucketConfig);
             } catch (ServiceNotAvailableException e) {
-                request.observable().onError(e);
+                failSafe(environment.scheduler(), true, request.observable(), e);
                 return;
             }
         }

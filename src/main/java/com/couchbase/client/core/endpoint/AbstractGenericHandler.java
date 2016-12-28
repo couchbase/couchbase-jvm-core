@@ -31,7 +31,6 @@ import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.EventSink;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -40,13 +39,11 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -59,6 +56,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+
+import static com.couchbase.client.core.utils.Observables.failSafe;
 
 /**
  * Generic handler which acts as the common base type for all implementing handlers.
@@ -250,9 +249,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 }
             }
         } catch (CouchbaseException e) {
-            currentRequest.observable().onError(e);
+            failSafe(env().scheduler(), moveResponseOut, currentRequest.observable(), e);
         } catch (Exception e) {
-            currentRequest.observable().onError(new CouchbaseException(e));
+            failSafe(env().scheduler(), moveResponseOut, currentRequest.observable(), new CouchbaseException(e));
         }
 
         if (currentDecodingState == DecodingState.FINISHED) {
@@ -499,7 +498,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             REQUEST req = sentRequestQueue.poll();
             try {
                 sideEffectRequestToCancel(req);
-                req.observable().onError(new RequestCancelledException("Request cancelled in-flight."));
+                failSafe(env().scheduler(), moveResponseOut, req.observable(),
+                        new RequestCancelledException("Request cancelled in-flight."));
             } catch (Exception ex) {
                 LOGGER.info("Exception thrown while cancelling outstanding operation: " + req, ex);
             }
