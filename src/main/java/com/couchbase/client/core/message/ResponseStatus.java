@@ -76,6 +76,10 @@ public enum ResponseStatus {
     INVALID_ARGUMENTS,
 
     /**
+     * Access error. It can also happen if some operations are not supported like subdoc.
+     */
+    ACCESS_ERROR,
+    /**
      * The remote service failed for an internal reason.
      */
     INTERNAL_ERROR,
