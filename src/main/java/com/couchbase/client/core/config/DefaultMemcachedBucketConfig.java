@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2016-2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.ConfigParserEnvironment;
 import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -36,11 +36,12 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
 
     private final long rev;
     private final TreeMap<Long, NodeInfo> ketamaNodes;
-    private final CoreEnvironment env;
+    private final ConfigParserEnvironment env;
 
     /**
      * Creates a new {@link MemcachedBucketConfig}.
      *
+     * @param env the bootstrap part of environment object.
      * @param rev the revision of the config.
      * @param name the name of the bucket.
      * @param uri the URI for this bucket.
@@ -50,7 +51,7 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
      */
     @JsonCreator
     public DefaultMemcachedBucketConfig(
-            @JacksonInject("env")CoreEnvironment env,
+            @JacksonInject("env")ConfigParserEnvironment env,
             @JsonProperty("rev") long rev,
             @JsonProperty("name") String name,
             @JsonProperty("uri") String uri,
