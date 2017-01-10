@@ -15,8 +15,10 @@
  */
 package com.couchbase.client.core.endpoint.config;
 
+import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
@@ -27,6 +29,7 @@ import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
+import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -49,7 +52,10 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
+import rx.subjects.AsyncSubject;
+import rx.subjects.Subject;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;
@@ -106,10 +112,11 @@ public class ConfigHandlerTest {
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
+        when(environment.retryStrategy()).thenReturn(FailFastRetryStrategy.INSTANCE);
 
         eventSink = new CollectingResponseEventSink();
         requestQueue = new ArrayDeque<ConfigRequest>();
-        handler = new ConfigHandler(endpoint, eventSink, requestQueue, true);
+        handler = new ConfigHandler(endpoint, eventSink, requestQueue, true, false);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -475,6 +482,35 @@ public class ConfigHandlerTest {
         assertNotNull(outbound.headers().get(HttpHeaders.Names.AUTHORIZATION));
         assertTrue(outbound.headers().contains(HttpHeaders.Names.HOST));
         assertEquals("Couchbase Client Mock", outbound.headers().get(HttpHeaders.Names.USER_AGENT));
+    }
+
+    @Test
+    public void shouldHavePipeliningDisabled() {
+        Subject<CouchbaseResponse,CouchbaseResponse> obs1 = AsyncSubject.create();
+        GetDesignDocumentsRequest requestMock1 = mock(GetDesignDocumentsRequest.class);
+        when(requestMock1.path()).thenReturn("");
+        when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.password()).thenReturn("");
+        when(requestMock1.observable()).thenReturn(obs1);
+
+        Subject<CouchbaseResponse,CouchbaseResponse> obs2 = AsyncSubject.create();
+        GetDesignDocumentsRequest requestMock2 = mock(GetDesignDocumentsRequest.class);
+        when(requestMock1.path()).thenReturn("");
+        when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.password()).thenReturn("");
+        when(requestMock2.observable()).thenReturn(obs2);
+
+
+        TestSubscriber<CouchbaseResponse> t1 = TestSubscriber.create();
+        TestSubscriber<CouchbaseResponse> t2 = TestSubscriber.create();
+
+        obs1.subscribe(t1);
+        obs2.subscribe(t2);
+
+        channel.writeOutbound(requestMock1, requestMock2);
+
+        t1.assertNotCompleted();
+        t2.assertError(RequestCancelledException.class);
     }
 
 }

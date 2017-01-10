@@ -45,6 +45,6 @@ public class SearchEndpoint extends AbstractEndpoint {
             pipeline.addLast(new IdleStateHandler(environment().keepAliveInterval(), 0, 0, TimeUnit.MILLISECONDS));
         }
         pipeline.addLast(new HttpClientCodec())
-                .addLast(new SearchHandler(this, responseBuffer(), false));
+                .addLast(new SearchHandler(this, responseBuffer(), false, false));
     }
 }

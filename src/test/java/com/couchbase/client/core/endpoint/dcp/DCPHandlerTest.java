@@ -69,7 +69,7 @@ public class DCPHandlerTest {
         requestQueue = new ArrayDeque<DCPRequest>();
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(DefaultCoreEnvironment.builder().dcpEnabled(true).build());
-        channel = new EmbeddedChannel(new DCPHandler(endpoint, eventSink, requestQueue, true));
+        channel = new EmbeddedChannel(new DCPHandler(endpoint, eventSink, requestQueue, true, true));
     }
 
     @Test
