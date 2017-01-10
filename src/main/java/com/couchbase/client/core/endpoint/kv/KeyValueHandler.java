@@ -162,8 +162,9 @@ public class KeyValueHandler
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
-    public KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, boolean isTransient) {
-        super(endpoint, responseBuffer, isTransient);
+    public KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, boolean isTransient,
+                           final boolean pipeline) {
+        super(endpoint, responseBuffer, isTransient, pipeline);
     }
 
     /**
@@ -173,8 +174,8 @@ public class KeyValueHandler
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<BinaryRequest> queue, boolean isTransient) {
-        super(endpoint, responseBuffer, queue, isTransient);
+    KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<BinaryRequest> queue, boolean isTransient, final boolean pipeline) {
+        super(endpoint, responseBuffer, queue, isTransient, pipeline);
     }
 
     @Override

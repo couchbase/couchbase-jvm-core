@@ -48,7 +48,7 @@ public class ViewEndpoint extends AbstractEndpoint {
         }
         pipeline
             .addLast(new HttpClientCodec())
-            .addLast(new ViewHandler(this, responseBuffer(), false));
+            .addLast(new ViewHandler(this, responseBuffer(), false, false));
     }
 
 }

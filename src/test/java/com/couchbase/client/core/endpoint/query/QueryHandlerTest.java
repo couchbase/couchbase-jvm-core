@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.query;
 
+import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.DecodingState;
@@ -30,6 +31,7 @@ import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.query.RawQueryRequest;
 import com.couchbase.client.core.message.query.RawQueryResponse;
+import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.util.Resources;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
@@ -60,6 +62,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import rx.functions.Action1;
+import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
@@ -137,12 +140,13 @@ public class QueryHandlerTest {
         when(environment.scheduler()).thenReturn(Schedulers.computation());
         when(environment.maxRequestLifetime()).thenReturn(10000L);
         when(environment.autoreleaseAfter()).thenReturn(2000L);
+        when(environment.retryStrategy()).thenReturn(FailFastRetryStrategy.INSTANCE);
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
 
         queue = new ArrayDeque<QueryRequest>();
-        handler = new QueryHandler(endpoint, responseRingBuffer, queue, false);
+        handler = new QueryHandler(endpoint, responseRingBuffer, queue, false, false);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -758,7 +762,7 @@ public class QueryHandlerTest {
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
 
-        QueryHandler testHandler = new QueryHandler(endpoint, responseRingBuffer, queue, false) {
+        QueryHandler testHandler = new QueryHandler(endpoint, responseRingBuffer, queue, false, false) {
             @Override
             public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
                 super.channelRegistered(ctx);
@@ -1531,5 +1535,34 @@ public class QueryHandlerTest {
         softly.assertThat(handler.getDecodingState()).isEqualTo(DecodingState.INITIAL);
         softly.assertThat(handler.getQueryParsingState()).isEqualTo(QueryHandler.QUERY_STATE_INITIAL);
         softly.assertAll();
+    }
+
+    @Test
+    public void shouldHavePipeliningDisabled() {
+        Subject<CouchbaseResponse,CouchbaseResponse> obs1 = AsyncSubject.create();
+        RawQueryRequest requestMock1 = mock(RawQueryRequest.class);
+        when(requestMock1.query()).thenReturn("SELECT * FROM `foo`");
+        when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.password()).thenReturn("");
+        when(requestMock1.observable()).thenReturn(obs1);
+
+        Subject<CouchbaseResponse,CouchbaseResponse> obs2 = AsyncSubject.create();
+        RawQueryRequest requestMock2 = mock(RawQueryRequest.class);
+        when(requestMock2.query()).thenReturn("SELECT * FROM `foo`");
+        when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.password()).thenReturn("");
+        when(requestMock2.observable()).thenReturn(obs2);
+
+
+        TestSubscriber<CouchbaseResponse> t1 = TestSubscriber.create();
+        TestSubscriber<CouchbaseResponse> t2 = TestSubscriber.create();
+
+        obs1.subscribe(t1);
+        obs2.subscribe(t2);
+
+        channel.writeOutbound(requestMock1, requestMock2);
+
+        t1.assertNotCompleted();
+        t2.assertError(RequestCancelledException.class);
     }
 }

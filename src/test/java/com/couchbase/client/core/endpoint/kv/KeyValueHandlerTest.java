@@ -16,6 +16,7 @@
 package com.couchbase.client.core.endpoint.kv;
 
 import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
@@ -56,7 +57,10 @@ import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import rx.observers.TestSubscriber;
+import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
+import rx.subjects.Subject;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;
@@ -95,6 +99,13 @@ public class KeyValueHandlerTest {
      */
     private static final byte[] KEY = "key".getBytes(CHARSET);
 
+    private static final CoreEnvironment ENVIRONMENT;
+
+    static {
+        ENVIRONMENT = mock(CoreEnvironment.class);
+        when(ENVIRONMENT.scheduler()).thenReturn(Schedulers.computation());
+    }
+
     /**
      * The channel in which the handler is tested.
      */
@@ -110,11 +121,18 @@ public class KeyValueHandlerTest {
      */
     private CollectingResponseEventSink eventSink;
 
+    /**
+     *  A mock endpoint.
+     */
+    private AbstractEndpoint endpoint;
+
     @Before
     public void setup() {
         eventSink = new CollectingResponseEventSink();
         requestQueue = new ArrayDeque<BinaryRequest>();
-        channel = new EmbeddedChannel(new KeyValueHandler(mock(AbstractEndpoint.class), eventSink, requestQueue, false));
+        endpoint = mock(AbstractEndpoint.class);
+        when(endpoint.environment()).thenReturn(ENVIRONMENT);
+        channel = new EmbeddedChannel(new KeyValueHandler(endpoint, eventSink, requestQueue, false, true));
     }
 
     @After
@@ -869,7 +887,7 @@ public class KeyValueHandlerTest {
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
 
         KeyValueHandler testHandler = new KeyValueHandler(mock(AbstractEndpoint.class), eventSink,
-                requestQueue, false) {
+                requestQueue, false, true) {
 
             @Override
             public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -913,6 +931,34 @@ public class KeyValueHandlerTest {
 
         assertEquals(2, keepAliveEventCounter.get());
         assertEquals(ResponseStatus.OUT_OF_MEMORY, keepAliveResponse.status());
+    }
+
+    @Test
+    public void shouldHavePipeliningEnabled() {
+        Subject<CouchbaseResponse,CouchbaseResponse> obs1 = AsyncSubject.create();
+        GetRequest requestMock1 = mock(GetRequest.class);
+        when(requestMock1.keyBytes()).thenReturn("hello".getBytes());
+        when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.observable()).thenReturn(obs1);
+
+        Subject<CouchbaseResponse,CouchbaseResponse> obs2 = AsyncSubject.create();
+        GetRequest requestMock2 = mock(GetRequest.class);
+        when(requestMock2.keyBytes()).thenReturn("hello".getBytes());
+
+        when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.observable()).thenReturn(obs2);
+
+
+        TestSubscriber<CouchbaseResponse> t1 = TestSubscriber.create();
+        TestSubscriber<CouchbaseResponse> t2 = TestSubscriber.create();
+
+        obs1.subscribe(t1);
+        obs2.subscribe(t2);
+
+        channel.writeOutbound(requestMock1, requestMock2);
+
+        t1.assertNotCompleted();
+        t2.assertNotCompleted();
     }
 
 }

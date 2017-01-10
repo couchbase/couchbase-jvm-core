@@ -153,14 +153,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     private final int sentQueueLimit;
 
+    private final boolean pipeline;
+
     /**
      * Creates a new {@link AbstractGenericHandler} with the default queue.
      *
      * @param endpoint the endpoint reference.
      * @param responseBuffer the response buffer.
      */
-    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer, final boolean isTransient) {
-        this(endpoint, responseBuffer, new ArrayDeque<REQUEST>(), isTransient);
+    protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer, final boolean isTransient, final boolean pipeline) {
+        this(endpoint, responseBuffer, new ArrayDeque<REQUEST>(), isTransient, pipeline);
     }
 
     /**
@@ -171,7 +173,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param queue the queue.
      */
     protected AbstractGenericHandler(final AbstractEndpoint endpoint, final EventSink<ResponseEvent> responseBuffer,
-        final Queue<REQUEST> queue, final boolean isTransient) {
+        final Queue<REQUEST> queue, final boolean isTransient, final boolean pipeline) {
+        this.pipeline = pipeline;
         this.endpoint = endpoint;
         this.responseBuffer = responseBuffer;
         this.sentRequestQueue = queue;
@@ -219,6 +222,14 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (!pipeline && (!sentRequestQueue.isEmpty() || currentDecodingState != DecodingState.INITIAL)) {
+            if (traceEnabled) {
+                LOGGER.trace("Rescheduling {} because pipelining disable and a request is in-flight.", msg);
+            }
+            RetryHelper.retryOrCancel(env(), (CouchbaseRequest) msg, responseBuffer);
+            return;
+        }
+
         if (sentRequestQueue.size() < sentQueueLimit) {
             super.write(ctx, msg, promise);
         } else {
