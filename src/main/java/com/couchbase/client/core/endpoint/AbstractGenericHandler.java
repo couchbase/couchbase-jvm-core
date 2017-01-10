@@ -535,6 +535,10 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
+            if (!shouldSendKeepAlive()) {
+                return;
+            }
+
             CouchbaseRequest keepAlive = createKeepAliveRequest();
             if (keepAlive != null) {
                 keepAlive.observable().subscribe(new KeepAliveResponseAction(ctx));
@@ -548,6 +552,21 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         } else {
             super.userEventTriggered(ctx, evt);
         }
+    }
+
+    /**
+     * Helper method to check if conditions are met to send a keepalive right now.
+     *
+     * @return true if keepalive can be sent, false otherwise.
+     */
+    private boolean shouldSendKeepAlive() {
+        if (pipeline) {
+            return true; // always send if pipelining is enabled
+        }
+
+        // if pipelining is disabled, only send if the request queue is empty and no response
+        // is currently being decoded.
+        return sentRequestQueue.isEmpty() && currentDecodingState == DecodingState.INITIAL;
     }
 
     /**
