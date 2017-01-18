@@ -72,7 +72,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
             features.add(ServerFeatures.MUTATION_SEQNO);
         }
         features.add(tcpNodelay ? ServerFeatures.TCPNODELAY : ServerFeatures.TCPDELAY);
-
+        features.add(ServerFeatures.XATTR);
     }
 
     @Override

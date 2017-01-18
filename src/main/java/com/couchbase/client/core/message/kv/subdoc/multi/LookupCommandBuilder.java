@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@ package com.couchbase.client.core.message.kv.subdoc.multi;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-
+import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiLookupRequest;
 /**
- * A single lookup description inside a TODO.
+ * Builder for {@link LookupCommand}
  *
- * @author Simon Baslé
- * @since 1.2
+ * @author Subhashni Balakrishnan
+ * @since 1.4.2
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-public class LookupCommand {
+public class LookupCommandBuilder {
 
     private final Lookup lookup;
     private final String path;
@@ -39,16 +39,13 @@ public class LookupCommand {
      * @param lookup the lookup type.
      * @param path the path to look-up inside the document.
      */
-    @Deprecated
-    public LookupCommand(Lookup lookup, String path) {
+    public LookupCommandBuilder(Lookup lookup, String path) {
         this.lookup = lookup;
         this.path = path;
     }
 
-    protected LookupCommand(LookupCommandBuilder builder) {
-        this.lookup = builder.lookup();
-        this.path = builder.path();
-        this.attributeAccess = builder.attributeAccess();
+    public LookupCommand build(){
+        return new LookupCommand(this);
     }
 
     public Lookup lookup() {
@@ -63,8 +60,21 @@ public class LookupCommand {
         return lookup.opCode();
     }
 
-    public boolean attributeAccess() {
-        return this.attributeAccess;
+    /**
+     * Access to extended attribute section of the couchbase document
+     *
+     * @return true if accessing extended attribute section
+     */
+    public boolean attributeAccess() { return this.attributeAccess; }
+
+    /**
+     * Access to extended attribute section of the couchbase document
+     *
+     * @return builder with true set for attribute access
+     */
+    public LookupCommandBuilder attributeAccess(boolean attributeAccess) {
+        this.attributeAccess = attributeAccess;
+        return this;
     }
 
 }

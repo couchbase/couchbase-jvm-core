@@ -109,11 +109,14 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
 
             ByteBuf commandBuf = Unpooled.buffer(4 + pathLength + command.fragment().readableBytes());
             commandBuf.writeByte(command.opCode());
+            byte flags = 0;
             if (command.createIntermediaryPath()) {
-                commandBuf.writeByte(KeyValueHandler.SUBDOC_BITMASK_MKDIR_P); //0 | SUBDOC_BITMASK_MKDIR_P
-            } else {
-                commandBuf.writeByte(0);
+                flags |= KeyValueHandler.SUBDOC_BITMASK_MKDIR_P;
             }
+            if (command.attributeAccess()) {
+                flags |= KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
+            }
+            commandBuf.writeByte(flags);
             commandBuf.writeShort(pathLength);
             commandBuf.writeInt(command.fragment().readableBytes());
             commandBuf.writeBytes(pathBytes);

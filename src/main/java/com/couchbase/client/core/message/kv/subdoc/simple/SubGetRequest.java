@@ -30,6 +30,8 @@ import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 @InterfaceAudience.Public
 public class SubGetRequest extends AbstractSubdocRequest {
 
+    private boolean attributeAccess;
+
     /**
      * Creates a new {@link SubGetRequest}.
      *
@@ -44,7 +46,9 @@ public class SubGetRequest extends AbstractSubdocRequest {
         if (path.isEmpty()) {
             cleanUpAndThrow(EXCEPTION_EMPTY_PATH);
         }
+        this.attributeAccess = false;
     }
+
 
     /**
      * {@inheritDoc}
@@ -53,5 +57,13 @@ public class SubGetRequest extends AbstractSubdocRequest {
     @Override
     public byte opcode() {
         return KeyValueHandler.OP_SUB_GET;
+    }
+
+    public boolean attributeAccess() {
+        return this.attributeAccess;
+    }
+
+    public void attributeAccess(boolean attributeAccess) {
+        this.attributeAccess = attributeAccess;
     }
 }

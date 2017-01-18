@@ -54,7 +54,14 @@ public enum ServerFeatures {
      *
      * @since Couchbase Server 4.0
      */
-    TCPDELAY((short) 0x05);
+    TCPDELAY((short) 0x05),
+
+    /**
+     * Enable xattr support
+     *
+     * @since  Couchbase Server Spock (5.0)
+     */
+    XATTR((short) 0x06);
 
     /**
      * The actual byte representation on the wire.
@@ -80,6 +87,7 @@ public enum ServerFeatures {
             case 0x03: return TCPNODELAY;
             case 0x04: return MUTATION_SEQNO;
             case 0x05: return TCPDELAY;
+            case 0x06: return XATTR;
             default: throw new IllegalStateException("Unrequested server feature: " + input);
         }
     }

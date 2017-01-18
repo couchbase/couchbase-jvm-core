@@ -40,6 +40,8 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
 
     private boolean createIntermediaryPath;
 
+    private boolean attributeAccess;
+
     private long cas;
 
     /**
@@ -75,7 +77,6 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
         super(key, path, bucket, observable, fragment);
         this.expiration = expiration;
         this.fragment = fragment;
-        this.createIntermediaryPath = false;
         this.cas = cas;
     }
 
@@ -101,6 +102,16 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
      */
     public void createIntermediaryPath(boolean createIntermediaryPath) {
         this.createIntermediaryPath = createIntermediaryPath;
+    }
+
+    @Override
+    public boolean attributeAccess() {
+        return this.attributeAccess;
+    }
+
+
+    public void attributeAccess(boolean attributeAccess) {
+        this.attributeAccess = attributeAccess;
     }
 
     @Override

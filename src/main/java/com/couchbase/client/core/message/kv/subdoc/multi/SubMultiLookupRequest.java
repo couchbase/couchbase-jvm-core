@@ -28,6 +28,8 @@ import io.netty.util.CharsetUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
+
 /**
  * Concrete implementation of a {@link BinarySubdocMultiLookupRequest}.
  *
@@ -37,7 +39,6 @@ import java.util.List;
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
 public class SubMultiLookupRequest extends AbstractKeyValueRequest implements BinarySubdocMultiLookupRequest {
-
     private final List<LookupCommand> commands;
     private final ByteBuf encoded;
 
@@ -46,6 +47,7 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
      *
      * @param key      the key of the document to look into.
      * @param bucket   the bucket of the document.
+     * @param commands {@link LookupCommand} commands
      */
     public SubMultiLookupRequest(String key, String bucket, LookupCommand... commands) {
         super(key, bucket, null);
@@ -64,7 +66,12 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
 
             ByteBuf commandBuf = Unpooled.buffer(4 + pathLength); //FIXME a way of using the pooled allocator?
             commandBuf.writeByte(command.opCode());
-            commandBuf.writeByte(0); //no flags supported for lookup
+            //flags
+            if (command.attributeAccess()) {
+                commandBuf.writeByte(SUBDOC_FLAG_XATTR_PATH);
+            } else {
+                commandBuf.writeByte(0);
+            }
             commandBuf.writeShort(pathLength);
             //no value length
             commandBuf.writeBytes(pathBytes);

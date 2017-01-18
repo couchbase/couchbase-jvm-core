@@ -112,6 +112,12 @@ public class ResponseStatusConverter {
                 return ResponseStatus.SUBDOC_INVALID_COMBO;
             case ERR_SUBDOC_MULTI_PATH_FAILURE:
                 return ResponseStatus.SUBDOC_MULTI_PATH_FAILURE;
+            case ERR_SUBDOC_XATTR_INVALID_FLAG_COMBO:
+                return ResponseStatus.INTERNAL_ERROR;
+            case ERR_SUBDOC_XATTR_UNKNOWN_MACRO:
+                return ResponseStatus.SUBDOC_XATTR_UNKNOWN_MACRO;
+            case ERR_SUBDOC_XATTR_INVALID_KEY_COMBO:
+                return ResponseStatus.SUBDOC_XATTR_INVALID_KEY_COMBO;
             //== end of subdocument API codes ==
             default:
                 LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",

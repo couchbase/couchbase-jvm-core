@@ -180,7 +180,17 @@ public enum ResponseStatus {
      * Subdocument error indicating that, in a multi-specification, one or more commands failed to execute on a document
      * which exists (ie. the key was valid).
      */
-    SUBDOC_MULTI_PATH_FAILURE;
+    SUBDOC_MULTI_PATH_FAILURE,
+
+    /**
+     * Subdocument extended attribute error indicating the server couldn't expand the supplied macro
+     */
+    SUBDOC_XATTR_UNKNOWN_MACRO,
+
+    /**
+     * Subdocument extended attribute error indicating use of key paths from different namespaces
+     */
+    SUBDOC_XATTR_INVALID_KEY_COMBO;
 
     /**
      * Check if the current {@link ResponseStatus} is success.
