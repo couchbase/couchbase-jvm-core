@@ -22,6 +22,10 @@ import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.state.LifecycleState;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,11 +44,14 @@ public class PartitionSelectionStrategyTest {
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
+        when(endpoint1.isFree()).thenReturn(true);
         Endpoint endpoint2 = mock(Endpoint.class);
         when(endpoint2.isState(LifecycleState.CONNECTED)).thenReturn(true);
+        when(endpoint2.isFree()).thenReturn(true);
         Endpoint endpoint3 = mock(Endpoint.class);
         when(endpoint3.isState(LifecycleState.CONNECTED)).thenReturn(true);
-        Endpoint[] endpoints = new Endpoint[] {endpoint1, endpoint2, endpoint3};
+        when(endpoint3.isFree()).thenReturn(true);
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
 
         GetBucketConfigRequest request = mock(GetBucketConfigRequest.class);
         Endpoint selected = strategy.select(request, endpoints);
@@ -59,11 +66,14 @@ public class PartitionSelectionStrategyTest {
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
+        when(endpoint1.isFree()).thenReturn(true);
         Endpoint endpoint2 = mock(Endpoint.class);
         when(endpoint2.isState(LifecycleState.CONNECTED)).thenReturn(false);
+        when(endpoint2.isFree()).thenReturn(true);
         Endpoint endpoint3 = mock(Endpoint.class);
         when(endpoint3.isState(LifecycleState.CONNECTED)).thenReturn(true);
-        Endpoint[] endpoints = new Endpoint[] {endpoint1, endpoint2, endpoint3};
+        when(endpoint3.isFree()).thenReturn(true);
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
 
         GetRequest request = mock(GetRequest.class);
         when(request.partition()).thenReturn((short) -1);
@@ -79,11 +89,14 @@ public class PartitionSelectionStrategyTest {
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(true);
+        when(endpoint1.isFree()).thenReturn(true);
         Endpoint endpoint2 = mock(Endpoint.class);
         when(endpoint2.isState(LifecycleState.CONNECTED)).thenReturn(true);
+        when(endpoint2.isFree()).thenReturn(true);
         Endpoint endpoint3 = mock(Endpoint.class);
         when(endpoint3.isState(LifecycleState.CONNECTED)).thenReturn(true);
-        Endpoint[] endpoints = new Endpoint[] {endpoint1, endpoint2, endpoint3};
+        when(endpoint3.isFree()).thenReturn(true);
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
 
         GetRequest request = mock(GetRequest.class);
         when(request.partition()).thenReturn((short) 12);
@@ -101,11 +114,14 @@ public class PartitionSelectionStrategyTest {
 
         Endpoint endpoint1 = mock(Endpoint.class);
         when(endpoint1.isState(LifecycleState.CONNECTED)).thenReturn(false);
+        when(endpoint1.isFree()).thenReturn(true);
         Endpoint endpoint2 = mock(Endpoint.class);
         when(endpoint2.isState(LifecycleState.CONNECTED)).thenReturn(true);
+        when(endpoint2.isFree()).thenReturn(true);
         Endpoint endpoint3 = mock(Endpoint.class);
         when(endpoint3.isState(LifecycleState.CONNECTED)).thenReturn(true);
-        Endpoint[] endpoints = new Endpoint[] {endpoint1, endpoint2, endpoint3};
+        when(endpoint3.isFree()).thenReturn(true);
+        List<Endpoint> endpoints = Arrays.asList(endpoint1, endpoint2, endpoint3);
 
         GetRequest request = mock(GetRequest.class);
         when(request.partition()).thenReturn((short) 12);
@@ -120,7 +136,7 @@ public class PartitionSelectionStrategyTest {
     public void shouldReturnIfEmptyArrayPassedIn() {
         SelectionStrategy strategy = PartitionSelectionStrategy.INSTANCE;
 
-        Endpoint selected = strategy.select(mock(CouchbaseRequest.class),  new Endpoint[] {});
+        Endpoint selected = strategy.select(mock(CouchbaseRequest.class),  Collections.<Endpoint>emptyList());
         assertNull(selected);
     }
 }

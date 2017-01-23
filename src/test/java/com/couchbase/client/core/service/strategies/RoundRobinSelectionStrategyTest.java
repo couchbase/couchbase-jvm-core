@@ -23,6 +23,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
@@ -39,11 +42,16 @@ public class RoundRobinSelectionStrategyTest {
         Endpoint d = Mockito.mock(Endpoint.class);
         Endpoint e = Mockito.mock(Endpoint.class);
         when(a.isState(any(LifecycleState.class))).thenReturn(true);
+        when(a.isFree()).thenReturn(true);
         when(b.isState(any(LifecycleState.class))).thenReturn(true);
+        when(b.isFree()).thenReturn(true);
         when(c.isState(any(LifecycleState.class))).thenReturn(true);
+        when(c.isFree()).thenReturn(true);
         when(d.isState(any(LifecycleState.class))).thenReturn(true);
+        when(d.isFree()).thenReturn(true);
         when(e.isState(any(LifecycleState.class))).thenReturn(true);
-        Endpoint[] endpoints = new Endpoint[] { a, b, c, d, e };
+        when(e.isFree()).thenReturn(true);
+        List<Endpoint> endpoints = Arrays.asList(a, b, c, d, e);
         CouchbaseRequest request = Mockito.mock(CouchbaseRequest.class);
 
         strategy.setSkip(Integer.MAX_VALUE - 2);

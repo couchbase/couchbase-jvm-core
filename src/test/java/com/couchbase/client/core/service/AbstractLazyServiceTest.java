@@ -76,9 +76,9 @@ public class AbstractLazyServiceTest {
         when(endpoint.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(factory.create(host, bucket, password, port, env, null)).thenReturn(endpoint);
 
-        assertEquals(0, service.endpoints().length);
+        assertEquals(0, service.endpoints().size());
         assertEquals(LifecycleState.IDLE, service.connect().toBlocking().single());
-        assertEquals(0, service.endpoints().length);
+        assertEquals(0, service.endpoints().size());
 
         endpointStates.transitionState(LifecycleState.CONNECTING);
         endpointStates.transitionState(LifecycleState.CONNECTED);

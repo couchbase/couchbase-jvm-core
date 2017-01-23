@@ -50,4 +50,17 @@ public interface Endpoint extends Stateful<LifecycleState> {
      */
     void send(CouchbaseRequest request);
 
+    /**
+     * If this endpoint is free to take a request. This is especially important in non-pipelined
+     * endpoint cases since if a request is in-flight this will return false.
+     *
+     * @return true if free to accept a request, false otherwise.
+     */
+    boolean isFree();
+
+    /**
+     * Returns the timestamp of the last response completed.
+     */
+    long lastResponse();
+
 }

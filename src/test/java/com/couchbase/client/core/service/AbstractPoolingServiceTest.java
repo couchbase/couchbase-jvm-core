@@ -92,9 +92,9 @@ public class AbstractPoolingServiceTest {
 
         verify(endpoint1, times(1)).connect();
         verify(endpoint2, times(1)).connect();
-        assertTrue(service.endpoints().length == 2);
-        assertEquals(service.endpoints()[0], endpoint1);
-        assertEquals(service.endpoints()[1], endpoint2);
+        assertTrue(service.endpoints().size() == 2);
+        assertEquals(service.endpoints().get(0), endpoint1);
+        assertEquals(service.endpoints().get(1), endpoint2);
     }
 
     @Test
@@ -116,9 +116,9 @@ public class AbstractPoolingServiceTest {
         final AtomicReference<List> foundEndpoints = new AtomicReference<List>();
         SelectionStrategy strategy = new SelectionStrategy() {
             @Override
-            public Endpoint select(CouchbaseRequest request, Endpoint[] endpoints) {
-                foundEndpoints.set(Arrays.asList(endpoints));
-                return endpoints[0];
+            public Endpoint select(CouchbaseRequest request, List<Endpoint> endpoints) {
+                foundEndpoints.set(endpoints);
+                return endpoints.get(0);
             }
         };
 
@@ -179,7 +179,7 @@ public class AbstractPoolingServiceTest {
 
         int endpoints = 1;
         SelectionStrategy strategy = mock(SelectionStrategy.class);
-        when(strategy.select(any(CouchbaseRequest.class), any(Endpoint[].class))).thenReturn(null);
+        when(strategy.select(any(CouchbaseRequest.class), any(List.class))).thenReturn(null);
         InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
                 endpoints, strategy, null, factory);
 
@@ -206,7 +206,7 @@ public class AbstractPoolingServiceTest {
         }
 
         @Override
-        public Endpoint[] endpoints() {
+        public List<Endpoint> endpoints() {
             return super.endpoints();
         }
     }

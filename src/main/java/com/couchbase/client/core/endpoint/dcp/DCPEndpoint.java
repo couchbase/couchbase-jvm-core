@@ -35,7 +35,7 @@ public class DCPEndpoint extends AbstractEndpoint {
 
     public DCPEndpoint(String hostname, String bucket, String password, int port,
                        CoreEnvironment environment, RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, environment, responseBuffer, false, environment.ioPool());
+        super(hostname, bucket, password, port, environment, responseBuffer, false, environment.ioPool(), true);
     }
 
     @Override

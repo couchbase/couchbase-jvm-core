@@ -25,6 +25,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.kv.AbstractKeyValueRequest;
 import com.couchbase.client.core.message.kv.AbstractKeyValueResponse;
@@ -1080,7 +1081,7 @@ public class KeyValueHandler
         return new KeepAliveRequest();
     }
 
-    protected static class KeepAliveRequest extends AbstractKeyValueRequest {
+    protected static class KeepAliveRequest extends AbstractKeyValueRequest implements KeepAlive {
 
         protected KeepAliveRequest() {
             super(null, null, null);

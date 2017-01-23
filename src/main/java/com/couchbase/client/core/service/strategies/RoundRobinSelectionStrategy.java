@@ -21,6 +21,8 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 
+import java.util.List;
+
 /**
  * Selects the {@link Endpoint} based on a round-robin selection of connected {@link Endpoint}s.
  *
@@ -42,16 +44,16 @@ public class RoundRobinSelectionStrategy implements SelectionStrategy {
      * @return the selected endpoint.
      */
     @Override
-    public Endpoint select(CouchbaseRequest request, Endpoint[] endpoints) {
-        int endpointSize = endpoints.length;
+    public Endpoint select(CouchbaseRequest request, List<Endpoint> endpoints) {
+        int endpointSize = endpoints.size();
         //increments skip and prevents it to overflow to a negative value
         skip = Math.max(0, skip+1);
         int offset = skip % endpointSize;
 
         //attempt to find a CONNECTED endpoint at the offset, or try following ones
         for (int i = offset; i < endpointSize; i++) {
-            Endpoint endpoint = endpoints[i];
-            if (endpoint.isState(LifecycleState.CONNECTED)) {
+            Endpoint endpoint = endpoints.get(i);
+            if (endpoint.isState(LifecycleState.CONNECTED) && endpoint.isFree()) {
                 return endpoint;
             }
         }
@@ -59,8 +61,8 @@ public class RoundRobinSelectionStrategy implements SelectionStrategy {
         //arriving here means the offset endpoint wasn't CONNECTED and none of the endpoints after it were.
         //wrap around and try from the beginning of the array
         for (int i = 0; i < offset; i++) {
-            Endpoint endpoint = endpoints[i];
-            if (endpoint.isState(LifecycleState.CONNECTED)) {
+            Endpoint endpoint = endpoints.get(i);
+            if (endpoint.isState(LifecycleState.CONNECTED) && endpoint.isFree()) {
                 return endpoint;
             }
         }

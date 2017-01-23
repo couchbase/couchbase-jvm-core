@@ -25,6 +25,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
 import com.couchbase.client.core.retry.RetryHelper;
@@ -266,6 +267,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         }
 
         if (currentDecodingState == DecodingState.FINISHED) {
+            endpoint.notifyResponseDecoded(currentRequest instanceof KeepAlive);
             resetStatesAfterDecode(ctx);
         }
     }

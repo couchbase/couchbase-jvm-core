@@ -21,6 +21,8 @@ import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.state.LifecycleState;
 
+import java.util.List;
+
 /**
  * Selects the {@link Endpoint} based on the information enclosed in the {@link CouchbaseRequest}.
  *
@@ -40,8 +42,8 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
     }
 
     @Override
-    public Endpoint select(final CouchbaseRequest request, final Endpoint[] endpoints) {
-        if (endpoints.length == 0) {
+    public Endpoint select(final CouchbaseRequest request, final List<Endpoint> endpoints) {
+        if (endpoints.size() == 0) {
             return null;
         }
 
@@ -63,11 +65,11 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
      * @param partition the partition of the incoming request.
      * @return the selected endpoint, or null if no acceptable one found.
      */
-    private static Endpoint selectByPartition(final Endpoint[] endpoints, final short partition) {
+    private static Endpoint selectByPartition(final List<Endpoint> endpoints, final short partition) {
         if (partition >= 0) {
-            int numEndpoints = endpoints.length;
-            Endpoint endpoint = numEndpoints == 1 ? endpoints[0] : endpoints[partition % numEndpoints];
-            if (endpoint != null && endpoint.isState(LifecycleState.CONNECTED)) {
+            int numEndpoints = endpoints.size();
+            Endpoint endpoint = numEndpoints == 1 ? endpoints.get(0) : endpoints.get(partition % numEndpoints);
+            if (endpoint != null && endpoint.isState(LifecycleState.CONNECTED) && endpoint.isFree()) {
                 return endpoint;
             }
             return null;
@@ -82,9 +84,9 @@ public class PartitionSelectionStrategy implements SelectionStrategy {
      * @param endpoints the list of endpoints.
      * @return the first connected or null if none found.
      */
-    private static Endpoint selectFirstConnected(final Endpoint[] endpoints) {
+    private static Endpoint selectFirstConnected(final List<Endpoint> endpoints) {
         for (Endpoint endpoint : endpoints) {
-            if (endpoint.isState(LifecycleState.CONNECTED)) {
+            if (endpoint.isState(LifecycleState.CONNECTED) && endpoint.isFree()) {
                 return endpoint;
             }
         }

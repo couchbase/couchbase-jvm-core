@@ -88,9 +88,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int IO_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     public static final int COMPUTATION_POOL_SIZE =  Runtime.getRuntime().availableProcessors();
     public static final int KEYVALUE_ENDPOINTS = 1;
-    public static final int VIEW_ENDPOINTS = 1;
-    public static final int QUERY_ENDPOINTS = 1;
-    public static final int SEARCH_ENDPOINTS = 1;
+    public static final int VIEW_ENDPOINTS = 12;
+    public static final int QUERY_ENDPOINTS = 12;
+    public static final int SEARCH_ENDPOINTS = 12;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
     public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
     public static final Delay RETRY_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 100);
@@ -232,6 +232,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook queryIoPoolShutdownHook;
     private final ShutdownHook viewIoPoolShutdownHook;
     private final ShutdownHook searchIoPoolShutdownHook;
+
+    private final KeyValueServiceConfig keyValueServiceConfig;
+    private final QueryServiceConfig queryServiceConfig;
+    private final ViewServiceConfig viewServiceConfig;
+    private final SearchServiceConfig searchServiceConfig;
 
     private final ShutdownHook nettyShutdownHook;
     private final ShutdownHook coreSchedulerShutdownHook;
@@ -404,6 +409,33 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             };
         } else {
             requestBufferWaitStrategy = builder.requestBufferWaitStrategy;
+        }
+
+        if (builder.keyValueServiceConfig != null) {
+            this.keyValueServiceConfig = builder.keyValueServiceConfig;
+        } else {
+            this.keyValueServiceConfig = KeyValueServiceConfig.create(kvEndpoints());
+        }
+
+        if (builder.viewServiceConfig != null) {
+            this.viewServiceConfig = builder.viewServiceConfig;
+        } else {
+            int minEndpoints = viewEndpoints() == VIEW_ENDPOINTS ? 0 : viewEndpoints();
+            this.viewServiceConfig = ViewServiceConfig.create(minEndpoints, viewEndpoints());
+        }
+
+        if (builder.queryServiceConfig != null) {
+            this.queryServiceConfig = builder.queryServiceConfig;
+        } else {
+            int minEndpoints = queryEndpoints() == VIEW_ENDPOINTS ? 0 : queryEndpoints();
+            this.queryServiceConfig = QueryServiceConfig.create(minEndpoints, queryEndpoints());
+        }
+
+        if (builder.searchServiceConfig != null) {
+            this.searchServiceConfig = builder.searchServiceConfig;
+        } else {
+            int minEndpoints = searchEndpoints() == VIEW_ENDPOINTS ? 0 : searchEndpoints();
+            this.searchServiceConfig = SearchServiceConfig.create(minEndpoints, searchEndpoints());
         }
 
         if (emitEnvWarnMessage) {
@@ -808,6 +840,26 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return instanceCounter;
     }
 
+    @Override
+    public KeyValueServiceConfig kvServiceConfig() {
+        return keyValueServiceConfig;
+    }
+
+    @Override
+    public QueryServiceConfig queryServiceConfig() {
+        return queryServiceConfig;
+    }
+
+    @Override
+    public ViewServiceConfig viewServiceConfig() {
+        return viewServiceConfig;
+    }
+
+    @Override
+    public SearchServiceConfig searchServiceConfig() {
+        return searchServiceConfig;
+    }
+
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -866,6 +918,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
         private LoggingConsumer defaultMetricsLoggingConsumer = LoggingConsumer.create();
+
+        private KeyValueServiceConfig keyValueServiceConfig;
+        private QueryServiceConfig queryServiceConfig;
+        private ViewServiceConfig viewServiceConfig;
+        private SearchServiceConfig searchServiceConfig;
+
 
         protected Builder() {
         }
@@ -1052,6 +1110,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * Only tune to more if IO has been identified as the most probable bottleneck,
          * since it can reduce batching on the tcp/network level.
+         *
+         * @deprecated Please use {@link Builder#keyValueServiceConfig(KeyValueServiceConfig)} going forward.
          */
         public Builder kvEndpoints(final int kvEndpoints) {
             this.kvEndpoints = kvEndpoints;
@@ -1062,6 +1122,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Sets the number of View endpoints to open per node in the cluster (default value {@value #VIEW_ENDPOINTS}).
          *
          * Setting this to a higher number is advised in heavy view workloads.
+         *
+         * @deprecated Please use {@link Builder#viewServiceConfig(ViewServiceConfig)} going forward.
          */
         public Builder viewEndpoints(final int viewEndpoints) {
             this.viewEndpoints = viewEndpoints;
@@ -1073,6 +1135,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * (default value {@value #QUERY_ENDPOINTS}).
          *
          * Setting this to a higher number is advised in heavy query workloads.
+         *
+         * @deprecated Please use {@link Builder#queryServiceConfig(QueryServiceConfig)} going forward.
          */
         public Builder queryEndpoints(final int queryEndpoints) {
             this.queryEndpoints = queryEndpoints;
@@ -1084,6 +1148,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * (default value {@value #SEARCH_ENDPOINTS}).
          *
          * Setting this to a higher number is advised in heavy query workloads.
+         *
+         * @deprecated Please use {@link Builder#searchServiceConfig(SearchServiceConfig)} going forward.
          */
         public Builder searchEndpoints(final int searchEndpoints) {
             this.searchEndpoints = searchEndpoints;
@@ -1400,6 +1466,46 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public Builder memcachedHashingStrategy(MemcachedHashingStrategy memcachedHashingStrategy) {
             this.memcachedHashingStrategy = memcachedHashingStrategy;
+            return this;
+        }
+
+        /**
+         * Allows to set a custom configuration for the KV service.
+         *
+         * @param keyValueServiceConfig the config to apply.
+         */
+        public Builder keyValueServiceConfig(KeyValueServiceConfig keyValueServiceConfig) {
+            this.keyValueServiceConfig = keyValueServiceConfig;
+            return this;
+        }
+
+        /**
+         * Allows to set a custom configuration for the View service.
+         *
+         * @param viewServiceConfig the config to apply.
+         */
+        public Builder viewServiceConfig(ViewServiceConfig viewServiceConfig) {
+            this.viewServiceConfig = viewServiceConfig;
+            return this;
+        }
+
+        /**
+         * Allows to set a custom configuration for the Query service.
+         *
+         * @param queryServiceConfig the config to apply.
+         */
+        public Builder queryServiceConfig(QueryServiceConfig queryServiceConfig) {
+            this.queryServiceConfig = queryServiceConfig;
+            return this;
+        }
+
+        /**
+         * Allows to set a custom configuration for the Search service.
+         *
+         * @param searchServiceConfig the config to apply.
+         */
+        public Builder searchServiceConfig(SearchServiceConfig searchServiceConfig) {
+            this.searchServiceConfig = searchServiceConfig;
             return this;
         }
 
