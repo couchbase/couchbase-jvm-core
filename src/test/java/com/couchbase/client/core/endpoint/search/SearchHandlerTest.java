@@ -19,20 +19,28 @@ package com.couchbase.client.core.endpoint.search;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
-import com.couchbase.client.core.endpoint.view.ViewHandler;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseMessage;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.search.SearchQueryRequest;
 import com.couchbase.client.core.message.search.SearchRequest;
-import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.DefaultLastHttpContent;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.junit.Before;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
@@ -47,7 +55,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -134,4 +147,51 @@ public class SearchHandlerTest {
         t1.assertNotCompleted();
         t2.assertError(RequestCancelledException.class);
     }
+
+    @Test
+    public void shouldFireKeepAlive() throws Exception {
+        //similar test to query
+        final AtomicInteger keepAliveEventCounter = new AtomicInteger();
+        final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+
+        SearchHandler searchKeepAliveHandler = new SearchHandler(endpoint, responseRingBuffer, queue, false, false) {
+            @Override
+            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                super.channelRegistered(ctx);
+                ctxRef.compareAndSet(null, ctx);
+            }
+
+            @Override
+            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                assertEquals(1, keepAliveEventCounter.incrementAndGet());
+            }
+
+            @Override
+            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                assertEquals(2, keepAliveEventCounter.incrementAndGet());
+            }
+        };
+        EmbeddedChannel channel = new EmbeddedChannel(searchKeepAliveHandler);
+
+        //test idle event triggers a query keepAlive request and hook is called
+        searchKeepAliveHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
+
+        assertEquals(1, keepAliveEventCounter.get());
+        assertTrue(queue.peek() instanceof SearchHandler.KeepAliveRequest);
+        SearchHandler.KeepAliveRequest keepAliveRequest = (SearchHandler.KeepAliveRequest) queue.peek();
+
+        //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+        LastHttpContent responseEnd = new DefaultLastHttpContent();
+        channel.writeInbound(response, responseEnd);
+        SearchHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+                .cast(SearchHandler.KeepAliveResponse.class)
+                .timeout(1, TimeUnit.SECONDS).toBlocking().single();
+
+        channel.pipeline().remove(searchKeepAliveHandler);
+        assertEquals(2, keepAliveEventCounter.get());
+        assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
+        assertEquals(0, responseEnd.refCnt());
+    }
+
 }

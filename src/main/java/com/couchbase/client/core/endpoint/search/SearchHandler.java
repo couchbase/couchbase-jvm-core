@@ -21,6 +21,9 @@ import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.search.GetSearchIndexRequest;
@@ -86,7 +89,7 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
      * @param queue the queue which holds all outstanding open requests.
      */
     SearchHandler(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<SearchRequest> queue,
-                boolean isTransient, final boolean pipeline) {
+                  boolean isTransient, final boolean pipeline) {
         super(endpoint, responseBuffer, queue, isTransient, pipeline);
     }
 
@@ -110,16 +113,24 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
             content = Unpooled.EMPTY_BUFFER;
         }
 
-        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
-        request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
-        if (msg instanceof UpsertSearchIndexRequest || msg instanceof SearchQueryRequest) {
-            request.headers().set(HttpHeaders.Names.ACCEPT, "*/*");
-            request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
-        }
-        request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
-        request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+        FullHttpRequest request;
 
-        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        if (msg instanceof KeepAliveRequest) {
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
+            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+        } else {
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
+            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            if (msg instanceof UpsertSearchIndexRequest || msg instanceof SearchQueryRequest) {
+                request.headers().set(HttpHeaders.Names.ACCEPT, "*/*");
+                request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
+            }
+            request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
+            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+            addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        }
+
         return request;
     }
 
@@ -138,11 +149,20 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
             }
         }
 
+
+
         if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
         }
 
-        if (msg instanceof LastHttpContent) {
+        if (currentRequest() instanceof KeepAliveRequest) {
+            if (msg instanceof LastHttpContent) {
+                response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
+        } else if (msg instanceof LastHttpContent) {
             ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
             String body = responseContent.readableBytes() > 0
                     ? responseContent.toString(CHARSET) : responseHeader.getStatus().reasonPhrase();
@@ -166,5 +186,27 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
     @Override
     protected ServiceType serviceType() {
         return ServiceType.SEARCH;
+    }
+
+    @Override
+    protected CouchbaseRequest createKeepAliveRequest() {
+        return new KeepAliveRequest();
+    }
+
+    protected static class KeepAliveRequest extends AbstractCouchbaseRequest implements SearchRequest {
+        protected KeepAliveRequest() {
+            super(null, null);
+        }
+
+        @Override
+        public String path() {
+            return "/api/ping";
+        }
+    }
+
+    protected static class KeepAliveResponse extends AbstractCouchbaseResponse {
+        protected KeepAliveResponse(ResponseStatus status, CouchbaseRequest request) {
+            super(status, request);
+        }
     }
 }
