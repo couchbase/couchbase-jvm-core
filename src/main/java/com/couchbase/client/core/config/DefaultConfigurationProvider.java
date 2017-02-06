@@ -340,7 +340,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public void signalOutdated() {
-        LOGGER.debug("Received signal for outdated configuration.");
+        LOGGER.debug("Received signal to proactively refresh (a maybe outdated) configuration.");
 
         if (currentConfig.bucketConfigs().isEmpty()) {
             LOGGER.debug("Ignoring outdated signal, since no buckets are open.");
