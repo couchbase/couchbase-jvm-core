@@ -165,6 +165,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private volatile boolean disconnected;
 
+    /**
+     * This endpoint is currently free to accept new writes. We always start out with true.
+     */
     private volatile boolean free;
 
     private volatile long lastResponse;
@@ -198,10 +201,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.isTransient = isTransient;
         this.disconnected = false;
         this.pipeline = pipeline;
-        this.free = true;
         this.connectCallbackGracePeriod = Integer.parseInt(DEFAULT_CONNECT_CALLBACK_GRACE_PERIOD);
         this.ioPool = env.ioPool();
         this.lastResponse = 0;
+        this.free = true;
     }
 
     /**
@@ -225,6 +228,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.isTransient = isTransient;
         this.ioPool = ioPool;
         this.pipeline = pipeline;
+        this.free = true;
         this.connectCallbackGracePeriod = Integer.parseInt(
             System.getProperty("com.couchbase.connectCallbackGracePeriod", DEFAULT_CONNECT_CALLBACK_GRACE_PERIOD)
         );

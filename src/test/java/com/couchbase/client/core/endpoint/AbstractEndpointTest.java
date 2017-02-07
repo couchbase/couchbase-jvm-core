@@ -225,6 +225,12 @@ public class AbstractEndpointTest {
         assertEquals(ConnectTimeoutException.class, errors.get(0).getClass());
     }
 
+    @Test
+    public void shouldAlwaysStartAsFree() {
+        Endpoint endpoint = new DummyEndpoint(hostname, environment);
+        assertTrue(endpoint.isFree());
+    }
+
     static class DummyEndpoint extends AbstractEndpoint {
         DummyEndpoint(BootstrapAdapter adapter, CoreEnvironment environment) {
             super("default", null, adapter, false, environment, true);
