@@ -52,6 +52,23 @@ public class DefaultPortInfo implements PortInfo {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
 
+        /*
+         * Temporary: Analytics can be enabled through system properties!
+         */
+        boolean analyticsEnabled = Boolean.parseBoolean(
+            System.getProperty("com.couchbase.analyticsEnabled", "false")
+        );
+        int analyticsPort = Integer.parseInt(
+            System.getProperty("com.couchbase.analyticsPort", "8095")
+        );
+        int analyticsSslPort = Integer.parseInt(
+            System.getProperty("com.couchbase.analyticsSslPort", "18095")
+        );
+        if (analyticsEnabled) {
+            ports.put(ServiceType.ANALYTICS, analyticsPort);
+            sslPorts.put(ServiceType.ANALYTICS, analyticsSslPort);
+        }
+
         for (Map.Entry<String, Integer> entry : services.entrySet()) {
             String service = entry.getKey();
             int port = entry.getValue();

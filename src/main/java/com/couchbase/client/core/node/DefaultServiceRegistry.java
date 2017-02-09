@@ -16,6 +16,7 @@
 package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.analytics.AnalyticsRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
@@ -169,6 +170,8 @@ public class DefaultServiceRegistry implements ServiceRegistry {
             return ServiceType.DCP;
         } else if (request instanceof SearchRequest) {
             return ServiceType.SEARCH;
+        } else if (request instanceof AnalyticsRequest) {
+            return ServiceType.ANALYTICS;
         } else {
             throw new IllegalStateException("Unknown Request: " + request);
         }

@@ -63,6 +63,8 @@ public class ServiceFactory {
                     return new DCPService(hostname, bucket, password, port, env, responseBuffer);
                 case SEARCH:
                     return new OldSearchService(hostname, bucket, password, port, env, responseBuffer);
+                case ANALYTICS:
+                    return new OldAnalyticsService(hostname, bucket, password, port, env, responseBuffer);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }
@@ -80,6 +82,8 @@ public class ServiceFactory {
                     return new DCPService(hostname, bucket, password, port, env, responseBuffer);
                 case SEARCH:
                     return new SearchService(hostname, bucket, password, port, env, responseBuffer);
+                case ANALYTICS:
+                    return new AnalyticsService(hostname, bucket, password, port, env, responseBuffer);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }
