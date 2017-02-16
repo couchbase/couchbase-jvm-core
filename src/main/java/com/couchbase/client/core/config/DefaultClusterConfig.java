@@ -16,10 +16,10 @@
 package com.couchbase.client.core.config;
 
 import java.net.InetAddress;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Default implementation of a {@link ClusterConfig}.
@@ -38,7 +38,7 @@ public class DefaultClusterConfig implements ClusterConfig {
      * Creates a new {@link DefaultClusterConfig}.
      */
     public DefaultClusterConfig() {
-        bucketConfigs = new HashMap<String, BucketConfig>();
+        bucketConfigs = new ConcurrentHashMap<String, BucketConfig>();
     }
 
     @Override
