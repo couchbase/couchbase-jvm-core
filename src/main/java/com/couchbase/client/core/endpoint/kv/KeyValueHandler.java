@@ -658,8 +658,10 @@ public class KeyValueHandler
         }
 
         ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
-        if (!status.equals(ResponseStatus.RETRY)) {
-           maybeFreeContent(request);
+        if (status.equals(ResponseStatus.RETRY)) {
+            resetContentReaderIndex(request);
+        } else {
+            maybeFreeContent(request);
         }
 
         msg.content().retain();
@@ -1046,6 +1048,13 @@ public class KeyValueHandler
      * @param request the request where to free the content.
      */
     private static void maybeFreeContent(BinaryRequest request) {
+        releaseContent(contentFromWriteRequest(request));
+    }
+
+    /**
+     * Helper method to extract the content from requests.
+     */
+    private static ByteBuf contentFromWriteRequest(BinaryRequest request) {
         ByteBuf content = null;
         if (request instanceof BinaryStoreRequest) {
             content = ((BinaryStoreRequest) request).content();
@@ -1060,7 +1069,25 @@ public class KeyValueHandler
         } else if (request instanceof BinarySubdocMultiMutationRequest) {
             content = ((BinarySubdocMultiMutationRequest) request).content();
         }
-        releaseContent(content);
+        return content;
+    }
+
+    /**
+     * Helper method to reset the reader index of the content so if downstream components
+     * on outbound did modify it, it can be reused (looking at you, SSLHandler).
+     *
+     * @param request the request which may have content that needs to be reset.
+     */
+    private static void resetContentReaderIndex(BinaryRequest request) {
+        ByteBuf content = contentFromWriteRequest(request);
+        if (content != null) {
+            try {
+                content.readerIndex(0);
+            } catch (Exception ex) {
+                LOGGER.warn("Exception while resetting the content reader index to 0, " +
+                    "please report this as a bug.", ex);
+            }
+        }
     }
 
     /**
