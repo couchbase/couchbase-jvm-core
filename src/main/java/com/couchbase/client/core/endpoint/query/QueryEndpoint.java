@@ -44,8 +44,13 @@ public class QueryEndpoint extends AbstractEndpoint {
         if (environment().keepAliveInterval() > 0) {
             pipeline.addLast(new IdleStateHandler(environment().keepAliveInterval(), 0, 0, TimeUnit.MILLISECONDS));
         }
-        pipeline
-            .addLast(new HttpClientCodec())
-            .addLast(new QueryHandler(this, responseBuffer(), false, false));
+
+        pipeline.addLast(new HttpClientCodec());
+        boolean enableV2 = Boolean.parseBoolean(System.getProperty("com.couchbase.enableYasjlQueryResponseParser", "false"));
+        if (!enableV2) {
+            pipeline.addLast(new QueryHandler(this, responseBuffer(), false, false));
+        } else {
+            pipeline.addLast(new QueryHandlerV2(this, responseBuffer(), false, false));
+        }
     }
 }
