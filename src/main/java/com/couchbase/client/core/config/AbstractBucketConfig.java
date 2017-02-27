@@ -20,6 +20,7 @@ import com.couchbase.client.core.service.ServiceType;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractBucketConfig implements BucketConfig {
 
@@ -30,15 +31,16 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final String streamingUri;
     private final List<NodeInfo> nodeInfo;
     private final int enabledServices;
+    private final List<BucketCapabilities> bucketCapabilities;
 
     protected AbstractBucketConfig(String name, BucketNodeLocator locator, String uri, String streamingUri,
-        List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
+        List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities) {
         this.name = name;
         this.locator = locator;
         this.uri = uri;
         this.streamingUri = streamingUri;
+        this.bucketCapabilities = bucketCapabilities;
         this.nodeInfo = portInfos == null ? nodeInfos : nodeInfoFromExtended(portInfos, nodeInfos);
-
         int es = 0;
         for (NodeInfo info : nodeInfo) {
             for (ServiceType type : info.services().keySet()) {
@@ -60,14 +62,23 @@ public abstract class AbstractBucketConfig implements BucketConfig {
      * @param nodesExt the extended information.
      * @return the generated node infos.
      */
-    private static List<NodeInfo> nodeInfoFromExtended(final List<PortInfo> nodesExt, final List<NodeInfo> nodeInfos) {
+    private List<NodeInfo> nodeInfoFromExtended(final List<PortInfo> nodesExt, final List<NodeInfo> nodeInfos) {
         List<NodeInfo> converted = new ArrayList<NodeInfo>(nodesExt.size());
         for (int i = 0; i < nodesExt.size(); i++) {
             InetAddress hostname = nodesExt.get(i).hostname();
             if (hostname == null) {
                 hostname = nodeInfos.get(i).hostname();
             }
-            converted.add(new DefaultNodeInfo(hostname, nodesExt.get(i).ports(), nodesExt.get(i).sslPorts()));
+            Map<ServiceType, Integer> ports = nodesExt.get(i).ports();
+            Map<ServiceType, Integer> sslPorts = nodesExt.get(i).sslPorts();
+
+            // this is an ephemeral bucket (not supporting views), don't enable views!
+            if (!bucketCapabilities.contains(BucketCapabilities.COUCHAPI)) {
+                ports.remove(ServiceType.VIEW);
+                sslPorts.remove(ServiceType.VIEW);
+            }
+
+            converted.add(new DefaultNodeInfo(hostname, ports, sslPorts));
         }
         return converted;
     }

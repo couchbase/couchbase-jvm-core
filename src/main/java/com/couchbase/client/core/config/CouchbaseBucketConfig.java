@@ -72,4 +72,11 @@ public interface CouchbaseBucketConfig extends BucketConfig {
      * @return true if it has, false otherwise.
      */
     boolean hasPrimaryPartitionsOnNode(InetAddress hostname);
+
+    /**
+     * If this couchbase bucket is ephemeral.
+     *
+     * @return true if it is, false otherwise.
+     */
+    boolean ephemeral();
 }

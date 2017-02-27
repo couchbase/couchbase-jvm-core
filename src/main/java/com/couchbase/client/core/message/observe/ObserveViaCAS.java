@@ -19,6 +19,7 @@ package com.couchbase.client.core.message.observe;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.DocumentConcurrentlyModifiedException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
+import com.couchbase.client.core.ServiceNotAvailableException;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
@@ -134,6 +135,10 @@ public class ObserveViaCAS {
                                         (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
                                 int numReplicas = conf.numberOfReplicas();
 
+                                if (conf.ephemeral() && persistTo.value() != 0) {
+                                    throw new ServiceNotAvailableException("Ephemeral Buckets do not support " +
+                                            "PersistTo.");
+                                }
                                 if (replicateTo.touchesReplica() && replicateTo.value() > numReplicas) {
                                     throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
                                             "the bucket.");

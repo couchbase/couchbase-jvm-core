@@ -64,7 +64,7 @@ public class AbstractBucketConfigTest {
     static class SampleBucketConfig extends AbstractBucketConfig {
 
         public SampleBucketConfig(List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
-            super(NAME, LOCATOR, URI, STREAMING_URI, nodeInfos, portInfos);
+            super(NAME, LOCATOR, URI, STREAMING_URI, nodeInfos, portInfos, null);
         }
 
         @Override
