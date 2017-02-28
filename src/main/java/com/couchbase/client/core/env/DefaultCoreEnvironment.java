@@ -427,14 +427,14 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         if (builder.queryServiceConfig != null) {
             this.queryServiceConfig = builder.queryServiceConfig;
         } else {
-            int minEndpoints = queryEndpoints() == VIEW_ENDPOINTS ? 0 : queryEndpoints();
+            int minEndpoints = queryEndpoints() == QUERY_ENDPOINTS ? 0 : queryEndpoints();
             this.queryServiceConfig = QueryServiceConfig.create(minEndpoints, queryEndpoints());
         }
 
         if (builder.searchServiceConfig != null) {
             this.searchServiceConfig = builder.searchServiceConfig;
         } else {
-            int minEndpoints = searchEndpoints() == VIEW_ENDPOINTS ? 0 : searchEndpoints();
+            int minEndpoints = searchEndpoints() == SEARCH_ENDPOINTS ? 0 : searchEndpoints();
             this.searchServiceConfig = SearchServiceConfig.create(minEndpoints, searchEndpoints());
         }
 
