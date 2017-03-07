@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 package com.couchbase.client.core.endpoint.kv;
 
+import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
-import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
-import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,104 +36,76 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * This handler negotiates the enabled features through the HELLO command.
- *
- * Like the SASL auth handler, this handler intercepts the original connect process to properly negotiate the
- * supported features with the server. Once the features are negotiated they are sent through custom events up the
- * pipeline and the handler removes itself.
+ * This handler is added dynamically by the {@link KeyValueFeatureHandler} to load and store the extended
+ * error map from the server. It will only be added if the server has this feature enabled.
  *
  * @author Michael Nitschinger
- * @since 1.2.0
+ * @since 1.4.4
  */
-public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
-    implements ChannelOutboundHandler {
+public class KeyValueErrorMapHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
+        implements ChannelOutboundHandler {
 
-    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueFeatureHandler.class);
-    private static final byte HELLO_CMD = 0x1f;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueErrorMapHandler.class);
+    private static final byte GET_ERROR_MAP_CMD = (byte) 0xfe;
+    private static final short MAP_VERSION = 1; // first version of the error map
 
-    private final List<ServerFeatures> features;
-    private final String userAgent;
+    private boolean errorMapEnabled;
 
     /**
      * The connect promise issued by the connect process.
      */
     private ChannelPromise originalPromise;
 
-    public KeyValueFeatureHandler(CoreEnvironment environment) {
-        // for now, extended errors are disabled by default
-        boolean xerrorEnabled = Boolean.parseBoolean(
-            System.getProperty("com.couchbase.xerrorEnabled", "false")
-        );
-
-        userAgent = environment.userAgent();
-        boolean tcpNodelay = environment.tcpNodelayEnabled();
-
-        features = new ArrayList<ServerFeatures>();
-        if (environment.mutationTokensEnabled()) {
-            features.add(ServerFeatures.MUTATION_SEQNO);
-        }
-        features.add(tcpNodelay ? ServerFeatures.TCPNODELAY : ServerFeatures.TCPDELAY);
-        features.add(ServerFeatures.XATTR);
-        features.add(ServerFeatures.SELECT_BUCKET);
-        if (xerrorEnabled) {
-            features.add(ServerFeatures.XERROR);
-        }
-    }
-
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
-        List<ServerFeatures> supported = new ArrayList<ServerFeatures>();
-
-        ResponseStatus responseStatus = ResponseStatusConverter.fromBinary(msg.getStatus());
-        if (responseStatus.isSuccess()) {
-            while (msg.content().isReadable()) {
-                supported.add(ServerFeatures.fromValue(msg.content().readShort()));
-            }
+        if (KeyValueStatus.SUCCESS.code() == msg.getStatus()) {
+            String content = msg.content().toString(CharsetUtil.UTF_8);
+            ErrorMap errorMap = MAPPER.readValue(content, ErrorMap.class);
+            LOGGER.debug("Trying to update Error Map With Version {}, Revision {}.",
+                errorMap.version(), errorMap.revision());
+            ResponseStatusConverter.updateBinaryErrorMap(errorMap);
+            originalPromise.setSuccess();
+            ctx.pipeline().remove(this);
+            ctx.fireChannelActive();
         } else {
-            LOGGER.debug("HELLO Negotiation did not succeed ({}).", responseStatus);
+            LOGGER.warn("Could not load extended error map, because the server responded with an error. Error " +
+                "code {}", Integer.toHexString(msg.getStatus()));
+            originalPromise.setFailure(new CouchbaseException("Could not load extended error map, " +
+                "because the server responded with an error. "));
         }
-
-        LOGGER.debug("Negotiated supported features: {}", supported);
-        ctx.fireUserEventTriggered(new ServerFeaturesEvent(supported));
-        originalPromise.setSuccess();
-        ctx.pipeline().remove(this);
-        ctx.fireChannelActive();
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-       ctx.writeAndFlush(helloRequest());
+        if (errorMapEnabled) {
+            ctx.writeAndFlush(errorMapRequest());
+        } else {
+            originalPromise.setSuccess();
+            ctx.pipeline().remove(this);
+            ctx.fireChannelActive();
+        }
     }
 
     /**
-     * Creates the HELLO request to ask for certain supported features.
-     *
-     * @return the request to send over the wire
+     * Creates the request to load the error map.
      */
-    private FullBinaryMemcacheRequest helloRequest() {
-        byte[] key = userAgent.getBytes(CharsetUtil.UTF_8);
-        short keyLength = (short) key.length;
-
-        ByteBuf wanted = Unpooled.buffer(features.size() * 2);
-        for (ServerFeatures feature : features) {
-            wanted.writeShort(feature.value());
-        }
-
-        LOGGER.debug("Requesting supported features: {}", features);
-        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, wanted);
-        request.setOpcode(HELLO_CMD);
-        request.setKeyLength(keyLength);
-        request.setTotalBodyLength(keyLength + wanted.readableBytes());
+    private FullBinaryMemcacheRequest errorMapRequest() {
+        LOGGER.debug("Requesting error map in version {}", MAP_VERSION);
+        ByteBuf content = Unpooled.buffer(2).writeShort(MAP_VERSION);
+        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(
+            new byte[] {}, Unpooled.EMPTY_BUFFER, content
+        );
+        request.setOpcode(GET_ERROR_MAP_CMD);
+        request.setTotalBodyLength(content.readableBytes());
         return request;
     }
 
     @Override
     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
-        ChannelPromise promise) throws Exception {
+                        ChannelPromise promise) throws Exception {
         originalPromise = promise;
         ChannelPromise downPromise = ctx.newPromise();
         downPromise.addListener(new GenericFutureListener<Future<Void>>() {
@@ -145,6 +117,15 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
             }
         });
         ctx.connect(remoteAddress, localAddress, downPromise);
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof ServerFeaturesEvent) {
+            errorMapEnabled = ((ServerFeaturesEvent) evt).supportedFeatures()
+                .contains(ServerFeatures.XERROR);
+        }
+        super.userEventTriggered(ctx, evt);
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.endpoint.kv.ErrorMap;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
@@ -29,6 +30,11 @@ import com.couchbase.client.core.message.ResponseStatus;
  * @see KeyValueStatus
  */
 public class ResponseStatusConverter {
+
+    /**
+     * Start with a static empty kv error map.
+     */
+    private static volatile ErrorMap BINARY_ERROR_MAP = null;
 
     /**
      * The logger used.
@@ -120,9 +126,21 @@ public class ResponseStatusConverter {
                 return ResponseStatus.SUBDOC_XATTR_INVALID_KEY_COMBO;
             //== end of subdocument API codes ==
             default:
-                LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
-                        status, Integer.toHexString(status.code()), status.description());
-                return ResponseStatus.FAILURE;
+                if (BINARY_ERROR_MAP == null) {
+                    LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
+                            status, Integer.toHexString(status.code()), status.description());
+                    return ResponseStatus.FAILURE;
+                } else {
+                    ErrorMap.ErrorCode result = BINARY_ERROR_MAP.errors().get(status.code());
+                    if (result == null) {
+                        LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue and not found in " +
+                            "Error Map: {} (0x{}, {})",  status, Integer.toHexString(status.code()),
+                            status.description());
+                    } else {
+                        LOGGER.warn("Unexpected ResponseStatus with Extended Error {}", result.toString());
+                    }
+                    return ResponseStatus.FAILURE;
+                }
         }
     }
 
@@ -154,6 +172,23 @@ public class ResponseStatusConverter {
                 status = ResponseStatus.FAILURE;
         }
         return status;
+    }
+
+    /**
+     * Updates the current error map in use for all uses of the response status converter.
+     *
+     * If the provided one is older than the one stored, this update operation will be ignored.
+     *
+     * @param map the map in use, it always uses the latest one.
+     */
+    public static void updateBinaryErrorMap(final ErrorMap map) {
+        if (map == null) {
+            return;
+        }
+
+        if (BINARY_ERROR_MAP == null || map.compareTo(BINARY_ERROR_MAP) > 0) {
+            BINARY_ERROR_MAP = map;
+        }
     }
 
 }

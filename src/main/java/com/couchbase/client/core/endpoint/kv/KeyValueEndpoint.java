@@ -68,6 +68,7 @@ public class KeyValueEndpoint extends AbstractEndpoint {
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
             .addLast(new KeyValueFeatureHandler(environment()))
+            .addLast(new KeyValueErrorMapHandler())
             .addLast(new KeyValueAuthHandler(username(), password()))
             .addLast(new KeyValueSelectBucketHandler(bucket()))
             .addLast(new KeyValueHandler(this, responseBuffer(), false, true));
