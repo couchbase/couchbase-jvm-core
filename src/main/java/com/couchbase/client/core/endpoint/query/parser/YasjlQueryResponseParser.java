@@ -95,6 +95,11 @@ public class YasjlQueryResponseParser {
     protected long ttl;
 
     /**
+     * Should complete callback on Io thread
+     */
+    protected boolean callbacksOnIoPool;
+
+    /**
      * Response status
      */
     protected ResponseStatus status;
@@ -109,10 +114,11 @@ public class YasjlQueryResponseParser {
      */
     protected GenericQueryResponse response;
 
-    public YasjlQueryResponseParser(Scheduler scheduler, long ttl) {
+    public YasjlQueryResponseParser(Scheduler scheduler, long ttl, boolean callbacksOnIoPool) {
         this.scheduler = scheduler;
         this.ttl = ttl;
         this.response = null;
+        this.callbacksOnIoPool = callbacksOnIoPool;
 
         JsonPointer[] jsonPointers = {
                 new JsonPointer("/requestID", new JsonPointerCB1() {
@@ -230,6 +236,19 @@ public class YasjlQueryResponseParser {
         queryStatusObservable = AsyncSubject.create();
         queryInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         querySignatureObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
+        queryErrorObservable.onBackpressureBuffer();
+        queryRowObservable.onBackpressureBuffer();
+        querySignatureObservable.onBackpressureBuffer();
+        queryStatusObservable.onBackpressureBuffer();
+        queryInfoObservable.onBackpressureBuffer();
+
+        if (!this.callbacksOnIoPool) {
+            queryErrorObservable.observeOn(scheduler);
+            queryRowObservable.observeOn(scheduler);
+            querySignatureObservable.observeOn(scheduler);
+            queryStatusObservable.observeOn(scheduler);
+            queryInfoObservable.observeOn(scheduler);
+        }
 
         parser.initialize(responseContent);
         initialized = true;
@@ -238,11 +257,11 @@ public class YasjlQueryResponseParser {
     private void createResponse() {
         //when streaming results/errors/status starts, build out the response
         response = new GenericQueryResponse(
-                queryErrorObservable.onBackpressureBuffer().observeOn(scheduler),
-                queryRowObservable.onBackpressureBuffer().observeOn(scheduler),
-                querySignatureObservable.onBackpressureBuffer().observeOn(scheduler),
-                queryStatusObservable.onBackpressureBuffer().observeOn(scheduler),
-                queryInfoObservable.onBackpressureBuffer().observeOn(scheduler),
+                queryErrorObservable,
+                queryRowObservable,
+                querySignatureObservable,
+                queryStatusObservable,
+                queryInfoObservable,
                 currentRequest,
                 status, requestID, clientContextID);
     }
