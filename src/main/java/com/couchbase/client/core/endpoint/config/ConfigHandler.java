@@ -36,14 +36,20 @@ import com.couchbase.client.core.message.config.FlushRequest;
 import com.couchbase.client.core.message.config.FlushResponse;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
+import com.couchbase.client.core.message.config.GetUsersRequest;
+import com.couchbase.client.core.message.config.GetUsersResponse;
 import com.couchbase.client.core.message.config.InsertBucketRequest;
 import com.couchbase.client.core.message.config.InsertBucketResponse;
 import com.couchbase.client.core.message.config.RemoveBucketRequest;
 import com.couchbase.client.core.message.config.RemoveBucketResponse;
+import com.couchbase.client.core.message.config.RemoveUserRequest;
+import com.couchbase.client.core.message.config.RemoveUserResponse;
 import com.couchbase.client.core.message.config.RestApiRequest;
 import com.couchbase.client.core.message.config.RestApiResponse;
 import com.couchbase.client.core.message.config.UpdateBucketRequest;
 import com.couchbase.client.core.message.config.UpdateBucketResponse;
+import com.couchbase.client.core.message.config.UpsertUserRequest;
+import com.couchbase.client.core.message.config.UpsertUserResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.EventSink;
 import com.lmax.disruptor.RingBuffer;
@@ -130,9 +136,12 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             return encodeRestApiRequest(ctx, (RestApiRequest) msg);
         }
         HttpMethod httpMethod = HttpMethod.GET;
-        if (msg instanceof FlushRequest || msg instanceof InsertBucketRequest || msg instanceof UpdateBucketRequest) {
+        if (msg instanceof FlushRequest || msg instanceof InsertBucketRequest
+                || msg instanceof UpdateBucketRequest) {
             httpMethod = HttpMethod.POST;
-        } else if (msg instanceof RemoveBucketRequest) {
+        } else if (msg instanceof UpsertUserRequest) {
+          httpMethod = HttpMethod.PUT;
+        } else if (msg instanceof RemoveBucketRequest || msg instanceof RemoveUserRequest) {
             httpMethod = HttpMethod.DELETE;
         }
 
@@ -141,13 +150,15 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             content = Unpooled.copiedBuffer(((InsertBucketRequest) msg).payload(), CharsetUtil.UTF_8);
         } else if (msg instanceof UpdateBucketRequest) {
             content = Unpooled.copiedBuffer(((UpdateBucketRequest) msg).payload(), CharsetUtil.UTF_8);
+        } else if (msg instanceof UpsertUserRequest) {
+            content = Unpooled.copiedBuffer(((UpsertUserRequest) msg).payload(), CharsetUtil.UTF_8);
         } else {
             content = Unpooled.EMPTY_BUFFER;
         }
 
         FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
         request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
-        if (msg instanceof InsertBucketRequest || msg instanceof UpdateBucketRequest) {
+        if (msg instanceof InsertBucketRequest || msg instanceof UpdateBucketRequest || msg instanceof UpsertUserRequest) {
             request.headers().set(HttpHeaders.Names.ACCEPT, "*/*");
             request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/x-www-form-urlencoded");
         }
@@ -236,6 +247,12 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             } else if (request instanceof FlushRequest) {
                 boolean done = responseHeader.getStatus().code() != 201;
                 response = new FlushResponse(done, body, status);
+            } else if (request instanceof GetUsersRequest) {
+                response = new GetUsersResponse(body, status, request);
+            } else if (request instanceof UpsertUserRequest) {
+                response = new UpsertUserResponse(body, status);
+            }  else if (request instanceof RemoveUserRequest) {
+                response = new RemoveUserResponse(status);
             } else if (request instanceof RestApiRequest) {
                 response = new RestApiResponse((RestApiRequest) request, responseHeader.getStatus(),
                         responseHeader.headers(), body);
