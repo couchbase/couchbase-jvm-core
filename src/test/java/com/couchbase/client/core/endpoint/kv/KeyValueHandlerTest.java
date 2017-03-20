@@ -51,12 +51,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.EncoderException;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import io.netty.util.IllegalReferenceCountException;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Subscriber;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
@@ -65,6 +68,7 @@ import rx.subjects.Subject;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,6 +77,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -959,6 +964,30 @@ public class KeyValueHandlerTest {
 
         t1.assertNotCompleted();
         t2.assertNotCompleted();
+    }
+
+    @Test
+    public void shouldPropagateErrorOnEncode() {
+        String id = "key";
+        ByteBuf content = Unpooled.buffer();
+        content.release(); // provoke a IllegalReferenceCountException
+        UpsertRequest request = new UpsertRequest(id, content, BUCKET);
+        request.partition((short) 1);
+
+
+        TestSubscriber<CouchbaseResponse> ts = TestSubscriber.create();
+        request.observable().subscribe(ts);
+
+        try {
+            channel.writeOutbound(request);
+            fail("Expected exception, none thrown.");
+        } catch (EncoderException ex) {
+            assertTrue(ex.getCause() instanceof IllegalReferenceCountException);
+        }
+
+        List<Throwable> onErrorEvents = ts.getOnErrorEvents();
+        assertTrue(onErrorEvents.get(0) instanceof RequestCancelledException);
+        assertTrue(onErrorEvents.get(0).getCause() instanceof IllegalReferenceCountException);
     }
 
 }
