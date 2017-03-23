@@ -20,7 +20,11 @@ import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 public class ClusterConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 
     public ClusterConfigRequest(String bucket, String password) {
-        super(bucket, password);
+        this(bucket, bucket, password);
+    }
+
+    public ClusterConfigRequest(String bucket, String username, String password) {
+        super(bucket, username, password);
     }
 
     @Override

@@ -75,19 +75,19 @@ public interface Service extends Stateful<LifecycleState> {
      * A helper factory which generates endpoints.
      */
     interface EndpointFactory {
-
         /**
          * Create a new {@link Endpoint}.
          *
          * @param hostname the hostname of the endpoint.
          * @param bucket the bucket name of the endpoint.
-         * @param password the password of the bucket.
+         * @param username the user authorized for bucket access.
+         * @param password the password of the user.
          * @param port the port of the endpoint.
          * @param env the shared environment.
          * @param responseBuffer the response buffer for messages.
          * @return a new {@link Endpoint}.
          */
-        Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env,
+        Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
             RingBuffer<ResponseEvent> responseBuffer);
 
     }

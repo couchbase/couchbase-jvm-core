@@ -24,7 +24,7 @@ public class InsertBucketRequest extends AbstractCouchbaseRequest implements Con
     private final String payload;
 
     public InsertBucketRequest(String payload, String username, String password) {
-        super(username, password);
+        super(null, username, password);
         this.payload = payload;
     }
 

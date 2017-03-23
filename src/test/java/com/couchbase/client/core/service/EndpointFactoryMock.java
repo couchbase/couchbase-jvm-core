@@ -114,8 +114,7 @@ public class EndpointFactoryMock implements Service.EndpointFactory {
         });
     }
 
-    @Override
-    public Endpoint create(String hostname, String bucket, String password, int port, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
+    public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         final BehaviorSubject<LifecycleState> state = BehaviorSubject.create(LifecycleState.DISCONNECTED);
         final Endpoint endpoint = mock(Endpoint.class);
         when(endpoint.states()).thenReturn(state);

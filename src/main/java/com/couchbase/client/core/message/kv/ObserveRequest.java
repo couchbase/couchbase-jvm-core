@@ -22,7 +22,7 @@ public class ObserveRequest extends AbstractKeyValueRequest {
     private final short replica;
 
     public ObserveRequest(String key, long cas, boolean master, short replica, String bucket) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (master && replica > 0) {
             throw new IllegalArgumentException("Either master or a replica node needs to be given");
         }

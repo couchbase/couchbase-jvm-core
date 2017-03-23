@@ -490,6 +490,7 @@ public class ConfigHandlerTest {
         GetDesignDocumentsRequest requestMock1 = mock(GetDesignDocumentsRequest.class);
         when(requestMock1.path()).thenReturn("");
         when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.username()).thenReturn("foo");
         when(requestMock1.password()).thenReturn("");
         when(requestMock1.observable()).thenReturn(obs1);
 
@@ -497,6 +498,7 @@ public class ConfigHandlerTest {
         GetDesignDocumentsRequest requestMock2 = mock(GetDesignDocumentsRequest.class);
         when(requestMock1.path()).thenReturn("");
         when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.username()).thenReturn("foo");
         when(requestMock2.password()).thenReturn("");
         when(requestMock2.observable()).thenReturn(obs2);
 

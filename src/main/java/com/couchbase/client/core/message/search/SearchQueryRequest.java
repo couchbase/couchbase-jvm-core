@@ -31,8 +31,8 @@ public class SearchQueryRequest extends AbstractCouchbaseRequest implements Sear
     private final String indexName;
     private final String payload;
 
-    public SearchQueryRequest(String indexName, String payload, String username, String password) {
-        super(username, password);
+    public SearchQueryRequest(String indexName, String payload, String bucket, String username, String password) {
+        super(bucket, username, password);
         this.indexName = indexName;
         this.payload = payload;
     }

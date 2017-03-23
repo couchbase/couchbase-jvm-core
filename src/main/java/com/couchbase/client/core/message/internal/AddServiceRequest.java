@@ -28,7 +28,11 @@ public class AddServiceRequest extends AbstractCouchbaseRequest implements Inter
     private final int port;
 
     public AddServiceRequest(ServiceType type, String bucket, String password, int port, InetAddress hostname) {
-        super(bucket, password);
+        this(type, bucket, bucket, password, port, hostname);
+    }
+
+    public AddServiceRequest(ServiceType type, String bucket, String username, String password, int port, InetAddress hostname) {
+        super(bucket, username, password);
         this.type = type;
         this.hostname = hostname;
         this.port = port;

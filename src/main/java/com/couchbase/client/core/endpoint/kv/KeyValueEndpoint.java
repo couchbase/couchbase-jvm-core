@@ -40,9 +40,21 @@ public class KeyValueEndpoint extends AbstractEndpoint {
      * @param hostname the hostname to connect on this endpoint.
      * @param env the couchbase environment.
      */
+    @Deprecated
     public KeyValueEndpoint(final String hostname, final String bucket, final String password, int port,
+                            final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+    }
+
+    /**
+     * Create a new {@link KeyValueEndpoint}.
+     *
+     * @param hostname the hostname to connect on this endpoint.
+     * @param env the couchbase environment.
+     */
+    public KeyValueEndpoint(final String hostname, final String bucket, final String username, final String password, int port,
         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, responseBuffer, false,
+        super(hostname, bucket, username, password, port, env, responseBuffer, false,
                 env.kvIoPool() == null ? env.ioPool() : env.kvIoPool(), true);
     }
 
@@ -56,7 +68,8 @@ public class KeyValueEndpoint extends AbstractEndpoint {
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
             .addLast(new KeyValueFeatureHandler(environment()))
-            .addLast(new KeyValueAuthHandler(bucket(), password()))
+            .addLast(new KeyValueAuthHandler(username(), password()))
+            .addLast(new KeyValueSelectBucketHandler(bucket()))
             .addLast(new KeyValueHandler(this, responseBuffer(), false, true));
     }
 

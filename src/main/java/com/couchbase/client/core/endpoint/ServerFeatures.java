@@ -61,7 +61,15 @@ public enum ServerFeatures {
      *
      * @since  Couchbase Server Spock (5.0)
      */
-    XATTR((short) 0x06);
+    XATTR((short) 0x06),
+
+
+    /**
+     * Enable select_bucket support
+     *
+     * @since  Couchbase Server Spock (5.0)
+     */
+    SELECT_BUCKET((short) 0x08);
 
     /**
      * The actual byte representation on the wire.
@@ -88,6 +96,7 @@ public enum ServerFeatures {
             case 0x04: return MUTATION_SEQNO;
             case 0x05: return TCPDELAY;
             case 0x06: return XATTR;
+            case 0x08: return SELECT_BUCKET;
             default: throw new IllegalStateException("Unrequested server feature: " + input);
         }
     }

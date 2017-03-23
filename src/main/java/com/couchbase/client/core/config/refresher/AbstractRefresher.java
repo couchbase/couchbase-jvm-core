@@ -55,7 +55,7 @@ public abstract  class AbstractRefresher implements Refresher {
 
     private ConfigurationProvider provider;
 
-    private final Map<String, String> registrations;
+    private final Map<String, Credential> registrations;
 
     private final CoreEnvironment env;
 
@@ -69,7 +69,7 @@ public abstract  class AbstractRefresher implements Refresher {
         this.env = env;
         this.configStream = PublishSubject.<BucketConfig>create().toSerialized();
         this.cluster = cluster;
-        registrations = new ConcurrentHashMap<String, String>();
+        registrations = new ConcurrentHashMap<String, Credential>();
     }
 
     @Override
@@ -84,12 +84,17 @@ public abstract  class AbstractRefresher implements Refresher {
 
     @Override
     public Observable<Boolean> registerBucket(String name, String password) {
+        return registerBucket(name, name, password);
+    }
+
+    @Override
+    public Observable<Boolean> registerBucket(String name, String username, String password) {
         LOGGER.debug("Registering Bucket {} for refresh.", name);
         if (registrations.containsKey(name)) {
             return Observable.just(false);
         }
 
-        registrations.put(name, password);
+        registrations.put(name, new Credential(username, password));
         return Observable.just(true);
     }
 
@@ -129,8 +134,25 @@ public abstract  class AbstractRefresher implements Refresher {
         this.provider = provider;
     }
 
-    protected Map<String, String> registrations() {
+    protected Map<String, Credential> registrations() {
         return registrations;
     }
 
+    static class Credential {
+        final private String username;
+        final private String password;
+
+        public Credential(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        public String username() {
+            return this.username;
+        }
+
+        public String password() {
+            return this.password;
+        }
+    }
 }

@@ -49,7 +49,7 @@ public class RestApiRequest extends AbstractCouchbaseRequest implements ConfigRe
      */
     public RestApiRequest(String login, String password, HttpMethod method, String path,
       Map<String, String> queryParameters, Map<String, Object> headers, String body) {
-        super(login, password);
+        super(null, login, password);
         this.path = path != null ? path : "";
         this.queryParameters = queryParameters != null ? queryParameters : Collections.<String, String>emptyMap();
         this.headers = headers != null ? headers : Collections.<String, Object>emptyMap();

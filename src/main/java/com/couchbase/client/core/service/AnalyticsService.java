@@ -18,7 +18,6 @@ package com.couchbase.client.core.service;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.analytics.AnalyticsEndpoint;
-import com.couchbase.client.core.endpoint.query.QueryEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.service.strategies.RoundRobinSelectionStrategy;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
@@ -52,11 +51,27 @@ public class AnalyticsService extends PooledService {
      * @param env the shared environment.
      * @param responseBuffer the shared response buffer.
      */
+    @Deprecated
     public AnalyticsService(final String hostname, final String bucket, final String password, final int port,
-        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.queryServiceConfig(), responseBuffer, FACTORY, STRATEGY);
+                            final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        this(hostname, bucket, bucket, password, port, env, responseBuffer);
     }
 
+    /**
+     * Creates a new {@link AnalyticsService}.
+     *
+     * @param hostname the hostname of the service.
+     * @param bucket the name of the bucket.
+     * @param username the user authorized for bucket access.
+     * @param password the password of the user.
+     * @param port the port of the service.
+     * @param env the shared environment.
+     * @param responseBuffer the shared response buffer.
+     */
+    public AnalyticsService(final String hostname, final String bucket, final String username, final String password, final int port,
+        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, username, password, port, env, env.queryServiceConfig(), responseBuffer, FACTORY, STRATEGY);
+    }
 
     @Override
     public ServiceType type() {
@@ -67,10 +82,10 @@ public class AnalyticsService extends PooledService {
      * The factory for {@link AnalyticsEndpoint}s.
      */
     static class AnalyticsEndpointFactory implements EndpointFactory {
-        @Override
-        public Endpoint create(final String hostname, final String bucket, final String password, final int port,
+        public Endpoint create(final String hostname, final String bucket, final String username, final String password,
+                               final int port,
             final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-            return new AnalyticsEndpoint(hostname, bucket, password, port, env, responseBuffer);
+            return new AnalyticsEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
         }
     }
 }

@@ -20,7 +20,7 @@ public class UnlockRequest extends AbstractKeyValueRequest {
     private final long cas;
 
     public UnlockRequest(String key, long cas, String bucket) {
-        super(key, bucket, null);
+        super(key, bucket);
         this.cas = cas;
     }
 

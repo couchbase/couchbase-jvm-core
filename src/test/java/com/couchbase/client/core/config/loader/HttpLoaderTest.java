@@ -79,7 +79,7 @@ public class HttpLoaderTest {
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(response);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         assertEquals("myconfig", configObservable.toBlocking().single());
     }
 
@@ -96,7 +96,7 @@ public class HttpLoaderTest {
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         assertEquals("verboseConfig", configObservable.toBlocking().single());
     }
 
@@ -113,7 +113,7 @@ public class HttpLoaderTest {
         when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         try {
             configObservable.toBlocking().single();
             assertTrue(false);
@@ -132,7 +132,7 @@ public class HttpLoaderTest {
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         try {
-            loader.discoverConfig("bucket", "password", host).toBlocking().single();
+            loader.discoverConfig("bucket", "bucket", "password", host).toBlocking().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
             assertEquals("HTTP Bootstrap disabled through configuration.", ex.getMessage());

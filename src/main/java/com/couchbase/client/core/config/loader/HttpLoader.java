@@ -61,7 +61,7 @@ public class HttpLoader extends AbstractLoader {
     }
 
     @Override
-    protected Observable<String> discoverConfig(final String bucket, final String password,
+    protected Observable<String> discoverConfig(final String bucket, final String username, final String password,
         final InetAddress hostname) {
         if (!env().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap manually disabled.");
@@ -70,7 +70,7 @@ public class HttpLoader extends AbstractLoader {
         LOGGER.debug("Starting to discover config through HTTP Bootstrap");
 
         return cluster()
-            .<BucketConfigResponse>send(new BucketConfigRequest(TERSE_PATH, hostname, bucket, password))
+            .<BucketConfigResponse>send(new BucketConfigRequest(TERSE_PATH, hostname, username, bucket, password))
             .flatMap(new Func1<BucketConfigResponse, Observable<BucketConfigResponse>>() {
                 @Override
                 public Observable<BucketConfigResponse> call(BucketConfigResponse response) {
@@ -80,7 +80,7 @@ public class HttpLoader extends AbstractLoader {
                     }
 
                     LOGGER.debug("Terse bucket config failed, falling back to verbose.");
-                    return cluster().send(new BucketConfigRequest(VERBOSE_PATH, hostname, bucket, password));
+                    return cluster().send(new BucketConfigRequest(VERBOSE_PATH, hostname, bucket, username, password));
                 }
             })
             .map(new Func1<BucketConfigResponse, String>() {

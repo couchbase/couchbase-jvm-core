@@ -75,7 +75,7 @@ public class AbstractPoolingServiceTest {
         EndpointStates e2s = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint2.connect()).thenReturn(Observable.just(LifecycleState.CONNECTING));
         when(endpoint2.states()).thenReturn(e2s.states());
-        when(factory.create(host, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
+        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
 
         int endpoints = 2;
         InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
@@ -111,7 +111,7 @@ public class AbstractPoolingServiceTest {
         Endpoint e4 = mock(Endpoint.class);
         EndpointStates e4s = new EndpointStates(LifecycleState.CONNECTED);
         when(e4.states()).thenReturn(e4s.states());
-        when(factory.create(host, bucket, password, port, env, null)).thenReturn(e1, e2, e3, e4);
+        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(e1, e2, e3, e4);
 
         final AtomicReference<List> foundEndpoints = new AtomicReference<List>();
         SelectionStrategy strategy = new SelectionStrategy() {
@@ -147,7 +147,7 @@ public class AbstractPoolingServiceTest {
         when(endpoint2.connect()).thenReturn(Observable.just(LifecycleState.CONNECTING));
         when(endpoint2.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(endpoint2.states()).thenReturn(e2s.states());
-        when(factory.create(host, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
+        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
 
         int endpoints = 2;
         InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
@@ -196,7 +196,7 @@ public class AbstractPoolingServiceTest {
         public InstrumentedService(String hostname, String bucket, String password, int port, CoreEnvironment env,
             int minEndpoints, int maxEndpoints, SelectionStrategy strategy, RingBuffer<ResponseEvent> responseBuffer,
             EndpointFactory endpointFactory) {
-            super(hostname, bucket, password, port, env, minEndpoints, maxEndpoints, strategy, responseBuffer,
+            super(hostname, bucket, bucket, password, port, env, minEndpoints, maxEndpoints, strategy, responseBuffer,
                 endpointFactory);
         }
 

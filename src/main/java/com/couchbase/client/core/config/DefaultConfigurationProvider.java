@@ -218,6 +218,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public Observable<ClusterConfig> openBucket(final String bucket, final String password) {
+        return openBucket(bucket, bucket, password);
+    }
+
+    @Override
+    public Observable<ClusterConfig> openBucket(final String bucket, final String username, final String password) {
         LOGGER.debug("Got instructed to open bucket {}", bucket);
         if (currentConfig != null && currentConfig.hasBucket(bucket)) {
             LOGGER.debug("Bucket {} already opened.", bucket);
@@ -229,60 +234,59 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
 
         Observable<Tuple2<LoaderType, BucketConfig>> observable = Observable.mergeDelayError(Observable
-            .from(seedHosts)
-            .map(new Func1<InetAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
-                @Override
-                public Observable<Tuple2<LoaderType, BucketConfig>> call(InetAddress seedHost) {
-                    Observable<Tuple2<LoaderType, BucketConfig>> node = loaderChain.get(0)
-                        .loadConfig(seedHost, bucket, password);
-                    for (int i = 1; i < loaderChain.size(); i++) {
-                        node = node.onErrorResumeNext(loaderChain.get(i)
-                            .loadConfig(seedHost, bucket, password));
+                .from(seedHosts)
+                .map(new Func1<InetAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
+                    @Override
+                    public Observable<Tuple2<LoaderType, BucketConfig>> call(InetAddress seedHost) {
+                        Observable<Tuple2<LoaderType, BucketConfig>> node = loaderChain.get(0)
+                                .loadConfig(seedHost, bucket, username, password);
+                        for (int i = 1; i < loaderChain.size(); i++) {
+                            node = node.onErrorResumeNext(loaderChain.get(i)
+                                    .loadConfig(seedHost, bucket, username, password));
+                        }
+                        return node;
                     }
-                    return node;
-                }
-            })
-        )
-        .take(1);
+                })
+        ).take(1);
 
         return
-            observable
-            .doOnNext(new Action1<Tuple2<LoaderType, BucketConfig>>() {
-                @Override
-                public void call(final Tuple2<LoaderType, BucketConfig> tuple) {
-                    registerBucketForRefresh(tuple.value1(), tuple.value2());
-                }
-            })
-            .map(new Func1<Tuple2<LoaderType, BucketConfig>, ClusterConfig>() {
-                @Override
-                public ClusterConfig call(final Tuple2<LoaderType, BucketConfig> tuple) {
-                    upsertBucketConfig(tuple.value2());
-                    return currentConfig;
-                }
-            })
-            .doOnNext(new Action1<ClusterConfig>() {
-                @Override
-                public void call(ClusterConfig clusterConfig) {
-                    LOGGER.info("Opened bucket " + bucket);
-                    if (eventBus != null && eventBus.hasSubscribers()) {
-                        eventBus.publish(new BucketOpenedEvent(bucket));
-                    }
-                    bootstrapped = true;
-                }
-            })
-            .doOnError(new Action1<Throwable>() {
-                @Override
-                public void call(Throwable throwable) {
-                    LOGGER.debug("Explicitly closing bucket {} after failed open attempt to clean resources.", bucket);
-                    removeBucketConfig(bucket);
-                }
-            })
-            .onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
-                @Override
-                public Observable<ClusterConfig> call(final Throwable throwable) {
-                    return Observable.error(new ConfigurationException("Could not open bucket.", throwable));
-                }
-            });
+                observable
+                        .doOnNext(new Action1<Tuple2<LoaderType, BucketConfig>>() {
+                            @Override
+                            public void call(final Tuple2<LoaderType, BucketConfig> tuple) {
+                                registerBucketForRefresh(tuple.value1(), tuple.value2());
+                            }
+                        })
+                        .map(new Func1<Tuple2<LoaderType, BucketConfig>, ClusterConfig>() {
+                            @Override
+                            public ClusterConfig call(final Tuple2<LoaderType, BucketConfig> tuple) {
+                                upsertBucketConfig(tuple.value2());
+                                return currentConfig;
+                            }
+                        })
+                        .doOnNext(new Action1<ClusterConfig>() {
+                            @Override
+                            public void call(ClusterConfig clusterConfig) {
+                                LOGGER.info("Opened bucket " + bucket);
+                                if (eventBus != null && eventBus.hasSubscribers()) {
+                                    eventBus.publish(new BucketOpenedEvent(bucket));
+                                }
+                                bootstrapped = true;
+                            }
+                        })
+                        .doOnError(new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                LOGGER.debug("Explicitly closing bucket {} after failed open attempt to clean resources.", bucket);
+                                removeBucketConfig(bucket);
+                            }
+                        })
+                        .onErrorResumeNext(new Func1<Throwable, Observable<ClusterConfig>>() {
+                            @Override
+                            public Observable<ClusterConfig> call(final Throwable throwable) {
+                                return Observable.error(new ConfigurationException("Could not open bucket.", throwable));
+                            }
+                        });
     }
 
     @Override
@@ -366,7 +370,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             throw new IllegalStateException("Could not find refresher for loader type: " + loaderType);
         }
 
-        refresher.registerBucket(bucketConfig.name(), bucketConfig.password()).subscribe();
+        refresher.registerBucket(bucketConfig.name(), bucketConfig.username(), bucketConfig.password()).subscribe();
     }
 
     /**

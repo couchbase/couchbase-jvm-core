@@ -633,6 +633,7 @@ public class ViewHandlerTest {
         ViewQueryRequest requestMock1 = mock(ViewQueryRequest.class);
         when(requestMock1.query()).thenReturn("{...}");
         when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.username()).thenReturn("foo");
         when(requestMock1.password()).thenReturn("");
         when(requestMock1.observable()).thenReturn(obs1);
 
@@ -640,6 +641,7 @@ public class ViewHandlerTest {
         ViewQueryRequest requestMock2 = mock(ViewQueryRequest.class);
         when(requestMock2.query()).thenReturn("{...}");
         when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.username()).thenReturn("foo");
         when(requestMock2.password()).thenReturn("");
         when(requestMock2.observable()).thenReturn(obs2);
 

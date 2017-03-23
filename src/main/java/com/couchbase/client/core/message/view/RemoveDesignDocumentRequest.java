@@ -23,7 +23,11 @@ public class RemoveDesignDocumentRequest extends AbstractCouchbaseRequest implem
     private final boolean development;
 
     public RemoveDesignDocumentRequest(String name, boolean development, String bucket, String password) {
-        super(bucket, password);
+        this(name, development, bucket, bucket, password);
+    }
+
+    public RemoveDesignDocumentRequest(String name, boolean development, String bucket, String username, String password) {
+        super(bucket, username, password);
         this.name = name;
         this.development = development;
     }

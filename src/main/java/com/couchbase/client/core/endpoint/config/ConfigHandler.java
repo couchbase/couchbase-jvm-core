@@ -165,7 +165,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
         request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
 
-        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        addHttpBasicAuth(ctx, request, msg.username(), msg.password());
         return request;
     }
 
@@ -186,7 +186,7 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
         //these headers should always be computed from the msg
         request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
 
-        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        addHttpBasicAuth(ctx, request, msg.username(), msg.password());
         return request;
     }
 

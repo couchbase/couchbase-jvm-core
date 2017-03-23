@@ -24,7 +24,7 @@ public class UpdateBucketRequest extends AbstractCouchbaseRequest implements Con
     private final String bucket;
 
     public UpdateBucketRequest(String bucket, String payload, String username, String password) {
-        super(username, password);
+        super(bucket, username, password);
         this.bucket = bucket;
         this.payload = payload;
     }

@@ -1137,7 +1137,7 @@ public class KeyValueHandler
     protected static class KeepAliveRequest extends AbstractKeyValueRequest implements KeepAlive {
 
         protected KeepAliveRequest() {
-            super(null, null, null);
+            super(null, null);
             partition((short) 0);
         }
     }

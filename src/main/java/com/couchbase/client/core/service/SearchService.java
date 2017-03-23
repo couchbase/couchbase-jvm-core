@@ -38,7 +38,7 @@ public class SearchService extends PooledService {
     private static final EndpointFactory FACTORY = new SearchEndpointFactory();
 
     /**
-     * Creates a new {@link ViewService}.
+     * Creates a new {@link SearchService}.
      *
      * @param hostname       the hostname of the service.
      * @param bucket         the name of the bucket.
@@ -47,9 +47,26 @@ public class SearchService extends PooledService {
      * @param env            the shared environment.
      * @param responseBuffer the shared response buffer.
      */
+    @Deprecated
     public SearchService(final String hostname, final String bucket, final String password, final int port,
                          final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, env, env.searchServiceConfig(), responseBuffer, FACTORY, STRATEGY);
+        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+    }
+
+    /**
+     * Creates a new {@link SearchService}.
+     *
+     * @param hostname       the hostname of the service.
+     * @param bucket         the name of the bucket.
+     * @param username       the user authorized for bucket access.
+     * @param password       the password of the user.
+     * @param port           the port of the service.
+     * @param env            the shared environment.
+     * @param responseBuffer the shared response buffer.
+     */
+    public SearchService(final String hostname, final String bucket, final String username, final String password, final int port,
+                         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, username, password, port, env, env.searchServiceConfig(), responseBuffer, FACTORY, STRATEGY);
 
     }
 
@@ -63,9 +80,9 @@ public class SearchService extends PooledService {
      */
     static class SearchEndpointFactory implements EndpointFactory {
         @Override
-        public Endpoint create(final String hostname, final String bucket, final String password, final int port,
+        public Endpoint create(final String hostname, final String bucket, final String username, final String password, final int port,
                                final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-            return new SearchEndpoint(hostname, bucket, password, port, env, responseBuffer);
+            return new SearchEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
         }
     }
 

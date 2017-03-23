@@ -50,7 +50,7 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
      * @param commands {@link LookupCommand} commands
      */
     public SubMultiLookupRequest(String key, String bucket, LookupCommand... commands) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (commands == null) {
             throw new NullPointerException("At least one lookup command is necessary");
         }

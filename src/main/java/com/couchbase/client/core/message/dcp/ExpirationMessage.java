@@ -32,11 +32,17 @@ public class ExpirationMessage extends AbstractDCPMessage {
     private final long bySequenceNumber;
     private final long revisionSequenceNumber;
 
+    @Deprecated
     public ExpirationMessage(int totalBodyLength, short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket) {
         this(totalBodyLength, partition, key, cas, bySequenceNumber, revisionSequenceNumber, bucket, null);
     }
 
+    @Deprecated
     public ExpirationMessage(int totalBodyLength, short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String password) {
+        this(totalBodyLength, partition, key, cas, bySequenceNumber, revisionSequenceNumber, bucket, bucket, password);
+    }
+
+    public ExpirationMessage(int totalBodyLength, short partition, String key, long cas, long bySequenceNumber, long revisionSequenceNumber, String bucket, String username, String password) {
         super(totalBodyLength, partition, key, bucket, password);
         this.cas = cas;
         this.bySequenceNumber = bySequenceNumber;

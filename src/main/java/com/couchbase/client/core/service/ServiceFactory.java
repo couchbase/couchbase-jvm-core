@@ -46,44 +46,44 @@ public class ServiceFactory {
 
     }
 
-    public static Service create(String hostname, String bucket, String password, int port, CoreEnvironment env,
+    public static Service create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
         ServiceType type, final RingBuffer<ResponseEvent> responseBuffer) {
 
         if (FORCE_OLD_SERVICES) {
             switch (type) {
                 case BINARY:
-                    return new OldKeyValueService(hostname, bucket, password, port, env, responseBuffer);
+                    return new OldKeyValueService(hostname, bucket, username, password, port, env, responseBuffer);
                 case VIEW:
-                    return new OldViewService(hostname, bucket, password, port, env, responseBuffer);
+                    return new OldViewService(hostname, bucket, username, password, port, env, responseBuffer);
                 case CONFIG:
-                    return new ConfigService(hostname, bucket, password, port, env, responseBuffer);
+                    return new ConfigService(hostname, bucket, username, password, port, env, responseBuffer);
                 case QUERY:
-                    return new OldQueryService(hostname, bucket, password, port, env, responseBuffer);
+                    return new OldQueryService(hostname, bucket, username, password, port, env, responseBuffer);
                 case DCP:
-                    return new DCPService(hostname, bucket, password, port, env, responseBuffer);
+                    return new DCPService(hostname, bucket, username, password, port, env, responseBuffer);
                 case SEARCH:
-                    return new OldSearchService(hostname, bucket, password, port, env, responseBuffer);
+                    return new OldSearchService(hostname, bucket, username, password, port, env, responseBuffer);
                 case ANALYTICS:
-                    return new OldAnalyticsService(hostname, bucket, password, port, env, responseBuffer);
+                    return new OldAnalyticsService(hostname, bucket, username, password, port, env, responseBuffer);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }
         } else {
             switch (type) {
                 case BINARY:
-                    return new KeyValueService(hostname, bucket, password, port, env, responseBuffer);
+                    return new KeyValueService(hostname, bucket, username, password, port, env, responseBuffer);
                 case VIEW:
-                    return new ViewService(hostname, bucket, password, port, env, responseBuffer);
+                    return new ViewService(hostname, bucket, username, password, port, env, responseBuffer);
                 case CONFIG:
-                    return new ConfigService(hostname, bucket, password, port, env, responseBuffer);
+                    return new ConfigService(hostname, bucket, username, password, port, env, responseBuffer);
                 case QUERY:
-                    return new QueryService(hostname, bucket, password, port, env, responseBuffer);
+                    return new QueryService(hostname, bucket, username, password, port, env, responseBuffer);
                 case DCP:
-                    return new DCPService(hostname, bucket, password, port, env, responseBuffer);
+                    return new DCPService(hostname, bucket, username, password, port, env, responseBuffer);
                 case SEARCH:
-                    return new SearchService(hostname, bucket, password, port, env, responseBuffer);
+                    return new SearchService(hostname, bucket, username, password, port, env, responseBuffer);
                 case ANALYTICS:
-                    return new AnalyticsService(hostname, bucket, password, port, env, responseBuffer);
+                    return new AnalyticsService(hostname, bucket, username, password, port, env, responseBuffer);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }

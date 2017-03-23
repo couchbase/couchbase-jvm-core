@@ -26,7 +26,7 @@ public class ReplicaGetRequest extends AbstractKeyValueRequest {
     private final short replica;
 
     public ReplicaGetRequest(String key, String bucket, short replica) {
-        super(key, bucket, null);
+        super(key, bucket);
         this.replica = replica;
     }
 

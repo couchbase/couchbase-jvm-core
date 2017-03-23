@@ -28,7 +28,7 @@ public class ObserveSeqnoRequest extends AbstractKeyValueRequest {
     private final short replica;
 
     public ObserveSeqnoRequest(long vbucketUUID, boolean master, short replica, String key, String bucket) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (master && replica > 0) {
             throw new IllegalArgumentException("Either master or a replica node needs to be given");
         }

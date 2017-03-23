@@ -24,6 +24,10 @@ import java.net.InetAddress;
 
 public interface Loader {
 
+     @Deprecated
      Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final InetAddress seedNode,
-        final String bucket, final String password);
+                                                             final String bucket, final String password);
+
+     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final InetAddress seedNode,
+        final String bucket, final String username, final String password);
 }

@@ -64,12 +64,12 @@ public class DefaultConfigurationProviderTest {
         Loader loader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
-        when(loader.loadConfig(any(InetAddress.class), anyString(), anyString()))
+        when(loader.loadConfig(any(InetAddress.class), anyString(), anyString(), anyString()))
             .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
@@ -95,15 +95,15 @@ public class DefaultConfigurationProviderTest {
         Loader errorLoader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
-        when(successLoader.loadConfig(any(InetAddress.class), anyString(), anyString()))
+        when(successLoader.loadConfig(any(InetAddress.class), anyString(), anyString(), anyString()))
             .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
         AsyncSubject<BucketConfig> errorSubject = AsyncSubject.create();
-        when(errorLoader.loadConfig(any(InetAddress.class), anyString(), anyString())).thenReturn((Observable) errorSubject);
+        when(errorLoader.loadConfig(any(InetAddress.class), anyString(), anyString(), anyString())).thenReturn((Observable) errorSubject);
         errorSubject.onError(new IllegalStateException());
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
@@ -128,7 +128,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -137,7 +137,7 @@ public class DefaultConfigurationProviderTest {
         InetAddress badNode = InetAddress.getByName("1.2.3.4");
 
 
-        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
             .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                 @Override
                 public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -153,7 +153,7 @@ public class DefaultConfigurationProviderTest {
                 }
             });
 
-        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
                 .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
                     public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -194,7 +194,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -202,7 +202,7 @@ public class DefaultConfigurationProviderTest {
         final InetAddress goodNode = InetAddress.getByName("5.6.7.8");
         InetAddress badNode = InetAddress.getByName("1.2.3.4");
 
-        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
                 .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
                     public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -210,7 +210,7 @@ public class DefaultConfigurationProviderTest {
                     }
                 });
 
-        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
                 .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
                     public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -251,7 +251,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -260,7 +260,7 @@ public class DefaultConfigurationProviderTest {
         InetAddress badNode = InetAddress.getByName("1.2.3.4");
 
 
-        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(carrierLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
                 .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
                     public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -281,7 +281,7 @@ public class DefaultConfigurationProviderTest {
                     }
                 });
 
-        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class)))
+        when(httpLoader.loadConfig(any(InetAddress.class), any(String.class), any(String.class), any(String.class)))
                 .thenAnswer(new Answer<Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
                     public Observable<Tuple2<LoaderType, BucketConfig>> answer(InvocationOnMock in) throws Throwable {
@@ -327,13 +327,13 @@ public class DefaultConfigurationProviderTest {
         Loader loader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
         when(bucketConfig.name()).thenReturn("bucket");
-        when(loader.loadConfig(any(InetAddress.class), anyString(), anyString()))
+        when(loader.loadConfig(any(InetAddress.class), anyString(), anyString(), anyString()))
             .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
 
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
@@ -368,12 +368,12 @@ public class DefaultConfigurationProviderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Loader errorLoader = mock(Loader.class);
         AsyncSubject<Tuple2<LoaderType, BucketConfig>> errorSubject = AsyncSubject.create();
-        when(errorLoader.loadConfig(any(InetAddress.class), anyString(), anyString())).thenReturn(errorSubject);
+        when(errorLoader.loadConfig(any(InetAddress.class), anyString(), anyString(), anyString())).thenReturn(errorSubject);
         errorSubject.onError(new IllegalStateException());
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<BucketConfig>empty());
-        when(refresher.registerBucket(anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,

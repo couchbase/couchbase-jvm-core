@@ -43,15 +43,27 @@ public abstract class AbstractDCPMessage extends AbstractDCPRequest implements D
      * @param password        the optional password of the bucket.
      */
     public AbstractDCPMessage(int totalBodyLength, short partition, String key, final String bucket, final String password) {
-        super(bucket, password);
-        this.partition(partition);
-        this.key = key;
-        this.totalBodyLength = totalBodyLength;
+        this(totalBodyLength, partition, key, bucket, bucket, password);
     }
 
-    public AbstractDCPMessage(int totalBodyLength, short partition, String key, final String bucket, final String password,
+    /**
+     * Creates a new {@link AbstractDCPMessage}.
+     *
+     * @param totalBodyLength
+     * @param partition
+     * @param key
+     * @param bucket          the bucket of the document.
+     * @param username        the user authorized for bucket access.
+     * @param password        the password of the user.
+     */
+    public AbstractDCPMessage(int totalBodyLength, short partition, String key, final String bucket, final String username, final String password) {
+        this(totalBodyLength, partition, key, bucket, username, password, null);
+    }
+
+
+    public AbstractDCPMessage(int totalBodyLength, short partition, String key, final String bucket, final String username, final String password,
                               final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
-        super(bucket, password, observable);
+        super(bucket, username, password, observable);
         this.partition(partition);
         this.key = key;
         this.totalBodyLength = totalBodyLength;

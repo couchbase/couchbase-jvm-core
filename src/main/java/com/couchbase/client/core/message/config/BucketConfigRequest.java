@@ -27,7 +27,11 @@ public class BucketConfigRequest extends AbstractCouchbaseRequest implements Con
     private final String path;
 
     public BucketConfigRequest(String path, InetAddress hostname, String bucket, String password) {
-        super(bucket, password);
+        this(path, hostname, bucket, bucket, password);
+    }
+
+    public BucketConfigRequest(String path, InetAddress hostname, String bucket, String username, String password) {
+        super(bucket, username, password);
         this.hostname = hostname;
         this.path = path;
     }

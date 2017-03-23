@@ -114,7 +114,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private final String bucket;
 
     /**
-     * The password of the couchbase bucket (needed for bucket-level endpoints).
+     * User authorized for bucket access
+     */
+    private final String username;
+
+    /**
+     * The password of the couchbase bucket/user.
      */
     private final String password;
 
@@ -183,18 +188,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Constructor to which allows to pass in an artificial bootstrap adapter.
      *
      * This method should not be used outside of tests. Please use the
-     * {@link #AbstractEndpoint(String, String, String, int, CoreEnvironment, RingBuffer, boolean, EventLoopGroup, boolean)}
+     * {@link #AbstractEndpoint(String, String, String, String, int, CoreEnvironment, RingBuffer, boolean, EventLoopGroup, boolean)}
      * constructor instead.
      *
      * @param bucket the name of the bucket.
-     * @param password the password of the bucket.
+     * @param username user authorized for bucket access.
+     * @param password the password of the user.
      * @param adapter the bootstrap adapter.
      */
-    protected AbstractEndpoint(final String bucket, final String password, final BootstrapAdapter adapter,
+    protected AbstractEndpoint(final String bucket, final String username, final String password, final BootstrapAdapter adapter,
         final boolean isTransient, CoreEnvironment env, final boolean pipeline) {
         super(LifecycleState.DISCONNECTED);
         bootstrap = adapter;
         this.bucket = bucket;
+        this.username = username;
         this.password = password;
         this.responseBuffer = null;
         this.env = env;
@@ -212,16 +219,18 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      *
      * @param hostname the hostname/ipaddr of the remote channel.
      * @param bucket the name of the bucket.
-     * @param password the password of the bucket.
+     * @param username the user authorized for bucket access.
+     * @param password the password of the user.
      * @param port the port of the remote channel.
      * @param environment the environment of the core.
      * @param responseBuffer the response buffer for passing responses up the stack.
      */
-    protected AbstractEndpoint(final String hostname, final String bucket, final String password, final int port,
+    protected AbstractEndpoint(final String hostname, final String bucket, final String username, final String password, final int port,
         final CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer, boolean isTransient,
         final EventLoopGroup ioPool, final boolean pipeline) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
+        this.username = username;
         this.password = password;
         this.responseBuffer = responseBuffer;
         this.env = environment;
@@ -596,9 +605,18 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     }
 
     /**
-     * The password of the bucket.
+     * Username of the bucket.
      *
-     * @return the bucket password.
+     * @return user authorized for bucket access.
+     */
+    protected String username() {
+        return username;
+    }
+
+    /**
+     * The password of the bucket/user.
+     *
+     * @return the bucket/user password.
      */
     protected String password() {
         return password;

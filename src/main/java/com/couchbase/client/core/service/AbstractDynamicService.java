@@ -47,6 +47,7 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
 
     private final String hostname;
     private final String bucket;
+    private final String username;
     private final String password;
     private final int port;
     private final CoreEnvironment env;
@@ -56,13 +57,14 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
     private final EndpointStateZipper endpointStates;
     private final LifecycleState initialState;
 
-    protected AbstractDynamicService(final String hostname, final String bucket, final String password, final int port,
+    protected AbstractDynamicService(final String hostname, final String bucket, final String username, final String password, final int port,
         final CoreEnvironment env, final int minEndpoints,
         final RingBuffer<ResponseEvent> responseBuffer, final EndpointFactory endpointFactory) {
         super(minEndpoints == 0 ? LifecycleState.IDLE : LifecycleState.DISCONNECTED);
         this.initialState = minEndpoints == 0 ? LifecycleState.IDLE : LifecycleState.DISCONNECTED;
         this.hostname = hostname;
         this.bucket = bucket;
+        this.username = username;
         this.password = password;
         this.port = port;
         this.env = env;
@@ -172,7 +174,7 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
      * @return the endpoint to create.
      */
     protected Endpoint createEndpoint() {
-        return endpointFactory.create(hostname, bucket, password, port, env, responseBuffer);
+        return endpointFactory.create(hostname, bucket, username, password, port, env, responseBuffer);
     }
 
     /**

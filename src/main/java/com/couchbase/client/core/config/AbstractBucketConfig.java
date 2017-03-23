@@ -25,6 +25,7 @@ import java.util.Map;
 public abstract class AbstractBucketConfig implements BucketConfig {
 
     private final String name;
+    private String username;
     private String password;
     private final BucketNodeLocator locator;
     private final String uri;
@@ -116,6 +117,17 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     @Override
     public BucketConfig password(final String password) {
         this.password = password;
+        return this;
+    }
+
+    @Override
+    public String username() {
+        return username;
+    }
+
+    @Override
+    public BucketConfig username(final String username) {
+        this.username = username;
         return this;
     }
 

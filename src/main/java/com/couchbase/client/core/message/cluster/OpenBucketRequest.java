@@ -20,7 +20,12 @@ import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 public class OpenBucketRequest extends AbstractCouchbaseRequest implements ClusterRequest {
 
     public OpenBucketRequest(String bucket, String password) {
-        super(bucket, password);
+        this(bucket, bucket, password);
     }
+
+    public OpenBucketRequest(String bucket, String username, String password) {
+        super(bucket, username, password);
+    }
+
 
 }

@@ -60,7 +60,7 @@ public class CarrierLoader extends AbstractLoader {
     }
 
     @Override
-    protected Observable<String> discoverConfig(final String bucket, final String password,
+    protected Observable<String> discoverConfig(final String bucket, final String username, final String password,
         final InetAddress hostname) {
         if (!env().bootstrapCarrierEnabled()) {
             LOGGER.info("Carrier Bootstrap manually disabled.");

@@ -41,7 +41,7 @@ public class GetAllMutationTokensRequest extends AbstractKeyValueRequest {
     }
 
     public GetAllMutationTokensRequest(final PartitionState partitionState, final InetAddress hostname, final String bucket) {
-        super("", bucket, null);
+        super("", bucket);
         this.partitionState = partitionState;
         this.hostname = hostname;
     }

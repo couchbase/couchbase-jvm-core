@@ -195,7 +195,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
                 + msg.getClass());
         }
 
-        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        addHttpBasicAuth(ctx, request, msg.username(), msg.password());
         return request;
     }
 

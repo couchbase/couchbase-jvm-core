@@ -33,9 +33,15 @@ import io.netty.channel.ChannelPipeline;
  */
 public class DCPEndpoint extends AbstractEndpoint {
 
+    @Deprecated
     public DCPEndpoint(String hostname, String bucket, String password, int port,
                        CoreEnvironment environment, RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, environment, responseBuffer, false, environment.ioPool(), true);
+        this(hostname, bucket, bucket, password, port, environment, responseBuffer);
+    }
+
+    public DCPEndpoint(String hostname, String bucket, String username, String password, int port,
+                       CoreEnvironment environment, RingBuffer<ResponseEvent> responseBuffer) {
+        super(hostname, bucket, username, password, port, environment, responseBuffer, false, environment.ioPool(), true);
     }
 
     @Override
@@ -43,7 +49,7 @@ public class DCPEndpoint extends AbstractEndpoint {
         pipeline
             .addLast(new BinaryMemcacheClientCodec())
             .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
-            .addLast(new KeyValueAuthHandler(bucket(), password()))
+            .addLast(new KeyValueAuthHandler(username(), password()))
             .addLast(new DCPConnectionHandler(environment()))
             .addLast(new DCPHandler(this, responseBuffer(), false, true));
     }

@@ -33,9 +33,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class QueryEndpoint extends AbstractEndpoint {
 
+    @Deprecated
     public QueryEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
+                         RingBuffer<ResponseEvent> responseBuffer) {
+        this(hostname, bucket, bucket, password, port, environment, responseBuffer);
+    }
+
+    public QueryEndpoint(String hostname, String bucket, String username, String password, int port, CoreEnvironment environment,
         RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, password, port, environment, responseBuffer, false,
+        super(hostname, bucket, username, password, port, environment, responseBuffer, false,
                 environment.queryIoPool() == null ? environment.ioPool() : environment.queryIoPool(), false);
     }
 

@@ -23,7 +23,7 @@ public class PrependRequest extends AbstractKeyValueRequest {
     private final ByteBuf content;
 
     public PrependRequest(String key, long cas, ByteBuf content, String bucket) {
-        super(key, bucket, null);
+        super(key, bucket);
         this.cas = cas;
         this.content = content;
     }

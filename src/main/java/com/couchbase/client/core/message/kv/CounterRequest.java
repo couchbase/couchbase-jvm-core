@@ -28,7 +28,7 @@ public class CounterRequest extends AbstractKeyValueRequest {
     private final int expiry;
 
     public CounterRequest(String key, long initial, long delta, int expiry, String bucket) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (initial < 0) {
             throw new IllegalArgumentException("The initial needs to be >= 0");
         }

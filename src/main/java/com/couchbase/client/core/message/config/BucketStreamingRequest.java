@@ -22,7 +22,11 @@ public class BucketStreamingRequest extends AbstractCouchbaseRequest implements 
     private final String path;
 
     public BucketStreamingRequest(final String path, final String bucket, final String password) {
-        super(bucket, password);
+        this(path, bucket, bucket, password);
+    }
+
+    public BucketStreamingRequest(final String path, final String bucket, final String username, final String password) {
+        super(bucket, username, password);
         this.path = path;
     }
 

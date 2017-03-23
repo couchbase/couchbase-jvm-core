@@ -1549,6 +1549,7 @@ public class QueryHandlerTest {
         RawQueryRequest requestMock1 = mock(RawQueryRequest.class);
         when(requestMock1.query()).thenReturn("SELECT * FROM `foo`");
         when(requestMock1.bucket()).thenReturn("foo");
+        when(requestMock1.username()).thenReturn("foo");
         when(requestMock1.password()).thenReturn("");
         when(requestMock1.observable()).thenReturn(obs1);
 
@@ -1556,6 +1557,7 @@ public class QueryHandlerTest {
         RawQueryRequest requestMock2 = mock(RawQueryRequest.class);
         when(requestMock2.query()).thenReturn("SELECT * FROM `foo`");
         when(requestMock2.bucket()).thenReturn("foo");
+        when(requestMock2.username()).thenReturn("foo");
         when(requestMock2.password()).thenReturn("");
         when(requestMock2.observable()).thenReturn(obs2);
 

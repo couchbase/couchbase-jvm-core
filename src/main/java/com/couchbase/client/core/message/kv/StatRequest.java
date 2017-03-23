@@ -28,7 +28,7 @@ public class StatRequest extends AbstractKeyValueRequest {
     private final InetAddress hostname;
 
     public StatRequest(final String key, final InetAddress hostname, final String bucket) {
-        super(key, bucket, null, ReplaySubject.<CouchbaseResponse>create());
+        super(key, bucket, null, null, ReplaySubject.<CouchbaseResponse>create());
         this.hostname = hostname;
     }
 

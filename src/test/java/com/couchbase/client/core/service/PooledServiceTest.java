@@ -748,7 +748,7 @@ public class PooledServiceTest {
 
         MockedService(ServiceType st, EndpointFactoryMock ef, AbstractServiceConfig sc,
             SelectionStrategy ss) {
-            super(ef.getHostname(), ef.getBucket(), ef.getPassword(), ef.getPort(), ef.getEnv(),
+            super(ef.getHostname(), ef.getBucket(), ef.getBucket(), ef.getPassword(), ef.getPort(), ef.getEnv(),
                 sc, ef.getResponseBuffer(), ef, ss);
             this.serviceType = st;
         }

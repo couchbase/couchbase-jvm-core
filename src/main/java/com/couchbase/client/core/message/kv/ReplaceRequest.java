@@ -91,7 +91,7 @@ public class ReplaceRequest extends AbstractKeyValueRequest implements BinarySto
 
     public ReplaceRequest(final String key, final ByteBuf content, final long cas, final int exp, final int flags,
         final String bucket, final boolean json) {
-        super(key, bucket, null);
+        super(key, bucket);
         this.content = content;
         this.expiration = exp;
         this.flags = flags;

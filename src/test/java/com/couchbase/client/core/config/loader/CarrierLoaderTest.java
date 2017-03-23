@@ -86,7 +86,7 @@ public class CarrierLoaderTest {
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         assertEquals("myconfig", configObservable.toBlocking().single());
     }
 
@@ -100,7 +100,7 @@ public class CarrierLoaderTest {
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         try {
             configObservable.toBlocking().single();
             assertTrue(false);
@@ -119,7 +119,7 @@ public class CarrierLoaderTest {
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
         try {
-            loader.discoverConfig("bucket", "password", host).toBlocking().single();
+            loader.discoverConfig("bucket", "password", "password", host).toBlocking().single();
             assertTrue(false);
         } catch(ConfigurationException ex) {
             assertEquals("Carrier Bootstrap disabled through configuration.", ex.getMessage());

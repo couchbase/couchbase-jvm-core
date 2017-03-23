@@ -55,7 +55,7 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
      * @param commands   the set of internal mutations to apply to the document.
      */
     public SubMultiMutationRequest(String key, String bucket, int expiration, long cas, List<MutationCommand> commands) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (commands == null || commands.isEmpty()) {
             throw new IllegalArgumentException("At least one mutation command is necessary");
         }

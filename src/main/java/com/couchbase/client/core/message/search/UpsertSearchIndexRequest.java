@@ -31,7 +31,7 @@ public class UpsertSearchIndexRequest extends AbstractCouchbaseRequest implement
     private final String payload;
 
     public UpsertSearchIndexRequest(String indexName, String payload, String username, String password) {
-        super(username, password);
+        super(null, username, password);
         this.indexName = indexName;
         this.payload = payload;
     }

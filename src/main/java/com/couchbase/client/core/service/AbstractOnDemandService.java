@@ -34,9 +34,9 @@ import rx.functions.Action1;
  */
 public abstract class AbstractOnDemandService extends AbstractDynamicService {
 
-    protected AbstractOnDemandService(String hostname, String bucket, String password, int port, CoreEnvironment env,
+    protected AbstractOnDemandService(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
         RingBuffer<ResponseEvent> responseBuffer, EndpointFactory endpointFactory) {
-        super(hostname, bucket, password, port, env, 0, responseBuffer, endpointFactory);
+        super(hostname, bucket, username, password, port, env, 0, responseBuffer, endpointFactory);
     }
 
     @Override

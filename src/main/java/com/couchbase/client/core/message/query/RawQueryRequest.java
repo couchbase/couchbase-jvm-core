@@ -34,8 +34,8 @@ import java.net.InetAddress;
 @InterfaceAudience.Public
 public class RawQueryRequest extends GenericQueryRequest {
 
-    private RawQueryRequest(String jsonQuery, String bucket, String password, InetAddress targetNode) {
-        super(jsonQuery, true, bucket, password, targetNode);
+    private RawQueryRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
+        super(jsonQuery, true, bucket, username, password, targetNode);
     }
 
     /**
@@ -51,7 +51,24 @@ public class RawQueryRequest extends GenericQueryRequest {
      * @return a {@link RawQueryRequest} for this full query.
      */
     public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String password) {
-        return new RawQueryRequest(jsonQuery, bucket, password, null);
+        return new RawQueryRequest(jsonQuery, bucket, bucket, password, null);
+    }
+
+    /**
+     * Create a {@link RawQueryRequest} containing a full N1QL query in Json form (including additional
+     * query parameters like named arguments, etc...).
+     *
+     * The simplest form of such a query is a single statement encapsulated in a json query object:
+     * <pre>{"statement":"SELECT * FROM default"}</pre>.
+     *
+     * @param jsonQuery the N1QL query in json form.
+     * @param bucket the bucket on which to perform the query.
+     * @param username the user authorized for bucket access.
+     * @param password the password for the user.
+     * @return a {@link RawQueryRequest} for this full query.
+     */
+    public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password) {
+        return new RawQueryRequest(jsonQuery, bucket, username, password, null);
     }
 
     /**
@@ -68,6 +85,24 @@ public class RawQueryRequest extends GenericQueryRequest {
      * @return a {@link RawQueryRequest} for this full query.
      */
     public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode) {
-        return new RawQueryRequest(jsonQuery, bucket, password, targetNode);
+        return new RawQueryRequest(jsonQuery, bucket, bucket, password, targetNode);
+    }
+
+    /**
+     * Create a {@link RawQueryRequest} containing a full N1QL query in Json form (including additional
+     * query parameters like named arguments, etc...).
+     *
+     * The simplest form of such a query is a single statement encapsulated in a json query object:
+     * <pre>{"statement":"SELECT * FROM default"}</pre>.
+     *
+     * @param jsonQuery the N1QL query in json form.
+     * @param bucket the bucket on which to perform the query.
+     * @param username the user authorized for bucket access.
+     * @param password the password for the user.
+     * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
+     * @return a {@link RawQueryRequest} for this full query.
+     */
+    public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
+        return new RawQueryRequest(jsonQuery, bucket, username, password, targetNode);
     }
 }

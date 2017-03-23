@@ -79,7 +79,7 @@ public abstract class AbstractSubdocRequest extends AbstractKeyValueRequest impl
     public AbstractSubdocRequest(String key, String path, String bucket,
                                  Subject<CouchbaseResponse, CouchbaseResponse> observable,
                                  ByteBuf... restOfContent) {
-        super(key, bucket, null, observable);
+        super(key, bucket, null, null, observable);
         this.path = path;
         ByteBuf pathByteBuf;
         if (path == null || path.isEmpty()) {

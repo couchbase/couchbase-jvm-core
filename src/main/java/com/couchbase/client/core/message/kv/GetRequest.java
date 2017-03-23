@@ -32,7 +32,7 @@ public class GetRequest extends AbstractKeyValueRequest {
     }
 
     public GetRequest(final String key, final String bucket, final boolean lock, final boolean touch, final int expiry) {
-        super(key, bucket, null);
+        super(key, bucket);
         if (lock && touch) {
             throw new IllegalArgumentException("Locking and touching in the same request is not supported.");
         }

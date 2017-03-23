@@ -195,7 +195,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
                 + msg.getClass());
         }
 
-        addHttpBasicAuth(ctx, request, msg.bucket(), msg.password());
+        addHttpBasicAuth(ctx, request, msg.username(), msg.password());
         return request;
     }
 

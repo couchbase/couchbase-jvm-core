@@ -68,7 +68,7 @@ public class InsertRequest extends AbstractKeyValueRequest implements BinaryStor
      * @param bucket the the name of the bucket.
      */
     public InsertRequest(final String key, final ByteBuf content, final int exp, final int flags, final String bucket, final boolean json) {
-        super(key, bucket, null);
+        super(key, bucket);
         this.content = content;
         this.expiration = exp;
         this.flags = flags;

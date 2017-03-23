@@ -43,7 +43,15 @@ public interface Refresher {
      *
      * @return true if it succeeded, a failing {@link Observable} otherwise with the cause.
      */
+    @Deprecated
     Observable<Boolean> registerBucket(String name, String password);
+
+    /**
+     * Registers a bucket to be watched for new configurations.
+     *
+     * @return true if it succeeded, a failing {@link Observable} otherwise with the cause.
+     */
+    Observable<Boolean> registerBucket(String name, String username, String password);
 
     /**
      * De-registers a bucket from watching.

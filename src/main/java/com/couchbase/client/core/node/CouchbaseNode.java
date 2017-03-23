@@ -254,6 +254,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         final Service service = ServiceFactory.create(
             request.hostname().getHostName(),
             request.bucket(),
+            request.username(),
             request.password(),
             request.port(),
             environment,

@@ -167,7 +167,7 @@ public class AbstractLoaderTest {
         }
 
         @Override
-        protected Observable<String> discoverConfig(String bucket, String password, InetAddress hostname) {
+        protected Observable<String> discoverConfig(String bucket, String password, String username, InetAddress hostname) {
             IllegalStateException ex = new IllegalStateException("Bucket config response did not return with success.");
             if (failCounter++ >= failAfter) {
                 return Observable.error(ex);

@@ -30,7 +30,11 @@ public class FlushRequest extends AbstractCouchbaseRequest implements ConfigRequ
     private static final String PATH = "/controller/doFlush";
 
     public FlushRequest(String bucket, String password) {
-        super(bucket, password);
+        this(bucket, bucket, password);
+    }
+
+    public FlushRequest(String bucket, String username, String password) {
+        super(bucket, username, password);
     }
 
     public String path() {
