@@ -73,6 +73,12 @@ public interface ConfigurationProvider {
 
     Observable<Boolean> closeBuckets();
 
+    /**
+     * Shutdown the {@link ConfigurationProvider} into a terminal state where it cannot
+     * be used anymore and all its non-bucket resources are freed.
+     */
+    Observable<Boolean> shutdown();
+
     void proposeBucketConfig(String bucket, String config);
 
     void signalOutdated();

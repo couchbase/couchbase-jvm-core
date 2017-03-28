@@ -266,6 +266,12 @@ public class CouchbaseCore implements ClusterFacade {
                 .closeBuckets()
                 .flatMap(new Func1<Boolean, Observable<Boolean>>() {
                     @Override
+                    public Observable<Boolean> call(Boolean aBoolean) {
+                        return configProvider.shutdown();
+                    }
+                })
+                .flatMap(new Func1<Boolean, Observable<Boolean>>() {
+                    @Override
                     public Observable<Boolean> call(Boolean done) {
                         return sharedEnvironment ? Observable.just(true) : environment.shutdownAsync();
                     }

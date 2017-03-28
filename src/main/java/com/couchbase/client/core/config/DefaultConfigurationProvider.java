@@ -105,6 +105,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     private final EventBus eventBus;
 
     /**
+     * Signals if the provider is completely terminated.
+     */
+    private volatile boolean terminated;
+
+    /**
      * Signals if the provider is bootstrapped and serving configs.
      */
     private volatile boolean bootstrapped;
@@ -166,6 +171,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         configObservable = PublishSubject.<ClusterConfig>create().toSerialized();
         seedHosts = null;
         bootstrapped = false;
+        terminated = false;
         currentConfig = new DefaultClusterConfig();
 
         Observable
@@ -353,6 +359,46 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
         for (Refresher refresher : refreshers.values()) {
             refresher.refresh(currentConfig);
+        }
+    }
+
+    @Override
+    public synchronized Observable<Boolean> shutdown() {
+        if (terminated) {
+            LOGGER.debug("ConfigurationProvider already shut down, ignoring.");
+            return Observable.just(true);
+        } else {
+            LOGGER.debug("Shutting down ConfigurationProvider.");
+            terminated = true;
+
+            return Observable
+                .just(true)
+                .doOnNext(new Action1<Boolean>() {
+                    @Override
+                    public void call(Boolean ignored) {
+                        if (configObservable != null) {
+                            LOGGER.trace("Completing ConfigObservable for termination.");
+                            configObservable.onCompleted();
+                        }
+                    }
+                })
+                .flatMap(new Func1<Boolean, Observable<Boolean>>() {
+                    @Override
+                    public Observable<Boolean> call(Boolean aBoolean) {
+                        Observable<Boolean> shutdownObs = Observable.just(true);
+                        for (final Refresher refresher : refreshers.values()) {
+                            shutdownObs = shutdownObs.flatMap(new Func1<Boolean, Observable<Boolean>>() {
+                                @Override
+                                public Observable<Boolean> call(Boolean ignored) {
+                                    LOGGER.trace("Initiating {} shutdown.",
+                                        refresher.getClass().getSimpleName());
+                                    return refresher.shutdown();
+                                }
+                            });
+                        }
+                        return shutdownObs;
+                    }
+                });
         }
     }
 

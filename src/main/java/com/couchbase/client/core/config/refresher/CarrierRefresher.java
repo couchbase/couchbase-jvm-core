@@ -30,6 +30,7 @@ import com.couchbase.client.core.utils.Buffers;
 import io.netty.util.CharsetUtil;
 import rx.Observable;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -58,6 +59,8 @@ public class CarrierRefresher extends AbstractRefresher {
     private final Set<String> subscriptions;
     private final CoreEnvironment environment;
 
+    private volatile Subscription pollerSubscription;
+
     /**
      * Creates a new {@link CarrierRefresher}.
      *
@@ -69,7 +72,7 @@ public class CarrierRefresher extends AbstractRefresher {
         subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
 
-        Observable
+        pollerSubscription = Observable
             .interval(10, TimeUnit.SECONDS, environment.scheduler())
             .subscribe(new Action1<Long>() {
                 @Override
@@ -81,7 +84,17 @@ public class CarrierRefresher extends AbstractRefresher {
 
     @Override
     public Observable<Boolean> shutdown() {
-        return Observable.just(true);
+        LOGGER.debug("Shutting down the CarrierRefresher.");
+        return Observable
+            .just(true)
+            .doOnNext(new Action1<Boolean>() {
+                @Override
+                public void call(Boolean ignored) {
+                    if (pollerSubscription != null && !pollerSubscription.isUnsubscribed()) {
+                        pollerSubscription.unsubscribe();
+                    }
+                }
+            });
     }
 
     @Override
@@ -276,6 +289,13 @@ public class CarrierRefresher extends AbstractRefresher {
                         + hostname + "\".", ex);
             }
         });
+    }
+
+    /**
+     * Helper method to inspect the poller subscription state in tests.
+     */
+    Subscription pollerSubscription() {
+        return pollerSubscription;
     }
 
 }

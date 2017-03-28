@@ -45,6 +45,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -332,4 +334,15 @@ public class CarrierRefresherTest {
         assertEquals(0, content.refCnt());
     }
 
+    @Test
+    public void shouldFreeResourcesAtShutdown() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        ConfigurationProvider provider = mock(ConfigurationProvider.class);
+        CarrierRefresher refresher = new CarrierRefresher(ENVIRONMENT, cluster);
+        refresher.provider(provider);
+
+        assertFalse(refresher.pollerSubscription().isUnsubscribed());
+        refresher.shutdown().toBlocking().single();
+        assertTrue(refresher.pollerSubscription().isUnsubscribed());
+    }
 }
