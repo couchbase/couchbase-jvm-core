@@ -445,4 +445,15 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     @InterfaceStability.Experimental
     @InterfaceAudience.Public
     WaitStrategyFactory requestBufferWaitStrategy();
+
+    /**
+     * Returns the proactive polling interval for cluster configurations.
+     *
+     * @return the polling interval in milliseconds.
+     */
+    @InterfaceStability.Experimental
+    @InterfaceAudience.Public
+    long configPollInterval();
+
+
 }
