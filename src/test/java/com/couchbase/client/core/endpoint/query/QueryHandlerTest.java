@@ -255,6 +255,7 @@ public class QueryHandlerTest {
         } else {
             assertEquals(0, signatureList.size());
         }
+        assertEquals(0, inbound.profileInfo().timeout(1, TimeUnit.SECONDS).toList().toBlocking().single().size());
     }
 
     private static Map<String, Object> expectedMetricsCounts(int expectedErrors, int expectedResults) {

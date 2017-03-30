@@ -1,0 +1,158 @@
+{
+  "requestID": "b92dddf9-14d6-4b0d-bdd4-5847292974d2",
+  "signature": {
+    "*": "*"
+  },
+  "results": [
+    {
+      "default": {
+        "foo": "bar"
+      }
+    }
+  ],
+  "status": "success",
+  "metrics": {
+    "elapsedTime": "7.09332ms",
+    "executionTime": "7.067571ms",
+    "resultCount": 1,
+    "resultSize": 81
+  },
+  "profile": {
+    "phaseTimes": {
+      "authorize": "946.585..s",
+      "fetch": "193.238..s",
+      "instantiate": "41.196..s",
+      "parse": "303.209..s",
+      "plan": "93.119..s",
+      "primaryScan": "5.318989ms",
+      "run": "6.585423ms"
+    },
+    "phaseCounts": {
+      "fetch": 1,
+      "primaryScan": 1
+    },
+    "phaseOperators": {
+      "authorize": 1,
+      "fetch": 1,
+      "primaryScan": 1
+    },
+    "executionTimings": {
+      "#operator": "Sequence",
+      "#stats": {
+        "#phaseSwitches": 2,
+        "execTime": "1.054..s",
+        "kernTime": "6.582721ms"
+      },
+      "~children": [
+        {
+          "#operator": "Authorize",
+          "#stats": {
+            "#phaseSwitches": 4,
+            "execTime": "3.819..s",
+            "kernTime": "5.610309ms",
+            "servTime": "942.766..s"
+          },
+          "privileges": {
+            "List": [
+              {
+                "Target": "default:default",
+                "Priv": 1
+              },
+              {
+                "Target": "default:default",
+                "Priv": 7
+              }
+            ]
+          },
+          "~child": {
+            "#operator": "Sequence",
+            "#stats": {
+              "#phaseSwitches": 3,
+              "execTime": "1.756..s",
+              "kernTime": "5.605713ms"
+            },
+            "~children": [
+              {
+                "#operator": "PrimaryScan",
+                "#stats": {
+                  "#itemsOut": 1,
+                  "#phaseSwitches": 7,
+                  "execTime": "4.846905ms",
+                  "kernTime": "3.405..s",
+                  "servTime": "472.084..s"
+                },
+                "index": "#primary",
+                "keyspace": "default",
+                "namespace": "default",
+                "using": "gsi"
+              },
+              {
+                "#operator": "Fetch",
+                "#stats": {
+                  "#itemsIn": 1,
+                  "#itemsOut": 1,
+                  "#phaseSwitches": 11,
+                  "execTime": "14.731..s",
+                  "kernTime": "5.340126ms",
+                  "servTime": "178.507..s"
+                },
+                "keyspace": "default",
+                "namespace": "default"
+              },
+              {
+                "#operator": "Sequence",
+                "#stats": {
+                  "#phaseSwitches": 5,
+                  "execTime": "3.631..s",
+                  "kernTime": "5.584355ms"
+                },
+                "~children": [
+                  {
+                    "#operator": "InitialProject",
+                    "#stats": {
+                      "#itemsIn": 1,
+                      "#itemsOut": 1,
+                      "#phaseSwitches": 9,
+                      "execTime": "4.294..s",
+                      "kernTime": "5.549889ms"
+                    },
+                    "result_terms": [
+                      {
+                        "expr": "self",
+                        "star": true
+                      }
+                    ]
+                  },
+                  {
+                    "#operator": "FinalProject",
+                    "#stats": {
+                      "#itemsIn": 1,
+                      "#itemsOut": 1,
+                      "#phaseSwitches": 11,
+                      "execTime": "2.139..s",
+                      "kernTime": "5.566502ms"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "#operator": "Stream",
+          "#stats": {
+            "#itemsIn": 1,
+            "#itemsOut": 1,
+            "#phaseSwitches": 9,
+            "execTime": "1.594..s",
+            "kernTime": "6.57442ms"
+          }
+        }
+      ],
+      "~versions": [
+        "1.7.0-N1QL",
+        "5.0.0-2412-enterprise"
+      ]
+    }
+  }
+}

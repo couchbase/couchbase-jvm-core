@@ -40,18 +40,20 @@ public class GenericQueryResponse extends AbstractCouchbaseResponse {
     private final Observable<String> queryStatus;
     private final Observable<ByteBuf> info;
     private final Observable<ByteBuf> signature;
+    private final Observable<ByteBuf> profileInfo;
 
     private final String requestId;
     private final String clientRequestId;
 
     public GenericQueryResponse(Observable<ByteBuf> errors, Observable<ByteBuf> rows, Observable<ByteBuf> signature,
-            Observable<String> queryStatus, Observable<ByteBuf> info,
+            Observable<String> queryStatus, Observable<ByteBuf> info, Observable<ByteBuf> profileInfo,
             CouchbaseRequest request, ResponseStatus status, String requestId, String clientRequestId) {
         super(status, request);
         this.errors = errors;
         this.rows = rows;
         this.signature = signature;
         this.info = info;
+        this.profileInfo = profileInfo;
         this.queryStatus = queryStatus;
         this.requestId = requestId;
         this.clientRequestId = clientRequestId == null ? "" : clientRequestId;
@@ -93,6 +95,12 @@ public class GenericQueryResponse extends AbstractCouchbaseResponse {
      * haven't been activated).
      */
     public Observable<ByteBuf> info() { return info; }
+
+    /**
+     * Contains a single {@link ByteBuf} representing the JSON object of query profile information (or empty if profile
+     * haven't been activated).
+     */
+    public Observable<ByteBuf> profileInfo() { return profileInfo; }
 
     /**
      * @return the UUID for this request, can be used on the server side for tracing.
