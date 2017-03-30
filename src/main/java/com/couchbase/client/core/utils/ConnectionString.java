@@ -95,9 +95,9 @@ public class ConnectionString {
             }
             String[] parts = splitted[i].split(":");
             if (parts.length == 1) {
-                hosts.add(InetSocketAddress.createUnresolved(parts[0], 0));
+                hosts.add(new InetSocketAddress(parts[0], 0));
             } else {
-                hosts.add(InetSocketAddress.createUnresolved(parts[0], Integer.parseInt(parts[1])));
+                hosts.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
             }
         }
         return hosts;
