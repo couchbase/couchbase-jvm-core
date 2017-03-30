@@ -19,6 +19,7 @@ package com.couchbase.client.core.message.dcp;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.cluster.ClusterRequest;
 
+@Deprecated
 public class OpenConnectionRequest extends AbstractCouchbaseRequest implements ClusterRequest {
     private final String connectionName;
 

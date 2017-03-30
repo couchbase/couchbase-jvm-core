@@ -30,6 +30,7 @@ import rx.subjects.Subject;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public abstract class AbstractDCPRequest extends AbstractCouchbaseRequest implements DCPRequest {
     protected static short DEFAULT_PARTITION = 0;
 

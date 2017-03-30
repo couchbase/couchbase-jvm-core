@@ -24,6 +24,7 @@ import java.util.List;
 /**
  * @author Sergey Avseyev
  */
+@Deprecated
 public class GetFailoverLogResponse extends AbstractDCPResponse {
     private final List<FailoverLogEntry> failoverLog;
 

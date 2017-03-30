@@ -31,6 +31,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public interface DCPRequest extends CouchbaseRequest {
     /**
      * The partition (vBucket) to use for this request.

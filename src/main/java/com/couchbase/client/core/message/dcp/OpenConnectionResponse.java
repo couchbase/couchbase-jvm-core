@@ -20,6 +20,7 @@ import com.couchbase.client.core.endpoint.dcp.DCPConnection;
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 
+@Deprecated
 public class OpenConnectionResponse extends AbstractCouchbaseResponse {
     private final DCPConnection connection;
 

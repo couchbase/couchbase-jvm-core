@@ -931,6 +931,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         /**
          * Set if DCP should be enabled (only makes sense with server versions >= 3.0.0, default {@value #DCP_ENABLED}).
          */
+        @Deprecated
         public Builder dcpEnabled(final boolean dcpEnabled) {
             this.dcpEnabled = dcpEnabled;
             return this;
@@ -1078,6 +1079,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * the current value of the buffer reach this limit. Set it to zero to disable DCP flow control.
          * (default value {@value #DCP_CONNECTION_BUFFER_SIZE}).
          */
+        @Deprecated
         public Builder dcpConnectionBufferSize(final int dcpConnectionBufferSize) {
             this.dcpConnectionBufferSize = dcpConnectionBufferSize;
             return this;
@@ -1088,6 +1090,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * a DCP Buffer Acknowledge message is sent to the server to signal producer how much data has been processed.
          * (default value {@value #DCP_CONNECTION_BUFFER_ACK_THRESHOLD}).
          */
+        @Deprecated
         public Builder dcpConnectionBufferAckThreshold(final double dcpConnectionBufferAckThreshold) {
             this.dcpConnectionBufferAckThreshold = dcpConnectionBufferAckThreshold;
             return this;
@@ -1099,6 +1102,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceStability.Experimental
         @InterfaceAudience.Public
+        @Deprecated
         public Builder dcpConnectionName(final String dcpConnectionName) {
             this.dcpConnectionName = dcpConnectionName;
             return this;

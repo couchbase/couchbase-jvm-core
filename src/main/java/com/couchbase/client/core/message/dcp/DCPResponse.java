@@ -28,6 +28,7 @@ import com.couchbase.client.core.message.CouchbaseResponse;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public interface DCPResponse extends CouchbaseResponse {
     /**
      * The partition (vBucket) to use for this request.

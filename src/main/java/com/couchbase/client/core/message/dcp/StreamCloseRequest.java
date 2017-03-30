@@ -25,6 +25,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public class StreamCloseRequest extends AbstractDCPRequest {
     public StreamCloseRequest(short partition, String bucket, String password) {
         super(bucket, password);

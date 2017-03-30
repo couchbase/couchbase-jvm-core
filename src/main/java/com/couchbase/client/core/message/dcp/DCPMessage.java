@@ -25,6 +25,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public interface DCPMessage {
     /**
      * @return total payload size of the message.

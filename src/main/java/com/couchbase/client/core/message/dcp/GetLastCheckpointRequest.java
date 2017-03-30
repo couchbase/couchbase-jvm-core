@@ -23,6 +23,7 @@ package com.couchbase.client.core.message.dcp;
  * @author Sergey Avseyev
  * @since 1.2.6
  */
+@Deprecated
 public class GetLastCheckpointRequest extends AbstractDCPRequest {
     public GetLastCheckpointRequest(final short partition, final String bucket) {
         super(bucket, null);

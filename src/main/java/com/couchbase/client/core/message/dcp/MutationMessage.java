@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
  * @author Sergey Avseyev
  * @since 1.1.0
  */
+@Deprecated
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
 public class MutationMessage extends AbstractDCPMessage {

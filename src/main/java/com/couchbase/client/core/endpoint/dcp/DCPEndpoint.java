@@ -31,6 +31,7 @@ import io.netty.channel.ChannelPipeline;
  * @author Sergey Avseyev
  * @since 1.1.0
  */
+@Deprecated
 public class DCPEndpoint extends AbstractEndpoint {
 
     @Deprecated

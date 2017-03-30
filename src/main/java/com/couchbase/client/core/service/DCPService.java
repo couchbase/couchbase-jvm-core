@@ -22,6 +22,7 @@ import com.couchbase.client.core.endpoint.dcp.DCPEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.lmax.disruptor.RingBuffer;
 
+@Deprecated
 public class DCPService extends AbstractLazyService {
 
     /**

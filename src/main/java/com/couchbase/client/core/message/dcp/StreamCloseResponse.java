@@ -27,6 +27,7 @@ import com.couchbase.client.core.message.ResponseStatus;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public class StreamCloseResponse extends AbstractDCPResponse {
     /**
      * Sets the required properties for the response.

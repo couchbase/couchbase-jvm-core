@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.ResponseStatus;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public abstract class AbstractDCPResponse extends AbstractCouchbaseResponse implements DCPResponse {
     /**
      * The partition (vBucket) of the document.

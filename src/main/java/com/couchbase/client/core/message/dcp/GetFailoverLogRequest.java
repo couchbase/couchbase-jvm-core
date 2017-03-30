@@ -28,6 +28,7 @@ package com.couchbase.client.core.message.dcp;
  * @author Sergey Avseyev
  * @since 1.2.3
  */
+@Deprecated
 public class GetFailoverLogRequest extends AbstractDCPRequest {
     public GetFailoverLogRequest(final short partition, final String bucket) {
         super(bucket, null);

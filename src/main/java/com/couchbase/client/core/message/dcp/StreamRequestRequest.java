@@ -32,6 +32,7 @@ import com.couchbase.client.core.endpoint.dcp.DCPConnection;
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Private
+@Deprecated
 public class StreamRequestRequest extends AbstractDCPRequest {
     /**
      * A unique identifier that is generated that is assigned to each VBucket.
