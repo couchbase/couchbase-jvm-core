@@ -42,7 +42,6 @@ public class CouchbasePartitionInfo {
         @JsonProperty("vBucketMap") List<List<Short>> partitions,
         @JsonProperty("vBucketMapForward") List<List<Short>> forwardPartitions) {
         this.numberOfReplicas = numberOfReplicas;
-        trimPort(partitionHosts);
         this.partitionHosts = partitionHosts.toArray(new String[partitionHosts.size()]);
         this.partitions = fromPartitionList(partitions);
         if (forwardPartitions != null && !forwardPartitions.isEmpty()) {
@@ -76,13 +75,6 @@ public class CouchbasePartitionInfo {
 
     public boolean tainted() {
         return tainted;
-    }
-
-    private static void trimPort(List<String> input) {
-        for (int i = 0; i < input.size(); i++) {
-            String[] parts =  input.get(i).split(":");
-            input.set(i, parts[0]);
-        }
     }
 
     private static List<Partition> fromPartitionList(List<List<Short>> input) {
