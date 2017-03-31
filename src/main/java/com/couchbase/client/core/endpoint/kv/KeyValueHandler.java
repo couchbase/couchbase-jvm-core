@@ -92,6 +92,7 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.IllegalReferenceCountException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -203,13 +204,25 @@ public class KeyValueHandler
 
         request.setOpaque(msg.opaque());
 
-        // Retain just the content, since a response could be "Not my Vbucket".
-        // The response handler checks the status and then releases if needed.
-        // Observe has content, but not external, so it should not be retained.
-        if (!(msg instanceof ObserveRequest)
-            && !(msg instanceof ObserveSeqnoRequest)
-            && (request instanceof FullBinaryMemcacheRequest)) {
-            ((FullBinaryMemcacheRequest) request).content().retain();
+        try {
+            // Retain just the content, since a response could be "Not my Vbucket".
+            // The response handler checks the status and then releases if needed.
+            // Observe has content, but not external, so it should not be retained.
+            if (!(msg instanceof ObserveRequest)
+                    && !(msg instanceof ObserveSeqnoRequest)
+                    && (request instanceof FullBinaryMemcacheRequest)) {
+                ((FullBinaryMemcacheRequest) request).content().retain();
+            }
+        } catch (IllegalReferenceCountException ex) {
+            //release extras bytebuf if there is an exception
+            if (request.getExtras() != null && request.getExtras().refCnt() > 0) {
+                try {
+                    request.getExtras().release();
+                } catch (Exception e) {
+                    //ignore
+                }
+            }
+            throw ex;
         }
 
         return request;
