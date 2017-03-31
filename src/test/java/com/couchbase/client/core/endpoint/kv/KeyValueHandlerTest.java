@@ -633,7 +633,7 @@ public class KeyValueHandlerTest {
         assertEquals(KeyValueHandler.OP_OBSERVE, outbound.getOpcode());
         assertEquals(1, outbound.content().readShort());
         assertEquals("key".length(), outbound.content().readShort());
-        assertEquals("key", outbound.content().readBytes(outbound.content().readableBytes()).toString(CharsetUtil.UTF_8));
+        assertEquals("key", outbound.content().toString(CharsetUtil.UTF_8));
         ReferenceCountUtil.releaseLater(outbound);
     }
 

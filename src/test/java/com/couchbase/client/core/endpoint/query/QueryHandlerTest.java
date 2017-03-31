@@ -1530,7 +1530,7 @@ public class QueryHandlerTest {
         GenericQueryResponse inbound = null;
         try {
             inbound = (GenericQueryResponse) obs.timeout(1, TimeUnit.SECONDS).toBlocking().last();
-            inbound.info().timeout(1, TimeUnit.SECONDS).toBlocking().last();
+            ReferenceCountUtil.release(inbound.info().timeout(1, TimeUnit.SECONDS).toBlocking().last());
         } catch (Exception e) {
             error = e;
         }
