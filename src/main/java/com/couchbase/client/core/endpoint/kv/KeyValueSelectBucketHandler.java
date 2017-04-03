@@ -112,6 +112,7 @@ public class KeyValueSelectBucketHandler extends SimpleChannelInboundHandler<Ful
             //remove the handler if the feature is not enabled
             originalPromise.setSuccess();
             this.ctx.pipeline().remove(this);
+            this.ctx.fireChannelActive();
         }
     }
 
