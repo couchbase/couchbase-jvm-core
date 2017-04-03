@@ -443,6 +443,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             newConfig.password(oldConfig.password());
         }
 
+        //copy the username as well
+        if (oldConfig != null) {
+            newConfig.username(oldConfig.username());
+        }
+
         cluster.setBucketConfig(newConfig.name(), newConfig);
         LOGGER.debug("Applying new configuration {}", newConfig);
 
