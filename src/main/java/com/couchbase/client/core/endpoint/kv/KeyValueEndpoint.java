@@ -18,6 +18,8 @@ package com.couchbase.client.core.endpoint.kv;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.channel.ChannelPipeline;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheClientCodec;
@@ -33,6 +35,8 @@ import java.util.concurrent.TimeUnit;
  * @since 1.0
  */
 public class KeyValueEndpoint extends AbstractEndpoint {
+
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueEndpoint.class);
 
     /**
      * Create a new {@link KeyValueEndpoint}.
@@ -64,12 +68,32 @@ public class KeyValueEndpoint extends AbstractEndpoint {
         if (environment().keepAliveInterval() > 0) {
             pipeline.addLast(new IdleStateHandler(environment().keepAliveInterval(), 0, 0, TimeUnit.MILLISECONDS));
         }
+
+        // (Michael N.) This has been added to allow for backwards compatibility with EOL'ed
+        // Server versions. Undocumented, only use it if you know what you are doing.
+        boolean authBeforeHello = Boolean.parseBoolean(
+            System.getProperty("com.couchbase.authBeforeHello", "false")
+        );
+
         pipeline
             .addLast(new BinaryMemcacheClientCodec())
-            .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
-            .addLast(new KeyValueFeatureHandler(environment()))
-            .addLast(new KeyValueErrorMapHandler())
-            .addLast(new KeyValueAuthHandler(username(), password()))
+            .addLast(new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE));
+
+        if (authBeforeHello) {
+            LOGGER.info("Manually enforced authentication before \"HELLO\" for backwards " +
+                "compatibility.");
+            pipeline
+                .addLast(new KeyValueAuthHandler(username(), password()))
+                .addLast(new KeyValueFeatureHandler(environment()))
+                .addLast(new KeyValueErrorMapHandler());
+        } else {
+            pipeline
+                .addLast(new KeyValueFeatureHandler(environment()))
+                .addLast(new KeyValueErrorMapHandler())
+                .addLast(new KeyValueAuthHandler(username(), password()));
+        }
+
+        pipeline
             .addLast(new KeyValueSelectBucketHandler(bucket()))
             .addLast(new KeyValueHandler(this, responseBuffer(), false, true));
     }
