@@ -52,6 +52,11 @@ import java.util.concurrent.TimeUnit;
 public class CarrierRefresher extends AbstractRefresher {
 
     /**
+     * Don't poll more often than 10ms.
+     */
+    static final long POLL_FLOOR_NS = TimeUnit.MILLISECONDS.toNanos(10);
+
+    /**
      * The logger used.
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CarrierRefresher.class);
@@ -60,6 +65,11 @@ public class CarrierRefresher extends AbstractRefresher {
     private final CoreEnvironment environment;
 
     private volatile Subscription pollerSubscription;
+
+    /**
+     * Stores the nanoTime for the last poll time instant.
+     */
+    private volatile long lastPollTimestamp;
 
     /**
      * Creates a new {@link CarrierRefresher}.
@@ -71,6 +81,7 @@ public class CarrierRefresher extends AbstractRefresher {
         super(environment, cluster);
         subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
+        this.lastPollTimestamp = 0;
 
         long pollInterval = environment.configPollInterval();
         if (pollInterval > 0) {
@@ -118,6 +129,18 @@ public class CarrierRefresher extends AbstractRefresher {
                 @Override
                 public Boolean call(Long aLong) {
                     return subscriptions.contains(bucketName);
+                }
+            })
+            .filter(new Func1<Long, Boolean>() {
+                @Override
+                public Boolean call(Long aLong) {
+                    boolean allowed = allowedToPoll();
+                    if (allowed) {
+                        lastPollTimestamp = System.nanoTime();
+                    } else {
+                        LOGGER.trace("Ignoring tainted polling attempt because poll interval is too small.");
+                    }
+                    return allowed;
                 }
             });
 
@@ -188,6 +211,18 @@ public class CarrierRefresher extends AbstractRefresher {
                     return registrations().containsKey(config.name());
                 }
             })
+            .filter(new Func1<BucketConfig, Boolean>() {
+                @Override
+                public Boolean call(BucketConfig config) {
+                    boolean allowed = allowedToPoll();
+                    if (allowed) {
+                        lastPollTimestamp = System.nanoTime();
+                    } else {
+                        LOGGER.trace("Ignoring refresh polling attempt because poll interval is too small.");
+                    }
+                    return allowed;
+                }
+            })
             .subscribe(new Action1<BucketConfig>() {
                 @Override
                 public void call(final BucketConfig config) {
@@ -251,6 +286,13 @@ public class CarrierRefresher extends AbstractRefresher {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Returns true if polling is allowed, false if we are below the configured floor poll interval.
+     */
+    private boolean allowedToPoll() {
+        return (System.nanoTime() - lastPollTimestamp) >= POLL_FLOOR_NS;
     }
 
     /**
