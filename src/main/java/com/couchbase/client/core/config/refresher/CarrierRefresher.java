@@ -67,6 +67,12 @@ public class CarrierRefresher extends AbstractRefresher {
     private volatile Subscription pollerSubscription;
 
     /**
+     * Stores an ever-incrementing offset that gets used to always pick a different relative node
+     * to poll.
+     */
+    private volatile long nodeOffset;
+
+    /**
      * Stores the nanoTime for the last poll time instant.
      */
     private volatile long lastPollTimestamp;
@@ -82,6 +88,7 @@ public class CarrierRefresher extends AbstractRefresher {
         subscriptions = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         this.environment = environment;
         this.lastPollTimestamp = 0;
+        this.nodeOffset = 0;
 
         long pollInterval = environment.configPollInterval();
         if (pollInterval > 0) {
@@ -123,7 +130,7 @@ public class CarrierRefresher extends AbstractRefresher {
 
         LOGGER.debug("Config for bucket \"" + bucketName + "\" marked as tainted, starting polling.");
         subscriptions.add(bucketName);
-        Observable<Long> pollSequence = Observable
+        Observable
             .interval(1, TimeUnit.SECONDS)
             .takeWhile(new Func1<Long, Boolean>() {
                 @Override
@@ -142,54 +149,35 @@ public class CarrierRefresher extends AbstractRefresher {
                     }
                     return allowed;
                 }
-            });
-
-
-        Observable<String> refreshSequence = null;
-        List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
-        Collections.shuffle(nodeInfos);
-        for (final NodeInfo nodeInfo : nodeInfos) {
-            if (!isValidCarrierNode(environment.sslEnabled(), nodeInfo)) {
-                continue;
-            }
-
-            if (refreshSequence == null) {
-                refreshSequence = pollSequence.flatMap(new Func1<Long, Observable<String>>() {
-                    @Override
-                    public Observable<String> call(Long aLong) {
-                        return refreshAgainstNode(bucketName, nodeInfo.hostname());
+            }).flatMap(new Func1<Long, Observable<String>>() {
+                @Override
+                public Observable<String> call(Long aLong) {
+                    List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
+                    if (nodeInfos.isEmpty()) {
+                        LOGGER.debug("Cannot poll bucket, because node list contains no nodes.");
+                        return Observable.empty();
                     }
-                });
-            } else {
-                refreshSequence = refreshSequence.onErrorResumeNext(
-                    refreshAgainstNode(bucketName, nodeInfo.hostname())
-                );
-            }
-        }
-
-        if (refreshSequence == null) {
-            LOGGER.debug("Cannot poll bucket, because node list contains no nodes.");
-            return;
-        }
-
-        refreshSequence.subscribe(new Subscriber<String>() {
-            @Override
-            public void onCompleted() {
-                LOGGER.debug("Completed polling for bucket \"{}\".", bucketName);
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                LOGGER.debug("Error while polling bucket config, ignoring.", e);
-            }
-
-            @Override
-            public void onNext(String rawConfig) {
-                if (rawConfig.startsWith("{")) {
-                    provider().proposeBucketConfig(bucketName, rawConfig);
+                    shiftNodeList(nodeInfos);
+                    return buildRefreshFallbackSequence(nodeInfos, bucketName);
                 }
-            }
-        });
+            }).subscribe(new Subscriber<String>() {
+                @Override
+                public void onCompleted() {
+                    LOGGER.debug("Completed polling for bucket \"{}\".", bucketName);
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    LOGGER.debug("Error while polling bucket config, ignoring.", e);
+                }
+
+                @Override
+                public void onNext(String rawConfig) {
+                    if (rawConfig.startsWith("{")) {
+                        provider().proposeBucketConfig(bucketName, rawConfig);
+                    }
+                }
+            });
     }
 
     @Override
@@ -227,29 +215,13 @@ public class CarrierRefresher extends AbstractRefresher {
                 @Override
                 public void call(final BucketConfig config) {
                     final String bucketName = config.name();
-                    Observable<String> refreshSequence = null;
-
                     List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
-                    Collections.shuffle(nodeInfos);
-
-                    for (NodeInfo nodeInfo : nodeInfos) {
-                        if (!isValidCarrierNode(environment.sslEnabled(), nodeInfo)) {
-                            continue;
-                        }
-
-                        if (refreshSequence == null) {
-                            refreshSequence = refreshAgainstNode(bucketName, nodeInfo.hostname());
-                        } else {
-                            refreshSequence = refreshSequence
-                                .onErrorResumeNext(refreshAgainstNode(bucketName, nodeInfo.hostname()));
-                        }
-                    }
-
-                    if (refreshSequence == null) {
-                        LOGGER.debug("No node registered in the current configuration, skipping to refresh.");
+                    if (nodeInfos.isEmpty()) {
+                        LOGGER.debug("Cannot refresh bucket, because node list contains no nodes.");
                         return;
                     }
-
+                    shiftNodeList(nodeInfos);
+                    Observable<String> refreshSequence = buildRefreshFallbackSequence(nodeInfos, bucketName);
                     refreshSequence.subscribe(new Subscriber<String>() {
                         @Override
                         public void onCompleted() {
@@ -271,6 +243,48 @@ public class CarrierRefresher extends AbstractRefresher {
                 }
             });
     }
+
+    /**
+     * Helper method which builds the refresh fallback sequence based on the node list.
+     *
+     * @param nodeInfos the list of node infos.
+     * @param bucketName the name of the bucket.
+     * @return an observable containing flatMapped failback sequences.
+     */
+    private Observable<String> buildRefreshFallbackSequence(List<NodeInfo> nodeInfos, String bucketName) {
+        Observable<String> failbackSequence = null;
+        for (final NodeInfo nodeInfo : nodeInfos) {
+            if (!isValidCarrierNode(environment.sslEnabled(), nodeInfo)) {
+                continue;
+            }
+
+            if (failbackSequence == null) {
+                failbackSequence = refreshAgainstNode(bucketName, nodeInfo.hostname());
+            } else {
+                failbackSequence = failbackSequence.onErrorResumeNext(
+                        refreshAgainstNode(bucketName, nodeInfo.hostname())
+                );
+            }
+        }
+        if (failbackSequence == null) {
+            LOGGER.debug("Could not build refresh sequence, node list is empty - ignoring attempt.");
+            return Observable.empty();
+        }
+        return failbackSequence;
+    }
+
+     /**
+      * Helper method to transparently rearrange the node list based on the current global offset.
+      *
+      * @param nodeList the list to shift.
+      */
+     <T> void shiftNodeList(List<T> nodeList) {
+         int shiftBy = (int) (nodeOffset++ % nodeList.size());
+         for(int i = 0; i < shiftBy; i++) {
+             T element = nodeList.remove(0);
+             nodeList.add(element);
+         }
+     }
 
     /**
      * Helper method to detect if the given node can actually perform carrier refresh.
