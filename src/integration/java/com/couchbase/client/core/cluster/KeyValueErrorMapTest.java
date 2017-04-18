@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,37 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.couchbase.client.core.cluster;
 
-import com.couchbase.client.core.BucketClosedException;
-import com.couchbase.client.core.message.cluster.CloseBucketRequest;
-import com.couchbase.client.core.message.kv.GetRequest;
+import com.couchbase.client.core.endpoint.ResponseStatusConverter;
+import com.couchbase.client.core.endpoint.kv.ErrorMap;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNotNull;
 
 /**
- * Short test ensuring that requests on a closed bucket fail fast with a
- * {@link BucketClosedException}
+ * Basic error map test
  *
- * @author Simon Baslé
- * @since 1.0.1
+ * @author Subhashni Balakrishnan
+ * @since 1.4.5
  */
-public class BucketClosedTest extends ClusterDependentTest {
+public class KeyValueErrorMapTest extends ClusterDependentTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        connect(false);
+        connect(true);
     }
 
-    @Test(expected = BucketClosedException.class)
-    public void shouldFailFastOnRequestOnClosedBucket() {
-        cluster().send(new CloseBucketRequest(bucket())).toBlocking().single();
-
-        cluster().send(new GetRequest("someid", bucket())).toBlocking().first();
-        fail();
+    @Test
+    public void checkIfTheErrorMapIsRead() throws Exception {
+        ErrorMap errMap = ResponseStatusConverter.getBinaryErrorMap();
+        assertNotNull(errMap);
     }
-
 }

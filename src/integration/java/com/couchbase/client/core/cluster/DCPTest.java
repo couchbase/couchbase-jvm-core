@@ -23,7 +23,7 @@ import org.junit.Before;
 public class DCPTest extends ClusterDependentTest {
     @Before
     public void connectToCluster() throws Exception {
-        connect();
+        connect(false);
     }
 
     @After

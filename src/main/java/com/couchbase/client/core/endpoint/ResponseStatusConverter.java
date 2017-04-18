@@ -191,4 +191,12 @@ public class ResponseStatusConverter {
         }
     }
 
+    /**
+     * Get the current error map used by the response status converter
+     *
+     * @return error map
+     */
+    public static ErrorMap getBinaryErrorMap() {
+        return BINARY_ERROR_MAP;
+    }
 }

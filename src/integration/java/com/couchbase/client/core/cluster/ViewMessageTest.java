@@ -21,6 +21,7 @@ import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.functions.Action1;
 
@@ -34,6 +35,11 @@ import static org.junit.Assert.assertNotNull;
  * @since 1.0
  */
 public class ViewMessageTest extends ClusterDependentTest {
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        connect(false);
+    }
 
     @Test
     public void shouldQueryNonExistentView() {

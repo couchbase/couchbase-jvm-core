@@ -55,6 +55,7 @@ public class ThreadCleanupTest {
 
     private static final String seedNode = TestProperties.seedNode();
     private static final String bucket = TestProperties.bucket();
+    private static final String username = TestProperties.username();
     private static final String password = TestProperties.password();
 
     private CoreEnvironment env;
@@ -72,7 +73,7 @@ public class ThreadCleanupTest {
                 new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
                     @Override
                     public Observable<OpenBucketResponse> call(SeedNodesResponse response) {
-                        return cluster.send(new OpenBucketRequest(bucket, password));
+                        return cluster.send(new OpenBucketRequest(bucket, username, password));
                     }
                 }
         ).toBlocking().single();

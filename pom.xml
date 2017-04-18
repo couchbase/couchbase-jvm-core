@@ -43,6 +43,7 @@
         <slf4j.version>1.7.7</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
         <commons-logging.version>1.1.3</commons-logging.version>
+        <couchbasemock.version>1.4.7</couchbasemock.version>
     </properties>
 
     <organization>
@@ -72,6 +73,13 @@
         <system>Couchbase JIRA</system>
         <url>http://www.couchbase.com/issues/browse/JVMCBC</url>
     </issueManagement>
+
+    <repositories>
+        <repository>
+            <id>mock</id>
+            <url>http://snapshots.couchbase.com/maven2</url>
+        </repository>
+    </repositories>
 
     <developers>
         <developer>
@@ -172,6 +180,12 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.couchbase.mock</groupId>
+            <artifactId>CouchbaseMock</artifactId>
+            <version>${couchbasemock.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

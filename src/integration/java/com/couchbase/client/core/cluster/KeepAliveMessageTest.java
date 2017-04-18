@@ -20,6 +20,7 @@ import com.couchbase.client.core.event.metrics.LatencyMetric;
 import com.couchbase.client.core.event.metrics.NetworkLatencyMetricsEvent;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
 import com.couchbase.client.core.util.ClusterDependentTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func1;
@@ -38,6 +39,11 @@ import static org.junit.Assert.assertTrue;
  * @since 1.3.0
  */
 public class KeepAliveMessageTest extends ClusterDependentTest {
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        connect(false);
+    }
 
     @Test
     public void shouldSendKeepAlives() throws Exception {

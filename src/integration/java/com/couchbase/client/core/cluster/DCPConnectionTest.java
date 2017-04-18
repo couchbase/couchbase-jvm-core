@@ -39,6 +39,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import rx.Observable;
@@ -60,6 +61,11 @@ import static org.junit.Assert.fail;
 @Ignore("DCPConnectionTest currently loops infinitely")
 public class DCPConnectionTest extends DCPTest {
 
+    @BeforeClass
+    public static void setup() throws Exception {
+        connect(false);
+    }
+
     @Before
     public void checkIfDCPEnabled() throws Exception {
         Assume.assumeTrue(isDCPEnabled());
@@ -69,7 +75,7 @@ public class DCPConnectionTest extends DCPTest {
         cluster().send(new SeedNodesRequest(Collections.singletonList(TestProperties.seedNode())));
 
         Observable<OpenBucketResponse> openBucketResponse =
-                cluster().send(new OpenBucketRequest(TestProperties.bucket(), TestProperties.password()));
+                cluster().send(new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password()));
         assertEquals(ResponseStatus.SUCCESS, openBucketResponse.toBlocking().single().status());
 
         OpenConnectionResponse response = cluster().<OpenConnectionResponse>send(

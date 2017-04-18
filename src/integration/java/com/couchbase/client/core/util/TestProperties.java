@@ -15,6 +15,16 @@
  */
 package com.couchbase.client.core.util;
 
+import org.couchbase.mock.Bucket;
+import org.couchbase.mock.BucketConfiguration;
+import org.couchbase.mock.CouchbaseMock;
+
+import java.util.ArrayList;
+import java.util.Properties;
+
+import static org.couchbase.mock.Bucket.BucketType.COUCHBASE;
+import static org.couchbase.mock.Bucket.BucketType.MEMCACHED;
+
 /**
  * Helper class to centralize test properties that can be modified through system properties.
  *
@@ -22,22 +32,56 @@ package com.couchbase.client.core.util;
  * @since 1.0
  */
 public class TestProperties {
-
     private static String seedNode;
     private static String bucket;
+    private static String username;
     private static String password;
     private static String adminUser;
     private static String adminPassword;
+    private static int mockNodeCount;
+    private static int mockReplicaCount;
+    private static Bucket.BucketType bucketType;
+    private static CouchbaseMock mock;
+
+    private static void createMock() {
+        BucketConfiguration bucketConfiguration = new BucketConfiguration();
+        bucketConfiguration.numNodes = mockNodeCount;
+        bucketConfiguration.numReplicas = mockNodeCount;
+        bucketConfiguration.numVBuckets = 1024;
+        bucketConfiguration.name = bucket;
+        bucketConfiguration.type = bucketType;
+        bucketConfiguration.password = password;
+        ArrayList<BucketConfiguration> configList = new ArrayList<BucketConfiguration>();
+        configList.add(bucketConfiguration);
+        try {
+            mock = new CouchbaseMock(0, configList);
+            mock.start();
+            mock.waitForStartup();
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to initialize mock" + ex.getMessage(), ex);
+        }
+    }
 
     /**
      * Initialize static the properties.
      */
     static {
-        seedNode = System.getProperty("seedNode", "127.0.0.1");
-        bucket = System.getProperty("bucket", "default");
-        password = System.getProperty("password", "");
-        adminUser = System.getProperty("adminUser", "Administrator");
-        adminPassword = System.getProperty("adminPassword", "password");
+        Properties properties = new Properties();
+        try {
+            properties.load(TestProperties.class.getClassLoader().getResourceAsStream("com.couchbase.client.core.integration.properties"));
+        } catch (Exception ex) {
+            //ignore
+        }
+        seedNode = properties.getProperty("seedNode", "127.0.0.1");
+        bucket = properties.getProperty("bucket", "default");
+        username = properties.getProperty("username", "default");
+        password = properties.getProperty("password", "");
+        adminUser = properties.getProperty("adminUser", "Administrator");
+        adminPassword = properties.getProperty("adminPassword", "password");
+        mockNodeCount = Integer.parseInt(properties.getProperty("mockNodeCount", "1"));
+        mockReplicaCount = Integer.parseInt(properties.getProperty("mockReplicaCount", "1"));
+        bucketType = properties.getProperty("mockBucketType", "couchbase").equalsIgnoreCase("couchbase") ? COUCHBASE : MEMCACHED;
+        createMock();
     }
 
     /**
@@ -56,6 +100,15 @@ public class TestProperties {
      */
     public static String bucket() {
         return bucket;
+    }
+
+    /**
+     * Username for bucket access applicable for server version 5.0
+     *
+     * @return the username
+     */
+    public static String username() {
+        return username;
     }
 
     /**
@@ -83,5 +136,41 @@ public class TestProperties {
      */
     public static String adminUser() {
         return adminUser;
+    }
+
+    /**
+     * Mock node count
+     *
+     * @return node count configured for mock
+     */
+    public static CouchbaseMock couchbaseMock() {
+        return mock;
+    }
+
+    /**
+     * Mock node count
+     *
+     * @return node count configured for mock
+     */
+    public static int mockNodeCount() {
+        return mockNodeCount;
+    }
+
+    /**
+     * Mock replica count
+     *
+     * @return replica count configured for mock
+     */
+    public static int mockReplicaCount() {
+        return mockReplicaCount;
+    }
+
+    /**
+     * Mock bucket type
+     *
+     * @return bucket type configured for mock
+     */
+    public static Bucket.BucketType bucketType() {
+        return bucketType;
     }
 }

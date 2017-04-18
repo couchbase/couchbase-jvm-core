@@ -33,16 +33,23 @@ import com.couchbase.client.core.message.config.FlushRequest;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.couchbase.mock.CouchbaseMock;
+import org.couchbase.mock.JsonUtils;
 import org.junit.AfterClass;
 import org.junit.Assume;
-import org.junit.BeforeClass;
 import rx.Observable;
 import rx.functions.Func1;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 
 /**
@@ -54,39 +61,74 @@ public class ClusterDependentTest {
 
     static {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+        System.setProperty("com.couchbase.xerrorEnabled", "true");
     }
 
     private static final String seedNode = TestProperties.seedNode();
     private static final String bucket = TestProperties.bucket();
+    private static final String username = TestProperties.username();
     private static final String password = TestProperties.password();
     private static final String adminUser = TestProperties.adminUser();
     private static final String adminPassword = TestProperties.adminPassword();
+    private static final CouchbaseMock couchbaseMock = TestProperties.couchbaseMock();
+    private static CoreEnvironment env;
 
     protected static final int KEEPALIVE_INTERVAL = 1000;
 
-    private static final CoreEnvironment env = DefaultCoreEnvironment
-            .builder()
-            .dcpEnabled(true)
-            .dcpConnectionBufferSize(1024)          // 1 kilobyte
-            .dcpConnectionBufferAckThreshold(0.5)   // should trigger BUFFER_ACK after 512 bytes
-            .mutationTokensEnabled(true)
-            .keepAliveInterval(KEEPALIVE_INTERVAL)
-            .build();
-
     private static ClusterFacade cluster;
 
-    @BeforeClass
-    public static void connect() {
+    private static int getCarrierPortInfo(int httpPort) throws Exception {
+        URIBuilder builder = new URIBuilder();
+        builder.setScheme("http").setHost("localhost").setPort(httpPort).setPath("mock/get_mcports")
+                .setParameter("bucket", bucket);
+        HttpGet request = new HttpGet(builder.build());
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpResponse response = client.execute(request);
+        int status = response.getStatusLine().getStatusCode();
+        if (status < 200 || status > 300) {
+            throw new ClientProtocolException("Unexpected response status: " + status);
+        }
+        String rawBody = EntityUtils.toString(response.getEntity());
+        com.google.gson.JsonObject respObject = JsonUtils.GSON.fromJson(rawBody, com.google.gson.JsonObject.class);
+        com.google.gson.JsonArray portsArray = respObject.getAsJsonArray("payload");
+        return portsArray.get(0).getAsInt();
+    }
+
+
+    public static void connect(boolean useMock) {
+        DefaultCoreEnvironment.Builder envBuilder = DefaultCoreEnvironment
+                .builder();
+
+        if (useMock) {
+            int httpBootstrapPort = couchbaseMock.getHttpPort();
+            try {
+                int carrierBootstrapPort = getCarrierPortInfo(httpBootstrapPort);
+                envBuilder
+                        .bootstrapHttpDirectPort(httpBootstrapPort)
+                        .bootstrapCarrierDirectPort(carrierBootstrapPort)
+                        .socketConnectTimeout(30000);
+            } catch (Exception ex) {
+                throw new RuntimeException("Unable to get port info" + ex.getMessage(), ex);
+            }
+
+        }
+        env = envBuilder.dcpEnabled(true)
+                .dcpConnectionBufferSize(1024)          // 1 kilobyte
+                .dcpConnectionBufferAckThreshold(0.5)   // should trigger BUFFER_ACK after 512 bytes
+                .mutationTokensEnabled(true)
+                .keepAliveInterval(KEEPALIVE_INTERVAL)
+                .build();
+
         cluster = new CouchbaseCore(env);
         cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
                 new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
                     @Override
                     public Observable<OpenBucketResponse> call(SeedNodesResponse response) {
-                        return cluster.send(new OpenBucketRequest(bucket, password));
+                        return cluster.send(new OpenBucketRequest(bucket, username, password));
                     }
                 }
         ).toBlocking().single();
-        cluster.send(new FlushRequest(bucket, password)).toBlocking().single();
+       cluster.send(new FlushRequest(bucket, username, password)).toBlocking().single();
     }
 
     @AfterClass
@@ -104,6 +146,10 @@ public class ClusterDependentTest {
 
     public static String bucket() {
         return bucket;
+    }
+
+    public static String username() {
+        return username;
     }
 
     public static CoreEnvironment env() {
