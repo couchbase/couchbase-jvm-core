@@ -33,6 +33,6 @@ public class RemoveUserRequest extends AbstractCouchbaseRequest implements Confi
 
     @Override
     public String path() {
-        return "/settings/rbac/users/builtin/" + userid;
+        return "/settings/rbac/users/local/" + userid;
     }
 }
