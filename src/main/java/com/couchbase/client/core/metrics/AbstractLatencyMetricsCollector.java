@@ -18,6 +18,8 @@ package com.couchbase.client.core.metrics;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.event.metrics.LatencyMetricsEvent;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import org.LatencyUtils.LatencyStats;
 import org.LatencyUtils.PauseDetector;
 import org.LatencyUtils.SimplePauseDetector;
@@ -38,6 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class AbstractLatencyMetricsCollector<I extends LatencyMetricsIdentifier, E extends LatencyMetricsEvent>
     extends AbstractMetricsCollector
     implements LatencyMetricsCollector<I> {
+
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(AbstractLatencyMetricsCollector.class);
+
 
     private final static Object PAUSE_DETECTOR_LOCK = new Object();
     private static int pauseDetectorCount = 0;
@@ -117,7 +122,14 @@ public abstract class AbstractLatencyMetricsCollector<I extends LatencyMetricsId
      * Helper method to remove an item out of the stored metrics.
      */
     protected void remove(I identifier) {
-        latencyMetrics.remove(identifier);
+        LatencyStats removed = latencyMetrics.remove(identifier);
+        if (removed != null) {
+            try {
+                removed.stop();
+            } catch (Exception ex) {
+                LOGGER.warn("Caught exception while removing LatencyStats, moving on.", ex);
+            }
+        }
     }
 
 }
