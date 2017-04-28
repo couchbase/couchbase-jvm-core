@@ -320,6 +320,11 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
 
         Endpoint endpoint = endpoints.size() > 0 ? selectionStrategy.select(request, endpoints) : null;
 
+        //don't send timed out requests to server
+        if(!request.isActive()) {
+            return;
+        }
+
         if (endpoint == null) {
             if (fixedEndpoints || ((endpoints.size() + pendingRequests) >= maxEndpoints)) {
                 RetryHelper.retryOrCancel(env, request, responseBuffer);

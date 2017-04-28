@@ -233,6 +233,7 @@ public class CouchbaseNodeTest {
         CouchbaseNode node = new CouchbaseNode(host, registryMock, env, null);
 
         CouchbaseRequest request = mock(CouchbaseRequest.class);
+        when(request.isActive()).thenReturn(true);
         AsyncSubject<CouchbaseResponse> response = AsyncSubject.create();
         when(request.observable()).thenReturn(response);
         node.send(request);

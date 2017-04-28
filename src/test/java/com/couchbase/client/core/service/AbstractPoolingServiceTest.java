@@ -184,6 +184,7 @@ public class AbstractPoolingServiceTest {
                 endpoints, strategy, null, factory);
 
         CouchbaseRequest request = mock(CouchbaseRequest.class);
+        when(request.isActive()).thenReturn(true);
         AsyncSubject<CouchbaseResponse> response = AsyncSubject.create();
         when(request.observable()).thenReturn(response);
         service.send(request);

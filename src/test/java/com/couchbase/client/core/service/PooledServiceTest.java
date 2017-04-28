@@ -295,6 +295,7 @@ public class PooledServiceTest {
 
         CouchbaseRequest request = mock(CouchbaseRequest.class);
         when(ss.select(same(request), any(List.class))).thenReturn(ef.endpoints().get(0));
+        when(request.isActive()).thenReturn(true);
 
         ms.send(request);
         assertEquals(1, ef.endpointSendCalled());
@@ -786,6 +787,7 @@ public class PooledServiceTest {
         AsyncSubject<CouchbaseResponse> subject = AsyncSubject.create();
         CouchbaseRequest request = mock(CouchbaseRequest.class);
         when(request.observable()).thenReturn(subject);
+        when(request.isActive()).thenReturn(true);
         TestSubscriber<CouchbaseResponse> subscriber = TestSubscriber.create();
         subject.subscribe(subscriber);
         return Tuple.create(request, subscriber);

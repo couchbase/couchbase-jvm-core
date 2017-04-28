@@ -153,6 +153,7 @@ public class RequestHandlerTest {
 
         RequestEvent mockEvent = mock(RequestEvent.class);
         CouchbaseRequest mockRequest = mock(CouchbaseRequest.class);
+        when(mockRequest.isActive()).thenReturn(true);
         when(mockEvent.getRequest()).thenReturn(mockRequest);
         handler.onEvent(mockEvent, 0, true);
         verify(mockNode).send(mockRequest);
@@ -237,6 +238,7 @@ public class RequestHandlerTest {
         RequestEvent mockEvent = mock(RequestEvent.class);
         CouchbaseRequest mockRequest = mock(CouchbaseRequest.class);
         AsyncSubject<CouchbaseResponse> response = AsyncSubject.create();
+        when(mockRequest.isActive()).thenReturn(true);
         when(mockEvent.getRequest()).thenReturn(mockRequest);
         when(mockRequest.observable()).thenReturn(response);
         handler.onEvent(mockEvent, 0, true);
