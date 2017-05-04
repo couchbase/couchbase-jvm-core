@@ -50,6 +50,11 @@ public interface BinarySubdocMultiMutationRequest extends BinaryRequest {
     long cas();
 
     /**
+     * @return the document flags for the Request
+     */
+    byte docFlags();
+
+    /**
      * @return a list of the {@link MutationCommand} describing the multiple mutations to apply.
      */
     List<MutationCommand> commands();

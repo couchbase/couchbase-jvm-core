@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,29 +18,37 @@ package com.couchbase.client.core.message.kv.subdoc.multi;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 
 /**
- * Enumeration of possible mutations inside a sub-document {@link LookupCommand}.
+ * Document options for {@link SubMultiMutationRequest}
  *
- * @author Simon Baslé
- * @since 1.2
+ * @author Subhashni Balakrishnan
+ * @since 1.4.6
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-public enum Lookup {
+public class SubMultiMutationDocOptionsBuilder {
+    private boolean createDocument;
 
-    GETDOC(KeyValueHandler.OP_GET),
-    GET(KeyValueHandler.OP_SUB_GET),
-    EXIST(KeyValueHandler.OP_SUB_EXIST);
-
-    private final byte opCode;
-
-    Lookup(byte opCode) {
-        this.opCode = opCode;
+    public static SubMultiMutationDocOptionsBuilder builder() {
+        return new SubMultiMutationDocOptionsBuilder();
     }
 
-    public byte opCode() {
-        return opCode;
+    public SubMultiMutationDocOptionsBuilder createDocument(boolean createDocument) {
+        this.createDocument = createDocument;
+        return this;
+    }
+
+    public boolean createDocument() {
+        return this.createDocument;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append(" \"createDocument\":" + createDocument);
+        sb.append("}");
+        return sb.toString();
     }
 }

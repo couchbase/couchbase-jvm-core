@@ -30,6 +30,7 @@ import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 @InterfaceAudience.Public
 public enum Mutation {
 
+    UPSERTDOC(KeyValueHandler.OP_UPSERT),
     COUNTER(KeyValueHandler.OP_SUB_COUNTER),
     REPLACE(KeyValueHandler.OP_SUB_REPLACE),
     DICT_ADD(KeyValueHandler.OP_SUB_DICT_ADD),

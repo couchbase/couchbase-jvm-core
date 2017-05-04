@@ -16,9 +16,10 @@
 
 package com.couchbase.client.core.message.kv.subdoc.multi;
 
+import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.*;
+
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.endpoint.kv.KeyValueAuthHandler;
 import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 import com.couchbase.client.core.message.kv.AbstractKeyValueRequest;
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiMutationRequest;
@@ -44,38 +45,45 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
     private final ByteBuf encoded;
     private final int expiration;
     private final long cas;
+    private byte docFlags;
 
     /**
      * Create a new {@link SubMultiMutationRequest}.
      *
-     * @param key        the key of the document to mutate into.
-     * @param bucket     the bucket of the document.
-     * @param expiration the expiration (or TTL) to apply to the whole document additionally to the mutations.
-     * @param cas        the CAS value to check for when applying the whole set of mutations.
-     * @param commands   the set of internal mutations to apply to the document.
+     * @param key               the key of the document to mutate into.
+     * @param bucket            the bucket of the document.
+     * @param expiration        the expiration (or TTL) to apply to the whole document additionally to the mutations.
+     * @param cas               the CAS value to check for when applying the whole set of mutations.
+     * @param docOptionsBuilder the document options builder {@link SubMultiMutationDocOptionsBuilder}.
+     * @param commands          the set of internal mutations to apply to the document.
      */
-    public SubMultiMutationRequest(String key, String bucket, int expiration, long cas, List<MutationCommand> commands) {
+    public SubMultiMutationRequest(String key, String bucket, int expiration, long cas, SubMultiMutationDocOptionsBuilder docOptionsBuilder, List<MutationCommand> commands) {
         super(key, bucket);
         if (commands == null || commands.isEmpty()) {
             throw new IllegalArgumentException("At least one mutation command is necessary");
         }
         this.commands = commands;
         this.encoded = encode(commands);
+
         this.expiration = expiration;
         this.cas = cas;
+        if (docOptionsBuilder.createDocument()) {
+            this.docFlags |= SUBDOC_FLAG_MKDOC;
+        }
     }
 
     /**
      * Create a new {@link SubMultiMutationRequest}.
      *
-     * @param key        the key of the document to mutate into.
-     * @param bucket     the bucket of the document.
-     * @param expiration the expiration (or TTL) to apply to the whole document additionally to the mutations.
-     * @param cas        the CAS value to check for when applying the whole set of mutations.
-     * @param commands   the set of internal mutations to apply to the document.
+     * @param key               the key of the document to mutate into.
+     * @param bucket            the bucket of the document.
+     * @param expiration        the expiration (or TTL) to apply to the whole document additionally to the mutations.
+     * @param cas               the CAS value to check for when applying the whole set of mutations.
+     * @param docOptionsBuilder the document options builder {@link SubMultiMutationDocOptionsBuilder}.
+     * @param commands          the set of internal mutations to apply to the document.
      */
-    public SubMultiMutationRequest(String key, String bucket, int expiration, long cas, MutationCommand... commands) {
-        this(key, bucket, expiration, cas, commands == null ? null : Arrays.asList(commands));
+    public SubMultiMutationRequest(String key, String bucket, int expiration, long cas, SubMultiMutationDocOptionsBuilder docOptionsBuilder, MutationCommand... commands) {
+        this(key, bucket, expiration, cas, docOptionsBuilder, commands == null ? null : Arrays.asList(commands));
     }
 
     /**
@@ -86,7 +94,19 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
      * @param commands   the set of internal mutations to apply to the document.
      */
     public SubMultiMutationRequest(String key, String bucket, List<MutationCommand> commands) {
-        this(key, bucket, 0, 0L, commands);
+        this(key, bucket, 0, 0L, SubMultiMutationDocOptionsBuilder.builder(), commands);
+    }
+
+    /**
+     * Create a new {@link SubMultiMutationRequest}.
+     *
+     * @param key               the key of the document to mutate into.
+     * @param bucket            the bucket of the document.
+     * @param docOptionsBuilder the document options builder {@link SubMultiMutationDocOptionsBuilder}.
+     * @param commands          the set of internal mutations to apply to the document.
+     */
+    public SubMultiMutationRequest(String key, String bucket, SubMultiMutationDocOptionsBuilder docOptionsBuilder, List<MutationCommand> commands) {
+        this(key, bucket, 0, 0L, docOptionsBuilder, commands);
     }
 
     /**
@@ -97,7 +117,19 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
      * @param commands   the set of internal mutations to apply to the document.
      */
     public SubMultiMutationRequest(String key, String bucket, MutationCommand... commands) {
-        this(key, bucket, 0, 0L, commands);
+        this(key, bucket, 0, 0L, SubMultiMutationDocOptionsBuilder.builder(), commands);
+    }
+
+    /**
+     * Create a new {@link SubMultiMutationRequest}.
+     *
+     * @param key               the key of the document to mutate into.
+     * @param bucket            the bucket of the document.
+     * @param docOptionsBuilder the document options builder {@link SubMultiMutationDocOptionsBuilder}.
+     * @param commands          the set of internal mutations to apply to the document.
+     */
+    public SubMultiMutationRequest(String key, String bucket, SubMultiMutationDocOptionsBuilder docOptionsBuilder, MutationCommand... commands) {
+        this(key, bucket, 0, 0L, docOptionsBuilder, commands);
     }
 
     private static ByteBuf encode(List<MutationCommand> commands) {
@@ -109,14 +141,14 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
 
             ByteBuf commandBuf = Unpooled.buffer(4 + pathLength + command.fragment().readableBytes());
             commandBuf.writeByte(command.opCode());
-            byte flags = 0;
+            byte subdocFlags = 0;
             if (command.createIntermediaryPath()) {
-                flags |= KeyValueHandler.SUBDOC_BITMASK_MKDIR_P;
+                subdocFlags |= KeyValueHandler.SUBDOC_BITMASK_MKDIR_P;
             }
             if (command.xattr()) {
-                flags |= KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
+                subdocFlags |= KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
             }
-            commandBuf.writeByte(flags);
+            commandBuf.writeByte(subdocFlags);
             commandBuf.writeShort(pathLength);
             commandBuf.writeInt(command.fragment().readableBytes());
             commandBuf.writeBytes(pathBytes);
@@ -161,4 +193,7 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
     public ByteBuf content() {
         return this.encoded;
     }
+
+    @Override
+    public byte docFlags() { return this.docFlags; }
 }
