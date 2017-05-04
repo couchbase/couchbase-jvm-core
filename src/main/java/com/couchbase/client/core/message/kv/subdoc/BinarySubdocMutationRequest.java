@@ -70,5 +70,5 @@ public interface BinarySubdocMutationRequest extends BinarySubdocRequest {
      *
      * @return true if accessing extended attribute section
      */
-    boolean attributeAccess();
+    boolean xattr();
 }

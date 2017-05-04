@@ -585,7 +585,7 @@ public class KeyValueHandler
             if (mut.createIntermediaryPath()) {
                 flags |= SUBDOC_BITMASK_MKDIR_P;
             }
-            if (mut.attributeAccess()) {
+            if (mut.xattr()) {
                 flags |= SUBDOC_FLAG_XATTR_PATH;
             }
             extras.writeByte(flags);
@@ -598,14 +598,14 @@ public class KeyValueHandler
             cas = mut.cas();
         } else if (msg instanceof SubGetRequest) {
             SubGetRequest req =  (SubGetRequest)msg;
-            if (req.attributeAccess()) {
+            if (req.xattr()) {
                 extras.writeByte(SUBDOC_FLAG_XATTR_PATH);
             } else {
                 extras.writeByte(0);
             }
         } else if (msg instanceof SubExistRequest) {
             SubExistRequest req =  (SubExistRequest)msg;
-            if (req.attributeAccess()) {
+            if (req.xattr()) {
                 extras.writeByte(SUBDOC_FLAG_XATTR_PATH);
             } else {
                 extras.writeByte(0);

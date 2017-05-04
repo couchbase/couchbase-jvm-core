@@ -31,7 +31,7 @@ public class LookupCommand {
 
     private final Lookup lookup;
     private final String path;
-    private boolean attributeAccess;
+    private boolean xattr;
 
     /**
      * Create a multi-lookup command.
@@ -48,7 +48,7 @@ public class LookupCommand {
     protected LookupCommand(LookupCommandBuilder builder) {
         this.lookup = builder.lookup();
         this.path = builder.path();
-        this.attributeAccess = builder.attributeAccess();
+        this.xattr = builder.xattr();
     }
 
     public Lookup lookup() {
@@ -63,8 +63,8 @@ public class LookupCommand {
         return lookup.opCode();
     }
 
-    public boolean attributeAccess() {
-        return this.attributeAccess;
+    public boolean xattr() {
+        return this.xattr;
     }
 
 }

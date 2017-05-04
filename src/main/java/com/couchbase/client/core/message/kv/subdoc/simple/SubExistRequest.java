@@ -29,7 +29,7 @@ import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
 public class SubExistRequest extends AbstractSubdocRequest {
-    private boolean attributeAccess;
+    private boolean xattr;
 
 
     /**
@@ -47,7 +47,7 @@ public class SubExistRequest extends AbstractSubdocRequest {
         if (path.isEmpty()) {
             cleanUpAndThrow(EXCEPTION_EMPTY_PATH);
         }
-        this.attributeAccess = false;
+        this.xattr = false;
     }
 
 
@@ -60,11 +60,11 @@ public class SubExistRequest extends AbstractSubdocRequest {
         return KeyValueHandler.OP_SUB_EXIST;
     }
 
-    public boolean attributeAccess() {
-        return this.attributeAccess;
+    public boolean xattr() {
+        return this.xattr;
     }
 
-    public void attributeAccess(boolean attributeAccess) {
-        this.attributeAccess = attributeAccess;
+    public void xattr(boolean xattr) {
+        this.xattr = xattr;
     }
 }

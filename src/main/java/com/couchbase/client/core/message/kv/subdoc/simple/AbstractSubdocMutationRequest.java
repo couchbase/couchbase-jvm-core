@@ -40,7 +40,7 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
 
     private boolean createIntermediaryPath;
 
-    private boolean attributeAccess;
+    private boolean xattr;
 
     private long cas;
 
@@ -105,13 +105,13 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
     }
 
     @Override
-    public boolean attributeAccess() {
-        return this.attributeAccess;
+    public boolean xattr() {
+        return this.xattr;
     }
 
 
-    public void attributeAccess(boolean attributeAccess) {
-        this.attributeAccess = attributeAccess;
+    public void xattr(boolean xattr) {
+        this.xattr = xattr;
     }
 
     @Override

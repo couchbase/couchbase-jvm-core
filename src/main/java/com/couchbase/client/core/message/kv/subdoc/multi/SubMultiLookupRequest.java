@@ -67,7 +67,7 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
             ByteBuf commandBuf = Unpooled.buffer(4 + pathLength); //FIXME a way of using the pooled allocator?
             commandBuf.writeByte(command.opCode());
             //flags
-            if (command.attributeAccess()) {
+            if (command.xattr()) {
                 commandBuf.writeByte(SUBDOC_FLAG_XATTR_PATH);
             } else {
                 commandBuf.writeByte(0);

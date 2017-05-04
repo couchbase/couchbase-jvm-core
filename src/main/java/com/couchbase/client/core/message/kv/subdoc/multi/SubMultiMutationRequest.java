@@ -113,7 +113,7 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
             if (command.createIntermediaryPath()) {
                 flags |= KeyValueHandler.SUBDOC_BITMASK_MKDIR_P;
             }
-            if (command.attributeAccess()) {
+            if (command.xattr()) {
                 flags |= KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
             }
             commandBuf.writeByte(flags);

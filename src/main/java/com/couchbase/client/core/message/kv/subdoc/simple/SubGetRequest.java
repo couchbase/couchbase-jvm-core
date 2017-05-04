@@ -30,7 +30,7 @@ import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
 @InterfaceAudience.Public
 public class SubGetRequest extends AbstractSubdocRequest {
 
-    private boolean attributeAccess;
+    private boolean xattr;
 
     /**
      * Creates a new {@link SubGetRequest}.
@@ -46,7 +46,7 @@ public class SubGetRequest extends AbstractSubdocRequest {
         if (path.isEmpty()) {
             cleanUpAndThrow(EXCEPTION_EMPTY_PATH);
         }
-        this.attributeAccess = false;
+        this.xattr = false;
     }
 
 
@@ -59,11 +59,11 @@ public class SubGetRequest extends AbstractSubdocRequest {
         return KeyValueHandler.OP_SUB_GET;
     }
 
-    public boolean attributeAccess() {
-        return this.attributeAccess;
+    public boolean xattr() {
+        return this.xattr;
     }
 
-    public void attributeAccess(boolean attributeAccess) {
-        this.attributeAccess = attributeAccess;
+    public void xattr(boolean xattr) {
+        this.xattr = xattr;
     }
 }
