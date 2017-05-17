@@ -17,15 +17,14 @@ package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.service.ServiceType;
-
-import java.net.InetAddress;
+import com.couchbase.client.core.utils.NetworkAddress;
 
 public class RemoveServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
     private final ServiceType type;
-    private final InetAddress hostname;
+    private final NetworkAddress hostname;
 
-    public RemoveServiceRequest(ServiceType type, String bucket, InetAddress hostname) {
+    public RemoveServiceRequest(ServiceType type, String bucket, NetworkAddress hostname) {
         super(bucket, null);
         this.type = type;
         this.hostname = hostname;
@@ -35,7 +34,7 @@ public class RemoveServiceRequest extends AbstractCouchbaseRequest implements In
         return type;
     }
 
-    public InetAddress hostname() {
+    public NetworkAddress hostname() {
         return hostname;
     }
 }

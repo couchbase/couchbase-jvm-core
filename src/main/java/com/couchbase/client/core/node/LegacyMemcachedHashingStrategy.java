@@ -32,7 +32,7 @@ public class LegacyMemcachedHashingStrategy implements MemcachedHashingStrategy 
 
     @Override
     public String hash(final NodeInfo info, final int repetition) {
-        String hostname = info.hostname().getHostAddress();
+        String hostname = info.hostname().address();
         if (hostname.startsWith("/")) {
             hostname = hostname.substring(1);
         }

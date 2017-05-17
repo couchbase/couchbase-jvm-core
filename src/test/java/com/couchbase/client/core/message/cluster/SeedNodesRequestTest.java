@@ -16,9 +16,9 @@
 package com.couchbase.client.core.message.cluster;
 
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,14 +37,14 @@ public class SeedNodesRequestTest {
     public void shouldConstructWithDefaultHostname() throws Exception {
         SeedNodesRequest request = new SeedNodesRequest();
         assertEquals(1, request.nodes().size());
-        assertTrue(request.nodes().contains(InetAddress.getByName("localhost")));
+        assertTrue(request.nodes().contains(NetworkAddress.localhost()));
     }
 
     @Test
     public void shouldConstructWithCustomHostname() throws Exception {
         SeedNodesRequest request = new SeedNodesRequest("127.0.0.1");
         assertEquals(1, request.nodes().size());
-        assertTrue(request.nodes().contains(InetAddress.getByName("127.0.0.1")));
+        assertTrue(request.nodes().contains(NetworkAddress.localhost()));
     }
 
     @Test

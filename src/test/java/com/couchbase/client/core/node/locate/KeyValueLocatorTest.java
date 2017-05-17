@@ -23,10 +23,10 @@ import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,9 +57,9 @@ public class KeyValueLocatorTest {
         ClusterConfig configMock = mock(ClusterConfig.class);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
         CouchbaseBucketConfig bucketMock = mock(CouchbaseBucketConfig.class);
         when(getRequestMock.bucket()).thenReturn("bucket");
@@ -82,15 +82,15 @@ public class KeyValueLocatorTest {
 
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.isState(LifecycleState.CONNECTED)).thenReturn(true);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.isState(LifecycleState.CONNECTED)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
         GetBucketConfigRequest requestMock = mock(GetBucketConfigRequest.class);
-        when(requestMock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(requestMock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
 
         locator.locateAndDispatch(requestMock, nodes, mock(ClusterConfig.class), null, null);
         verify(node1Mock, never()).send(requestMock);
@@ -106,9 +106,9 @@ public class KeyValueLocatorTest {
         NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
         // Configure Cluster and Bucket config
@@ -159,9 +159,9 @@ public class KeyValueLocatorTest {
         NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
         // Configure Cluster and Bucket config

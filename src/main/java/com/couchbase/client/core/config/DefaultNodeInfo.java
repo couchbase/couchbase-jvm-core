@@ -17,12 +17,11 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ import java.util.Map;
  */
 public class DefaultNodeInfo implements NodeInfo {
 
-    private final InetAddress hostname;
+    private final NetworkAddress hostname;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
     private int configPort;
@@ -56,8 +55,8 @@ public class DefaultNodeInfo implements NodeInfo {
         }
 
         try {
-            this.hostname = InetAddress.getByName(trimPort(hostname));
-        } catch (UnknownHostException e) {
+            this.hostname = NetworkAddress.create(trimPort(hostname));
+        } catch (Exception e) {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
         this.directServices = parseDirectServices(viewUri, ports);
@@ -71,7 +70,7 @@ public class DefaultNodeInfo implements NodeInfo {
      * @param direct   the port list of the direct node services.
      * @param ssl      the port list of the ssl node services.
      */
-    public DefaultNodeInfo(InetAddress hostname, Map<ServiceType, Integer> direct,
+    public DefaultNodeInfo(NetworkAddress hostname, Map<ServiceType, Integer> direct,
         Map<ServiceType, Integer> ssl) {
         if (hostname == null) {
             throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
@@ -83,7 +82,7 @@ public class DefaultNodeInfo implements NodeInfo {
     }
 
     @Override
-    public InetAddress hostname() {
+    public NetworkAddress hostname() {
         return hostname;
     }
 

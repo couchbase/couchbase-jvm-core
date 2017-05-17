@@ -17,7 +17,6 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.ConfigurationException;
-import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
@@ -25,14 +24,13 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
+import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
-
-import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -49,11 +47,11 @@ import static org.mockito.Mockito.when;
 public class CarrierLoaderTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
-    private static InetAddress host;
+    private static NetworkAddress host;
 
     @BeforeClass
     public static void setup() throws Exception {
-        host = InetAddress.getLocalHost();
+        host = NetworkAddress.localhost();
     }
 
     @Test

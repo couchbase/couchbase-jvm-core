@@ -18,13 +18,13 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.env.ConfigParserEnvironment;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.util.CharsetUtil;
 
-import java.net.InetAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -113,7 +113,7 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
     }
 
     @Override
-    public InetAddress nodeForId(final byte[] id) {
+    public NetworkAddress nodeForId(final byte[] id) {
         long hash = calculateKetamaHash(id);
 
         if (!ketamaNodes.containsKey(hash)) {

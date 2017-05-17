@@ -24,9 +24,9 @@ import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.RingBuffer;
 
-import java.net.InetAddress;
 import java.util.List;
 
 /**
@@ -50,7 +50,7 @@ public class ConfigLocator implements Locator {
         CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
         if (request instanceof BucketConfigRequest && ((BucketConfigRequest) request).hostname() != null) {
             BucketConfigRequest req = (BucketConfigRequest) request;
-            InetAddress hostname = req.hostname();
+            NetworkAddress hostname = req.hostname();
             for (Node node : nodes) {
                 if (node.hostname().equals(hostname)) {
                     node.send(request);

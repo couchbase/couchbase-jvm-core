@@ -24,10 +24,9 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Func1;
-
-import java.net.InetAddress;
 
 /**
  * Loads a raw bucket configuration through the Couchbase Server HTTP config interface.
@@ -62,7 +61,7 @@ public class HttpLoader extends AbstractLoader {
 
     @Override
     protected Observable<String> discoverConfig(final String bucket, final String username, final String password,
-        final InetAddress hostname) {
+        final NetworkAddress hostname) {
         if (!env().bootstrapHttpEnabled()) {
             LOGGER.info("HTTP Bootstrap manually disabled.");
             return Observable.error(new ConfigurationException("HTTP Bootstrap disabled through configuration."));

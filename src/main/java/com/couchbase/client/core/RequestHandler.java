@@ -48,6 +48,7 @@ import com.couchbase.client.core.node.locate.ViewLocator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
@@ -55,7 +56,6 @@ import rx.Subscriber;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -284,7 +284,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
-    public Observable<LifecycleState> addNode(final InetAddress hostname) {
+    public Observable<LifecycleState> addNode(final NetworkAddress hostname) {
         Node node = nodeBy(hostname);
         if (node != null) {
             LOGGER.debug("Node {} already registered, skipping.", hostname);
@@ -324,7 +324,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#DISCONNECTED}).
      */
-    public Observable<LifecycleState> removeNode(final InetAddress hostname) {
+    public Observable<LifecycleState> removeNode(final NetworkAddress hostname) {
         return removeNode(nodeBy(hostname));
     }
 
@@ -368,7 +368,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the node or null if no hostname for that ip address.
      */
-    public Node nodeBy(final InetAddress hostname) {
+    public Node nodeBy(final NetworkAddress hostname) {
         if (hostname == null) {
             return null;
         }
@@ -469,7 +469,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             .doOnNext(new Action1<Boolean>() {
                 @Override
                 public void call(Boolean aBoolean) {
-                    Set<InetAddress> configNodes = config.allNodeAddresses();
+                    Set<NetworkAddress> configNodes = config.allNodeAddresses();
 
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {

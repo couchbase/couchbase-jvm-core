@@ -21,14 +21,13 @@ import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -59,10 +58,10 @@ public class ConfigLocatorTest {
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
@@ -91,15 +90,15 @@ public class ConfigLocatorTest {
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         when(node1Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
         when(node3Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         when(node3Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));

@@ -16,18 +16,17 @@
 package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.utils.NetworkAddress;
 import rx.subjects.ReplaySubject;
-
-import java.net.InetAddress;
 
 /**
  * @author Sergey Avseyev
  * @since 1.2.1
  */
 public class StatRequest extends AbstractKeyValueRequest {
-    private final InetAddress hostname;
+    private final NetworkAddress hostname;
 
-    public StatRequest(final String key, final InetAddress hostname, final String bucket) {
+    public StatRequest(final String key, final NetworkAddress hostname, final String bucket) {
         super(key, bucket, null, null, ReplaySubject.<CouchbaseResponse>create());
         this.hostname = hostname;
     }
@@ -44,7 +43,7 @@ public class StatRequest extends AbstractKeyValueRequest {
         }
     }
 
-    public InetAddress hostname() {
+    public NetworkAddress hostname() {
         return hostname;
     }
 

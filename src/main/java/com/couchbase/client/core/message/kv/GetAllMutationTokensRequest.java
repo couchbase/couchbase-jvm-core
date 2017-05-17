@@ -18,8 +18,7 @@ package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.message.observe.ObserveViaMutationToken;
-
-import java.net.InetAddress;
+import com.couchbase.client.core.utils.NetworkAddress;
 
 /**
  * Get the current high sequence numbers one could initialize streams
@@ -34,13 +33,13 @@ import java.net.InetAddress;
 @InterfaceStability.Experimental
 public class GetAllMutationTokensRequest extends AbstractKeyValueRequest {
     private final PartitionState partitionState;
-    private final InetAddress hostname;
+    private final NetworkAddress hostname;
 
-    public GetAllMutationTokensRequest(final InetAddress hostname, final String bucket) {
+    public GetAllMutationTokensRequest(final NetworkAddress hostname, final String bucket) {
         this(PartitionState.ANY, hostname, bucket);
     }
 
-    public GetAllMutationTokensRequest(final PartitionState partitionState, final InetAddress hostname, final String bucket) {
+    public GetAllMutationTokensRequest(final PartitionState partitionState, final NetworkAddress hostname, final String bucket) {
         super("", bucket);
         this.partitionState = partitionState;
         this.hostname = hostname;
@@ -50,7 +49,7 @@ public class GetAllMutationTokensRequest extends AbstractKeyValueRequest {
         return partitionState;
     }
 
-    public InetAddress hostname() {
+    public NetworkAddress hostname() {
         return hostname;
     }
 

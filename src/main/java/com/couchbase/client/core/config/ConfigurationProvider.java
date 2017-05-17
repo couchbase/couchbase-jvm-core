@@ -15,9 +15,9 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 
-import java.net.InetAddress;
 import java.util.Set;
 
 public interface ConfigurationProvider {
@@ -46,7 +46,7 @@ public interface ConfigurationProvider {
      * @param shuffle shuffle seed host list.
      * @return true if host list updated, false otherwise.
      */
-    boolean seedHosts(Set<InetAddress> hosts, boolean shuffle);
+    boolean seedHosts(Set<NetworkAddress> hosts, boolean shuffle);
 
     /**
      * Start to fetch a config for the given bucket and also watch for changes, depending on the mechanism

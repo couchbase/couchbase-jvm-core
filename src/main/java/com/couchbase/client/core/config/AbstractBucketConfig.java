@@ -16,8 +16,8 @@
 package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +66,7 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private List<NodeInfo> nodeInfoFromExtended(final List<PortInfo> nodesExt, final List<NodeInfo> nodeInfos) {
         List<NodeInfo> converted = new ArrayList<NodeInfo>(nodesExt.size());
         for (int i = 0; i < nodesExt.size(); i++) {
-            InetAddress hostname = nodesExt.get(i).hostname();
+            NetworkAddress hostname = nodesExt.get(i).hostname();
             if (hostname == null) {
                 hostname = nodeInfos.get(i).hostname();
             }

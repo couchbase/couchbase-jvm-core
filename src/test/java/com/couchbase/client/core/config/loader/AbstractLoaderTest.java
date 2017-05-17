@@ -29,11 +29,10 @@ import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
-
-import java.net.InetAddress;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,11 +51,11 @@ public class AbstractLoaderTest {
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private final String localhostConfig = Resources.read("localhost.json", this.getClass());
 
-    private static InetAddress host;
+    private static NetworkAddress host;
 
     @BeforeClass
     public static void setup() throws Exception {
-        host = InetAddress.getLocalHost();
+        host = NetworkAddress.localhost();
     }
 
     @Test
@@ -71,7 +70,7 @@ public class AbstractLoaderTest {
 
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
-            loader.loadConfig(InetAddress.getByName("localhost"), "default", "password");
+            loader.loadConfig(NetworkAddress.localhost(), "default", "password");
 
         BucketConfig loadedConfig = configObservable.toBlocking().single().value2();
         assertEquals("default", loadedConfig.name());
@@ -90,7 +89,7 @@ public class AbstractLoaderTest {
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
-            loader.loadConfig(InetAddress.getByName("localhost"), "default", "password");
+            loader.loadConfig(NetworkAddress.localhost(), "default", "password");
 
         try {
             configObservable.toBlocking().single();
@@ -111,7 +110,7 @@ public class AbstractLoaderTest {
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
-            loader.loadConfig(InetAddress.getByName("localhost"), "default", "password");
+            loader.loadConfig(NetworkAddress.localhost(), "default", "password");
 
         try {
             configObservable.toBlocking().single();
@@ -135,7 +134,7 @@ public class AbstractLoaderTest {
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
-            loader.loadConfig(InetAddress.getByName("localhost"), "default", "password");
+            loader.loadConfig(NetworkAddress.localhost(), "default", "password");
 
         try {
             configObservable.toBlocking().single();
@@ -167,7 +166,7 @@ public class AbstractLoaderTest {
         }
 
         @Override
-        protected Observable<String> discoverConfig(String bucket, String password, String username, InetAddress hostname) {
+        protected Observable<String> discoverConfig(String bucket, String password, String username, NetworkAddress hostname) {
             IllegalStateException ex = new IllegalStateException("Bucket config response did not return with success.");
             if (failCounter++ >= failAfter) {
                 return Observable.error(ex);

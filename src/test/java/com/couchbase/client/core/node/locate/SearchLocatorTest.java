@@ -16,13 +16,12 @@
 package com.couchbase.client.core.node.locate;
 
 import com.couchbase.client.core.config.ClusterConfig;
-import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.search.SearchQueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,10 +50,10 @@ public class SearchLocatorTest {
 
         Node node1Mock = mock(Node.class);
         when(node1Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         Node node2Mock = mock(Node.class);
         when(node2Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
         locator.locateAndDispatch(request, nodes, configMock, null, null);
@@ -80,13 +79,13 @@ public class SearchLocatorTest {
 
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
         when(node3Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
@@ -121,16 +120,16 @@ public class SearchLocatorTest {
 
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(false);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
         when(node3Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         Node node4Mock = mock(Node.class);
-        when(node4Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.104"));
+        when(node4Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.104"));
         when(node4Mock.serviceEnabled(ServiceType.SEARCH)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock, node4Mock));
 

@@ -24,12 +24,12 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.view.ViewQueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,14 +61,14 @@ public class ViewLocatorTest {
         when(request.bucket()).thenReturn("default");
         ClusterConfig configMock = mock(ClusterConfig.class);
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(any(InetAddress.class))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(any(NetworkAddress.class))).thenReturn(true);
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
@@ -93,16 +93,16 @@ public class ViewLocatorTest {
         when(request.bucket()).thenReturn("default");
         ClusterConfig configMock = mock(ClusterConfig.class);
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.101"))).thenReturn(false);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.102"))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.101"))).thenReturn(false);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.102"))).thenReturn(true);
 
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
@@ -127,20 +127,20 @@ public class ViewLocatorTest {
         when(request.bucket()).thenReturn("default");
         ClusterConfig configMock = mock(ClusterConfig.class);
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.101"))).thenReturn(true);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.102"))).thenReturn(false);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.103"))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.101"))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.102"))).thenReturn(false);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.103"))).thenReturn(true);
 
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(false);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
         when(node3Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
@@ -196,24 +196,24 @@ public class ViewLocatorTest {
         when(request.bucket()).thenReturn("default");
         ClusterConfig configMock = mock(ClusterConfig.class);
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.101"))).thenReturn(false);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.102"))).thenReturn(false);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.103"))).thenReturn(true);
-        when(bucketConfigMock.hasPrimaryPartitionsOnNode(InetAddress.getByName("192.168.56.104"))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.101"))).thenReturn(false);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.102"))).thenReturn(false);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.103"))).thenReturn(true);
+        when(bucketConfigMock.hasPrimaryPartitionsOnNode(NetworkAddress.create("192.168.56.104"))).thenReturn(true);
 
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
         when(node1Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
         when(node2Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(false);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
         when(node3Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         Node node4Mock = mock(Node.class);
-        when(node4Mock.hostname()).thenReturn(InetAddress.getByName("192.168.56.104"));
+        when(node4Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.104"));
         when(node4Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock, node4Mock));
 

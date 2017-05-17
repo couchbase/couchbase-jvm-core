@@ -30,13 +30,13 @@ import com.couchbase.client.core.event.system.BucketOpenedEvent;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -122,7 +122,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     /**
      * List of initial bootstrap seed hostnames.
      */
-    private volatile Set<InetAddress> seedHosts;
+    private volatile Set<NetworkAddress> seedHosts;
 
     /**
      * Create a new {@link DefaultConfigurationProvider}.
@@ -206,16 +206,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public boolean seedHosts(final Set<InetAddress> hosts, boolean shuffle) {
+    public boolean seedHosts(final Set<NetworkAddress> hosts, boolean shuffle) {
         if (bootstrapped) {
             LOGGER.debug("Seed hosts called with {}, but already bootstrapped.", hosts);
             return false;
         }
         LOGGER.debug("Setting seed hosts to {}", hosts);
         if (shuffle) {
-            List<InetAddress> hostsList = new ArrayList<InetAddress>(hosts);
+            List<NetworkAddress> hostsList = new ArrayList<NetworkAddress>(hosts);
             Collections.shuffle(hostsList);
-            seedHosts = new HashSet<InetAddress>(hostsList);
+            seedHosts = new HashSet<NetworkAddress>(hostsList);
         } else {
             seedHosts = hosts;
         }
@@ -241,9 +241,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
         Observable<Tuple2<LoaderType, BucketConfig>> observable = Observable.mergeDelayError(Observable
                 .from(seedHosts)
-                .map(new Func1<InetAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
+                .map(new Func1<NetworkAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
-                    public Observable<Tuple2<LoaderType, BucketConfig>> call(InetAddress seedHost) {
+                    public Observable<Tuple2<LoaderType, BucketConfig>> call(NetworkAddress seedHost) {
                         Observable<Tuple2<LoaderType, BucketConfig>> node = loaderChain.get(0)
                                 .loadConfig(seedHost, bucket, username, password);
                         for (int i = 1; i < loaderChain.size(); i++) {

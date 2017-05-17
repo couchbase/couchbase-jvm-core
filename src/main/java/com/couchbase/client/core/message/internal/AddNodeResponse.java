@@ -18,19 +18,18 @@ package com.couchbase.client.core.message.internal;
 import com.couchbase.client.core.message.AbstractCouchbaseResponse;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
-
-import java.net.InetAddress;
+import com.couchbase.client.core.utils.NetworkAddress;
 
 public class AddNodeResponse extends AbstractCouchbaseResponse implements CouchbaseResponse {
 
-    private final InetAddress hostname;
+    private final NetworkAddress hostname;
 
-    public AddNodeResponse(ResponseStatus status, InetAddress hostname) {
+    public AddNodeResponse(ResponseStatus status, NetworkAddress hostname) {
         super(status, null);
         this.hostname = hostname;
     }
 
-    public InetAddress hostname() {
+    public NetworkAddress hostname() {
         return hostname;
     }
 }

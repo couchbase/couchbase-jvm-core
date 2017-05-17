@@ -21,8 +21,10 @@ import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
 import com.couchbase.client.core.utils.Events;
+import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -36,12 +38,12 @@ import java.util.Set;
 public class ConfigUpdatedEvent implements CouchbaseEvent {
 
     private final Set<String> bucketNames;
-    private final Set<InetAddress> clusterNodes;
+    private final Set<NetworkAddress> clusterNodes;
 
     public ConfigUpdatedEvent(final ClusterConfig clusterConfig) {
         this.bucketNames = clusterConfig.bucketConfigs().keySet();
 
-        Set<InetAddress> nodes = new HashSet<InetAddress>();
+        Set<NetworkAddress> nodes = new HashSet<NetworkAddress>();
         for (Map.Entry<String, BucketConfig> cfg : clusterConfig.bucketConfigs().entrySet()) {
             for (NodeInfo node : cfg.getValue().nodes()) {
                 nodes.add(node.hostname());
@@ -59,8 +61,27 @@ public class ConfigUpdatedEvent implements CouchbaseEvent {
 
     /**
      * Returns the {@link InetAddress} of all nodes that are part of the cluster config.
+     *
+     * @deprecated please use {@link #clusterNodesAsNetworkAddress()} instead.
      */
+    @Deprecated
     public Set<InetAddress> clusterNodes() {
+        Set<InetAddress> nodes = new HashSet<InetAddress>();
+        for (NetworkAddress na : clusterNodes) {
+            try {
+                nodes.add(InetAddress.getByName(na.address()));
+            } catch (UnknownHostException e) {
+                throw new IllegalStateException(e);
+            }
+
+        }
+        return nodes;
+    }
+
+    /**
+     * Returns the {@link NetworkAddress} of all nodes that are part of the cluster config.
+     */
+    public Set<NetworkAddress> clusterNodesAsNetworkAddress() {
         return clusterNodes;
     }
 
@@ -75,7 +96,7 @@ public class ConfigUpdatedEvent implements CouchbaseEvent {
         result.put("openBuckets", openBuckets());
 
         Set<String> clusterNodes = new HashSet<String>();
-        for (InetAddress node : clusterNodes()) {
+        for (NetworkAddress node : this.clusterNodes) {
             clusterNodes.add(node.toString());
         }
         result.put("clusterNodes", clusterNodes);
