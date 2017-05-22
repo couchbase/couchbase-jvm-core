@@ -15,6 +15,8 @@
  */
 package com.couchbase.client.core.utils;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 
 /**
@@ -38,7 +40,19 @@ public class NetworkAddress {
 
     NetworkAddress(final String input, final boolean reverseDns) {
         try {
-            this.inner = InetAddress.getByName(input);
+            InetAddress[] addrs = InetAddress.getAllByName(input);
+            InetAddress foundAddr = null;
+            for (InetAddress addr : addrs) {
+                if (addr instanceof Inet4Address) {
+                    // we need to ignore IPv6 addrs since Couchbase doesn't support it by now
+                    foundAddr = addr;
+                    break;
+                }
+            }
+            if (foundAddr == null) {
+                throw new IllegalArgumentException("No IPv4 address found for \"" + input + "\"");
+            }
+            this.inner = foundAddr;
             this.createdFromHostname = !InetAddresses.isInetAddress(input);
             this.allowReverseDns = reverseDns;
         } catch (Exception ex) {
