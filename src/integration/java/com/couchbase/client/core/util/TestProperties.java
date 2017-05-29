@@ -74,8 +74,8 @@ public class TestProperties {
         }
         seedNode = properties.getProperty("seedNode", "127.0.0.1");
         bucket = properties.getProperty("bucket", "default");
-        username = properties.getProperty("username", "default");
-        password = properties.getProperty("password", "");
+        username = properties.getProperty("username", "Administrator");
+        password = properties.getProperty("password", "password");
         adminUser = properties.getProperty("adminUser", "Administrator");
         adminPassword = properties.getProperty("adminPassword", "password");
         mockNodeCount = Integer.parseInt(properties.getProperty("mockNodeCount", "1"));
