@@ -45,6 +45,7 @@ public class ResponseStatusConverter {
     public static final int HTTP_CREATED = 201;
     public static final int HTTP_ACCEPTED = 202;
     public static final int HTTP_BAD_REQUEST = 400;
+    public static final int HTTP_UNAUTHORIZED = 401;
     public static final int HTTP_NOT_FOUND = 404;
     public static final int HTTP_INTERNAL_ERROR = 500;
 
@@ -166,6 +167,9 @@ public class ResponseStatusConverter {
                 break;
             case HTTP_INTERNAL_ERROR:
                 status = ResponseStatus.INTERNAL_ERROR;
+                break;
+            case HTTP_UNAUTHORIZED:
+                status = ResponseStatus.ACCESS_ERROR;
                 break;
             default:
                 LOGGER.warn("Unknown ResponseStatus with Protocol HTTP: {}", code);
