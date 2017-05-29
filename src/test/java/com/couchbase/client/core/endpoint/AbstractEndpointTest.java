@@ -223,6 +223,8 @@ public class AbstractEndpointTest {
         List<Throwable> errors = testSubscriber.getOnErrorEvents();
         assertEquals(1, errors.size());
         assertEquals(ConnectTimeoutException.class, errors.get(0).getClass());
+
+        endpoint.disconnect().subscribe();
     }
 
     @Test
