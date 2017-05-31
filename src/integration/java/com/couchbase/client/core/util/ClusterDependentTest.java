@@ -34,10 +34,14 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import com.couchbase.mock.CouchbaseMock;
@@ -67,8 +71,8 @@ public class ClusterDependentTest {
 
     private static final String seedNode = TestProperties.seedNode();
     private static final String bucket = TestProperties.bucket();
-    private static final String username = TestProperties.username();
-    private static final String password = TestProperties.password();
+    private static volatile String username = TestProperties.username();
+    private static volatile String password = TestProperties.password();
     private static final String adminUser = TestProperties.adminUser();
     private static final String adminPassword = TestProperties.adminPassword();
     private static final CouchbaseMock couchbaseMock = TestProperties.couchbaseMock();
@@ -104,7 +108,40 @@ public class ClusterDependentTest {
         return portsArray.get(0).getAsInt();
     }
 
-    public static void connect(boolean useMock) {
+    /**
+     * Helper (hacked together) method to grab a config from a bucket without having to initialize the
+     * client first - this helps with pre-bootstrap decisions like credentials for RBAC.
+     */
+    private static int[] minClusterVersion() throws Exception {
+        URIBuilder builder = new URIBuilder();
+        builder.setScheme("http").setHost(seedNode).setPort(8091).setPath("/pools/default/buckets/" + bucket)
+            .setParameter("bucket", bucket);
+        HttpGet request = new HttpGet(builder.build());
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope(seedNode, 8091), new UsernamePasswordCredentials(adminUser, adminPassword));
+        HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(credentialsProvider).build();
+        HttpResponse response = client.execute(request);
+        int status = response.getStatusLine().getStatusCode();
+        if (status < 200 || status > 300) {
+            throw new ClientProtocolException("Unexpected response status: " + status);
+        }
+        String rawConfig = EntityUtils.toString(response.getEntity());
+        return minNodeVersionFromConfig(rawConfig);
+    }
+
+
+    public static void connect(boolean useMock) throws Exception {
+
+        /*
+         * If we are running under RBAC, set the user and password to the admin
+         * credentials which will always work. This hopefully makes the test suite
+         * forwards and backwards compat.
+         */
+        if (minClusterVersion()[0] >= 5) {
+            username = adminUser;
+            password = adminPassword;
+        }
+
         DefaultCoreEnvironment.Builder envBuilder = DefaultCoreEnvironment
                 .builder();
 
@@ -137,7 +174,7 @@ public class ClusterDependentTest {
                     }
                 }
         ).toBlocking().single();
-       cluster.send(new FlushRequest(bucket, username, password)).toBlocking().single();
+        cluster.send(new FlushRequest(bucket, username, password)).toBlocking().single();
     }
 
     @AfterClass
