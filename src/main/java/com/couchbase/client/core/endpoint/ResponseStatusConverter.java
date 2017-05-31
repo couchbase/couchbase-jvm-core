@@ -49,6 +49,7 @@ public class ResponseStatusConverter {
     public static final int HTTP_NOT_FOUND = 404;
     public static final int HTTP_INTERNAL_ERROR = 500;
 
+
     /**
      * Convert the binary protocol status in a typesafe enum that can be acted upon later.
      *
@@ -126,23 +127,22 @@ public class ResponseStatusConverter {
             case ERR_SUBDOC_XATTR_INVALID_KEY_COMBO:
                 return ResponseStatus.SUBDOC_XATTR_INVALID_KEY_COMBO;
             //== end of subdocument API codes ==
-            default:
-                if (BINARY_ERROR_MAP == null) {
-                    LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue: {} (0x{}, {})",
-                            status, Integer.toHexString(status.code()), status.description());
-                    return ResponseStatus.FAILURE;
-                } else {
-                    ErrorMap.ErrorCode result = BINARY_ERROR_MAP.errors().get(status.code());
-                    if (result == null) {
-                        LOGGER.warn("Unexpected ResponseStatus with Protocol KeyValue and not found in " +
-                            "Error Map: {} (0x{}, {})",  status, Integer.toHexString(status.code()),
-                            status.description());
-                    } else {
-                        LOGGER.warn("Unexpected ResponseStatus with Extended Error {}", result.toString());
-                    }
-                    return ResponseStatus.FAILURE;
-                }
         }
+        return ResponseStatus.FAILURE;
+    }
+
+    /**
+     * Get the error code from Key Value error map
+     *
+     * @param code the status to convert.
+     */
+    public static ErrorMap.ErrorCode readErrorCodeFromErrorMap(final short code) {
+        if (BINARY_ERROR_MAP == null) {
+            LOGGER.trace("Binary error map unavailable");
+            return null;
+        }
+        ErrorMap.ErrorCode result = BINARY_ERROR_MAP.errors().get(code);
+        return result;
     }
 
     /**

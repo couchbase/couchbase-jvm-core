@@ -70,17 +70,16 @@ import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMutationRequest;
 import com.couchbase.client.core.message.kv.subdoc.BinarySubdocRequest;
 import com.couchbase.client.core.message.kv.subdoc.multi.Lookup;
 import com.couchbase.client.core.message.kv.subdoc.multi.LookupCommand;
-import com.couchbase.client.core.message.kv.subdoc.multi.LookupCommandBuilder;
 import com.couchbase.client.core.message.kv.subdoc.multi.MultiLookupResponse;
 import com.couchbase.client.core.message.kv.subdoc.multi.MultiMutationResponse;
 import com.couchbase.client.core.message.kv.subdoc.multi.MultiResult;
 import com.couchbase.client.core.message.kv.subdoc.multi.Mutation;
 import com.couchbase.client.core.message.kv.subdoc.multi.MutationCommand;
-import com.couchbase.client.core.message.kv.subdoc.multi.MutationCommandBuilder;
 import com.couchbase.client.core.message.kv.subdoc.simple.SimpleSubdocResponse;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubExistRequest;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubGetRequest;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.time.Delay;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
@@ -99,6 +98,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.AUTH;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.AUTO_RETRY;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.CONN_STATE_INVALIDATED;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.FETCH_CONFIG;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_LATER;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_NOW;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.SUBDOC;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.TEMP;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.RetryStrategy.CONSTANT;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.RetryStrategy.EXPONENTIAL;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.RetryStrategy.LINEAR;
 
 /**
  * The {@link KeyValueHandler} is responsible for encoding {@link BinaryRequest}s into lower level
@@ -690,6 +702,57 @@ public class KeyValueHandler
         }
 
         ResponseStatus status = ResponseStatusConverter.fromBinary(msg.getStatus());
+        ErrorMap.ErrorCode errorCode = ResponseStatusConverter.readErrorCodeFromErrorMap(msg.getStatus());
+
+        if (errorCode != null) {
+            LOGGER.debug("ResponseStatus with Extended Error Code {}", errorCode.toString());
+
+            if (errorCode.attributes().contains(FETCH_CONFIG)) {
+                LOGGER.debug(logIdent(ctx, endpoint()) +
+                        "Config reload requested by the server, sending config reload message");
+                endpoint().signalConfigReload();
+            }
+
+            if (errorCode.attributes().contains(CONN_STATE_INVALIDATED)) {
+                LOGGER.debug(logIdent(ctx, endpoint()) +
+                        "Connection state has been invalidated by the server, reconnecting");
+                ctx.close();
+                status = ResponseStatus.FAILURE;
+            }
+
+            if (errorCode.attributes().contains(TEMP)) {
+                LOGGER.debug(logIdent(ctx, endpoint()) +
+                        "Temporary failure using error code translation");
+                status = ResponseStatus.TEMPORARY_FAILURE;
+            }
+
+            if (errorCode.attributes().contains(AUTH)) {
+                LOGGER.debug(logIdent(ctx, endpoint()) +
+                        "Authentication failure using error code translation");
+                status = ResponseStatus.ACCESS_ERROR;
+            }
+
+            if (errorCode.attributes().contains(AUTO_RETRY) ||
+                    errorCode.attributes().contains(RETRY_NOW) ||
+                    errorCode.attributes().contains(RETRY_LATER)) {
+                LOGGER.debug(logIdent(ctx, endpoint()) +
+                        "Retry requested by the server");
+                status = ResponseStatus.RETRY;
+            }
+
+            if (errorCode.attributes().contains(AUTO_RETRY) && request.retryDelay() == null) {
+                if (errorCode.retrySpec().strategy() == CONSTANT) {
+                    request.retryDelay(Delay.fixed(errorCode.retrySpec().interval(), TimeUnit.MILLISECONDS));
+                } else if (errorCode.retrySpec().strategy() == LINEAR) {
+                    request.retryDelay(Delay.linear(TimeUnit.MILLISECONDS, errorCode.retrySpec().ceil(), 0, errorCode.retrySpec().interval()));
+                } else if (errorCode.retrySpec().strategy() == EXPONENTIAL) {
+                    request.retryDelay(Delay.exponential(TimeUnit.MILLISECONDS, errorCode.retrySpec().ceil(), 0, errorCode.retrySpec().interval()));
+                }
+                request.retryAfter(errorCode.retrySpec().after());
+                request.maxRetryDuration(System.currentTimeMillis() + errorCode.retrySpec().maxDuration());
+            }
+        }
+
         if (status.equals(ResponseStatus.RETRY)) {
             resetContentReaderIndex(request);
         } else {

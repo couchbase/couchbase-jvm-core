@@ -15,15 +15,15 @@
  */
 package com.couchbase.client.core.util;
 
-import org.couchbase.mock.Bucket;
-import org.couchbase.mock.BucketConfiguration;
-import org.couchbase.mock.CouchbaseMock;
+import com.couchbase.mock.Bucket;
+import com.couchbase.mock.BucketConfiguration;
+import com.couchbase.mock.CouchbaseMock;
 
 import java.util.ArrayList;
 import java.util.Properties;
 
-import static org.couchbase.mock.Bucket.BucketType.COUCHBASE;
-import static org.couchbase.mock.Bucket.BucketType.MEMCACHED;
+import static com.couchbase.mock.Bucket.BucketType.COUCHBASE;
+import static com.couchbase.mock.Bucket.BucketType.MEMCACHED;
 
 /**
  * Helper class to centralize test properties that can be modified through system properties.
