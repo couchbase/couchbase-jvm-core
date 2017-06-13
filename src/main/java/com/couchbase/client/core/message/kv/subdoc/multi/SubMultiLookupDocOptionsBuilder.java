@@ -20,45 +20,34 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 
 /**
- * Document options for {@link SubMultiMutationRequest}
+ * Document options for {@link SubMultiLookupRequest}
  *
  * @author Subhashni Balakrishnan
- * @since 1.4.6
+ * @since 1.5.0
  */
 @InterfaceStability.Experimental
 @InterfaceAudience.Public
-public class SubMultiMutationDocOptionsBuilder {
-    private boolean createDocument;
-    private boolean insertDocument;
+public class SubMultiLookupDocOptionsBuilder {
+    private boolean accessDeleted;
 
-    public static SubMultiMutationDocOptionsBuilder builder() {
-        return new SubMultiMutationDocOptionsBuilder();
+    public static SubMultiLookupDocOptionsBuilder builder() {
+        return new SubMultiLookupDocOptionsBuilder();
     }
 
-    public SubMultiMutationDocOptionsBuilder createDocument(boolean createDocument) {
-        this.createDocument = createDocument;
+    public SubMultiLookupDocOptionsBuilder accessDeleted(boolean accessDeleted) {
+        this.accessDeleted = accessDeleted;
         return this;
     }
 
-    public boolean createDocument() {
-        return this.createDocument;
-    }
-
-    public SubMultiMutationDocOptionsBuilder insertDocument(boolean insertDocument) {
-        this.insertDocument = insertDocument;
-        return this;
-    }
-
-    public boolean insertDocument() {
-        return this.insertDocument;
+    public boolean accessDeleted() {
+        return this.accessDeleted;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
-        sb.append(" \"createDocument\":" + createDocument);
-        sb.append(", \"insertDocument\": " + insertDocument);
+        sb.append(" \"accessDeleted\": " + accessDeleted);
         sb.append("}");
         return sb.toString();
     }

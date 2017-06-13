@@ -43,6 +43,11 @@ public interface BinarySubdocMultiLookupRequest extends BinaryRequest {
     List<LookupCommand> commands();
 
     /**
+     * @return the document flags for the Request
+     */
+    byte docFlags();
+
+    /**
      * The {@link ByteBuf} representing the whole list of {@link #commands()}.
      *
      * This buffer is to be automatically released once the message has been written on the wire.

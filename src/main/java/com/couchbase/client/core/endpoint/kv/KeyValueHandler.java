@@ -183,8 +183,17 @@ public class KeyValueHandler
     /**
      * The bitmask for sub-document create document
      */
-    public static final byte SUBDOC_FLAG_MKDOC = (byte) 0x1;
+    public static final byte SUBDOC_DOCFLAG_MKDOC = (byte) 0x1;
 
+    /**
+     * The bitmask for sub-document insert document
+     */
+    public static final byte SUBDOC_DOCFLAG_INSERT = (byte) 0x2;
+
+    /**
+     * The bitmask for sub-document access deleted
+     */
+    public static final byte SUBDOC_DOCFLAG_ACCESS_DELETED = (byte) 0x04;
 
     boolean seqOnMutation = false;
 
@@ -619,11 +628,13 @@ public class KeyValueHandler
 
             byte docFlags = 0;
             if (mut.createDocument()) {
-                docFlags |= SUBDOC_FLAG_MKDOC;
+                docFlags |= SUBDOC_DOCFLAG_MKDOC;
             }
-
+            if (mut.insertDocument()) {
+                docFlags |= SUBDOC_DOCFLAG_INSERT;
+            }
             if (docFlags != 0) {
-                extrasLength += 1;
+                extrasLength++;
                 extras.writeByte(docFlags);
             }
 
@@ -635,6 +646,10 @@ public class KeyValueHandler
             } else {
                 extras.writeByte(0);
             }
+            if (req.accessDeleted()) {
+                extrasLength++;
+                extras.writeByte(SUBDOC_DOCFLAG_ACCESS_DELETED);
+            }
         } else if (msg instanceof SubExistRequest) {
             SubExistRequest req = (SubExistRequest) msg;
             if (req.xattr()) {
@@ -642,12 +657,20 @@ public class KeyValueHandler
             } else {
                 extras.writeByte(0);
             }
+            if (req.accessDeleted()) {
+                extrasLength++;
+                extras.writeByte(SUBDOC_DOCFLAG_ACCESS_DELETED);
+            }
         } else if (msg instanceof SubGetCountRequest) {
             SubGetCountRequest req = (SubGetCountRequest) msg;
             if (req.xattr()) {
                 extras.writeByte(SUBDOC_FLAG_XATTR_PATH);
             } else {
                 extras.writeByte(0);
+            }
+            if (req.accessDeleted()) {
+                extrasLength++;
+                extras.writeByte(SUBDOC_DOCFLAG_ACCESS_DELETED);
             }
         } else {
             extras.writeByte(0);
@@ -668,11 +691,21 @@ public class KeyValueHandler
         byte[] key = msg.keyBytes();
         short keyLength = (short) key.length;
 
-        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, Unpooled.EMPTY_BUFFER, msg.content());
+        byte extrasLength = 0;
+
+        ByteBuf extras = Unpooled.EMPTY_BUFFER;
+
+        if (msg.docFlags() != 0) {
+            extrasLength = 1;
+            extras = ctx.alloc().buffer(extrasLength, extrasLength);
+            extras.writeByte(msg.docFlags());
+        }
+
+        FullBinaryMemcacheRequest request = new DefaultFullBinaryMemcacheRequest(key, extras, msg.content());
         request.setOpcode(OP_SUB_MULTI_LOOKUP)
                 .setKeyLength(keyLength)
-                .setExtrasLength((byte) 0)
-                .setTotalBodyLength(keyLength + msg.content().readableBytes());
+                .setExtrasLength(extrasLength)
+                .setTotalBodyLength(keyLength + extrasLength + msg.content().readableBytes());
 
         return request;
     }

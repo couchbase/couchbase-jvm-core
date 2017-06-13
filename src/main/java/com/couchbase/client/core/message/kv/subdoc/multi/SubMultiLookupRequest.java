@@ -28,6 +28,7 @@ import io.netty.util.CharsetUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_DOCFLAG_ACCESS_DELETED;
 import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
 
 /**
@@ -41,21 +42,37 @@ import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_FLAG_
 public class SubMultiLookupRequest extends AbstractKeyValueRequest implements BinarySubdocMultiLookupRequest {
     private final List<LookupCommand> commands;
     private final ByteBuf encoded;
+    private byte docFlags;
 
     /**
      * Creates a new {@link SubMultiLookupRequest}.
      *
-     * @param key      the key of the document to look into.
-     * @param bucket   the bucket of the document.
-     * @param commands {@link LookupCommand} commands
+     * @param key                the key of the document to look into.
+     * @param bucket             the bucket of the document.
+     * @param docOptionsBuilder  the document access options
+     * @param commands           {@link LookupCommand} commands
      */
-    public SubMultiLookupRequest(String key, String bucket, LookupCommand... commands) {
+    public SubMultiLookupRequest(String key, String bucket, SubMultiLookupDocOptionsBuilder docOptionsBuilder, LookupCommand... commands) {
         super(key, bucket);
         if (commands == null) {
             throw new NullPointerException("At least one lookup command is necessary");
         }
         this.commands = Arrays.asList(commands);
         this.encoded = encode(this.commands);
+        if (docOptionsBuilder.accessDeleted()) {
+            this.docFlags |= SUBDOC_DOCFLAG_ACCESS_DELETED;
+        }
+    }
+
+    /**
+     * Creates a new {@link SubMultiLookupRequest}.
+     *
+     * @param key                the key of the document to look into.
+     * @param bucket             the bucket of the document.
+     * @param commands           {@link LookupCommand} commands
+     */
+    public SubMultiLookupRequest(String key, String bucket, LookupCommand... commands) {
+        this(key, bucket, SubMultiLookupDocOptionsBuilder.builder(), commands);
     }
 
     private static ByteBuf encode(List<LookupCommand> commands) {
@@ -94,4 +111,7 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
     public ByteBuf content() {
         return this.encoded;
     }
+
+    @Override
+    public byte docFlags() { return this.docFlags; }
 }

@@ -108,7 +108,9 @@ public enum KeyValueStatus {
     ERR_SUBDOC_XATTR_INVALID_KEY_COMBO((short) 0xcf,
             "Only single xattr key may be accessed at the same time"),
     ERR_SUBDOC_XATTR_UNKNOWN_MACRO((short) 0xd0,
-            "The server has no knowledge of the requested macro");
+            "The server has no knowledge of the requested macro"),
+    SUBDOC_SUCCESS_DELETED_DOCUMENT((short)0xcd,
+            "The subdoc operation completed successfully on the deleted document");
 
     private final short code;
     private final String description;
@@ -136,6 +138,8 @@ public enum KeyValueStatus {
             return ERR_EXISTS;
         } else if (code == ERR_NOT_MY_VBUCKET.code) {
             return ERR_NOT_MY_VBUCKET;
+        } else if (code == SUBDOC_SUCCESS_DELETED_DOCUMENT.code) {
+            return SUCCESS;
         }
 
         for (KeyValueStatus keyValueStatus : values()) {
