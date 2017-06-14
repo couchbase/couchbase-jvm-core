@@ -36,6 +36,11 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
     private final long creationTime;
 
     /**
+     * The detailed status for this response, might be not set at all (null).
+     */
+    private volatile ResponseStatusDetails statusDetails;
+
+    /**
      * Sets the required properties for the response.
      *
      * @param status the status of the response.
@@ -51,8 +56,20 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
         return status;
     }
 
+    @Override
+    public ResponseStatusDetails statusDetails() {
+        return statusDetails;
+    }
+
+    @Override
+    public void statusDetails(final ResponseStatusDetails statusDetails) {
+        if (this.statusDetails == null) {
+            this.statusDetails = statusDetails;
+        }
+    }
+
     /**
-     * Stub method implementation which needs to be overriden by all responses that support cloning.
+     * Stub method implementation which needs to be overridden by all responses that support cloning.
      */
     @Override
     public CouchbaseRequest request() {
@@ -66,6 +83,11 @@ public abstract class AbstractCouchbaseResponse implements CouchbaseResponse {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "{" + "status=" + status + ", request=" + request + '}';
+        return this.getClass().getSimpleName() + "{" +
+                "status=" + status +
+                ", request=" + request +
+                ", creationTime=" + creationTime +
+                ", statusDetails=" + statusDetails +
+                '}';
     }
 }

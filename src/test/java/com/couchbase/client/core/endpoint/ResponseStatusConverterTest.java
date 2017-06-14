@@ -17,9 +17,14 @@
 package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.ResponseStatusDetails;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Verifies the functionality of the {@link ResponseStatusConverter}.
@@ -48,5 +53,26 @@ public class ResponseStatusConverterTest {
         assertEquals(ResponseStatus.TEMPORARY_FAILURE, ResponseStatusConverter.fromBinary((short) 0x86));
 
         assertEquals(ResponseStatus.FAILURE, ResponseStatusConverter.fromBinary(Short.MAX_VALUE));
+    }
+
+    @Test
+    public void shouldHandleCheckDetailsForBinaryWithoutFlag() {
+        assertNull(ResponseStatusConverter.detailsFromBinary((byte) 0x00, Unpooled.buffer())); // raw
+        assertNull(ResponseStatusConverter.detailsFromBinary((byte) 0x02, Unpooled.buffer())); // snappy
+        assertNull(ResponseStatusConverter.detailsFromBinary((byte) 0x04, Unpooled.buffer())); // xattr
+        assertNull(ResponseStatusConverter.detailsFromBinary((byte) (0x04 & 0x02), Unpooled.buffer())); // snappy & xattr
+    }
+
+    @Test
+    public void shouldHandleCheckDetailsForBinaryWithFlag() {
+        String raw = "{ \"error\" : { \"context\" : \"textual context information\", \"ref\" :" +
+            " \"error reference to be found in the server logs\" }}";
+
+        assertNotNull(ResponseStatusConverter.detailsFromBinary((byte) 0x01,
+            Unpooled.copiedBuffer(raw, CharsetUtil.UTF_8)));
+        assertNotNull(ResponseStatusConverter.detailsFromBinary((byte) (0x01 | 0x02),
+            Unpooled.copiedBuffer(raw, CharsetUtil.UTF_8)));
+        assertNotNull(ResponseStatusConverter.detailsFromBinary((byte) (0x01 | 0x04 | 0x02),
+                Unpooled.copiedBuffer(raw, CharsetUtil.UTF_8)));
     }
 }
