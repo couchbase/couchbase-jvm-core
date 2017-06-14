@@ -247,4 +247,9 @@ public class DefaultCoreEnvironmentTest {
         assertTrue(elg.isShutdown());
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void shouldFailIfClientCertEnabledButSSLIsnt() {
+        DefaultCoreEnvironment.builder().certAuthEnabled(true).build();
+    }
+
 }

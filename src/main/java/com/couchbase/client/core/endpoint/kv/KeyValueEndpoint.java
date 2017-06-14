@@ -82,15 +82,22 @@ public class KeyValueEndpoint extends AbstractEndpoint {
         if (authBeforeHello) {
             LOGGER.info("Manually enforced authentication before \"HELLO\" for backwards " +
                 "compatibility.");
+
+            if (!environment().certAuthEnabled()) {
+                pipeline.addLast(new KeyValueAuthHandler(username(), password()));
+            }
+
             pipeline
-                .addLast(new KeyValueAuthHandler(username(), password()))
                 .addLast(new KeyValueFeatureHandler(environment()))
                 .addLast(new KeyValueErrorMapHandler());
         } else {
             pipeline
                 .addLast(new KeyValueFeatureHandler(environment()))
-                .addLast(new KeyValueErrorMapHandler())
-                .addLast(new KeyValueAuthHandler(username(), password()));
+                .addLast(new KeyValueErrorMapHandler());
+
+            if (!environment().certAuthEnabled()) {
+                pipeline.addLast(new KeyValueAuthHandler(username(), password()));
+            }
         }
 
         pipeline
