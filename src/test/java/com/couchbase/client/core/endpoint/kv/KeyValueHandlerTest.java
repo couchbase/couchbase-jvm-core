@@ -911,7 +911,8 @@ public class KeyValueHandlerTest {
 
             @Override
             protected CoreEnvironment env() {
-                return DefaultCoreEnvironment.create();
+                return DefaultCoreEnvironment.builder()
+                    .continuousKeepAliveEnabled(false).build();
             }
         };
         EmbeddedChannel channel = new EmbeddedChannel(testHandler);

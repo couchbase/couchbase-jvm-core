@@ -97,6 +97,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final RetryStrategy RETRY_STRATEGY = BestEffortRetryStrategy.INSTANCE;
     public static final long MAX_REQUEST_LIFETIME = TimeUnit.SECONDS.toMillis(75);
     public static final long KEEPALIVEINTERVAL = TimeUnit.SECONDS.toMillis(30);
+    public static final boolean CONTINUOUS_KEEPALIVE_ENABLED = true;
+    public static final long KEEPALIVE_ERROR_THRESHOLD = 4;
+    public static final long KEEPALIVE_TIMEOUT = 2500;
     public static final long AUTORELEASE_AFTER = TimeUnit.SECONDS.toMillis(2);
     public static final boolean BUFFER_POOLING_ENABLED = true;
     public static final boolean TCP_NODELAY_ENALED = true;
@@ -208,6 +211,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final RetryStrategy retryStrategy;
     private final long maxRequestLifetime;
     private final long keepAliveInterval;
+    private final boolean continuousKeepAliveEnabled;
+    private final long keepAliveErrorThreshold;
+    private final long keepAliveTimeout;
     private final long autoreleaseAfter;
     private final boolean bufferPoolingEnabled;
     private final boolean tcpNodelayEnabled;
@@ -297,6 +303,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         memcachedHashingStrategy = builder.memcachedHashingStrategy;
         configPollInterval = longPropertyOr("configPollInterval", builder.configPollInterval);
         certAuthEnabled = booleanPropertyOr("certAuthEnabled", builder.certAuthEnabled);
+        continuousKeepAliveEnabled = booleanPropertyOr(
+            "continuousKeepAliveEnabled",
+                builder.continuousKeepAliveEnabled
+        );
+        keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
+        keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -883,6 +895,21 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return certAuthEnabled;
     }
 
+    @Override
+    public boolean continuousKeepAliveEnabled() {
+        return continuousKeepAliveEnabled;
+    }
+
+    @Override
+    public long keepAliveErrorThreshold() {
+        return keepAliveErrorThreshold;
+    }
+
+    @Override
+    public long keepAliveTimeout() {
+        return keepAliveTimeout;
+    }
+
     public static class Builder {
 
         private boolean dcpEnabled = DCP_ENABLED;
@@ -928,6 +955,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private EventBus eventBus;
         private long maxRequestLifetime = MAX_REQUEST_LIFETIME;
         private long keepAliveInterval = KEEPALIVEINTERVAL;
+        private boolean continuousKeepAliveEnabled = CONTINUOUS_KEEPALIVE_ENABLED;
+        private long keepAliveErrorThreshold = KEEPALIVE_ERROR_THRESHOLD;
+        private long keepAliveTimeout = KEEPALIVE_TIMEOUT;
         private long autoreleaseAfter = AUTORELEASE_AFTER;
         private boolean bufferPoolingEnabled = BUFFER_POOLING_ENABLED;
         private boolean tcpNodelayEnabled = TCP_NODELAY_ENALED;
@@ -1568,6 +1598,37 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        /**
+         * Allows to enable or disable the continous emitting of keepalive messages.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public Builder continuousKeepAliveEnabled(final boolean continuousKeepAliveEnabled) {
+            this.continuousKeepAliveEnabled = continuousKeepAliveEnabled;
+            return this;
+        }
+
+        /**
+         * Allows to customize the errors on keepalive messages threshold after which the
+         * connection will be recycled.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public Builder keepAliveErrorThreshold(final long keepAliveErrorThreshold) {
+            this.keepAliveErrorThreshold = keepAliveErrorThreshold;
+            return this;
+        }
+
+        /**
+         * Allows to customize the timeout used for keepalive operations.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public Builder keepAliveTimeout(final long keepAliveTimeout) {
+            this.keepAliveTimeout = keepAliveTimeout;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1651,6 +1712,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", reconnectDelay=").append(reconnectDelay);
         sb.append(", observeIntervalDelay=").append(observeIntervalDelay);
         sb.append(", keepAliveInterval=").append(keepAliveInterval);
+        sb.append(", continuousKeepAliveEnabled=").append(continuousKeepAliveEnabled);
+        sb.append(", keepAliveErrorThreshold=").append(keepAliveErrorThreshold);
+        sb.append(", keepAliveTimeout=").append(keepAliveTimeout);
         sb.append(", autoreleaseAfter=").append(autoreleaseAfter);
         sb.append(", bufferPoolingEnabled=").append(bufferPoolingEnabled);
         sb.append(", tcpNodelayEnabled=").append(tcpNodelayEnabled);

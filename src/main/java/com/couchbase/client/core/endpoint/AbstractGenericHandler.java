@@ -33,6 +33,8 @@ import com.couchbase.client.core.service.ServiceType;
 import com.lmax.disruptor.EventSink;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
@@ -57,6 +59,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 import static com.couchbase.client.core.utils.Observables.failSafe;
 
@@ -155,6 +158,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     private final boolean pipeline;
 
+    private volatile long keepAliveThreshold;
+
     /**
      * Creates a new {@link AbstractGenericHandler} with the default queue.
      *
@@ -185,6 +190,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         this.classNameCache = new IdentityHashMap<Class<? extends CouchbaseRequest>, String>();
         this.moveResponseOut = env() == null || !env().callbacksOnIoPool();
         this.sentQueueLimit = Integer.parseInt(System.getProperty("com.couchbase.sentRequestQueueLimit", "5120"));
+        this.keepAliveThreshold = 0;
     }
 
     /**
@@ -456,6 +462,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             // Should not happen in production, but in testing it might be different
             remoteHostname = addr.toString();
         }
+        channelActiveSideEffects(ctx);
         ctx.fireChannelActive();
     }
 
@@ -472,6 +479,23 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         ChannelPromise future) throws Exception {
         connectFuture = future;
         ctx.connect(remoteAddress, localAddress, future);
+    }
+
+    /**
+     * Helper method to perform certain side effects when the channel is connected.
+     */
+    private void channelActiveSideEffects(final ChannelHandlerContext ctx) {
+        long interval = env().keepAliveInterval();
+        if (env().continuousKeepAliveEnabled()) {
+            ctx.executor().scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    if (shouldSendKeepAlive()) {
+                        createAndWriteKeepAlive(ctx);
+                    }
+                }
+            }, interval, interval, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Override
@@ -545,22 +569,31 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
-            if (!shouldSendKeepAlive()) {
+            if (!shouldSendKeepAlive() || env().continuousKeepAliveEnabled()) {
                 return;
             }
-
-            CouchbaseRequest keepAlive = createKeepAliveRequest();
-            if (keepAlive != null) {
-                keepAlive.observable().subscribe(new KeepAliveResponseAction(ctx));
-                onKeepAliveFired(ctx, keepAlive);
-
-                Channel channel = ctx.channel();
-                if (channel.isActive() && channel.isWritable()) {
-                    ctx.pipeline().writeAndFlush(keepAlive);
-                }
-            }
+            createAndWriteKeepAlive(ctx);
         } else {
             super.userEventTriggered(ctx, evt);
+        }
+    }
+
+    /**
+     * Helper method to create, write and flush the keepalive message.
+     */
+    private void createAndWriteKeepAlive(final ChannelHandlerContext ctx) {
+        CouchbaseRequest keepAlive = createKeepAliveRequest();
+        if (keepAlive != null) {
+            keepAlive
+                .observable()
+                .timeout(env().keepAliveTimeout(), TimeUnit.MILLISECONDS)
+                .subscribe(new KeepAliveResponseAction(ctx));
+            onKeepAliveFired(ctx, keepAlive);
+
+            Channel channel = ctx.channel();
+            if (channel.isActive() && channel.isWritable()) {
+                ctx.pipeline().writeAndFlush(keepAlive);
+            }
         }
     }
 
@@ -597,7 +630,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param keepAliveRequest the keep alive request that was sent when keep alive was triggered
      */
     protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
-        if (LOGGER.isDebugEnabled()) {
+        if (env().continuousKeepAliveEnabled() && LOGGER.isTraceEnabled()) {
+            LOGGER.trace(logIdent(ctx, endpoint) + "Continuous KeepAlive fired");
+        } else if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(logIdent(ctx, endpoint) + "KeepAlive fired");
         }
     }
@@ -676,12 +711,28 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
         @Override
         public void onCompleted() {
-            // ignored on purpose.
+            keepAliveThreshold = 0;
         }
 
         @Override
         public void onError(Throwable e) {
+            if (ctx.channel() == null || !ctx.channel().isActive()) {
+                return;
+            }
             LOGGER.warn(logIdent(ctx, endpoint) + "Got error while consuming KeepAliveResponse.", e);
+            keepAliveThreshold++;
+            if (keepAliveThreshold >= env().keepAliveErrorThreshold()) {
+                LOGGER.warn(logIdent(ctx, endpoint) + "KeepAliveThreshold reached - " +
+                    "closing this socket proactively.");
+                ctx.close().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (!future.isSuccess()) {
+                            LOGGER.warn("Error while proactively closing the socket.", future.cause());
+                        }
+                    }
+                });
+            }
         }
 
         @Override

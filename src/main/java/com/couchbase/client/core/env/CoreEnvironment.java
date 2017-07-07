@@ -361,6 +361,35 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     long keepAliveInterval();
 
     /**
+     * If set to true, KeepAlives will be sent on a regular basis in the interval also if there
+     * is traffic on the socket,  not only if its idle.
+     *
+     * @return true if enabled, false otherwise.
+     */
+    @InterfaceAudience.Public
+    @InterfaceStability.Uncommitted
+    boolean continuousKeepAliveEnabled();
+
+    /**
+     * Specifies the number of times a KeepAlive message on a socket can fail before the connection
+     * is recycled.
+     *
+     * @return the number of keepalive errors allowed to happen before the socket is reopened.
+     */
+    @InterfaceAudience.Public
+    @InterfaceStability.Uncommitted
+    long keepAliveErrorThreshold();
+
+    /**
+     * Specifies the timeout of a keepalive operation on the socket in milliseconds.
+     *
+     * @return
+     */
+    @InterfaceAudience.Public
+    @InterfaceStability.Uncommitted
+    long keepAliveTimeout();
+
+    /**
      * Returns the event bus where events are broadcasted on and can be published to.
      *
      * @return the configured event bus.
