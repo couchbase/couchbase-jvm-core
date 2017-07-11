@@ -66,7 +66,7 @@ public class ClusterDependentTest {
 
     static {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
-        System.setProperty("com.couchbase.xerrorEnabled", "true");
+        System.setProperty("com.couchbase.xerrorEnabled", "false");
     }
 
     private static final String seedNode = TestProperties.seedNode();

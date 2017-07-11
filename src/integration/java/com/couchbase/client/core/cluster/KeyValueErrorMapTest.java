@@ -25,6 +25,7 @@ import com.couchbase.mock.JsonUtils;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,6 +34,7 @@ import java.util.Map;
 
 import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.OP_UPSERT;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Basic error map test
@@ -45,6 +47,14 @@ public class KeyValueErrorMapTest extends ClusterDependentTest {
     @BeforeClass
     public static void setup() throws Exception {
         connect(true);
+    }
+
+    @Before
+    public void before() throws Exception {
+        assumeTrue(
+            "Ignoring because extended error not enabled",
+            Boolean.parseBoolean(System.getProperty("com.couchbase.xerrorEnabled", "false"))
+        );
     }
 
     private static void startRetryVerifyRequest() throws Exception {
