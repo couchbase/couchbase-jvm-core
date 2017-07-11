@@ -136,8 +136,10 @@ public class ClusterDependentTest {
          * If we are running under RBAC, set the user and password to the admin
          * credentials which will always work. This hopefully makes the test suite
          * forwards and backwards compat.
+         *
+         * Also, the mock currently doesn't support RBAC so ignore it if set.
          */
-        if (minClusterVersion()[0] >= 5) {
+        if (minClusterVersion()[0] >= 5 && !useMock) {
             username = adminUser;
             password = adminPassword;
         }
