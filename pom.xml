@@ -32,10 +32,10 @@
         <native.original>libnetty-transport-native-epoll.so</native.original>
         <native.renamed>libcom-couchbase-client-deps-netty-transport-native-epoll.so</native.renamed>
 
-        <rxjava.version>1.2.7</rxjava.version>
-        <netty.version>4.0.45.Final</netty.version>
+        <rxjava.version>1.2.10</rxjava.version>
+        <netty.version>4.0.49.Final</netty.version>
         <disruptor.version>3.3.6</disruptor.version>
-        <jackson.version>2.7.9</jackson.version>
+        <jackson.version>2.7.9.1</jackson.version>
         <latency-utils.version>2.0.3</latency-utils.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>
