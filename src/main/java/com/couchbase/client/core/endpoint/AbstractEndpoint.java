@@ -64,6 +64,7 @@ import rx.subjects.Subject;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
@@ -145,6 +146,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     private final boolean pipeline;
 
+    private final String hostname;
+
     /**
      * Factory which handles {@link SSLEngine} creation.
      */
@@ -212,6 +215,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.ioPool = env.ioPool();
         this.lastResponse = 0;
         this.free = true;
+        this.hostname = "127.0.0.1"; // let's consider its localhost for testing, use other constructor if not.
     }
 
     /**
@@ -238,6 +242,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.ioPool = ioPool;
         this.pipeline = pipeline;
         this.free = true;
+        this.hostname = hostname;
         this.connectCallbackGracePeriod = Integer.parseInt(
             System.getProperty("com.couchbase.connectCallbackGracePeriod", DEFAULT_CONNECT_CALLBACK_GRACE_PERIOD)
         );
@@ -508,6 +513,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     if (!pipeline) {
                         free = false;
                     }
+                    request.dispatchHostname(hostname);
                     channel.write(request, channel.voidPromise());
                     hasWritten = true;
                 } else {

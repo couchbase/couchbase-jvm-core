@@ -127,4 +127,8 @@ public interface CouchbaseRequest extends CouchbaseMessage {
     @InterfaceAudience.Private
     @InterfaceStability.Uncommitted
     void subscriber(Subscriber subscriber);
+
+    String dispatchHostname();
+
+    void dispatchHostname(String hostname);
 }

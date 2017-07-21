@@ -64,6 +64,8 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
 
     private volatile long maxRetryDuration;
 
+    private volatile String dispatchHostname;
+
     private Delay retryDelay;
 
     /**
@@ -191,6 +193,16 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     @Override
     public void subscriber(Subscriber subscriber) {
         this.subscriber = subscriber;
+    }
+
+    @Override
+    public String dispatchHostname() {
+        return dispatchHostname;
+    }
+
+    @Override
+    public void dispatchHostname(String hostname) {
+        this.dispatchHostname = hostname;
     }
 
     @Override
