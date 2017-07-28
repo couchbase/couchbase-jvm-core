@@ -151,6 +151,16 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
     private boolean sectionDone = false;
 
     /**
+     * Keep the closing character position processing state to avoid continuously parsing the same buffer
+     */
+    private ClosingPositionBufProcessor queryRowClosingPositionProcessor;
+
+    /**
+     * Last closing character position processing end index
+     */
+    private int queryRowClosingProcessorIndex = 0;
+
+    /**
      * Creates a new {@link QueryHandler} with the default queue for requests.
      *
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
@@ -600,14 +610,27 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             if (isEmptySection(openBracketPos) || (lastChunk && openBracketPos < 0)) {
                 sectionDone();
                 queryParsingState = transitionToNextToken(lastChunk);
+                queryRowClosingPositionProcessor = null;
+                queryRowClosingProcessorIndex = 0;
                 break;
             }
 
-            int closeBracketPos = findSectionClosingPosition(responseContent, '{', '}');
+            if (queryRowClosingPositionProcessor == null) {
+                queryRowClosingPositionProcessor = new ClosingPositionBufProcessor('{', '}', true);
+                queryRowClosingProcessorIndex = responseContent.readerIndex();
+            }
+
+            int lengthToScan = responseContent.writerIndex() - this.queryRowClosingProcessorIndex;
+            int closeBracketPos = responseContent.forEachByte(queryRowClosingProcessorIndex,
+                lengthToScan, queryRowClosingPositionProcessor);
+
             if (closeBracketPos == -1) {
+                queryRowClosingProcessorIndex = responseContent.writerIndex();
                 break;
             }
 
+            queryRowClosingPositionProcessor = null;
+            queryRowClosingProcessorIndex = 0;
             int length = closeBracketPos - openBracketPos - responseContent.readerIndex() + 1;
             responseContent.skipBytes(openBracketPos);
             ByteBuf resultSlice = responseContent.readSlice(length);
@@ -744,6 +767,8 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         querySignatureObservable = null;
         queryProfileInfoObservable = null;
         queryParsingState = QUERY_STATE_INITIAL;
+        queryRowClosingPositionProcessor = null;
+        queryRowClosingProcessorIndex = 0;
     }
 
     @Override
