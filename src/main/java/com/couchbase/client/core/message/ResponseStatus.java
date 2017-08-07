@@ -190,7 +190,12 @@ public enum ResponseStatus {
     /**
      * Subdocument extended attribute error indicating use of key paths from different namespaces
      */
-    SUBDOC_XATTR_INVALID_KEY_COMBO;
+    SUBDOC_XATTR_INVALID_KEY_COMBO,
+
+    /**
+     * Indicates that the document is locked at the moment.
+     */
+    LOCKED;
 
     /**
      * Check if the current {@link ResponseStatus} is success.

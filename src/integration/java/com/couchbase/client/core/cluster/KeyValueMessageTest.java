@@ -319,7 +319,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
 
         request = new UpsertRequest(key, Unpooled.copiedBuffer("content", CharsetUtil.UTF_8), bucket());
         response = cluster().<UpsertResponse>send(request).toBlocking().single();
-        assertEquals(ResponseStatus.EXISTS, response.status());
+        assertTrue(ResponseStatus.EXISTS == response.status() || ResponseStatus.LOCKED == response.status());
         ReferenceCountUtil.releaseLater(response.content());
 
         GetResponse secondLockResponse = (GetResponse) cluster().send(new GetRequest(key, bucket(), true, false, 2))
@@ -408,7 +408,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
 
         request = new UpsertRequest(key, Unpooled.copiedBuffer("content", CharsetUtil.UTF_8), bucket());
         response = cluster().<UpsertResponse>send(request).toBlocking().single();
-        assertEquals(ResponseStatus.EXISTS, response.status());
+        assertTrue(ResponseStatus.EXISTS == response.status() || ResponseStatus.LOCKED == response.status());
         ReferenceCountUtil.releaseLater(response.content());
 
         UnlockRequest unlockRequest = new UnlockRequest(key, getResponse.cas(), bucket());

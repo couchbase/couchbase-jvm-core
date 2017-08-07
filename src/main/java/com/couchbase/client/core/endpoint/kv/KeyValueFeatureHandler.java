@@ -64,9 +64,8 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
     private ChannelPromise originalPromise;
 
     public KeyValueFeatureHandler(CoreEnvironment environment) {
-        // for now, extended errors are disabled by default
         boolean xerrorEnabled = Boolean.parseBoolean(
-            System.getProperty("com.couchbase.xerrorEnabled", "false")
+            System.getProperty("com.couchbase.xerrorEnabled", "true")
         );
 
         userAgent = environment.userAgent();

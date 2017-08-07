@@ -105,6 +105,7 @@ import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.AUTH
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.AUTO_RETRY;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.CONN_STATE_INVALIDATED;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.FETCH_CONFIG;
+import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.ITEM_LOCKED;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_LATER;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_NOW;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.SUBDOC;
@@ -717,7 +718,9 @@ public class KeyValueHandler
             msg.getDataType(),
             msg.content()
         );
-        ErrorMap.ErrorCode errorCode = ResponseStatusConverter.readErrorCodeFromErrorMap(msg.getStatus());
+
+        // Only consult the error map if we don't know what the code is!
+        ErrorMap.ErrorCode errorCode = status == ResponseStatus.FAILURE ? ResponseStatusConverter.readErrorCodeFromErrorMap(msg.getStatus()) : null;
 
         if (errorCode != null) {
             LOGGER.debug("ResponseStatus with Extended Error Code {}", errorCode.toString());
@@ -745,6 +748,15 @@ public class KeyValueHandler
                 LOGGER.debug(logIdent(ctx, endpoint()) +
                         "Authentication failure using error code translation");
                 status = ResponseStatus.ACCESS_ERROR;
+            }
+
+            // For LOCKED we need to make sure we are not retrying to preserve
+            // backwards compatible behavior (that is, not retry...)!
+            if (errorCode.attributes().contains(ITEM_LOCKED)) {
+                errorCode.attributes().remove(RETRY_NOW);
+                errorCode.attributes().remove(RETRY_LATER);
+                errorCode.attributes().remove(AUTO_RETRY);
+                status = ResponseStatus.LOCKED;
             }
 
             if (errorCode.attributes().contains(AUTO_RETRY) ||
