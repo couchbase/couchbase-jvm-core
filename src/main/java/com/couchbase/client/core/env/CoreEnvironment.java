@@ -151,14 +151,6 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     Scheduler scheduler();
 
     /**
-     * Identifies if DCP should be enabled.
-     *
-     * @return true if DCP is enabled, false otherwise.
-     */
-    @Deprecated
-    boolean dcpEnabled();
-
-    /**
      * If bootstrapping through HTTP is enabled.
      *
      * @return true if enabled.
@@ -248,19 +240,6 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      * @return the size of the ringbuffer.
      */
     int responseBufferSize();
-
-    /**
-     * Size of the buffer to control speed of DCP producer.
-     */
-    @Deprecated
-    int dcpConnectionBufferSize();
-
-    /**
-     * When a DCP connection read bytes reaches this percentage of the {@link #dcpConnectionBufferSize},
-     * a DCP Buffer Acknowledge message is sent to the server
-     */
-    @Deprecated
-    double dcpConnectionBufferAckThreshold();
 
     /**
      * The number of key/value service endpoints.
@@ -456,14 +435,6 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      * @return true if callbacks are scheduled on the IO event loops.
      */
     boolean callbacksOnIoPool();
-
-    /**
-     * @return Default DCP connection name.
-     */
-    @InterfaceStability.Experimental
-    @InterfaceAudience.Public
-    @Deprecated
-    String dcpConnectionName();
 
     /**
      * Waiting strategy used by request {@link com.lmax.disruptor.EventProcessor}s to wait for data from

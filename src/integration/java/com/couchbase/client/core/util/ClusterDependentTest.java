@@ -160,9 +160,7 @@ public class ClusterDependentTest {
             }
 
         }
-        env = envBuilder.dcpEnabled(true)
-                .dcpConnectionBufferSize(1024)          // 1 kilobyte
-                .dcpConnectionBufferAckThreshold(0.5)   // should trigger BUFFER_ACK after 512 bytes
+        env = envBuilder
                 .mutationTokensEnabled(true)
                 .keepAliveInterval(KEEPALIVE_INTERVAL)
                 .build();
@@ -205,15 +203,6 @@ public class ClusterDependentTest {
     }
 
     public static CouchbaseMock mock() { return couchbaseMock; }
-
-    /**
-     * Checks based on the cluster node versions if DCP is available.
-     *
-     * @return true if all nodes in the cluster are version 3 or later.
-     */
-    public static boolean isDCPEnabled() throws Exception {
-        return minNodeVersion()[0] >= 3;
-    }
 
     public static boolean isMutationMetadataEnabled() throws Exception {
         return minNodeVersion()[0] >= 4;

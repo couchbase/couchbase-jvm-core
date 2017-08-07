@@ -27,7 +27,6 @@ import com.couchbase.client.core.message.BootstrapMessage;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.analytics.AnalyticsRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
-import com.couchbase.client.core.message.dcp.DCPRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.SignalFlush;
@@ -39,7 +38,6 @@ import com.couchbase.client.core.node.CouchbaseNode;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.node.locate.AnalyticsLocator;
 import com.couchbase.client.core.node.locate.ConfigLocator;
-import com.couchbase.client.core.node.locate.DCPLocator;
 import com.couchbase.client.core.node.locate.KeyValueLocator;
 import com.couchbase.client.core.node.locate.Locator;
 import com.couchbase.client.core.node.locate.QueryLocator;
@@ -98,11 +96,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * The node locator for the config service.
      */
     private final Locator configLocator = new ConfigLocator();
-
-    /**
-     * The node locator for DCP service.
-     */
-    private final Locator dcpLocator = new DCPLocator();
 
     /**
      * The node locator for the query service.
@@ -273,10 +266,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         } else if (request instanceof SearchRequest && !config.serviceEnabled(ServiceType.SEARCH)) {
             throw new ServiceNotAvailableException("The Search service is not enabled or no node in the "
                 + "cluster supports it.");
-        } else if (request instanceof DCPRequest && !(environment.dcpEnabled()
-            || config.serviceEnabled(ServiceType.DCP))) {
-            throw new ServiceNotAvailableException("The DCP service is not enabled or no node in the cluster "
-                + "supports it.");
         } else if (request instanceof AnalyticsRequest && !config.serviceEnabled(ServiceType.ANALYTICS)) {
             throw new ServiceNotAvailableException("The Analytics service is not enabled or no node in the "
                 + "cluster supports it.");
@@ -400,8 +389,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             return queryLocator;
         } else if (request instanceof ConfigRequest) {
             return configLocator;
-        } else if (request instanceof DCPRequest) {
-            return dcpLocator;
         } else if (request instanceof SearchRequest) {
             return searchLocator;
         } else if (request instanceof AnalyticsRequest) {
@@ -520,9 +507,6 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
                         Map<ServiceType, Integer> services =
                                 environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
-                        if (services.containsKey(ServiceType.BINARY) && environment.dcpEnabled()) {
-                            services.put(ServiceType.DCP, services.get(ServiceType.BINARY));
-                        }
                         return Observable.just(services);
                     }
                 }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {

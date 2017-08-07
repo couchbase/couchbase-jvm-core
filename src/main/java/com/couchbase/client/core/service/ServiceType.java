@@ -44,11 +44,6 @@ public enum ServiceType {
     CONFIG(BucketServiceMapping.ONE_FOR_ALL),
 
     /**
-     * DCP operations
-     */
-    DCP(BucketServiceMapping.ONE_BY_ONE),
-
-    /**
      * Search (CBFT) operations.
      */
     SEARCH(BucketServiceMapping.ONE_FOR_ALL),

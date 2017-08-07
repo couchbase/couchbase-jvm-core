@@ -65,7 +65,6 @@ public class ThreadCleanupTest {
     public void connect() {
         env = DefaultCoreEnvironment
                 .builder()
-                .dcpEnabled(true)
                 .mutationTokensEnabled(true)
                 .build();
         cluster = new CouchbaseCore(env);
