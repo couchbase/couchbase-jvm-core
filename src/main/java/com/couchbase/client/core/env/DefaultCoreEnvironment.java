@@ -1492,16 +1492,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Allows to set the configuration poll interval which polls the server cluster
          * configuration proactively.
          *
-         * Note that the interval cannot be set lower than 2500 millisconds (other than 0
+         * Note that the interval cannot be set lower than 50 milliseconds (other than 0
          * to disable it).
          * @param configPollInterval the interval in milliseconds, 0 deactivates the polling.
          */
         @InterfaceStability.Experimental
         @InterfaceAudience.Public
         public Builder configPollInterval(long configPollInterval) {
-            if (configPollInterval < 2500 && configPollInterval != 0) {
+            if (configPollInterval < 50 && configPollInterval != 0) {
                 throw new IllegalArgumentException("The poll interval cannot be lower than " +
-                    "2500 milliseconds");
+                    "50 milliseconds");
             }
             this.configPollInterval = configPollInterval;
             return this;
