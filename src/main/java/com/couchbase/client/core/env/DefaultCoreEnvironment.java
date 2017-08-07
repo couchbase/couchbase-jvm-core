@@ -105,7 +105,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long DISCONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(25);
     public static final MemcachedHashingStrategy MEMCACHED_HASHING_STRATEGY =
         DefaultMemcachedHashingStrategy.INSTANCE;
-    public static final long CONFIG_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(10);
+    public static final long CONFIG_POLL_INTERVAL = 2500;
     public static final boolean CERT_AUTH_ENABLED = false;
 
     public static String CORE_VERSION;
