@@ -411,9 +411,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
      * @param signalFlush the flush signal to propagate.
      */
     private void sendFlush(final SignalFlush signalFlush) {
-        int length = endpoints.size();
-        for (int i = 0; i < length; i++) {
-            Endpoint endpoint = endpoints.get(i);
+        for (Endpoint endpoint : endpoints) {
             if (endpoint != null) {
                 endpoint.send(signalFlush);
             }
