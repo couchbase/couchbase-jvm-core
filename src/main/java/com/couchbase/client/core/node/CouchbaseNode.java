@@ -90,6 +90,8 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      */
     private final ServiceRegistry serviceRegistry;
 
+    private final ServiceFactory serviceFactory;
+
     private final ServiceStateZipper serviceStates;
 
     private volatile boolean connected;
@@ -101,17 +103,18 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     public CouchbaseNode(final NetworkAddress hostname, final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, new DefaultServiceRegistry(), environment, responseBuffer);
+        this(hostname, new DefaultServiceRegistry(), environment, responseBuffer, ServiceFactory.INSTANCE);
     }
 
     CouchbaseNode(final NetworkAddress hostname, ServiceRegistry registry, final CoreEnvironment environment,
-        final RingBuffer<ResponseEvent> responseBuffer) {
+        final RingBuffer<ResponseEvent> responseBuffer, ServiceFactory serviceFactory) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;
         this.serviceRegistry = registry;
         this.environment = environment;
         this.responseBuffer = responseBuffer;
         this.eventBus = environment.eventBus();
+        this.serviceFactory = serviceFactory;
         this.serviceStates = new ServiceStateZipper(LifecycleState.DISCONNECTED);
 
         if (NetworkAddress.ALLOW_REVERSE_DNS) {
@@ -253,7 +256,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
             return Observable.just(addedService);
         }
 
-        final Service service = ServiceFactory.create(
+        final Service service = serviceFactory.create(
             request.hostname().nameOrAddress(),
             request.bucket(),
             request.username(),
