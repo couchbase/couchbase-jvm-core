@@ -72,4 +72,9 @@ public class LinearDelayTest {
         assertEquals("LinearDelay{growBy 0.5 SECONDS; lower=0, upper=2147483647}", linearDelay.toString());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailIfLowerLargerThanUpper() {
+        new LinearDelay(TimeUnit.SECONDS, 5, 10, 1);
+    }
+
 }

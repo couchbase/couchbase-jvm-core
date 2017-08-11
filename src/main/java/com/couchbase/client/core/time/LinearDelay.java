@@ -31,7 +31,9 @@ public class LinearDelay extends Delay {
 
     LinearDelay(TimeUnit unit, long upper, long lower, double growBy) {
         super(unit);
-
+        if (lower > upper) {
+            throw new IllegalArgumentException("The lower value must be smaller or equal to the upper value!");
+        }
         this.growBy = growBy;
         this.lower = lower;
         this.upper = upper;

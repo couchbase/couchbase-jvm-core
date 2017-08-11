@@ -181,4 +181,9 @@ public class ExponentialDelayTest {
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailIfLowerLargerThanUpper() {
+        new ExponentialDelay(TimeUnit.SECONDS, 5, 10, 1, 2);
+    }
+
 }

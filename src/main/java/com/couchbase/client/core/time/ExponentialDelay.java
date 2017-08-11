@@ -55,6 +55,9 @@ public class ExponentialDelay extends Delay {
 
     ExponentialDelay(TimeUnit unit, long upper, long lower, double growBy, int powersOf) {
         super(unit);
+        if (lower > upper) {
+            throw new IllegalArgumentException("The lower value must be smaller or equal to the upper value!");
+        }
         this.lower = lower;
         this.upper = upper;
         this.growBy = growBy;
