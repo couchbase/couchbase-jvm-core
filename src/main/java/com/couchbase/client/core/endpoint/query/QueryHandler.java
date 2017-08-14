@@ -149,6 +149,11 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
      * In case of chunked processing, allows to detect we are still parsing a section.
      */
     private boolean sectionDone = false;
+    
+    /** keep the closing character position processing state to avoid continuously parsing the same buffer */
+    private ClosingPositionBufProcessor closingPositionProcessor;
+    /** last closing character position processing end index*/
+    private int closingProcessorIndex = -1;
 
     /**
      * Creates a new {@link QueryHandler} with the default queue for requests.
@@ -600,14 +605,24 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             if (isEmptySection(openBracketPos) || (lastChunk && openBracketPos < 0)) {
                 sectionDone();
                 queryParsingState = transitionToNextToken(lastChunk);
+                closingPositionProcessor = null;
                 break;
             }
 
-            int closeBracketPos = findSectionClosingPosition(responseContent, '{', '}');
+            if(closingPositionProcessor == null) {
+            	closingPositionProcessor = new ClosingPositionBufProcessor('{', '}', true);
+            	closingProcessorIndex = responseContent.readerIndex();
+            }
+  
+            int lengthToScan = responseContent.writerIndex() - this.closingProcessorIndex;
+            int closeBracketPos = responseContent.forEachByte(closingProcessorIndex, lengthToScan, closingPositionProcessor);
+            
             if (closeBracketPos == -1) {
+            	closingProcessorIndex = responseContent.writerIndex();
                 break;
             }
 
+            closingPositionProcessor = null;
             int length = closeBracketPos - openBracketPos - responseContent.readerIndex() + 1;
             responseContent.skipBytes(openBracketPos);
             ByteBuf resultSlice = responseContent.readSlice(length);
