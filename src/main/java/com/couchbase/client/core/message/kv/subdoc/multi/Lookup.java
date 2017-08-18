@@ -32,7 +32,8 @@ public enum Lookup {
 
     GETDOC(KeyValueHandler.OP_GET),
     GET(KeyValueHandler.OP_SUB_GET),
-    EXIST(KeyValueHandler.OP_SUB_EXIST);
+    EXIST(KeyValueHandler.OP_SUB_EXIST),
+    GET_COUNT(KeyValueHandler.OP_SUB_GET_COUNT);
 
     private final byte opCode;
 

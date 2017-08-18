@@ -78,6 +78,7 @@ import com.couchbase.client.core.message.kv.subdoc.multi.Mutation;
 import com.couchbase.client.core.message.kv.subdoc.multi.MutationCommand;
 import com.couchbase.client.core.message.kv.subdoc.simple.SimpleSubdocResponse;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubExistRequest;
+import com.couchbase.client.core.message.kv.subdoc.simple.SubGetCountRequest;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubGetRequest;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.time.Delay;
@@ -166,6 +167,7 @@ public class KeyValueHandler
     public static final byte OP_SUB_COUNTER = (byte) 0xcf;
     public static final byte OP_SUB_MULTI_LOOKUP = (byte) 0xd0;
     public static final byte OP_SUB_MULTI_MUTATION = (byte) 0xd1;
+    public static final byte OP_SUB_GET_COUNT = (byte) 0xd2;
 
     /**
      * The bitmask for sub-document extras "command" section (third byte of the extras) that activates the
@@ -634,7 +636,14 @@ public class KeyValueHandler
                 extras.writeByte(0);
             }
         } else if (msg instanceof SubExistRequest) {
-            SubExistRequest req =  (SubExistRequest)msg;
+            SubExistRequest req = (SubExistRequest) msg;
+            if (req.xattr()) {
+                extras.writeByte(SUBDOC_FLAG_XATTR_PATH);
+            } else {
+                extras.writeByte(0);
+            }
+        } else if (msg instanceof SubGetCountRequest) {
+            SubGetCountRequest req = (SubGetCountRequest) msg;
             if (req.xattr()) {
                 extras.writeByte(SUBDOC_FLAG_XATTR_PATH);
             } else {
