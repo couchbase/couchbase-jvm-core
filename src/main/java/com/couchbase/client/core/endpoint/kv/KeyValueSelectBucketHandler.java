@@ -77,6 +77,11 @@ public class KeyValueSelectBucketHandler extends SimpleChannelInboundHandler<Ful
     private static final byte SUCCESS = (byte)0x00;
 
     /**
+     * The bucket is not found upon selection
+     */
+    private static final byte NOTFOUND_ERROR = (byte)0x01;
+
+    /**
      * Access error response status
      */
     private static final byte ACCESS_ERROR = (byte)0x24;
@@ -133,6 +138,9 @@ public class KeyValueSelectBucketHandler extends SimpleChannelInboundHandler<Ful
                 break;
             case ACCESS_ERROR:
                 originalPromise.setFailure(new AuthenticationException("Authentication failure on Select Bucket command"));
+                break;
+            case NOTFOUND_ERROR:
+                originalPromise.setFailure(new AuthenticationException("Bucket not found on Select Bucket command"));
                 break;
             default:
                 originalPromise.setFailure(new AuthenticationException("Unhandled select bucket status: "
