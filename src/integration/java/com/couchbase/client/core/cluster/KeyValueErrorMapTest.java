@@ -115,7 +115,7 @@ public class KeyValueErrorMapTest extends ClusterDependentTest {
         } catch (Exception ex) {
             //ignore exception
         }
-        checkRetryVerifyRequest(Long.parseLong("7FF0", 16), OP_UPSERT, 30);
+        checkRetryVerifyRequest(Long.parseLong("7FF0", 16), OP_UPSERT, 25);
         opFailRequest(Long.parseLong("7FF0", 16),  0);
     }
 
@@ -131,7 +131,7 @@ public class KeyValueErrorMapTest extends ClusterDependentTest {
         } catch (Exception ex) {
             //ignore exception
         }
-        checkRetryVerifyRequest(Long.parseLong("7FF1", 16), OP_UPSERT, 10);
+        checkRetryVerifyRequest(Long.parseLong("7FF1", 16), OP_UPSERT, 25);
         opFailRequest(Long.parseLong("7FF1", 16),  0);
     }
 
@@ -147,7 +147,7 @@ public class KeyValueErrorMapTest extends ClusterDependentTest {
         } catch (Exception ex) {
             //ignore exception
         }
-        checkRetryVerifyRequest(Long.parseLong("7FF2", 16), OP_UPSERT, 10);
+        checkRetryVerifyRequest(Long.parseLong("7FF2", 16), OP_UPSERT, 25);
         opFailRequest(Long.parseLong("7FF2", 16),  0);
     }
 }
