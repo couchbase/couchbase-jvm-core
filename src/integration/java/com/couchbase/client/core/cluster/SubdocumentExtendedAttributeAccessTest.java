@@ -46,7 +46,7 @@ public class SubdocumentExtendedAttributeAccessTest extends ClusterDependentTest
     public void prepareData() {
         UpsertRequest upsert = new UpsertRequest(testXAttrKey, Unpooled.copiedBuffer(jsonContent, CharsetUtil.UTF_8), bucket(), true);
         UpsertResponse response = cluster().<UpsertResponse>send(upsert).toBlocking().single();
-        assertTrue("Couldn't insert " + testXAttrKey, response.status().isSuccess());
+        assertTrue("Couldn't insert " + testXAttrKey + "(" + response.status() + ")", response.status().isSuccess());
         response.release();
     }
 

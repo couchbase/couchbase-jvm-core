@@ -20,6 +20,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
+import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
 import org.junit.Test;
 import rx.Observable;
@@ -40,11 +41,16 @@ import static org.junit.Assert.assertEquals;
 public class BucketLifecycleTest {
 
     @Test
-    public void shouldSuccessfullyOpenBucket() {
+    public void shouldSuccessfullyOpenBucket() throws Exception {
         CouchbaseCore core = new CouchbaseCore();
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
-        OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
+        OpenBucketRequest request;
+        if (ClusterDependentTest.minClusterVersion()[0] >= 5) {
+            request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.adminUser(), TestProperties.adminPassword());
+        } else {
+            request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
+        }
         Observable<OpenBucketResponse> response = core.send(request);
         assertEquals(ResponseStatus.SUCCESS, response.toBlocking().single().status());
     }
@@ -91,13 +97,20 @@ public class BucketLifecycleTest {
     }
 
     @Test
-    public void shouldSucceedSubsequentlyAfterFailedAttempt() {
+    public void shouldSucceedSubsequentlyAfterFailedAttempt() throws Exception {
         final CouchbaseCore core = new CouchbaseCore();
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
 
         OpenBucketRequest badAttempt = new OpenBucketRequest(TestProperties.bucket() + "asd", TestProperties.username(), TestProperties.password());
-        final OpenBucketRequest goodAttempt = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
+
+        final OpenBucketRequest goodAttempt;
+        if (ClusterDependentTest.minClusterVersion()[0] >= 5) {
+            goodAttempt = new OpenBucketRequest(TestProperties.bucket(), TestProperties.adminUser(), TestProperties.adminPassword());
+        } else {
+            goodAttempt = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
+
+        }
 
         OpenBucketResponse response = core
             .<OpenBucketResponse>send(badAttempt)

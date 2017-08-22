@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2017 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.message.config.ClusterConfigRequest;
 import com.couchbase.client.core.message.config.ClusterConfigResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
+import com.couchbase.mock.CouchbaseMock;
+import com.couchbase.mock.JsonUtils;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
@@ -44,8 +46,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import com.couchbase.mock.CouchbaseMock;
-import com.couchbase.mock.JsonUtils;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import rx.Observable;
@@ -62,7 +62,7 @@ import java.util.zip.CRC32;
  *
  * @author Michael Nitschinger
  */
-public class ClusterDependentTest {
+public class MockDependentTest {
 
     static {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
@@ -129,36 +129,23 @@ public class ClusterDependentTest {
     }
 
 
-    public static void connect(boolean useMock) throws Exception {
+    public static void connect() throws Exception {
 
-        /*
-         * If we are running under RBAC, set the user and password to the admin
-         * credentials which will always work. This hopefully makes the test suite
-         * forwards and backwards compat.
-         *
-         * Also, the mock currently doesn't support RBAC so ignore it if set.
-         */
-        if (minClusterVersion()[0] >= 5 && !useMock) {
-            username = adminUser;
-            password = adminPassword;
-        }
 
         DefaultCoreEnvironment.Builder envBuilder = DefaultCoreEnvironment
                 .builder();
 
-        if (useMock) {
-            int httpBootstrapPort = couchbaseMock.getHttpPort();
-            try {
-                int carrierBootstrapPort = getCarrierPortInfo();
-                envBuilder
-                        .bootstrapHttpDirectPort(httpBootstrapPort)
-                        .bootstrapCarrierDirectPort(carrierBootstrapPort)
-                        .socketConnectTimeout(30000);
-            } catch (Exception ex) {
-                throw new RuntimeException("Unable to get port info" + ex.getMessage(), ex);
-            }
-
+        int httpBootstrapPort = couchbaseMock.getHttpPort();
+        try {
+            int carrierBootstrapPort = getCarrierPortInfo();
+            envBuilder
+                    .bootstrapHttpDirectPort(httpBootstrapPort)
+                    .bootstrapCarrierDirectPort(carrierBootstrapPort)
+                    .socketConnectTimeout(30000);
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to get port info" + ex.getMessage(), ex);
         }
+
         env = envBuilder
                 .mutationTokensEnabled(true)
                 .keepAliveInterval(KEEPALIVE_INTERVAL)
