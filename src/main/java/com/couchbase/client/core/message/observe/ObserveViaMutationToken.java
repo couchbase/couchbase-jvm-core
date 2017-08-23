@@ -22,7 +22,10 @@ import com.couchbase.client.core.ServiceNotAvailableException;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.endpoint.kv.AuthenticationException;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.ResponseStatusDetails;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.FailoverObserveSeqnoResponse;
@@ -61,6 +64,12 @@ public class ObserveViaMutationToken {
                 .map(new Func1<CouchbaseResponse, ObserveItem>() {
                     @Override
                     public ObserveItem call(CouchbaseResponse response) {
+                        if (response.status() == ResponseStatus.ACCESS_ERROR) {
+                            String details = ResponseStatusDetails.stringify(response.status(), response.statusDetails());
+                            throw new AuthenticationException("The application is not authorized to perform the \"observe\" "
+                                    + "operation, make sure you have read privileges on this bucket: " + details);
+                        }
+
                         if (response instanceof FailoverObserveSeqnoResponse) {
                             FailoverObserveSeqnoResponse fr = (FailoverObserveSeqnoResponse) response;
                             if (fr.lastSeqNoReceived() < token.sequenceNumber()) {
