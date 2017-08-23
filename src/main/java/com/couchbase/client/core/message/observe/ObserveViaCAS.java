@@ -23,6 +23,9 @@ import com.couchbase.client.core.ServiceNotAvailableException;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.endpoint.kv.AuthenticationException;
+import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.ResponseStatusDetails;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
 import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
@@ -225,6 +228,12 @@ public class ObserveViaCAS {
                 response.content().release();
             }
             ObserveResponse.ObserveStatus status = response.observeStatus();
+
+            if (response.status() == ResponseStatus.ACCESS_ERROR) {
+                String details = ResponseStatusDetails.stringify(response.status(), response.statusDetails());
+                throw new AuthenticationException("The application is not authorized to perform the \"observe\" "
+                    + "operation, make sure you have read privileges on this bucket: " + details);
+            }
 
             // the CAS values always need to match up to make sure we are still observing the right
             // document. The only exclusion from that rule is when a real delete is returned, because
