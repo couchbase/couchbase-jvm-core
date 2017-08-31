@@ -135,7 +135,7 @@ public class ByteBufJsonParser {
         if (mode == Mode.JSON_OBJECT) {
             if (levelStack.size() > 0) {
                 JsonLevel current = levelStack.peek();
-                newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().refTokens()));
+                newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().tokens()));
             } else {
                 newJsonLevel = new JsonLevel(mode, new JsonPointer());
             }
@@ -143,7 +143,7 @@ public class ByteBufJsonParser {
         if (mode == Mode.JSON_ARRAY) {
             if (levelStack.size() > 0) {
                 JsonLevel current = levelStack.peek();
-                newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().refTokens()));
+                newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().tokens()));
             } else {
                 newJsonLevel = new JsonLevel(mode, new JsonPointer());
             }
@@ -461,7 +461,7 @@ public class ByteBufJsonParser {
         }
 
         public void removeLastTokenFromJsonPointer() {
-            this.jsonPointer.removeToken();
+            this.jsonPointer.removeLastToken();
         }
 
         public void emitJsonPointerValue() {
