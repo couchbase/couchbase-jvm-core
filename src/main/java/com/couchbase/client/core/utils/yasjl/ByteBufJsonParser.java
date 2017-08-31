@@ -16,6 +16,8 @@
 package com.couchbase.client.core.utils.yasjl;
 
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Stack;
 
 import static com.couchbase.client.core.utils.yasjl.JsonParserUtils.*;
@@ -48,7 +50,7 @@ public class ByteBufJsonParser {
     }
 
     private final JsonPointerTree tree;
-    private final Stack<JsonLevel> levelStack;
+    private final Deque<JsonLevel> levelStack;
     private final JsonWhiteSpaceByteBufProcessor wsProcessor;
     private final JsonStringByteBufProcessor stProcessor;
     private final JsonArrayByteBufProcessor arProcessor;
@@ -78,7 +80,7 @@ public class ByteBufJsonParser {
         numProcessor = new JsonNumberByteBufProcessor();
         trueProcessor = new JsonBooleanTrueByteBufProcessor();
         falseProcessor = new JsonBooleanFalseByteBufProcessor();
-        levelStack = new Stack<JsonLevel>();
+        levelStack = new ArrayDeque<JsonLevel>();
         tree = new JsonPointerTree();
 
         for (JsonPointer jp : jsonPointers) {
@@ -103,7 +105,7 @@ public class ByteBufJsonParser {
      * @throws EOFException if parsing fails.
      */
     public void parse() throws EOFException {
-        if (!startedStreaming && levelStack.empty()) {
+        if (!startedStreaming && levelStack.isEmpty()) {
             readNextChar(null);
 
             switch (currentChar) {
@@ -124,7 +126,7 @@ public class ByteBufJsonParser {
         }
 
         while (true) {
-            if (levelStack.empty()) {
+            if (levelStack.isEmpty()) {
                 return; //nothing more to do
             }
 
@@ -190,7 +192,7 @@ public class ByteBufJsonParser {
      */
     private void popAndResetToOldLevel() {
         this.levelStack.pop();
-        if (!this.levelStack.empty()) {
+        if (!this.levelStack.isEmpty()) {
             JsonLevel newTop = levelStack.peek();
             if (newTop != null) {
                 newTop.removeLastTokenFromJsonPointer();
@@ -460,7 +462,7 @@ public class ByteBufJsonParser {
      */
     class JsonLevel {
 
-        private final Stack<Mode> modes;
+        private final Deque<Mode> modes;
         private final JsonPointer jsonPointer;
 
         private ByteBuf currentValue;
@@ -469,7 +471,7 @@ public class ByteBufJsonParser {
         private int arrayIndex;
 
         JsonLevel(final Mode mode, final JsonPointer jsonPointer) {
-            this.modes = new Stack<Mode>();
+            this.modes = new ArrayDeque<Mode>();
             this.pushMode(mode);
             this.jsonPointer = jsonPointer;
         }
