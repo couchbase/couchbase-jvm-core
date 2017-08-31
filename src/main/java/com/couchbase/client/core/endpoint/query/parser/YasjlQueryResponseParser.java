@@ -64,11 +64,6 @@ public class YasjlQueryResponseParser {
     private final long ttl;
 
     /**
-     * Should complete callback on Io thread
-     */
-    private final boolean callbacksOnIoPool;
-
-    /**
      * The actual yasjl parser handling the response.
      */
     private final ByteBufJsonParser parser;
@@ -149,12 +144,10 @@ public class YasjlQueryResponseParser {
      *
      * @param scheduler the scheduler which should be used when computations are moved out.
      * @param ttl the ttl used for the subjects until their contents are garbage collected.
-     * @param callbacksOnIoPool if the callbacks should be fired on the scheduler or directly.
      */
-    public YasjlQueryResponseParser(final Scheduler scheduler, final long ttl, final boolean callbacksOnIoPool) {
+    public YasjlQueryResponseParser(final Scheduler scheduler, final long ttl) {
         this.scheduler = scheduler;
         this.ttl = ttl;
-        this.callbacksOnIoPool = callbacksOnIoPool;
         this.response = null;
 
         JsonPointer[] jsonPointers = {
@@ -298,21 +291,6 @@ public class YasjlQueryResponseParser {
         queryInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         querySignatureObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         queryProfileInfoObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
-        queryErrorObservable.onBackpressureBuffer();
-        queryRowObservable.onBackpressureBuffer();
-        querySignatureObservable.onBackpressureBuffer();
-        queryStatusObservable.onBackpressureBuffer();
-        queryInfoObservable.onBackpressureBuffer();
-        queryProfileInfoObservable.onBackpressureBuffer();
-
-        if (!this.callbacksOnIoPool) {
-            queryErrorObservable.observeOn(scheduler);
-            queryRowObservable.observeOn(scheduler);
-            querySignatureObservable.observeOn(scheduler);
-            queryStatusObservable.observeOn(scheduler);
-            queryInfoObservable.observeOn(scheduler);
-            queryProfileInfoObservable.observeOn(scheduler);
-        }
 
         parser.initialize(responseContent);
         initialized = true;
@@ -323,12 +301,12 @@ public class YasjlQueryResponseParser {
      */
     private void createResponse() {
         response = new GenericQueryResponse(
-            queryErrorObservable,
-            queryRowObservable,
-            querySignatureObservable,
-            queryStatusObservable,
-            queryInfoObservable,
-            queryProfileInfoObservable,
+            queryErrorObservable.onBackpressureBuffer(),
+            queryRowObservable.onBackpressureBuffer(),
+            querySignatureObservable.onBackpressureBuffer(),
+            queryStatusObservable.onBackpressureBuffer(),
+            queryInfoObservable.onBackpressureBuffer(),
+            queryProfileInfoObservable.onBackpressureBuffer(),
             currentRequest,
             status,
             requestID,

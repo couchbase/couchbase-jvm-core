@@ -81,7 +81,7 @@ public class QueryHandlerV2 extends AbstractGenericHandler<HttpObject, HttpReque
     public QueryHandlerV2(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, boolean isTransient,
                         final boolean pipeline) {
         super(endpoint, responseBuffer, isTransient, pipeline);
-        parser = new YasjlQueryResponseParser(env().scheduler(), env().autoreleaseAfter(), env().callbacksOnIoPool());
+        parser = new YasjlQueryResponseParser(env().scheduler(), env().autoreleaseAfter());
     }
 
     /**
@@ -94,7 +94,7 @@ public class QueryHandlerV2 extends AbstractGenericHandler<HttpObject, HttpReque
     QueryHandlerV2(AbstractEndpoint endpoint, RingBuffer<ResponseEvent> responseBuffer, Queue<QueryRequest> queue,
                  boolean isTransient, final boolean pipeline) {
         super(endpoint, responseBuffer, queue, isTransient, pipeline);
-        parser = new YasjlQueryResponseParser(env().scheduler(), env().autoreleaseAfter(), env().callbacksOnIoPool());
+        parser = new YasjlQueryResponseParser(env().scheduler(), env().autoreleaseAfter());
     }
 
 
