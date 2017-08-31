@@ -217,6 +217,7 @@ public class QueryHandlerTest {
         assertEquals(expectedStatus, inbound.status());
         assertEquals(expectedRequestId, inbound.requestId());
         assertEquals(expectedClientId, inbound.clientRequestId());
+        assertNotNull(inbound.request());
 
         assertEquals(expectedFinalStatus, inbound.queryStatus().timeout(1, TimeUnit.SECONDS).toBlocking().single());
 

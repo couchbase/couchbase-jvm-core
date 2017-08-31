@@ -238,13 +238,14 @@ public class YasjlQueryResponseParser {
         return this.initialized;
     }
 
-    public void initialize(ByteBuf responseContent, final ResponseStatus responseStatus) {
+    public void initialize(ByteBuf responseContent, final ResponseStatus responseStatus, final CouchbaseRequest request) {
         this.requestID = "";
         this.clientContextID = ""; //initialize to empty strings instead of null as we may not receive context id sometimes
         this.sentResponse = false;
         this.response = null;
         this.status = responseStatus;
         this.responseContent = responseContent;
+        this.currentRequest = request;
 
         queryRowObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
         queryErrorObservable = UnicastAutoReleaseSubject.create(ttl, TimeUnit.MILLISECONDS, scheduler);
