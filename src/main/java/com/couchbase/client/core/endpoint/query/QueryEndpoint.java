@@ -52,7 +52,7 @@ public class QueryEndpoint extends AbstractEndpoint {
         }
 
         pipeline.addLast(new HttpClientCodec());
-        boolean enableV2 = Boolean.parseBoolean(System.getProperty("com.couchbase.enableYasjlQueryResponseParser", "false"));
+        boolean enableV2 = Boolean.parseBoolean(System.getProperty("com.couchbase.enableYasjlQueryResponseParser", "true"));
         if (!enableV2) {
             pipeline.addLast(new QueryHandler(this, responseBuffer(), false, false));
         } else {
