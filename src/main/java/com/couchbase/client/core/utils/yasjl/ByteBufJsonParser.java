@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.couchbase.client.core.utils.yasjl;
 
 import java.nio.charset.Charset;
@@ -31,18 +30,25 @@ import io.netty.buffer.ByteBufProcessor;
 import java.io.EOFException;
 
 /**
- * Query value for json pointers in a ByteBuf
- * Strictly works on utf8. Not a json validator, parses upto json pointer paths and return value
- * Not thread safe
+ * The {@link ByteBufJsonParser} allows to query for values identified by {@link JsonPointer} in Netty {@link ByteBuf}.
+ *
+ * A couple of notes:
+ *  - it strictly works on UTF-8
+ *  - it is not a json validator
+ *  - it parses up to the given {@link JsonPointer} paths and returns their value
+ *  - it is not thread safe!
  *
  * @author Subhashni Balakrishnan
  */
 public class ByteBufJsonParser {
 
-    private ByteBuf content;
-    private JsonPointerTree tree;
-    private Stack<JsonLevel> levelStack;
-    private JsonLevel currentLevel;
+    private static final EOFException NEED_MORE_DATA = new EOFException();
+    static {
+        NEED_MORE_DATA.setStackTrace(new StackTraceElement[0]);
+    }
+
+    private final JsonPointerTree tree;
+    private final Stack<JsonLevel> levelStack;
     private final JsonWhiteSpaceByteBufProcessor wsProcessor;
     private final JsonStringByteBufProcessor stProcessor;
     private final JsonArrayByteBufProcessor arProcessor;
@@ -52,10 +58,17 @@ public class ByteBufJsonParser {
     private final JsonNumberByteBufProcessor numProcessor;
     private final JsonBooleanTrueByteBufProcessor trueProcessor;
     private final JsonBooleanFalseByteBufProcessor falseProcessor;
+
+    private ByteBuf content;
     private byte currentChar;
     private boolean startedStreaming;
 
-    public ByteBufJsonParser(JsonPointer[] jsonPointers) {
+    /**
+     * Creates a new {@link ByteBufJsonParser} and initializes all of its internal processors.
+     *
+     * @param jsonPointers the pointers which should be set.
+     */
+    public ByteBufJsonParser(final JsonPointer[] jsonPointers) {
         wsProcessor = new JsonWhiteSpaceByteBufProcessor();
         stProcessor = new JsonStringByteBufProcessor();
         arProcessor = new JsonArrayByteBufProcessor(stProcessor);
@@ -65,23 +78,35 @@ public class ByteBufJsonParser {
         numProcessor = new JsonNumberByteBufProcessor();
         trueProcessor = new JsonBooleanTrueByteBufProcessor();
         falseProcessor = new JsonBooleanFalseByteBufProcessor();
-        this.levelStack = new Stack<JsonLevel>();
-        this.tree = new JsonPointerTree();
+        levelStack = new Stack<JsonLevel>();
+        tree = new JsonPointerTree();
 
         for (JsonPointer jp : jsonPointers) {
-            tree.addJsonPointer(jp); //ignores if the json pointers were actually inserted, whatever is valid gets inserted
+            //ignores if the json pointers were actually inserted, whatever is valid gets inserted
+            tree.addJsonPointer(jp);
         }
     }
 
-    public void initialize(ByteBuf content) {
+    /**
+     * (re)initializes this parser with new content.
+     *
+     * @param content the content used for parsing.
+     */
+    public void initialize(final ByteBuf content) {
         this.content = content;
-        this.startedStreaming = false;
+        startedStreaming = false;
     }
 
-    public void parse() throws Exception {
-        if (levelStack.empty() && !startedStreaming) {
+    /**
+     * Instructs the parser to start parsing the current buffer.
+     *
+     * @throws EOFException if parsing fails.
+     */
+    public void parse() throws EOFException {
+        if (!startedStreaming && levelStack.empty()) {
             readNextChar(null);
-            switch (this.currentChar) {
+
+            switch (currentChar) {
                 case (byte) 0xEF:
                     pushLevel(Mode.BOM);
                     break;
@@ -94,6 +119,7 @@ public class ByteBufJsonParser {
                 default:
                     throw new IllegalStateException("Only UTF-8 is supported");
             }
+
             startedStreaming = true;
         }
 
@@ -101,9 +127,9 @@ public class ByteBufJsonParser {
             if (levelStack.empty()) {
                 return; //nothing more to do
             }
-            currentLevel = levelStack.peek();
-            Mode currentMode = currentLevel.peekMode();
-            switch (currentMode) {
+
+            JsonLevel currentLevel = levelStack.peek();
+            switch (currentLevel.peekMode()) {
                 case BOM:
                     readBOM();
                     break;
@@ -127,20 +153,24 @@ public class ByteBufJsonParser {
         }
     }
 
-    private void pushLevel(Mode mode) throws Exception {
+    /**
+     * Pushes a new {@link JsonLevel} onto the level stack.
+     *
+     * @param mode the mode for this level.
+     */
+    private void pushLevel(final Mode mode) {
         JsonLevel newJsonLevel = null;
+
         if (mode == Mode.BOM) {
             newJsonLevel = new JsonLevel(mode, new JsonPointer()); //not a valid nesting level
-        }
-        if (mode == Mode.JSON_OBJECT) {
+        } else if (mode == Mode.JSON_OBJECT) {
             if (levelStack.size() > 0) {
                 JsonLevel current = levelStack.peek();
                 newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().tokens()));
             } else {
                 newJsonLevel = new JsonLevel(mode, new JsonPointer());
             }
-        }
-        if (mode == Mode.JSON_ARRAY) {
+        } else if (mode == Mode.JSON_ARRAY) {
             if (levelStack.size() > 0) {
                 JsonLevel current = levelStack.peek();
                 newJsonLevel = new JsonLevel(mode, new JsonPointer(current.jsonPointer().tokens()));
@@ -150,11 +180,14 @@ public class ByteBufJsonParser {
             newJsonLevel.isArray(true);
             newJsonLevel.setArrayIndexOnJsonPointer();
         }
+
         levelStack.push(newJsonLevel);
     }
 
-    // we are done with the last stack so remove
-    // the ref token that pointed to that object
+    /**
+     * Helper method to clean up after being done with the last stack
+     * so it removes the tokens that pointed to that object.
+     */
     private void popAndResetToOldLevel() {
         this.levelStack.pop();
         if (!this.levelStack.empty()) {
@@ -165,8 +198,13 @@ public class ByteBufJsonParser {
         }
     }
 
-
-    private void readObject(JsonLevel level) throws Exception {
+    /**
+     * Handle the logic for reading down a JSON Object.
+     *
+     * @param level the current level.
+     * @throws EOFException if more data is needed.
+     */
+    private void readObject(final JsonLevel level) throws EOFException {
         while (true) {
             readNextChar(level);
             if (this.currentChar == JSON_ST) {
@@ -234,7 +272,13 @@ public class ByteBufJsonParser {
         }
     }
 
-    private void readArray(JsonLevel level) throws Exception {
+    /**
+     * Handle the logic for reading down a JSON Array.
+     *
+     * @param level the current level.
+     * @throws EOFException if more data is needed.
+     */
+    private void readArray(final JsonLevel level) throws EOFException {
         while (true) {
             readNextChar(level);
             if (this.currentChar == JSON_ST) {
@@ -277,9 +321,14 @@ public class ByteBufJsonParser {
         }
     }
 
-    private void readValue(JsonLevel level) throws EOFException {
-
-        int readerIndex = this.content.readerIndex();
+    /**
+     * Handle the logic for reading down a JSON Value.
+     *
+     * @param level the current level.
+     * @throws EOFException if more data is needed.
+     */
+    private void readValue(final JsonLevel level) throws EOFException {
+        int readerIndex = content.readerIndex();
         ByteBufProcessor processor = null;
         Mode mode = level.peekMode();
         switch (mode) {
@@ -290,7 +339,6 @@ public class ByteBufJsonParser {
             case JSON_OBJECT_VALUE:
                 obProcessor.reset();
                 processor = obProcessor;
-
                 break;
             case JSON_STRING_VALUE:
             case JSON_STRING_HASH_KEY:
@@ -311,18 +359,18 @@ public class ByteBufJsonParser {
                 break;
         }
         int length;
-        boolean shouldSaveValue = this.tree.isTerminalPath(level.jsonPointer()) || mode == Mode.JSON_STRING_HASH_KEY;
+        boolean shouldSaveValue = tree.isTerminalPath(level.jsonPointer()) || mode == Mode.JSON_STRING_HASH_KEY;
 
-        int lastValidIndex = this.content.forEachByte(processor);
+        int lastValidIndex = content.forEachByte(processor);
         if (lastValidIndex == -1) {
-            if (mode == Mode.JSON_NUMBER_VALUE && this.content.readableBytes() > 2) {
+            if (mode == Mode.JSON_NUMBER_VALUE && content.readableBytes() > 2) {
                 length = 1;
                 ByteBuf slice = this.content.slice(readerIndex - 1, length);
                 level.setCurrentValue(slice.copy(), length);
                 //no need to skip here
                 level.emitJsonPointerValue();
             } else {
-                throw new EOFException("Needs more input (Level: " + level.jsonPointer().toString() + ")");
+                throw NEED_MORE_DATA;
             }
         } else {
             if (mode == Mode.JSON_OBJECT_VALUE ||
@@ -335,18 +383,18 @@ public class ByteBufJsonParser {
 
                 length = lastValidIndex - readerIndex + 1;
                 if (shouldSaveValue) {
-                    ByteBuf slice = this.content.slice(readerIndex - 1, length + 1);
+                    ByteBuf slice = content.slice(readerIndex - 1, length + 1);
                     level.setCurrentValue(slice.copy(), length);
                     level.emitJsonPointerValue();
                 }
-                this.content.skipBytes(length);
+                content.skipBytes(length);
             } else {
                 //special handling for number as they don't need structural tokens intact
                 //and the processor returns only on an unacceptable value rather than a finite state automaton
                 length = lastValidIndex - readerIndex;
                 if (length > 0) {
                     if (shouldSaveValue) {
-                        ByteBuf slice = this.content.slice(readerIndex - 1, length + 1);
+                        ByteBuf slice = content.slice(readerIndex - 1, length + 1);
                         level.setCurrentValue(slice.copy(), length);
                         level.emitJsonPointerValue();
                     }
@@ -354,100 +402,111 @@ public class ByteBufJsonParser {
                 } else {
                     length = 1;
                     if (shouldSaveValue) {
-                        ByteBuf slice = this.content.slice(readerIndex - 1, length);
+                        ByteBuf slice = content.slice(readerIndex - 1, length);
                         level.setCurrentValue(slice.copy(), length);
                         level.emitJsonPointerValue();
                     }
                 }
             }
         }
-        //DONT THIS HERE: it should be app to do it after calling parse, or releasing the input
-        //bytebuf
-        //this.content.discardReadBytes();
-
         if (mode != Mode.JSON_STRING_HASH_KEY) {
             level.removeLastTokenFromJsonPointer();
         }
         level.popMode();
     }
 
-    private void readBOM() throws Exception {
-        int readerIndex = this.content.readerIndex();
-        int lastBOMIndex = this.content.forEachByte(bomProcessor);
+    /**
+     * Reads the UTF-8 Byte Order Mark.
+     *
+     * @throws EOFException if more input is needed.
+     */
+    private void readBOM() throws EOFException {
+        int readerIndex = content.readerIndex();
+        int lastBOMIndex = content.forEachByte(bomProcessor);
+
         if (lastBOMIndex == -1) {
-            throw new EOFException("Need more input");
+            throw NEED_MORE_DATA;
         }
         if (lastBOMIndex > readerIndex) {
             this.content.skipBytes(lastBOMIndex - readerIndex + 1);
         }
+
         this.levelStack.pop();
         this.content.discardReadBytes();
     }
 
-    private void readNextChar(JsonLevel level) throws Exception {
-        int readerIndex = this.content.readerIndex();
-        int lastWsIndex = this.content.forEachByte(wsProcessor);
+    /**
+     * Reads the next character into {@link #currentChar}.
+     *
+     * @param level the current level of nesting.
+     * @throws EOFException if more input is needed.
+     */
+    private void readNextChar(final JsonLevel level) throws EOFException {
+        int readerIndex = content.readerIndex();
+        int lastWsIndex = content.forEachByte(wsProcessor);
+
         if (lastWsIndex == -1 && level != null) {
-            throw new EOFException("Needs more input (Level: " + level.jsonPointer().toString() + ")");
+            throw NEED_MORE_DATA;
         }
         if (lastWsIndex > readerIndex) {
             this.content.skipBytes(lastWsIndex - readerIndex);
         }
+
         this.currentChar = this.content.readByte();
     }
 
     /**
-     * JsonLevel can be a nesting level of an json object or json array
+     * JsonLevel can be a nesting level of an json object or json array.
      */
     class JsonLevel {
 
         private final Stack<Mode> modes;
-        private ByteBuf currentValue;
         private final JsonPointer jsonPointer;
+
+        private ByteBuf currentValue;
         private boolean isHashValue;
         private boolean isArray;
         private int arrayIndex;
 
-
-        public JsonLevel(Mode mode, JsonPointer jsonPointer) {
+        JsonLevel(final Mode mode, final JsonPointer jsonPointer) {
             this.modes = new Stack<Mode>();
             this.pushMode(mode);
             this.jsonPointer = jsonPointer;
         }
 
-        public void isHashValue(boolean isHashValue) {
+        void isHashValue(boolean isHashValue) {
             this.isHashValue = isHashValue;
         }
 
-        public boolean isHashValue() {
+        boolean isHashValue() {
             return this.isHashValue;
         }
 
-        public void isArray(boolean isArray) {
+        void isArray(boolean isArray) {
             this.isArray = isArray;
         }
 
-        public void pushMode(Mode mode) {
+        void pushMode(Mode mode) {
             this.modes.push(mode);
         }
 
-        public Mode peekMode() {
+        Mode peekMode() {
             return this.modes.peek();
         }
 
-        public Mode popMode() {
-            return this.modes.pop();
+        void popMode() {
+            this.modes.pop();
         }
 
-        public JsonPointer jsonPointer() {
+        JsonPointer jsonPointer() {
             return this.jsonPointer;
         }
 
-        public void updateIndex() {
+        void updateIndex() {
             this.arrayIndex++;
         }
 
-        public void setCurrentValue(ByteBuf value, int length) {
+        void setCurrentValue(ByteBuf value, int length) {
             this.currentValue = value;
             if (peekMode() == Mode.JSON_STRING_HASH_KEY) {
                 //strip the quotes
@@ -456,15 +515,15 @@ public class ByteBufJsonParser {
             }
         }
 
-        public void setArrayIndexOnJsonPointer() {
+        void setArrayIndexOnJsonPointer() {
             this.jsonPointer.addToken(Integer.toString(this.arrayIndex));
         }
 
-        public void removeLastTokenFromJsonPointer() {
+        void removeLastTokenFromJsonPointer() {
             this.jsonPointer.removeLastToken();
         }
 
-        public void emitJsonPointerValue() {
+        void emitJsonPointerValue() {
             if ((this.isHashValue || this.isArray) && this.jsonPointer.jsonPointerCB() != null) {
                 JsonPointerCB cb = this.jsonPointer.jsonPointerCB();
                 if (cb instanceof JsonPointerCB1) {
