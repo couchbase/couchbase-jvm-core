@@ -145,7 +145,7 @@ public class JsonPointer {
             sb.append("/");
             sb.append(refToken);
         }
-        return "JsonPointer{path=" + sb.substring(1) + "}";
+        return "JsonPointer{path=" + (this.refTokens.isEmpty() ? "" : sb.substring(1)) + "}";
     }
 
 }

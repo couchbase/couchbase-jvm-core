@@ -20,6 +20,7 @@ import com.couchbase.client.core.utils.yasjl.Callbacks.JsonPointerCB1;
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -78,6 +79,7 @@ public class JsonPointerTest {
     public void shouldReturnStringRepresentation() {
         assertEquals("JsonPointer{path=}", new JsonPointer().toString());
         assertEquals("JsonPointer{path=/foo/bar}", new JsonPointer("/foo/bar").toString());
+        assertEquals("JsonPointer{path=}", new JsonPointer(new ArrayList<String>()).toString());
     }
 
     @Test
