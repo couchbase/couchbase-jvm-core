@@ -17,9 +17,12 @@ package com.couchbase.client.core.endpoint;
 
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.internal.EndpointHealth;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import rx.Observable;
+import rx.Single;
 
 /**
  * Represents a stateful {@link Endpoint} which abstracts the underlying channel.
@@ -62,5 +65,10 @@ public interface Endpoint extends Stateful<LifecycleState> {
      * Returns the timestamp of the last response completed.
      */
     long lastResponse();
+
+    /**
+     * Returns health information for this endpoint.
+     */
+    Single<EndpointHealth> healthCheck(ServiceType type);
 
 }

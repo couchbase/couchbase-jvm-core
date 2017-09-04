@@ -21,6 +21,7 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
@@ -166,6 +167,15 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
     @Override
     public BucketServiceMapping mapping() {
         return type().mapping();
+    }
+
+    @Override
+    public Observable<EndpointHealth> healthCheck() {
+        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>();
+        for (Endpoint endpoint : endpoints()) {
+            healthChecks.add(endpoint.healthCheck(type()).toObservable());
+        }
+        return Observable.merge(healthChecks);
     }
 
     /**

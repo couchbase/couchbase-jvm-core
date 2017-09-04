@@ -24,7 +24,10 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
+import com.couchbase.client.core.message.internal.EndpointHealth;
+import com.couchbase.client.core.message.internal.HealthCheckResponse;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
+import com.couchbase.client.core.message.internal.ServicesHealth;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.Service;
@@ -38,6 +41,7 @@ import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -288,6 +292,15 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         serviceStates.deregister(service);
         enabledServices &= ~(1 << service.type().ordinal());
         return Observable.just(service);
+    }
+
+    @Override
+    public Observable<EndpointHealth> healthCheck() {
+        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>();
+        for (Service service : serviceRegistry.services()) {
+            healthChecks.add(service.healthCheck());
+        }
+        return Observable.merge(healthChecks);
     }
 
     @Override

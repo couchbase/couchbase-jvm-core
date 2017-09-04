@@ -23,8 +23,10 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.internal.SignalFlush;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.NotConnectedException;
@@ -179,6 +181,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private volatile boolean free;
 
     private volatile long lastResponse;
+
+    private volatile long lastKeepAliveLatency;
 
     /**
      * Preset the stack trace for the static exceptions.
@@ -580,6 +584,13 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         }
     }
 
+    /**
+     * Called by the underlying channel when a keepalive is returned to record how long it took.
+     */
+    public void setLastKeepAliveLatency(long latency) {
+        lastKeepAliveLatency = latency;
+    }
+
     @Override
     public long lastResponse() {
         return lastResponse;
@@ -599,6 +610,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         } else {
             return free;
         }
+    }
+
+    @Override
+    public Single<EndpointHealth> healthCheck(ServiceType type) {
+        LifecycleState currentState = state();
+        SocketAddress remoteAddr = null;
+        SocketAddress localAddr = null;
+        if(channel != null) {
+            remoteAddr = channel.remoteAddress();
+            localAddr = channel.localAddress();
+        }
+        long lastActivity = TimeUnit.NANOSECONDS.toMicros(lastResponse > 0 ? System.nanoTime() - lastResponse : 0);
+        long pingLatency = TimeUnit.NANOSECONDS.toMicros(lastKeepAliveLatency);
+        return Single.just(new EndpointHealth(type, currentState, localAddr, remoteAddr, lastActivity, pingLatency));
     }
 
     /**

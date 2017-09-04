@@ -45,6 +45,7 @@ import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.message.internal.GetConfigProviderRequest;
 import com.couchbase.client.core.message.internal.GetConfigProviderResponse;
+import com.couchbase.client.core.message.internal.HealthCheckRequest;
 import com.couchbase.client.core.message.internal.InternalRequest;
 import com.couchbase.client.core.message.internal.RemoveNodeRequest;
 import com.couchbase.client.core.message.internal.RemoveNodeResponse;
@@ -353,14 +354,16 @@ public class CouchbaseCore implements ClusterFacade {
                 .subscribe(request.observable());
         } else if (request instanceof RemoveServiceRequest) {
             requestHandler
-                .removeService((RemoveServiceRequest) request)
-                .map(new Func1<Service, RemoveServiceResponse>() {
-                    @Override
-                    public RemoveServiceResponse call(Service service) {
-                        return new RemoveServiceResponse(ResponseStatus.SUCCESS);
-                    }
-                })
-                .subscribe(request.observable());
+                    .removeService((RemoveServiceRequest) request)
+                    .map(new Func1<Service, RemoveServiceResponse>() {
+                        @Override
+                        public RemoveServiceResponse call(Service service) {
+                            return new RemoveServiceResponse(ResponseStatus.SUCCESS);
+                        }
+                    })
+                    .subscribe(request.observable());
+        } else if (request instanceof HealthCheckRequest) {
+            requestHandler.healthCheck().subscribe(request.observable());
         } else {
             request
                 .observable()

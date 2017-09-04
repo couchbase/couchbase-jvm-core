@@ -47,6 +47,7 @@ import io.netty.util.CharsetUtil;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.couchbase.client.core.utils.Observables.failSafe;
 
@@ -272,6 +274,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 publishResponse(response, currentRequest.observable());
                 if (currentDecodingState == DecodingState.FINISHED) {
                     writeMetrics(response);
+                    if (currentRequest instanceof KeepAlive) {
+                        endpoint.setLastKeepAliveLatency(currentOpTime);
+                    }
                 }
             }
         } catch (CouchbaseException e) {
@@ -708,6 +713,9 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         public void onError(Throwable e) {
             if (ctx.channel() == null || !ctx.channel().isActive()) {
                 return;
+            }
+            if (e instanceof TimeoutException) {
+                endpoint.setLastKeepAliveLatency(TimeUnit.MILLISECONDS.toMicros(env().keepAliveTimeout()));
             }
             LOGGER.warn(logIdent(ctx, endpoint) + "Got error while consuming KeepAliveResponse.", e);
             keepAliveThreshold++;

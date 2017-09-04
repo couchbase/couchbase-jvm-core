@@ -18,6 +18,7 @@ package com.couchbase.client.core.node;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
+import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
@@ -25,6 +26,9 @@ import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
 import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represents a Couchbase Node.
@@ -72,5 +76,10 @@ public interface Node extends Stateful<LifecycleState> {
      * True if the given {@link ServiceType} is currently enabled on this node, false otherwise.
      */
     boolean serviceEnabled(ServiceType type);
+
+    /**
+     * Returns endpoint health information for all endpoints this node is currently associated with.
+     */
+    Observable<EndpointHealth> healthCheck();
 
 }

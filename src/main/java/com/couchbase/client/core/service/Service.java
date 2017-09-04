@@ -20,6 +20,7 @@ import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
@@ -70,6 +71,11 @@ public interface Service extends Stateful<LifecycleState> {
      * @return the states of the {@link Service} after the disconnect process for all enabled {@link Endpoint}s.
      */
     Observable<LifecycleState> disconnect();
+
+    /**
+     * Returns endpoint health information for all endpoints this service is currently associated with.
+     */
+    Observable<EndpointHealth> healthCheck();
 
     /**
      * A helper factory which generates endpoints.

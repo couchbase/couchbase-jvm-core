@@ -22,6 +22,7 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
+import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
@@ -416,6 +417,15 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                 endpoint.send(signalFlush);
             }
         }
+    }
+
+    @Override
+    public Observable<EndpointHealth> healthCheck() {
+        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>();
+        for (Endpoint endpoint : endpoints()) {
+            healthChecks.add(endpoint.healthCheck(type()).toObservable());
+        }
+        return Observable.merge(healthChecks);
     }
 
     @Override
