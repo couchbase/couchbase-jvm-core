@@ -28,7 +28,7 @@ import io.netty.buffer.Unpooled;
  * @author Simon Baslé
  * @since 1.2
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Committed
 @InterfaceAudience.Public
 public class MutationCommand {
     private final Mutation mutation;

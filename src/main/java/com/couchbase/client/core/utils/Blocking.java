@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Michael Nitschinger
  * @since 1.3.0
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Uncommitted
 @InterfaceAudience.Private
 public class Blocking {
 

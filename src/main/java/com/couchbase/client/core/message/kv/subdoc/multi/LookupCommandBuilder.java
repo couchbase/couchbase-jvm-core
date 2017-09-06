@@ -25,7 +25,7 @@ import com.couchbase.client.core.message.kv.subdoc.BinarySubdocMultiLookupReques
  * @author Subhashni Balakrishnan
  * @since 1.4.2
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Committed
 @InterfaceAudience.Public
 public class LookupCommandBuilder {
 

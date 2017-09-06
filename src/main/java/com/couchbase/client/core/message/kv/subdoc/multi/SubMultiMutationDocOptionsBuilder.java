@@ -25,7 +25,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  * @author Subhashni Balakrishnan
  * @since 1.4.6
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Uncommitted
 @InterfaceAudience.Public
 public class SubMultiMutationDocOptionsBuilder {
     private boolean createDocument;

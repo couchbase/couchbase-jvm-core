@@ -26,7 +26,7 @@ import com.couchbase.client.core.endpoint.kv.KeyValueHandler;
  * @author Michael Nitschinger
  * @since 1.5
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Uncommitted
 @InterfaceAudience.Public
 public class SubGetCountRequest extends AbstractSubdocRequest {
 

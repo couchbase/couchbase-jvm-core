@@ -27,7 +27,7 @@ import io.netty.buffer.ByteBuf;
  * @author Simon Baslé
  * @since 1.2
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Committed
 @InterfaceAudience.Public
 public class SubReplaceRequest extends AbstractSubdocMutationRequest {
 

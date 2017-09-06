@@ -23,7 +23,7 @@ import java.lang.annotation.Documented;
  * @author Michael Nitschinger
  * @since 1.0
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Committed
 @InterfaceAudience.Public
 public class InterfaceStability {
 

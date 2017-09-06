@@ -452,7 +452,7 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      *
      * @return the polling interval in milliseconds.
      */
-    @InterfaceStability.Experimental
+    @InterfaceStability.Committed
     @InterfaceAudience.Public
     long configPollInterval();
 

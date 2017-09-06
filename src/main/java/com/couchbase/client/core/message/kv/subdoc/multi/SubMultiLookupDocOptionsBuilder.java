@@ -25,7 +25,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
  * @author Subhashni Balakrishnan
  * @since 1.5.0
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Uncommitted
 @InterfaceAudience.Public
 public class SubMultiLookupDocOptionsBuilder {
     private boolean accessDeleted;

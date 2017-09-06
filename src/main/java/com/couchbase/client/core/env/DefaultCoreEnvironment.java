@@ -855,7 +855,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return searchServiceConfig;
     }
 
-    @InterfaceStability.Experimental
+    @InterfaceStability.Committed
     @InterfaceAudience.Public
     @Override
     public long configPollInterval() {
@@ -1507,7 +1507,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to disable it).
          * @param configPollInterval the interval in milliseconds, 0 deactivates the polling.
          */
-        @InterfaceStability.Experimental
+        @InterfaceStability.Committed
         @InterfaceAudience.Public
         public Builder configPollInterval(long configPollInterval) {
             if (configPollInterval < 50 && configPollInterval != 0) {

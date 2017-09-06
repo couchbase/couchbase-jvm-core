@@ -34,7 +34,7 @@ import rx.subjects.Subject;
  * @author Simon Baslé
  * @since 1.2
  */
-@InterfaceStability.Experimental
+@InterfaceStability.Committed
 @InterfaceAudience.Public
 public abstract class AbstractSubdocRequest extends AbstractKeyValueRequest implements BinarySubdocRequest {
 
