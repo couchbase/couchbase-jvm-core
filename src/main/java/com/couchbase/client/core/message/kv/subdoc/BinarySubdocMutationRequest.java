@@ -73,11 +73,19 @@ public interface BinarySubdocMutationRequest extends BinarySubdocRequest {
     boolean xattr();
 
     /**
-     * Create document if it does not exist
+     * Create document if it does not exist. It is deprecated, use {@link #upsertDocument()}
      *
      * @return true if creating document
      */
+    @Deprecated
     boolean createDocument();
+
+    /**
+     * Upsert document if it does not exist
+     *
+     * @return true if creating document
+     */
+    boolean upsertDocument();
 
     /**
      * Add document only if it does not exist

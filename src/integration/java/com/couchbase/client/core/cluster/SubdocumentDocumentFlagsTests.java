@@ -60,41 +60,41 @@ public class SubdocumentDocumentFlagsTests extends ClusterDependentTest {
 
 
     @Test
-    public void shouldCreateDocumentIfSet() {
+    public void shouldUpsertDocumentIfSet() {
         String subPath = "hello";
         ByteBuf fragment = Unpooled.copiedBuffer("\"world\"", CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(fragment);
 
-        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldCreateDocumentIfSet", subPath, fragment, bucket());
-        insertRequest.createDocument(true);
+        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldUpsertDocumentIfSet", subPath, fragment, bucket());
+        insertRequest.upsertDocument(true);
         SimpleSubdocResponse insertResponse = cluster().<SimpleSubdocResponse>send(insertRequest).toBlocking().single();
         ReferenceCountUtil.releaseLater(insertResponse.content());
         assertTrue(insertResponse.status().isSuccess());
-        RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldCreateDocumentIfSet", bucket())).toBlocking().single();
+        RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldUpsertDocumentIfSet", bucket())).toBlocking().single();
         assert(response.status() == ResponseStatus.SUCCESS);
     }
 
     @Test
-    public void shouldCreateDocumentIfSetWithExpiryAndPathFlags() {
+    public void shouldUpsertDocumentIfSetWithExpiryAndPathFlags() {
         String subPath = "first.hello";
         ByteBuf fragment = Unpooled.copiedBuffer("\"world\"", CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(fragment);
-        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldCreateDocumentIfSetWithExpiryAndPathFlags", subPath, fragment, bucket(), 10, 0);
-        insertRequest.createDocument(true);
+        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldUpsertDocumentIfSetWithExpiryAndPathFlags", subPath, fragment, bucket(), 10, 0);
+        insertRequest.upsertDocument(true);
         insertRequest.createIntermediaryPath(true);
         SimpleSubdocResponse insertResponse = cluster().<SimpleSubdocResponse>send(insertRequest).toBlocking().single();
         ReferenceCountUtil.releaseLater(insertResponse.content());
         assertTrue(insertResponse.status().isSuccess());
-        RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldCreateDocumentIfSetWithExpiryAndPathFlags", bucket())).toBlocking().single();
+        RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldUpsertDocumentIfSetWithExpiryAndPathFlags", bucket())).toBlocking().single();
         assertEquals(response.status(), ResponseStatus.SUCCESS);
     }
 
     @Test
-    public void shouldFailIfCreateDocumentIsNotSetWhenDocumentDoesNotExist() {
+    public void shouldFailIfUpsertDocumentIsNotSetWhenDocumentDoesNotExist() {
         String subPath = "hello";
         ByteBuf fragment = Unpooled.copiedBuffer("\"world\"", CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(fragment);
-        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldFailIfCreateDocumentIsNotSetWhenDocumentDoesNotExist", subPath, fragment, bucket());
+        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldFailIfUpsertDocumentIsNotSetWhenDocumentDoesNotExist", subPath, fragment, bucket());
         SimpleSubdocResponse insertResponse = cluster().<SimpleSubdocResponse>send(insertRequest).toBlocking().single();
         ReferenceCountUtil.releaseLater(insertResponse.content());
         assertEquals(insertResponse.status(), ResponseStatus.NOT_EXISTS);
@@ -112,6 +112,21 @@ public class SubdocumentDocumentFlagsTests extends ClusterDependentTest {
         ReferenceCountUtil.releaseLater(insertResponse.content());
         assertTrue(insertResponse.status().isSuccess());
         RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldInsertDocumentIfSet", bucket())).toBlocking().single();
+        assertEquals(response.status(), ResponseStatus.SUCCESS);
+    }
+
+    @Test
+    public void shouldCreateDocumentIfSet() {
+        String subPath = "hello";
+        ByteBuf fragment = Unpooled.copiedBuffer("\"world\"", CharsetUtil.UTF_8);
+        ReferenceCountUtil.releaseLater(fragment);
+
+        SubDictAddRequest insertRequest = new SubDictAddRequest("shouldCreateDocumentIfSet", subPath, fragment, bucket());
+        insertRequest.createDocument(true);
+        SimpleSubdocResponse insertResponse = cluster().<SimpleSubdocResponse>send(insertRequest).toBlocking().single();
+        ReferenceCountUtil.releaseLater(insertResponse.content());
+        assertTrue(insertResponse.status().isSuccess());
+        RemoveResponse response = cluster().<RemoveResponse>send(new RemoveRequest("shouldCreateDocumentIfSet", bucket())).toBlocking().single();
         assertEquals(response.status(), ResponseStatus.SUCCESS);
     }
 
@@ -142,7 +157,7 @@ public class SubdocumentDocumentFlagsTests extends ClusterDependentTest {
         ReferenceCountUtil.releaseLater(fragment);
 
         SubDictAddRequest insertRequest = new SubDictAddRequest("shouldAccessDeletedDocumentIfSet", subPath, fragment, bucket());
-        insertRequest.createDocument(true);
+        insertRequest.upsertDocument(true);
         insertRequest.xattr(true);
         insertRequest.createIntermediaryPath(true);
         SimpleSubdocResponse insertResponse = cluster().<SimpleSubdocResponse>send(insertRequest).toBlocking().single();
