@@ -16,7 +16,7 @@
 
     <groupId>com.couchbase.client</groupId>
     <artifactId>core-io</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Couchbase JVM Core IO</name>
