@@ -33,6 +33,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -200,20 +201,23 @@ public class DefaultCoreEnvironmentTest {
      * message got emitted and that there are more than one environments found.
      */
     @Test
-    public void shouldEmitEvent() {
+    public void shouldEmitEvent() throws Exception {
         CoreEnvironment env = DefaultCoreEnvironment.create();
 
         final AtomicInteger evtCount = new AtomicInteger(0);
+        final CountDownLatch latch = new CountDownLatch(1);
+
         env.eventBus().get().forEach(new Action1<CouchbaseEvent>() {
             @Override
             public void call(CouchbaseEvent couchbaseEvent) {
                 if (couchbaseEvent instanceof TooManyEnvironmentsEvent) {
                     evtCount.set(((TooManyEnvironmentsEvent) couchbaseEvent).numEnvs());
+                    latch.countDown();
                 }
             }
         });
-
         CoreEnvironment env2 = DefaultCoreEnvironment.builder().eventBus(env.eventBus()).build();
+        latch.await(5, TimeUnit.SECONDS);
 
         env.shutdown();
         env2.shutdown();
