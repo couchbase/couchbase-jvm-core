@@ -87,12 +87,23 @@ public class KeyValueSelectBucketHandler extends SimpleChannelInboundHandler<Ful
     private static final byte ACCESS_ERROR = (byte)0x24;
 
     /**
+     * Test constructor to enable/disable the feature in the embedded channels.
+     *
+     * @param bucket the name of the user/bucket.
+     * @param selectBucketEnabled if it should be enabled without firing the event.
+     */
+    KeyValueSelectBucketHandler(String bucket, boolean selectBucketEnabled) {
+        this.bucket = bucket;
+        this.selectBucketEnabled = selectBucketEnabled;
+    }
+
+    /**
      * Creates a new {@link KeyValueSelectBucketHandler}.
      *
      * @param bucket the name of the user/bucket.
      */
     public KeyValueSelectBucketHandler(String bucket) {
-        this.bucket = bucket;
+        this(bucket, false);
     }
 
     /**
