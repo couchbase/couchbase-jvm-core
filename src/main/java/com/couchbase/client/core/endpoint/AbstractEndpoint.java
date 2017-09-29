@@ -549,7 +549,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * endpoint is in a connected or connecting state).
      */
     public void notifyChannelInactive() {
-        if (isTransient) {
+        // if this socket is transient OR we already received an explicit call to disconnect this endpoint,
+        // there is no point in either reconnecting or signalling a config reload, since we are expecting
+        // that this method will be called.
+        if (isTransient || disconnected) {
             return;
         }
         LOGGER.info(logIdent(channel, this) + "Got notified from Channel as inactive, " +
