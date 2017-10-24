@@ -110,6 +110,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final MemcachedHashingStrategy MEMCACHED_HASHING_STRATEGY =
         DefaultMemcachedHashingStrategy.INSTANCE;
     public static final long CONFIG_POLL_INTERVAL = 2500;
+    public static final long CONFIG_POLL_FLOOR_INTERVAL = 50;
     public static final boolean CERT_AUTH_ENABLED = false;
 
     public static String CORE_VERSION;
@@ -223,6 +224,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final WaitStrategyFactory requestBufferWaitStrategy;
     private final MemcachedHashingStrategy memcachedHashingStrategy;
     private final long configPollInterval;
+    private final long configPollFloorInterval;
     private final boolean certAuthEnabled;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
@@ -302,6 +304,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sslTruststore = builder.sslTruststore;
         memcachedHashingStrategy = builder.memcachedHashingStrategy;
         configPollInterval = longPropertyOr("configPollInterval", builder.configPollInterval);
+        configPollFloorInterval = longPropertyOr("configPollFloorInterval", builder.configPollFloorInterval);
         certAuthEnabled = booleanPropertyOr("certAuthEnabled", builder.certAuthEnabled);
         continuousKeepAliveEnabled = booleanPropertyOr(
             "continuousKeepAliveEnabled",
@@ -466,6 +469,14 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         this.couchbaseCoreSendHook = builder.couchbaseCoreSendHook;
+
+        if (configPollInterval < configPollFloorInterval) {
+            throw new IllegalArgumentException("The config poll interval (" +
+                configPollInterval + ") is lower than the config " +
+                "poll floor interval (" + configPollFloorInterval +
+                "), which means that some config polling will " +
+                "be skipped. Please adjust both settings in a logical fashion.");
+        }
     }
 
     public static DefaultCoreEnvironment create() {
@@ -886,6 +897,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return configPollInterval;
     }
 
+    @InterfaceStability.Committed
+    @InterfaceAudience.Public
+    @Override
+    public long configPollFloorInterval() {
+        return configPollFloorInterval;
+    }
+
     @Override
     public boolean certAuthEnabled() {
         return certAuthEnabled;
@@ -968,6 +986,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private WaitStrategyFactory requestBufferWaitStrategy;
         private MemcachedHashingStrategy memcachedHashingStrategy = MEMCACHED_HASHING_STRATEGY;
         private long configPollInterval = CONFIG_POLL_INTERVAL;
+        private long configPollFloorInterval = CONFIG_POLL_FLOOR_INTERVAL;
         private boolean certAuthEnabled = CERT_AUTH_ENABLED;
         private CouchbaseCoreSendHook couchbaseCoreSendHook;
 
@@ -1578,18 +1597,30 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Allows to set the configuration poll interval which polls the server cluster
          * configuration proactively.
          *
-         * Note that the interval cannot be set lower than 50 milliseconds (other than 0
-         * to disable it).
+         * Note that the interval cannot be set lower than the floor interval defined in
+         * {@link #configPollFloorInterval(long)}.
+         *
          * @param configPollInterval the interval in milliseconds, 0 deactivates the polling.
          */
         @InterfaceStability.Committed
         @InterfaceAudience.Public
         public Builder configPollInterval(long configPollInterval) {
-            if (configPollInterval < 50 && configPollInterval != 0) {
-                throw new IllegalArgumentException("The poll interval cannot be lower than " +
-                    "50 milliseconds");
-            }
             this.configPollInterval = configPollInterval;
+            return this;
+        }
+
+        /**
+         * Allows to set the minimum config polling interval.
+         *
+         * Note that the {@link #configPollInterval(long)} obviously needs to be equal
+         * or larger than this setting, otherwise intervals will be skipped.
+         *
+         * @param configPollFloorInterval the interval in milliseconds.
+         */
+        @InterfaceStability.Committed
+        @InterfaceAudience.Public
+        public Builder configPollFloorInterval(long configPollFloorInterval) {
+            this.configPollFloorInterval = configPollFloorInterval;
             return this;
         }
 
@@ -1680,6 +1711,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", queryServiceEndpoints=").append(queryServiceEndpoints);
         sb.append(", searchServiceEndpoints=").append(searchServiceEndpoints);
         sb.append(", configPollInterval=").append(configPollInterval);
+        sb.append(", configPollFloorInterval=").append(configPollFloorInterval);
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());
         if (ioPoolShutdownHook == null || ioPoolShutdownHook instanceof  NoOpShutdownHook) {
             sb.append("!unmanaged");

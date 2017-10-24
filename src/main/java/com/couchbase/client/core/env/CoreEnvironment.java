@@ -456,6 +456,16 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     @InterfaceAudience.Public
     long configPollInterval();
 
+
+    /**
+     * Returns the minimum polling interval allowed.
+     *
+     * @return the minimum polling interval.
+     */
+    @InterfaceStability.Committed
+    @InterfaceAudience.Public
+    long configPollFloorInterval();
+
     /**
      * True if X.509 client certificate authentication is enabled.
      */

@@ -401,7 +401,7 @@ public class CarrierRefresherTest {
         int good = 0;
         int bad = 0;
         for (int i = 1; i < invocationTimings.size(); i++) {
-            if ((invocationTimings.get(i) - lastCall) >= CarrierRefresher.POLL_FLOOR_NS) {
+            if ((invocationTimings.get(i) - lastCall) >= DefaultCoreEnvironment.CONFIG_POLL_FLOOR_INTERVAL) {
                 good++;
             } else {
                 bad++;
