@@ -47,7 +47,7 @@ public class FlushTest extends ClusterDependentTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        connect(false);
+        connect();
     }
 
     @Test

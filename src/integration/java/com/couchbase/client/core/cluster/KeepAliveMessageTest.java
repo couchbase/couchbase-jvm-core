@@ -42,7 +42,7 @@ public class KeepAliveMessageTest extends ClusterDependentTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        connect(false);
+        connect();
     }
 
     @Test

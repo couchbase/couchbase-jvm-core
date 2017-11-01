@@ -42,6 +42,7 @@ public class TestProperties {
     private static int mockReplicaCount;
     private static Bucket.BucketType bucketType;
     private static CouchbaseMock mock;
+    private static Boolean useMock;
 
     private static void createMock() {
         BucketConfiguration bucketConfiguration = new BucketConfiguration();
@@ -81,6 +82,7 @@ public class TestProperties {
         mockNodeCount = Integer.parseInt(properties.getProperty("mockNodeCount", "1"));
         mockReplicaCount = Integer.parseInt(properties.getProperty("mockReplicaCount", "1"));
         bucketType = properties.getProperty("mockBucketType", "couchbase").equalsIgnoreCase("couchbase") ? COUCHBASE : MEMCACHED;
+        useMock = Boolean.parseBoolean(properties.getProperty("useMock", "false"));
         createMock();
     }
 
@@ -173,4 +175,10 @@ public class TestProperties {
     public static Bucket.BucketType bucketType() {
         return bucketType;
     }
+
+    /**
+     * Whether the integration tests are going using CouchbaseMock or a real server
+     * @return true if working against CouchbaseMock, otherwise false
+     */
+    public static Boolean useMock() { return useMock; }
 }

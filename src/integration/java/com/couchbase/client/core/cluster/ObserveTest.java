@@ -52,7 +52,7 @@ public class ObserveTest extends ClusterDependentTest {
 
     @BeforeClass
     public static void setup() throws Exception {
-        connect(false);
+        connect();
     }
 
     private CouchbaseBucketConfig config = null;
