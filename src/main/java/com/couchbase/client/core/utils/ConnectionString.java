@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Implements a {@link ConnectionString}.
@@ -89,15 +91,34 @@ public class ConnectionString {
         String[] splitted = paramsRemoved.split(",");
 
         List<InetSocketAddress> hosts = new ArrayList<InetSocketAddress>();
+
+        Pattern ipv6pattern = Pattern.compile("^\\[(.+)]:(\\d+)$");
         for (int i = 0; i < splitted.length; i++) {
-            if (splitted[i] == null || splitted[i].isEmpty()) {
+            String singleHost = splitted[i];
+            if (singleHost == null || singleHost.isEmpty()) {
                 continue;
             }
-            String[] parts = splitted[i].split(":");
-            if (parts.length == 1) {
-                hosts.add(new InetSocketAddress(parts[0], 0));
+            singleHost = singleHost.trim();
+
+            Matcher matcher = ipv6pattern.matcher(singleHost);
+            if (singleHost.startsWith("[") && singleHost.endsWith("]")) {
+                // this is an ipv6 addr!
+                singleHost = singleHost.substring(1, singleHost.length() - 1);
+                hosts.add(new InetSocketAddress(singleHost, 0));
+            } else if (matcher.matches()) {
+                // this is ipv6 with addr and port!
+                hosts.add(new InetSocketAddress(
+                    matcher.group(1),
+                    Integer.parseInt(matcher.group(2)))
+                );
             } else {
-                hosts.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
+                // either ipv4 or a hostname
+                String[] parts = singleHost.split(":");
+                if (parts.length == 1) {
+                    hosts.add(new InetSocketAddress(parts[0], 0));
+                } else {
+                    hosts.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
+                }
             }
         }
         return hosts;
