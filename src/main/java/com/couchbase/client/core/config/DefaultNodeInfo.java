@@ -21,7 +21,10 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,10 +118,26 @@ public class DefaultNodeInfo implements NodeInfo {
         return services;
     }
 
-    private String trimPort(String hostname) {
+    private String trimPort(final String hostname) {
         String[] parts = hostname.split(":");
-        configPort = Integer.parseInt(parts[1]);
-        return parts[0];
+        configPort = Integer.parseInt(parts[parts.length - 1]);
+
+        if (parts.length > 2) {
+            // Handle IPv6 syntax
+            String assembledHost = "";
+            for (int i = 0; i < parts.length - 1; i++) {
+                assembledHost += parts[i];
+                if (parts[i].endsWith("]")) {
+                    break;
+                } else {
+                    assembledHost += ":";
+                }
+            }
+            return assembledHost;
+        } else {
+            // Simple IPv4 Handling
+            return parts[0];
+        }
     }
 
     @Override
