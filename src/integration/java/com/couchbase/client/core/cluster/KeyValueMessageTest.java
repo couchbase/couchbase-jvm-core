@@ -324,7 +324,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
 
         GetResponse secondLockResponse = (GetResponse) cluster().send(new GetRequest(key, bucket(), true, false, 2))
                 .toBlocking().single();
-        assertEquals(ResponseStatus.TEMPORARY_FAILURE, secondLockResponse.status());
+        assertTrue(ResponseStatus.TEMPORARY_FAILURE == secondLockResponse.status() || ResponseStatus.LOCKED == secondLockResponse.status());
         ReferenceCountUtil.releaseLater(secondLockResponse.content());
 
         Thread.sleep(3000);
