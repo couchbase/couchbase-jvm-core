@@ -39,6 +39,36 @@ public interface CouchbaseRequest extends CouchbaseMessage {
     Subject<CouchbaseResponse, CouchbaseResponse> observable();
 
     /**
+     * Emits the {@link CouchbaseResponse} into the underlying state holder (like a subject)
+     * without completing it as per contract.
+     *
+     * @param response the response to emit.
+     */
+    void emit(CouchbaseResponse response);
+
+    /**
+     * Completes the underlying state holder.
+     */
+    void complete();
+
+    /**
+     * Emits the {@link CouchbaseResponse} into the underlying state holder (like a subject)
+     * and completes it as well per contract.
+     *
+     * Its basically a shortcut for {@link #emit(CouchbaseResponse)} followed by {@link #complete()}.
+     *
+     * @param response the response to emit and complete.
+     */
+    void succeed(CouchbaseResponse response);
+
+    /**
+     * Fails the {@link CouchbaseResponse} on the state holder as per contract.
+     *
+     * @param throwable the throwable to fail the response with.
+     */
+    void fail(Throwable throwable);
+
+    /**
      * The associated bucket name for this request.
      *
      * @return the bucket name.
