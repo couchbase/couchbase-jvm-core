@@ -42,6 +42,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.SaslClient;
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Arrays;
 
 /**
  * A SASL Client which communicates through the memcache binary protocol.
@@ -94,6 +95,11 @@ public class KeyValueAuthHandler
     private final String password;
 
     /**
+     * If PLAIN SASL auth mode should be forced.
+     */
+    private final boolean forceSaslPlain;
+
+    /**
      * The handler context.
      */
     private ChannelHandlerContext ctx;
@@ -119,9 +125,10 @@ public class KeyValueAuthHandler
      * @param username the name of the user/bucket.
      * @param password the password associated with the user/bucket.
      */
-    public KeyValueAuthHandler(String username, String password) {
+    public KeyValueAuthHandler(String username, String password, boolean forceSaslPlain) {
         this.username = username;
         this.password = password == null ? "" : password;
+        this.forceSaslPlain = forceSaslPlain;
     }
 
     /**
@@ -186,6 +193,10 @@ public class KeyValueAuthHandler
         String[] supportedMechanisms = msg.content().toString(CharsetUtil.UTF_8).split(" ");
         if (supportedMechanisms.length == 0) {
             throw new AuthenticationException("Received empty SASL mechanisms list from server: " + remote);
+        }
+        if (forceSaslPlain) {
+            LOGGER.trace("Got SASL Mechs {} but forcing PLAIN due to config setting.", Arrays.asList(supportedMechanisms));
+            supportedMechanisms = new String[] { "PLAIN" };
         }
 
         saslClient = Sasl.createSaslClient(supportedMechanisms, null, "couchbase", remote, null, this);

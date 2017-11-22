@@ -112,6 +112,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long CONFIG_POLL_INTERVAL = 2500;
     public static final long CONFIG_POLL_FLOOR_INTERVAL = 50;
     public static final boolean CERT_AUTH_ENABLED = false;
+    public static final boolean FORCE_SASL_PLAIN = false;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -256,6 +257,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final NetworkLatencyMetricsCollector networkLatencyMetricsCollector;
     private final Subscription metricsCollectorSubscription;
 
+    private final boolean forceSaslPlain;
+
     private final CouchbaseCoreSendHook couchbaseCoreSendHook;
 
     protected DefaultCoreEnvironment(final Builder builder) {
@@ -306,6 +309,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         configPollInterval = longPropertyOr("configPollInterval", builder.configPollInterval);
         configPollFloorInterval = longPropertyOr("configPollFloorInterval", builder.configPollFloorInterval);
         certAuthEnabled = booleanPropertyOr("certAuthEnabled", builder.certAuthEnabled);
+        forceSaslPlain = booleanPropertyOr("forceSaslPlain", builder.forceSaslPlain);
         continuousKeepAliveEnabled = booleanPropertyOr(
             "continuousKeepAliveEnabled",
                 builder.continuousKeepAliveEnabled
@@ -929,6 +933,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return couchbaseCoreSendHook;
     }
 
+    @Override
+    public boolean forceSaslPlain() {
+        return forceSaslPlain;
+    }
+
     public static class Builder {
 
         private boolean sslEnabled = SSL_ENABLED;
@@ -989,6 +998,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private long configPollFloorInterval = CONFIG_POLL_FLOOR_INTERVAL;
         private boolean certAuthEnabled = CERT_AUTH_ENABLED;
         private CouchbaseCoreSendHook couchbaseCoreSendHook;
+        private boolean forceSaslPlain = FORCE_SASL_PLAIN;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1676,6 +1686,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return this;
         }
 
+        /**
+         * Allows to forcre the KeyValue SASL authentication method to PLAIN which is used to
+         * allow authentication against LDAP-based users.
+         *
+         * @param forceSaslPlain true if plain should be forced, false otherwise.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Committed
+        public Builder forceSaslPlain(final boolean forceSaslPlain) {
+            this.forceSaslPlain = forceSaslPlain;
+            return this;
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1776,6 +1799,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", certAuthEnabled=").append(certAuthEnabled);
         sb.append(", coreSendHook=").append(couchbaseCoreSendHook == null ? "null" :
             couchbaseCoreSendHook.getClass().getSimpleName());
+        sb.append(", forceSaslPlain=").append(forceSaslPlain);
         return sb;
     }
 

@@ -480,4 +480,12 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     @InterfaceAudience.Public
     CouchbaseCoreSendHook couchbaseCoreSendHook();
 
+    /**
+     * Forces the KeyValue SASL Authentication method to PLAIN if set to true,
+     * specifically allowing LDAP-based users to authenticate.
+     *
+     * @return true if plain should be forced, false otherwise (default).
+     */
+    boolean forceSaslPlain();
+
 }

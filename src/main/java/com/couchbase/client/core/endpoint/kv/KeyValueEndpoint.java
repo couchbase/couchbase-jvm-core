@@ -84,7 +84,7 @@ public class KeyValueEndpoint extends AbstractEndpoint {
                 "compatibility.");
 
             if (!environment().certAuthEnabled()) {
-                pipeline.addLast(new KeyValueAuthHandler(username(), password()));
+                pipeline.addLast(new KeyValueAuthHandler(username(), password(), environment().forceSaslPlain()));
             }
 
             pipeline
@@ -96,7 +96,7 @@ public class KeyValueEndpoint extends AbstractEndpoint {
                 .addLast(new KeyValueErrorMapHandler());
 
             if (!environment().certAuthEnabled()) {
-                pipeline.addLast(new KeyValueAuthHandler(username(), password()));
+                pipeline.addLast(new KeyValueAuthHandler(username(), password(), environment().forceSaslPlain()));
             }
         }
 
