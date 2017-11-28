@@ -76,8 +76,8 @@ class Log4JLogger extends AbstractCouchbaseLogger {
     // The trace level was introduced in log4j 1.2.12.
     final boolean traceCapable;
 
-    Log4JLogger(Logger logger) {
-        super(logger.getName());
+    Log4JLogger(Logger logger, RedactionLevel redactionLevel) {
+        super(logger.getName(), redactionLevel);
         this.logger = logger;
         traceCapable = isTraceCapable();
     }
@@ -337,7 +337,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object arg) {
-        if (logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled() && !infoRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.log(FQCN, Level.INFO, ft.getMessage(), ft.getThrowable());
         }
@@ -361,10 +361,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object argA, Object argB) {
-        if (logger.isInfoEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.log(FQCN, Level.INFO, ft.getMessage(), ft.getThrowable());
-        }
+        info(format, new Object[] { argA, argB });
     }
 
     /**
@@ -383,7 +380,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object... argArray) {
-        if (logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled() && !infoRedacted(format, argArray)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
             logger.log(FQCN, Level.INFO, ft.getMessage(), ft.getThrowable());
         }
@@ -440,7 +437,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object arg) {
-        if (logger.isEnabledFor(Level.WARN)) {
+        if (logger.isEnabledFor(Level.WARN) && !warnRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.log(FQCN, Level.WARN, ft.getMessage(), ft.getThrowable());
         }
@@ -464,10 +461,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
-        if (logger.isEnabledFor(Level.WARN)) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.log(FQCN, Level.WARN, ft.getMessage(), ft.getThrowable());
-        }
+        warn(format, new Object[] { argA, argB });
     }
 
     /**
@@ -486,7 +480,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object... argArray) {
-        if (logger.isEnabledFor(Level.WARN)) {
+        if (logger.isEnabledFor(Level.WARN) && !warnRedacted(format, argArray)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
             logger.log(FQCN, Level.WARN, ft.getMessage(), ft.getThrowable());
         }
@@ -543,7 +537,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object arg) {
-        if (logger.isEnabledFor(Level.ERROR)) {
+        if (logger.isEnabledFor(Level.ERROR) && !errorRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.log(FQCN, Level.ERROR, ft.getMessage(), ft.getThrowable());
         }
@@ -567,10 +561,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object argA, Object argB) {
-        if (logger.isEnabledFor(Level.ERROR)) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.log(FQCN, Level.ERROR, ft.getMessage(), ft.getThrowable());
-        }
+        error(format, new Object[] { argA, argB });
     }
 
     /**
@@ -589,7 +580,7 @@ class Log4JLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object... argArray) {
-        if (logger.isEnabledFor(Level.ERROR)) {
+        if (logger.isEnabledFor(Level.ERROR)  && !errorRedacted(format, argArray)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
             logger.log(FQCN, Level.ERROR, ft.getMessage(), ft.getThrowable());
         }

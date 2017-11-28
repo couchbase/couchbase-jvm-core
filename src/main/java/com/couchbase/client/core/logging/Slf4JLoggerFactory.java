@@ -43,10 +43,14 @@ import java.io.UnsupportedEncodingException;
  */
 public class Slf4JLoggerFactory extends CouchbaseLoggerFactory {
 
-    public Slf4JLoggerFactory() {
+    private final RedactionLevel redactionLevel;
+
+    public Slf4JLoggerFactory(RedactionLevel redactionLevel) {
+        this.redactionLevel = redactionLevel;
     }
 
-    Slf4JLoggerFactory(boolean failIfNOP) {
+    Slf4JLoggerFactory(boolean failIfNOP, RedactionLevel redactionLevel) {
+        this.redactionLevel = redactionLevel;
         assert failIfNOP; // Should be always called with true.
 
         // SFL4J writes it error messages to System.err. Capture them so that the user does not see such a message on
@@ -78,6 +82,6 @@ public class Slf4JLoggerFactory extends CouchbaseLoggerFactory {
 
     @Override
     public CouchbaseLogger newInstance(String name) {
-        return new Slf4JLogger(LoggerFactory.getLogger(name));
+        return new Slf4JLogger(LoggerFactory.getLogger(name), redactionLevel);
     }
 }

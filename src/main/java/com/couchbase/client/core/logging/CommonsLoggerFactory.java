@@ -42,10 +42,20 @@ import java.util.Map;
  */
 public class CommonsLoggerFactory extends CouchbaseLoggerFactory {
 
+    private final RedactionLevel redactionLevel;
+
+    public CommonsLoggerFactory() {
+        this(RedactionLevel.NONE);
+    }
+
+    public CommonsLoggerFactory(RedactionLevel redactionLevel) {
+        this.redactionLevel = redactionLevel;
+    }
+
     Map<String, CouchbaseLogger> loggerMap = new HashMap<String, CouchbaseLogger>();
 
     @Override
     public CouchbaseLogger newInstance(String name) {
-        return new CommonsLogger(LogFactory.getLog(name), name);
+        return new CommonsLogger(LogFactory.getLog(name), name, redactionLevel);
     }
 }

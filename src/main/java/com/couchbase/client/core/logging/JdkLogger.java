@@ -67,8 +67,8 @@ class JdkLogger extends AbstractCouchbaseLogger {
 
     final transient Logger logger;
 
-    JdkLogger(Logger logger) {
-        super(logger.getName());
+    JdkLogger(Logger logger, RedactionLevel redactionLevel) {
+        super(logger.getName(), redactionLevel);
         this.logger = logger;
     }
 
@@ -321,7 +321,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object arg) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isLoggable(Level.INFO) && !infoRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             log(SELF, Level.INFO, ft.getMessage(), ft.getThrowable());
         }
@@ -345,10 +345,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object argA, Object argB) {
-        if (logger.isLoggable(Level.INFO)) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            log(SELF, Level.INFO, ft.getMessage(), ft.getThrowable());
-        }
+        info(format, new Object[] { argA, argB });
     }
 
     /**
@@ -367,7 +364,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object... argArray) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isLoggable(Level.INFO) && !infoRedacted(format, argArray)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
             log(SELF, Level.INFO, ft.getMessage(), ft.getThrowable());
         }
@@ -429,7 +426,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object arg) {
-        if (logger.isLoggable(Level.WARNING)) {
+        if (logger.isLoggable(Level.WARNING) && !warnRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             log(SELF, Level.WARNING, ft.getMessage(), ft.getThrowable());
         }
@@ -453,10 +450,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
-        if (logger.isLoggable(Level.WARNING)) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            log(SELF, Level.WARNING, ft.getMessage(), ft.getThrowable());
-        }
+        warn(format, new Object[] { argA, argB });
     }
 
     /**
@@ -475,7 +469,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object... argArray) {
-        if (logger.isLoggable(Level.WARNING)) {
+        if (logger.isLoggable(Level.WARNING)&& !infoRedacted(format, argArray)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, argArray);
             log(SELF, Level.WARNING, ft.getMessage(), ft.getThrowable());
         }
@@ -536,7 +530,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object arg) {
-        if (logger.isLoggable(Level.SEVERE)) {
+        if (logger.isLoggable(Level.SEVERE) && !errorRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             log(SELF, Level.SEVERE, ft.getMessage(), ft.getThrowable());
         }
@@ -560,10 +554,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object argA, Object argB) {
-        if (logger.isLoggable(Level.SEVERE)) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            log(SELF, Level.SEVERE, ft.getMessage(), ft.getThrowable());
-        }
+        error(format, new Object[] { argA, argB });
     }
 
     /**
@@ -582,7 +573,7 @@ class JdkLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object... arguments) {
-        if (logger.isLoggable(Level.SEVERE)) {
+        if (logger.isLoggable(Level.SEVERE) && !errorRedacted(format, arguments)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             log(SELF, Level.SEVERE, ft.getMessage(), ft.getThrowable());
         }

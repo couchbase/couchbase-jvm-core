@@ -48,6 +48,8 @@ import io.netty.util.internal.ThreadLocalRandom;
  */
 public abstract class CouchbaseLoggerFactory {
 
+    private static volatile RedactionLevel redactionLevel = RedactionLevel.NONE;
+
     private static volatile CouchbaseLoggerFactory defaultFactory =
             newDefaultFactory(CouchbaseLoggerFactory.class.getName());
 
@@ -65,17 +67,24 @@ public abstract class CouchbaseLoggerFactory {
     private static CouchbaseLoggerFactory newDefaultFactory(String name) {
         CouchbaseLoggerFactory f;
         try {
-            f = new Slf4JLoggerFactory(true);
+            f = new Slf4JLoggerFactory(true, redactionLevel);
             f.newInstance(name).debug("Using SLF4J as the default logging framework");
         } catch (Throwable t1) {
             try {
-                f = new Log4JLoggerFactory();
+                f = new Log4JLoggerFactory(redactionLevel);
                 f.newInstance(name).debug("Using Log4J as the default logging framework");
             } catch (Throwable t2) {
-                f = new JdkLoggerFactory();
+                f = new JdkLoggerFactory(redactionLevel);
                 f.newInstance(name).debug("Using java.util.logging as the default logging framework");
             }
         }
+
+        if (redactionLevel != RedactionLevel.NONE) {
+            f.newInstance(name).info("Log redaction enabled. Previous log entries might not be redacted. " +
+                    "Logs have reduced identifying information. Diagnosis and support of issues may be challenging " +
+                    "or not possible in this configuration.");
+        }
+
         return f;
     }
 
@@ -95,6 +104,24 @@ public abstract class CouchbaseLoggerFactory {
             throw new NullPointerException("defaultFactory");
         }
         CouchbaseLoggerFactory.defaultFactory = defaultFactory;
+    }
+
+    /**
+     * Returns the current redaction level.
+     */
+    public static RedactionLevel getRedactionLevel() {
+        return redactionLevel;
+    }
+
+    /**
+     * Changes the redaction level.
+     */
+    public static void setRedactionLevel(RedactionLevel redactionLevel) {
+        if (defaultFactory == null) {
+            throw new NullPointerException("redactionLevel");
+        }
+
+        CouchbaseLoggerFactory.redactionLevel = redactionLevel;
     }
 
     /**

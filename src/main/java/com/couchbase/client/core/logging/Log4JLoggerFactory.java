@@ -38,8 +38,14 @@ import org.apache.log4j.Logger;
  */
 public class Log4JLoggerFactory extends CouchbaseLoggerFactory {
 
+    private final RedactionLevel redactionLevel;
+
+    public Log4JLoggerFactory(RedactionLevel redactionLevel) {
+        this.redactionLevel = redactionLevel;
+    }
+
     @Override
     public CouchbaseLogger newInstance(String name) {
-        return new Log4JLogger(Logger.getLogger(name));
+        return new Log4JLogger(Logger.getLogger(name), redactionLevel);
     }
 }

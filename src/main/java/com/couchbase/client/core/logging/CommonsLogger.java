@@ -66,8 +66,8 @@ class CommonsLogger extends AbstractCouchbaseLogger {
 
     private final transient Log logger;
 
-    CommonsLogger(Log logger, String name) {
-        super(name);
+    CommonsLogger(Log logger, String name, RedactionLevel redactionLevel) {
+        super(name, redactionLevel);
         if (logger == null) {
             throw new NullPointerException("logger");
         }
@@ -313,7 +313,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
 
     @Override
     public void info(String format, Object arg) {
-        if (logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled() && !infoRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.info(ft.getMessage(), ft.getThrowable());
         }
@@ -336,10 +336,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object argA, Object argB) {
-        if (logger.isInfoEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.info(ft.getMessage(), ft.getThrowable());
-        }
+        info(format, new Object[] { argA, argB });
     }
 
     /**
@@ -356,7 +353,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object... arguments) {
-        if (logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled() && !infoRedacted(format, arguments)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.info(ft.getMessage(), ft.getThrowable());
         }
@@ -412,7 +409,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object arg) {
-        if (logger.isWarnEnabled()) {
+        if (logger.isWarnEnabled() && !warnRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.warn(ft.getMessage(), ft.getThrowable());
         }
@@ -436,10 +433,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
-        if (logger.isWarnEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.warn(ft.getMessage(), ft.getThrowable());
-        }
+        warn(format, new Object[] { argA, argB });
     }
 
     /**
@@ -456,7 +450,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object... arguments) {
-        if (logger.isWarnEnabled()) {
+        if (logger.isWarnEnabled() && !warnRedacted(format, arguments)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.warn(ft.getMessage(), ft.getThrowable());
         }
@@ -513,7 +507,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object arg) {
-        if (logger.isErrorEnabled()) {
+        if (logger.isErrorEnabled() && !errorRedacted(format, arg)) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.error(ft.getMessage(), ft.getThrowable());
         }
@@ -537,10 +531,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object argA, Object argB) {
-        if (logger.isErrorEnabled()) {
-            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
-            logger.error(ft.getMessage(), ft.getThrowable());
-        }
+        error(format, new Object[] { argA, argB });
     }
 
     /**
@@ -557,7 +548,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object... arguments) {
-        if (logger.isErrorEnabled()) {
+        if (logger.isErrorEnabled() && !errorRedacted(format, arguments)) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.error(ft.getMessage(), ft.getThrowable());
         }
