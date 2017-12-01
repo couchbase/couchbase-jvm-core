@@ -36,7 +36,7 @@ public interface Refresher {
      *
      * @return the config observable.
      */
-    Observable<BucketConfig> configs();
+    Observable<String> configs();
 
     /**
      * Registers a bucket to be watched for new configurations.

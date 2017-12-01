@@ -17,6 +17,7 @@ package com.couchbase.client.core.config.refresher;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
@@ -27,6 +28,7 @@ import com.couchbase.client.core.util.Resources;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
@@ -69,13 +71,20 @@ public class HttpRefresherTest {
         HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
-        refresher.configs().subscribe(new Action1<BucketConfig>() {
-            @Override
-            public void call(BucketConfig bucketConfig) {
-                assertEquals("default", bucketConfig.name());
-                latch.countDown();
-            }
-        });
+        refresher.configs()
+            .map(new Func1<String, BucketConfig>() {
+                @Override
+                public BucketConfig call(String s) {
+                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                }
+            })
+            .subscribe(new Action1<BucketConfig>() {
+                @Override
+                public void call(BucketConfig bucketConfig) {
+                    assertEquals("default", bucketConfig.name());
+                    latch.countDown();
+                }
+            });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
@@ -104,13 +113,20 @@ public class HttpRefresherTest {
         HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
-        refresher.configs().subscribe(new Action1<BucketConfig>() {
-            @Override
-            public void call(BucketConfig bucketConfig) {
-                assertEquals("default", bucketConfig.name());
-                latch.countDown();
-            }
-        });
+        refresher.configs()
+            .map(new Func1<String, BucketConfig>() {
+                @Override
+                public BucketConfig call(String s) {
+                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                }
+            })
+            .subscribe(new Action1<BucketConfig>() {
+                @Override
+                public void call(BucketConfig bucketConfig) {
+                    assertEquals("default", bucketConfig.name());
+                    latch.countDown();
+                }
+            });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
@@ -142,13 +158,20 @@ public class HttpRefresherTest {
         HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
-        refresher.configs().subscribe(new Action1<BucketConfig>() {
-            @Override
-            public void call(BucketConfig bucketConfig) {
-                assertEquals("default", bucketConfig.name());
-                latch.countDown();
-            }
-        });
+        refresher.configs()
+            .map(new Func1<String, BucketConfig>() {
+                @Override
+                public BucketConfig call(String s) {
+                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                }
+            })
+            .subscribe(new Action1<BucketConfig>() {
+                @Override
+                public void call(BucketConfig bucketConfig) {
+                    assertEquals("default", bucketConfig.name());
+                    latch.countDown();
+                }
+            });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
@@ -175,13 +198,20 @@ public class HttpRefresherTest {
         HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
         final CountDownLatch latch = new CountDownLatch(3);
-        refresher.configs().subscribe(new Action1<BucketConfig>() {
-            @Override
-            public void call(BucketConfig bucketConfig) {
-                assertEquals("default", bucketConfig.name());
-                latch.countDown();
-            }
-        });
+        refresher.configs()
+            .map(new Func1<String, BucketConfig>() {
+                @Override
+                public BucketConfig call(String s) {
+                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                }
+            })
+            .subscribe(new Action1<BucketConfig>() {
+                @Override
+                public void call(BucketConfig bucketConfig) {
+                    assertEquals("default", bucketConfig.name());
+                    latch.countDown();
+                }
+            });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());

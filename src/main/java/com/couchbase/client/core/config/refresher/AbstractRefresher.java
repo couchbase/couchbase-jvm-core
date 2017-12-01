@@ -46,7 +46,7 @@ public abstract  class AbstractRefresher implements Refresher {
     /**
      * The config stream where the provider subscribes to.
      */
-    private final Subject<BucketConfig, BucketConfig> configStream;
+    private final Subject<String, String> configStream;
 
     /**
      * Cluster reference so that implementations can call requests.
@@ -67,7 +67,7 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     protected AbstractRefresher(final CoreEnvironment env, final ClusterFacade cluster) {
         this.env = env;
-        this.configStream = PublishSubject.<BucketConfig>create().toSerialized();
+        this.configStream = PublishSubject.<String>create().toSerialized();
         this.cluster = cluster;
         registrations = new ConcurrentHashMap<String, Credential>();
     }
@@ -99,7 +99,7 @@ public abstract  class AbstractRefresher implements Refresher {
     }
 
     @Override
-    public Observable<BucketConfig> configs() {
+    public Observable<String> configs() {
         return configStream;
     }
 
@@ -110,8 +110,8 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     protected void pushConfig(final String config) {
         try {
-            configStream.onNext(BucketConfigParser.parse(config, env));
-        } catch (CouchbaseException e) {
+            configStream.onNext(config);
+        } catch (Exception e) {
             LOGGER.warn("Exception while pushing new configuration - ignoring.", e);
         }
     }

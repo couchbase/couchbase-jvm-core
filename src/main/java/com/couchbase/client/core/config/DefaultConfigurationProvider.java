@@ -31,6 +31,7 @@ import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.utils.NetworkAddress;
+import com.fasterxml.jackson.databind.JsonNode;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -182,15 +183,15 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                     refresher.provider(DefaultConfigurationProvider.this);
                 }
             })
-            .flatMap(new Func1<Refresher, Observable<BucketConfig>>() {
+            .flatMap(new Func1<Refresher, Observable<String>>() {
                 @Override
-                public Observable<BucketConfig> call(Refresher refresher) {
+                public Observable<String> call(Refresher refresher) {
                     return refresher.configs();
                 }
-            }).subscribe(new Action1<BucketConfig>() {
+            }).subscribe(new Action1<String>() {
                 @Override
-                public void call(BucketConfig bucketConfig) {
-                    upsertBucketConfig(bucketConfig);
+                public void call(String bucketConfig) {
+                    proposeBucketConfig(null, bucketConfig);
                 }
             });
     }
@@ -339,14 +340,31 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public void proposeBucketConfig(String bucket, String rawConfig) {
-        LOGGER.debug("New Bucket {} config proposed.", bucket);
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Proposed raw config is {}", rawConfig);
-        }
+        try {
+            LOGGER.debug("New Bucket {} config proposed.", bucket);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("Proposed raw config is {}", rawConfig);
+            }
 
-        BucketConfig config = BucketConfigParser.parse(rawConfig, environment);
-        upsertBucketConfig(config);
+            JsonNode configNodes = BucketConfigParser.jackson().readTree(rawConfig);
+            String bucketName = bucket == null ? configNodes.get("name").textValue() : bucket;
+
+            JsonNode revNode = configNodes.get("rev");
+            long newRev = revNode == null ? 0 : revNode.asLong();
+
+            BucketConfig oldConfig = currentConfig.bucketConfig(bucketName);
+            if (newRev > 0 && oldConfig != null && newRev <= oldConfig.rev()) {
+                LOGGER.trace("Not applying new configuration, older or same rev ID.");
+                return;
+            }
+
+            BucketConfig config = BucketConfigParser.parse(rawConfig, environment);
+            upsertBucketConfig(config);
+        } catch (Exception ex) {
+            LOGGER.warn("Could not read proposed configuration, ignoring.", ex);
+        }
     }
+
 
     @Override
     public void signalOutdated() {
@@ -431,7 +449,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         BucketConfig oldConfig = cluster.bucketConfig(newConfig.name());
 
         if (newConfig.rev() > 0 && oldConfig != null && newConfig.rev() <= oldConfig.rev()) {
-            LOGGER.trace("Not applying new configuration, older rev ID.");
+            LOGGER.trace("Not applying new configuration, older or same rev ID.");
             return;
         }
 

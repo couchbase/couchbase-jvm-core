@@ -16,6 +16,8 @@
 package com.couchbase.client.core.config.parser;
 
 import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.env.ConfigParserEnvironment;
 import com.fasterxml.jackson.databind.InjectableValues;
@@ -38,6 +40,15 @@ public final class BucketConfigParser {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
+     * Accessor to the jackson object mapper.
+     */
+    @InterfaceStability.Committed
+    @InterfaceAudience.Private
+    public static ObjectMapper jackson() {
+        return OBJECT_MAPPER;
+    }
+
+    /**
      * Parse a raw configuration into a {@link BucketConfig}.
      *
      * @param input the raw string input.
@@ -47,7 +58,7 @@ public final class BucketConfigParser {
         try {
             InjectableValues inject = new InjectableValues.Std()
                     .addValue("env", env);
-            return OBJECT_MAPPER.readerFor(BucketConfig.class).with(inject).readValue(input);
+            return jackson().readerFor(BucketConfig.class).with(inject).readValue(input);
         } catch (IOException e) {
             throw new CouchbaseException("Could not parse configuration", e);
         }
