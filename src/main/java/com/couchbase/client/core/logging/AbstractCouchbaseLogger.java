@@ -34,7 +34,8 @@ import io.netty.util.internal.StringUtil;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.Arrays;
+
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
 
 /**
  * A skeletal implementation of {@link CouchbaseLogger}.  This class implements
@@ -55,14 +56,8 @@ public abstract class AbstractCouchbaseLogger implements CouchbaseLogger, Serial
      * Creates a new instance.
      */
     protected AbstractCouchbaseLogger(String name, RedactionLevel redactionLevel) {
-        if (name == null) {
-            throw new NullPointerException("name");
-        }
-        if (redactionLevel == null)  {
-            throw new NullPointerException("redactionLevel");
-        }
-        this.name = name;
-        this.redactionLevel = redactionLevel;
+        this.name = requireNonNull(name, "name");
+        this.redactionLevel = requireNonNull(redactionLevel, "redactionLevel");
     }
 
     @Override

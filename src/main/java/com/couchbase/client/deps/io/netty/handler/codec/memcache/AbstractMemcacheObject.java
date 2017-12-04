@@ -17,6 +17,8 @@ package com.couchbase.client.deps.io.netty.handler.codec.memcache;
 
 import io.netty.handler.codec.DecoderResult;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 /**
  * The default {@link MemcacheObject} implementation.
  */
@@ -35,11 +37,7 @@ public abstract class AbstractMemcacheObject implements MemcacheObject {
 
     @Override
     public void setDecoderResult(DecoderResult result) {
-        if (result == null) {
-            throw new NullPointerException("DecoderResult should not be null.");
-        }
-
-        decoderResult = result;
+        decoderResult = requireNonNull(result, "DecoderResult should not be null.");
     }
 
 }

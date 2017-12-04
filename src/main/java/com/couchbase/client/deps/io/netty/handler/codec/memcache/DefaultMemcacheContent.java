@@ -18,6 +18,8 @@ package com.couchbase.client.deps.io.netty.handler.codec.memcache;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.StringUtil;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 /**
  * The default {@link MemcacheContent} implementation.
  */
@@ -29,10 +31,7 @@ public class DefaultMemcacheContent extends AbstractMemcacheObject implements Me
      * Creates a new instance with the specified content.
      */
     public DefaultMemcacheContent(ByteBuf content) {
-        if (content == null) {
-            throw new NullPointerException("Content cannot be null.");
-        }
-        this.content = content;
+        this.content = requireNonNull(content, "Content cannot be null.");
     }
 
     @Override

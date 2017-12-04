@@ -18,6 +18,8 @@ package com.couchbase.client.deps.io.netty.handler.codec.memcache.binary;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 /**
  * The default implementation of a {@link FullBinaryMemcacheRequest}.
  */
@@ -43,14 +45,9 @@ public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheReque
      * @param extras  the extras to use.
      * @param content the content of the full request.
      */
-    public DefaultFullBinaryMemcacheRequest(byte[] key, ByteBuf extras,
-        ByteBuf content) {
+    public DefaultFullBinaryMemcacheRequest(byte[] key, ByteBuf extras, ByteBuf content) {
         super(key, extras);
-        if (content == null) {
-            throw new NullPointerException("Supplied content is null.");
-        }
-
-        this.content = content;
+        this.content = requireNonNull(content, "Supplied content is null.");
     }
 
     @Override

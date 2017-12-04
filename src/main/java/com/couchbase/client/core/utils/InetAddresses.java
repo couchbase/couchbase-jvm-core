@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 public class InetAddresses {
     private static int IPV4_PART_COUNT = 4;
     private static int IPV6_PART_COUNT = 8;
@@ -229,9 +231,7 @@ public class InetAddresses {
      * @since 10.0
      */
     public static String toAddrString(InetAddress ip) {
-        if (ip == null) {
-            throw new NullPointerException("ip");
-        }
+        requireNonNull(ip, "ip");
         if (ip instanceof Inet4Address) {
             // For IPv4, Java's formatting is good enough.
             byte[] bytes = ip.getAddress();

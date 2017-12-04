@@ -30,6 +30,7 @@ import java.util.List;
 
 import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_DOCFLAG_ACCESS_DELETED;
 import static com.couchbase.client.core.endpoint.kv.KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
 
 /**
  * Concrete implementation of a {@link BinarySubdocMultiLookupRequest}.
@@ -54,9 +55,7 @@ public class SubMultiLookupRequest extends AbstractKeyValueRequest implements Bi
      */
     public SubMultiLookupRequest(String key, String bucket, SubMultiLookupDocOptionsBuilder docOptionsBuilder, LookupCommand... commands) {
         super(key, bucket);
-        if (commands == null) {
-            throw new NullPointerException("At least one lookup command is necessary");
-        }
+        requireNonNull(commands, "At least one lookup command is necessary");
         this.commands = Arrays.asList(commands);
         this.encoded = encode(this.commands);
         if (docOptionsBuilder.accessDeleted()) {

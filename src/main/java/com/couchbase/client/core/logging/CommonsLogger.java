@@ -56,6 +56,8 @@ package com.couchbase.client.core.logging;
 
 import org.apache.commons.logging.Log;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 /**
  * <a href="http://commons.apache.org/logging/">Apache Commons Logging</a>
  * logger.
@@ -68,10 +70,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
 
     CommonsLogger(Log logger, String name, RedactionLevel redactionLevel) {
         super(name, redactionLevel);
-        if (logger == null) {
-            throw new NullPointerException("logger");
-        }
-        this.logger = logger;
+        this.logger = requireNonNull(logger, "logger");
     }
 
     /**

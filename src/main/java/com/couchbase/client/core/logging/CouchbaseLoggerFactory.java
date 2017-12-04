@@ -31,6 +31,8 @@
 package com.couchbase.client.core.logging;
 import io.netty.util.internal.ThreadLocalRandom;
 
+import static com.couchbase.client.core.lang.backport.java.util.Objects.requireNonNull;
+
 /**
  * Creates an {@link CouchbaseLogger} or changes the default factory
  * implementation.  This factory allows you to choose what logging framework
@@ -100,10 +102,7 @@ public abstract class CouchbaseLoggerFactory {
      * Changes the default factory.
      */
     public static void setDefaultFactory(CouchbaseLoggerFactory defaultFactory) {
-        if (defaultFactory == null) {
-            throw new NullPointerException("defaultFactory");
-        }
-        CouchbaseLoggerFactory.defaultFactory = defaultFactory;
+        CouchbaseLoggerFactory.defaultFactory = requireNonNull(defaultFactory, "defaultFactory");
     }
 
     /**
@@ -117,11 +116,7 @@ public abstract class CouchbaseLoggerFactory {
      * Changes the redaction level.
      */
     public static void setRedactionLevel(RedactionLevel redactionLevel) {
-        if (redactionLevel == null) {
-            throw new NullPointerException("redactionLevel");
-        }
-
-        CouchbaseLoggerFactory.redactionLevel = redactionLevel;
+        CouchbaseLoggerFactory.redactionLevel = requireNonNull(redactionLevel, "redactionLevel");
     }
 
     /**
