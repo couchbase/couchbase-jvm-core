@@ -117,7 +117,7 @@ public abstract class CouchbaseLoggerFactory {
      * Changes the redaction level.
      */
     public static void setRedactionLevel(RedactionLevel redactionLevel) {
-        if (defaultFactory == null) {
+        if (redactionLevel == null) {
             throw new NullPointerException("redactionLevel");
         }
 
