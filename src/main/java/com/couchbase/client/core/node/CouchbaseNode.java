@@ -45,6 +45,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+
 /**
  * The general implementation of a {@link Node}.
  *
@@ -133,7 +136,11 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
             String lookupResult = hostname.nameAndAddress();
             long lookupDurationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lookupStart);
             if (lookupDurationMs >= DNS_RESOLUTION_THRESHOLD) {
-                LOGGER.warn("DNS Reverse Lookup of " + lookupResult + " is slow, took " + lookupDurationMs + "ms");
+                LOGGER.warn(
+                    "DNS Reverse Lookup of {} is slow, took {}ms",
+                    system(lookupResult),
+                    lookupDurationMs
+                );
             }
         }
 
@@ -175,7 +182,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      * Log that this node is now connected and also inform all susbcribers on the event bus.
      */
     private void signalConnected() {
-        LOGGER.info("Connected to Node " + hostname.nameAndAddress());
+        LOGGER.info("Connected to Node {}", system(hostname.nameAndAddress()));
         if (eventBus != null && eventBus.hasSubscribers()) {
             eventBus.publish(new NodeConnectedEvent(hostname));
         }
@@ -185,7 +192,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      * Log that this node is now disconnected and also inform all susbcribers on the event bus.
      */
     private void signalDisconnected() {
-        LOGGER.info("Disconnected from Node " + hostname.nameAndAddress());
+        LOGGER.info("Disconnected from Node {}", system(hostname.nameAndAddress()));
         if (eventBus != null && eventBus.hasSubscribers()) {
             eventBus.publish(new NodeDisconnectedEvent(hostname));
         }

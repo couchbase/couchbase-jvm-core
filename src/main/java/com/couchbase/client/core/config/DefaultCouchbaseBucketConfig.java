@@ -28,6 +28,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implements CouchbaseBucketConfig {
 
@@ -130,7 +133,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
                 try {
                     directPort = Integer.parseInt(port);
                 } catch (NumberFormatException e) {
-                    LOGGER.warn("Could not parse port from the node address: {}, fallback to 0", rawHost);
+                    LOGGER.warn("Could not parse port from the node address: {}, fallback to 0", system(rawHost));
                     directPort = 0;
                 }
             } catch (Exception e) {

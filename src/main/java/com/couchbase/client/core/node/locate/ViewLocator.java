@@ -33,6 +33,9 @@ import com.lmax.disruptor.RingBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+import static com.couchbase.client.core.logging.RedactableArgument.user;
+
 public class ViewLocator implements Locator {
 
     /**
@@ -66,7 +69,10 @@ public class ViewLocator implements Locator {
         if (node != null) {
             node.send(request);
         } else {
-            LOGGER.warn("Locator found selected node to be null, this is a bug. {}, {}", request, nodes);
+            LOGGER.warn("Locator found selected node to be null, this is a bug. {}, {}",
+                user(request),
+                system(nodes)
+            );
             RetryHelper.retryOrCancel(env, request, responseBuffer);
         }
     }

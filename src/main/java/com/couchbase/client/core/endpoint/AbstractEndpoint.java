@@ -19,8 +19,11 @@ import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.logging.AbstractCouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.logging.RedactableArgument;
+import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.internal.EndpointHealth;
@@ -72,6 +75,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.utils.Observables.failSafe;
 
 /**
@@ -389,29 +394,39 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         transitionState(LifecycleState.CONNECTED);
                     } else {
                         if (future.cause() instanceof AuthenticationException) {
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Authentication Failure.");
+                            LOGGER.warn(
+                                "{}Authentication Failure.",
+                                logIdent(channel, AbstractEndpoint.this)
+                            );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof SSLHandshakeException) {
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "SSL Handshake Failure during connect.");
+                            LOGGER.warn(
+                                "{}SSL Handshake Failure during connect.",
+                                logIdent(channel, AbstractEndpoint.this)
+                            );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ClosedChannelException) {
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Generic Failure.");
+                            LOGGER.warn(
+                                "{}Generic Failure.",
+                                logIdent(channel, AbstractEndpoint.this)
+                            );
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ConnectTimeoutException) {
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Socket connect took longer than specified timeout.");
+                            LOGGER.warn(
+                                "{}Socket connect took longer than specified timeout..",
+                                logIdent(channel, AbstractEndpoint.this)
+                            );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ConnectException) {
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Could not connect to remote socket.");
+                            LOGGER.warn(
+                                "{}Could not connect to remote socket.",
+                                logIdent(channel, AbstractEndpoint.this)
+                            );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (isTransient) {
@@ -441,9 +456,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                         } else if (!disconnected && !isTransient) {
                             long delay = env.reconnectDelay().calculate(reconnectAttempt++);
                             TimeUnit delayUnit = env.reconnectDelay().unit();
-                            LOGGER.warn(logIdent(channel, AbstractEndpoint.this)
-                                    + "Could not connect to endpoint, retrying with delay " + delay + " "
-                                    + delayUnit + ": ", future.cause());
+                            LOGGER.warn(
+                                "{}Could not connect to endpoint, retrying with delay " + delay + " "
+                                    + delayUnit + ": ",
+                                logIdent(channel, AbstractEndpoint.this),
+                                future.cause()
+                            );
                             if (responseBuffer != null) {
                                 responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR,
                                         SignalConfigReload.INSTANCE, null);
@@ -506,8 +524,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 if (future.isSuccess()) {
                     LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Disconnected Endpoint.");
                 } else {
-                    LOGGER.warn(logIdent(channel, AbstractEndpoint.this) + "Received an error "
-                        + "during disconnect.", future.cause());
+                    LOGGER.warn(
+                        "{}Received an error during disconnect.",
+                        logIdent(channel, AbstractEndpoint.this),
+                        future.cause()
+                    );
                 }
                 transitionState(LifecycleState.DISCONNECTED);
                 observable.onNext(state());
@@ -564,8 +585,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         if (isTransient || disconnected) {
             return;
         }
-        LOGGER.info(logIdent(channel, this) + "Got notified from Channel as inactive, " +
-                "attempting reconnect.");
+        LOGGER.info( "{}Got notified from Channel as inactive, " +
+                "attempting reconnect.", logIdent(channel, AbstractEndpoint.this));
 
         if (state() != LifecycleState.DISCONNECTED && state() != LifecycleState.DISCONNECTING) {
             signalConfigReload();
@@ -694,9 +715,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param endpoint the endpoint.
      * @return a prefix string for logs.
      */
-    protected static String logIdent(final Channel chan, final Endpoint endpoint) {
-        SocketAddress addr = chan != null ? chan.remoteAddress() : null;
-        return "[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ";
+    protected static RedactableArgument logIdent(final Channel chan, final Endpoint endpoint) {
+        String addr = chan != null ? chan.remoteAddress().toString() : "";
+        return system("[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ");
     }
 
 }

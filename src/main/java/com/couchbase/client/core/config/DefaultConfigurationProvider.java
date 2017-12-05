@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+
 /**
  * **The default implementation of a {@link ConfigurationProvider}.**
  *
@@ -274,7 +276,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                         .doOnNext(new Action1<ClusterConfig>() {
                             @Override
                             public void call(ClusterConfig clusterConfig) {
-                                LOGGER.info("Opened bucket " + bucket);
+                                LOGGER.info("Opened bucket {}", meta(bucket));
                                 if (eventBus != null && eventBus.hasSubscribers()) {
                                     eventBus.publish(new BucketOpenedEvent(bucket));
                                 }
@@ -303,7 +305,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             @Override
             public ClusterConfig call(String bucket) {
                 removeBucketConfig(bucket);
-                LOGGER.info("Closed bucket " + bucket);
+                LOGGER.info("Closed bucket {}", meta(bucket));
                 if (eventBus != null && eventBus.hasSubscribers()) {
                     eventBus.publish(new BucketClosedEvent(bucket));
                 }

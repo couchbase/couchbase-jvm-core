@@ -76,6 +76,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+
 
 /**
  * The {@link ConfigHandler} is responsible for encoding {@link ConfigRequest}s into lower level
@@ -333,8 +336,8 @@ public class ConfigHandler extends AbstractGenericHandler<HttpObject, HttpReques
             } catch (RejectedExecutionException ex) {
                 // this can happen during shutdown, so log it but don't let it
                 // bubble up the event loop.
-                LOGGER.info(logIdent(ctx, endpoint()) + "Could not complete config stream, scheduler shut "
-                    + "down already.");
+                LOGGER.info("{}Could not complete config stream, scheduler shut "
+                    + "down already.", logIdent(ctx, endpoint()));
             }
         }
         super.handlerRemoved(ctx);

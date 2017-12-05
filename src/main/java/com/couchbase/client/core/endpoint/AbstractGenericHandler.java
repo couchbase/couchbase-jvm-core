@@ -23,6 +23,8 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.CoreScheduler;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.logging.RedactableArgument;
+import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.KeepAlive;
@@ -64,6 +66,9 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+import static com.couchbase.client.core.logging.RedactableArgument.user;
 import static com.couchbase.client.core.utils.Observables.failSafe;
 
 /**
@@ -325,8 +330,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 );
                 env().networkLatencyMetricsCollector().record(identifier, currentOpTime);
             } catch (Throwable e) {
-                LOGGER.warn("Could not collect latency metric for request + "
-                    + currentRequest + "(" + currentOpTime + ")", e);
+                LOGGER.warn("Could not collect latency metric for request {} ({})",
+                    user(currentRequest.toString()),
+                    currentOpTime,
+                    e
+                );
             }
         }
     }
@@ -518,7 +526,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(logIdent(ctx, endpoint) + "Connection reset by peer: " + cause.getMessage(), cause);
             } else {
-                LOGGER.info(logIdent(ctx, endpoint) + "Connection reset by peer: " + cause.getMessage());
+                LOGGER.info("{}Connection reset by peer: {}", logIdent(ctx, endpoint), cause.getMessage());
             }
             handleOutstandingOperations(ctx);
         } else if (cause instanceof DecoderException && cause.getCause() instanceof SSLHandshakeException) {
@@ -527,11 +535,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             } else {
                 // This should not be possible, since handshake is done before connecting. But just in case, we
                 // can trap and log an error that might slip through for one reason or another.
-                LOGGER.warn(logIdent(ctx, endpoint) + "Caught SSL exception after being connected: "
-                    + cause.getMessage(), cause);
+                LOGGER.warn("{}Caught SSL exception after being connected: {}", logIdent(ctx, endpoint),
+                    cause.getMessage(), cause);
             }
         } else {
-            LOGGER.warn(logIdent(ctx, endpoint) + "Caught unknown exception: " + cause.getMessage(), cause);
+            LOGGER.warn("{}Caught unknown exception: {}", logIdent(ctx, endpoint), cause.getMessage(), cause);
             ctx.fireExceptionCaught(cause);
         }
     }
@@ -566,7 +574,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 failSafe(env().scheduler(), moveResponseOut, req.observable(),
                         new RequestCancelledException("Request cancelled in-flight."));
             } catch (Exception ex) {
-                LOGGER.info("Exception thrown while cancelling outstanding operation: " + req, ex);
+                LOGGER.info(
+                    "Exception thrown while cancelling outstanding operation: {}",
+                    user(req.toString()),
+                    ex
+                );
             }
         }
 
@@ -711,8 +723,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * @param endpoint the endpoint.
      * @return a prefix string for logs.
      */
-    protected static String logIdent(final ChannelHandlerContext ctx, final Endpoint endpoint) {
-        return "[" + ctx.channel().remoteAddress() + "][" + endpoint.getClass().getSimpleName() + "]: ";
+    protected static RedactableArgument logIdent(final ChannelHandlerContext ctx, final Endpoint endpoint) {
+        return system("[" + ctx.channel().remoteAddress() + "][" + endpoint.getClass().getSimpleName() + "]: ");
     }
 
     private class KeepAliveResponseAction extends Subscriber<CouchbaseResponse> {
@@ -732,11 +744,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             if (e instanceof TimeoutException) {
                 endpoint.setLastKeepAliveLatency(TimeUnit.MILLISECONDS.toMicros(env().keepAliveTimeout()));
             }
-            LOGGER.warn(logIdent(ctx, endpoint) + "Got error while consuming KeepAliveResponse.", e);
+            LOGGER.warn("{}Got error while consuming KeepAliveResponse.", logIdent(ctx, endpoint), e);
             keepAliveThreshold++;
             if (keepAliveThreshold >= env().keepAliveErrorThreshold()) {
-                LOGGER.warn(logIdent(ctx, endpoint) + "KeepAliveThreshold reached - " +
-                    "closing this socket proactively.");
+                LOGGER.warn( "{}KeepAliveThreshold reached - " +
+                    "closing this socket proactively.", system(logIdent(ctx, endpoint)));
                 ctx.close().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {

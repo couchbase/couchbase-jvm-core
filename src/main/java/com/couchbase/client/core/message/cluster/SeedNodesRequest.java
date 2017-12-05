@@ -27,6 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+
 /**
  * **Set up the bootstrap nodes for a {@link ClusterFacade}.**
  *
@@ -91,7 +94,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
             try {
                 parsedNodes.add(NetworkAddress.create(node));
             } catch (Exception e) {
-                LOGGER.info("Unknown host " + node + " in bootstrap list.", e);
+                LOGGER.info("Unknown host {} in bootstrap list.", system(node), e);
             }
         }
 

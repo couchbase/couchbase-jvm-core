@@ -29,9 +29,11 @@ import com.couchbase.client.core.utils.MathUtils;
 import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.RingBuffer;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+import static com.couchbase.client.core.logging.RedactableArgument.user;
 
 public class QueryLocator implements Locator {
 
@@ -71,7 +73,10 @@ public class QueryLocator implements Locator {
         if (node != null) {
             node.send(request);
         } else {
-            LOGGER.warn("Locator found selected node to be null, this is a bug. {}, {}", request, nodes);
+            LOGGER.warn("Locator found selected node to be null, this is a bug. {}, {}",
+                user(request),
+                system(nodes)
+            );
             RetryHelper.retryOrCancel(env, request, responseBuffer);
         }
     }

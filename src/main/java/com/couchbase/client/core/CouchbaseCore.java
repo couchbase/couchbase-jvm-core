@@ -65,6 +65,8 @@ import rx.subjects.Subject;
 
 import java.util.concurrent.ThreadFactory;
 
+import static com.couchbase.client.core.logging.RedactableArgument.user;
+
 /**
  * The general implementation of a {@link ClusterFacade}.
  *
@@ -151,7 +153,11 @@ public class CouchbaseCore implements ClusterFacade {
         responseDisruptor.setDefaultExceptionHandler(new ExceptionHandler<ResponseEvent>() {
             @Override
             public void handleEventException(Throwable ex, long sequence, ResponseEvent event) {
-                LOGGER.warn("Exception while Handling Response Events {}", event, ex);
+                LOGGER.warn(
+                    "Exception while Handling Response Events {}",
+                    user(event),
+                    ex
+                );
             }
 
             @Override
@@ -179,7 +185,11 @@ public class CouchbaseCore implements ClusterFacade {
         requestDisruptor.setDefaultExceptionHandler(new ExceptionHandler<RequestEvent>() {
             @Override
             public void handleEventException(Throwable ex, long sequence, RequestEvent event) {
-                LOGGER.warn("Exception while Handling Request Events {}", event, ex);
+                LOGGER.warn(
+                    "Exception while Handling Request Events {}",
+                    user(event),
+                    ex
+                );
             }
 
             @Override
