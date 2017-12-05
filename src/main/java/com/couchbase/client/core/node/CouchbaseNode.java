@@ -25,9 +25,7 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.EndpointHealth;
-import com.couchbase.client.core.message.internal.HealthCheckResponse;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
-import com.couchbase.client.core.message.internal.ServicesHealth;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.Service;
@@ -45,7 +43,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 
 /**
@@ -309,12 +306,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     }
 
     @Override
-    public Observable<EndpointHealth> healthCheck() {
-        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>();
+    public Observable<EndpointHealth> diagnostics() {
+        List<Observable<EndpointHealth>> diags = new ArrayList<Observable<EndpointHealth>>();
         for (Service service : serviceRegistry.services()) {
-            healthChecks.add(service.healthCheck());
+            diags.add(service.diagnostics());
         }
-        return Observable.merge(healthChecks);
+        return Observable.merge(diags);
     }
 
     @Override

@@ -42,12 +42,12 @@ public class EndpointHealth {
     private final InetSocketAddress local;
     private final InetSocketAddress remote;
     private final long lastActivityUs;
-    private final long pingLatencyUs;
+    private final String id;
 
-
-    public EndpointHealth(ServiceType type, LifecycleState state, SocketAddress localAddr, SocketAddress remoteAddr, long lastActivityUs, long pingLatencyUs) {
+    public EndpointHealth(ServiceType type, LifecycleState state, SocketAddress localAddr, SocketAddress remoteAddr, long lastActivityUs, String id) {
         this.type = type;
         this.state = state;
+        this.id = id;
 
         if (localAddr == null) {
             this.local = null;
@@ -66,7 +66,6 @@ public class EndpointHealth {
         }
 
         this.lastActivityUs = lastActivityUs;
-        this.pingLatencyUs = pingLatencyUs;
     }
 
     public ServiceType type() {
@@ -89,8 +88,8 @@ public class EndpointHealth {
         return lastActivityUs;
     }
 
-    public long pingLatency() {
-        return pingLatencyUs;
+    public String id() {
+        return id;
     }
 
     public Map<String, Object> toMap() {
@@ -101,7 +100,7 @@ public class EndpointHealth {
         map.put("local", la == null ? "" : la.nameOrAddress() + ":" + local().getPort());
         map.put("state", state().toString().toLowerCase());
         map.put("last_activity_us", lastActivity());
-        map.put("latency_us", pingLatency());
+        map.put("id", id());
         return map;
     }
 

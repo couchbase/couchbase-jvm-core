@@ -15,12 +15,20 @@
  */
 package com.couchbase.client.core.message.internal;
 
-import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.message.AbstractCouchbaseResponse;
+import com.couchbase.client.core.message.ResponseStatus;
 
-public class HealthCheckRequest extends AbstractCouchbaseRequest implements InternalRequest {
+public class DiagnosticsResponse extends AbstractCouchbaseResponse {
 
-    public HealthCheckRequest() {
-        super(null, null);
+    private final DiagnosticsReport diagnosticsReport;
+
+    public DiagnosticsResponse(final DiagnosticsReport diagnosticsReport) {
+        super(ResponseStatus.SUCCESS, null);
+        this.diagnosticsReport = diagnosticsReport;
+    }
+
+    public DiagnosticsReport diagnosticsReport() {
+        return diagnosticsReport;
     }
 
 }

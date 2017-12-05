@@ -41,18 +41,18 @@ public class EndpointHealthTest {
             null,
             null,
             0,
-            0
+            "0xdeadbeef"
         );
 
         assertNull(eh.local());
         assertNull(eh.remote());
 
         Map<String, Object> result = eh.toMap();
-        assertEquals(0L, result.get("latency_us"));
         assertEquals(0L, result.get("last_activity_us"));
         assertEquals("connected", result.get("state"));
         assertEquals("", result.get("remote"));
         assertEquals("", result.get("local"));
+        assertEquals("0xdeadbeef", result.get("id"));
     }
 
 }

@@ -420,12 +420,12 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
     }
 
     @Override
-    public Observable<EndpointHealth> healthCheck() {
-        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>();
+    public Observable<EndpointHealth> diagnostics() {
+        List<Observable<EndpointHealth>> diags = new ArrayList<Observable<EndpointHealth>>();
         for (Endpoint endpoint : endpoints()) {
-            healthChecks.add(endpoint.healthCheck(type()).toObservable());
+            diags.add(endpoint.diagnostics(type()).toObservable());
         }
-        return Observable.merge(healthChecks);
+        return Observable.merge(diags);
     }
 
     @Override

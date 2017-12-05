@@ -75,7 +75,7 @@ public interface Service extends Stateful<LifecycleState> {
     /**
      * Returns endpoint health information for all endpoints this service is currently associated with.
      */
-    Observable<EndpointHealth> healthCheck();
+    Observable<EndpointHealth> diagnostics();
 
     /**
      * A helper factory which generates endpoints.

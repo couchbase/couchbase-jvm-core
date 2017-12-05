@@ -69,6 +69,6 @@ public interface Endpoint extends Stateful<LifecycleState> {
     /**
      * Returns health information for this endpoint.
      */
-    Single<EndpointHealth> healthCheck(ServiceType type);
+    Single<EndpointHealth> diagnostics(ServiceType type);
 
 }

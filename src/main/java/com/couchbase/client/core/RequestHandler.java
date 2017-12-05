@@ -29,10 +29,9 @@ import com.couchbase.client.core.message.analytics.AnalyticsRequest;
 import com.couchbase.client.core.message.config.ConfigRequest;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.EndpointHealth;
-import com.couchbase.client.core.message.internal.HealthCheckRequest;
-import com.couchbase.client.core.message.internal.HealthCheckResponse;
+import com.couchbase.client.core.message.internal.DiagnosticsResponse;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
-import com.couchbase.client.core.message.internal.ServicesHealth;
+import com.couchbase.client.core.message.internal.DiagnosticsReport;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.query.QueryRequest;
@@ -408,15 +407,15 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      *
      * @return an observable with the response once ready.
      */
-    public Observable<HealthCheckResponse> healthCheck() {
-        List<Observable<EndpointHealth>> healthChecks = new ArrayList<Observable<EndpointHealth>>(nodes.size());
+    public Observable<DiagnosticsResponse> diagnostics(final String id) {
+        List<Observable<EndpointHealth>> diags = new ArrayList<Observable<EndpointHealth>>(nodes.size());
         for (Node node : nodes) {
-            healthChecks.add(node.healthCheck());
+            diags.add(node.diagnostics());
         }
-        return Observable.merge(healthChecks).toList().map(new Func1<List<EndpointHealth>, HealthCheckResponse>() {
+        return Observable.merge(diags).toList().map(new Func1<List<EndpointHealth>, DiagnosticsResponse>() {
             @Override
-            public HealthCheckResponse call(List<EndpointHealth> checks) {
-                return new HealthCheckResponse(new ServicesHealth(checks));
+            public DiagnosticsResponse call(List<EndpointHealth> checks) {
+                return new DiagnosticsResponse(new DiagnosticsReport(checks, environment.userAgent(), id));
             }
         });
     }

@@ -16,9 +16,9 @@
 package com.couchbase.client.core.cluster;
 
 import com.couchbase.client.core.message.internal.EndpointHealth;
-import com.couchbase.client.core.message.internal.HealthCheckRequest;
-import com.couchbase.client.core.message.internal.HealthCheckResponse;
-import com.couchbase.client.core.message.internal.ServicesHealth;
+import com.couchbase.client.core.message.internal.DiagnosticsRequest;
+import com.couchbase.client.core.message.internal.DiagnosticsResponse;
+import com.couchbase.client.core.message.internal.DiagnosticsReport;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import org.junit.BeforeClass;
@@ -32,12 +32,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Simple verification of the {@link HealthCheckResponse}.
+ * Simple verification of the {@link DiagnosticsResponse}.
  *
  * @author Michael Nitschinger
  * @since 1.5.0
  */
-public class HealthCheckTest extends ClusterDependentTest {
+public class DiagnosticsReportTest extends ClusterDependentTest {
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -46,10 +46,10 @@ public class HealthCheckTest extends ClusterDependentTest {
 
     @Test
     public void shouldExposeHealthInfoAfterConnect() {
-        HealthCheckResponse response = cluster()
-            .<HealthCheckResponse>send(new HealthCheckRequest()).toBlocking().single();
+        DiagnosticsResponse response = cluster()
+            .<DiagnosticsResponse>send(new DiagnosticsRequest("diag-id-provided")).toBlocking().single();
 
-        ServicesHealth sh = response.servicesHealth();
+        DiagnosticsReport sh = response.diagnosticsReport();
         assertNotNull(sh);
 
         List<EndpointHealth> eph = sh.endpoints();
@@ -61,7 +61,14 @@ public class HealthCheckTest extends ClusterDependentTest {
             assertNotNull(eh.local());
             assertNotNull(eh.remote());
             assertTrue(eh.lastActivity() > 0);
+            assertTrue(eh.id().startsWith("0x"));
         }
+
+        assertNotNull(sh.sdk());
+        assertEquals(sh.sdk(), env().userAgent());
+        assertEquals("diag-id-provided", sh.id());
+
+        assertNotNull(sh.exportToJson());
     }
 
 }

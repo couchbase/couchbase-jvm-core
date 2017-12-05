@@ -80,6 +80,6 @@ public interface Node extends Stateful<LifecycleState> {
     /**
      * Returns endpoint health information for all endpoints this node is currently associated with.
      */
-    Observable<EndpointHealth> healthCheck();
+    Observable<EndpointHealth> diagnostics();
 
 }

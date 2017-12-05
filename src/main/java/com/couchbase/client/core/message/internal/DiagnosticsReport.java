@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Aggregates the health of all {@link Endpoint}s.
@@ -35,18 +36,30 @@ import java.util.Map;
  */
 @InterfaceAudience.Public
 @InterfaceStability.Experimental
-public class ServicesHealth {
+public class DiagnosticsReport {
 
     private static final ObjectMapper JACKSON = new ObjectMapper();
 
-    private static final int VERSION = 0; // 0 because this is experimental right now.
+    private static final int VERSION = 1;
 
     private final int version;
     private final List<EndpointHealth> endpoints;
+    private final String sdk;
+    private final String id;
 
-    public ServicesHealth(List<EndpointHealth> endpoints) {
+    public DiagnosticsReport(List<EndpointHealth> endpoints, String sdk, String id) {
+        this.id = id == null ? UUID.randomUUID().toString() : id;
         this.endpoints = endpoints;
         this.version = VERSION;
+        this.sdk = sdk;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public String sdk() {
+        return sdk;
     }
 
     public List<EndpointHealth> endpoints() {
@@ -63,7 +76,13 @@ public class ServicesHealth {
         return filtered;
     }
 
-    public String toJson() {
+    /**
+     * Exports this report into the standard JSON format which is consistent
+     * across different language SDKs.
+     *
+     * @return the encoded JSON string.
+     */
+    public String exportToJson() {
         Map<String, Object> result = new HashMap<String, Object>();
         Map<String, List<Map<String, Object>>> services = new HashMap<String, List<Map<String, Object>>>();
 
@@ -78,6 +97,9 @@ public class ServicesHealth {
 
         result.put("version", version);
         result.put("services", services);
+        result.put("sdk", sdk);
+        result.put("id", id);
+
         try {
             return JACKSON.writeValueAsString(result);
         } catch (JsonProcessingException e) {
@@ -94,11 +116,11 @@ public class ServicesHealth {
             case QUERY:
                 return "n1ql";
             case CONFIG:
-                return "config";
+                return "mgmt";
             case SEARCH:
                 return "fts";
             case ANALYTICS:
-                return "analytics";
+                return "cbas";
             default:
                 throw new IllegalArgumentException();
         }

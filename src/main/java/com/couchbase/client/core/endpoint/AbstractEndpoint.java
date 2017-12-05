@@ -650,7 +650,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     }
 
     @Override
-    public Single<EndpointHealth> healthCheck(ServiceType type) {
+    public Single<EndpointHealth> diagnostics(ServiceType type) {
         LifecycleState currentState = state();
         SocketAddress remoteAddr = null;
         SocketAddress localAddr = null;
@@ -659,8 +659,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             localAddr = channel.localAddress();
         }
         long lastActivity = TimeUnit.NANOSECONDS.toMicros(lastResponse > 0 ? System.nanoTime() - lastResponse : 0);
-        long pingLatency = TimeUnit.NANOSECONDS.toMicros(lastKeepAliveLatency);
-        return Single.just(new EndpointHealth(type, currentState, localAddr, remoteAddr, lastActivity, pingLatency));
+        String id = "0x" + Integer.toHexString(hashCode());
+        return Single.just(new EndpointHealth(type, currentState, localAddr, remoteAddr, lastActivity, id));
     }
 
     /**
