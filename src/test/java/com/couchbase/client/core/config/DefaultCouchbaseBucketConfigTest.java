@@ -25,6 +25,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class DefaultCouchbaseBucketConfigTest {
 
@@ -113,6 +114,8 @@ public class DefaultCouchbaseBucketConfigTest {
 
     @Test
     public void shouldLoadConfigWithIPv6() throws Exception {
+        assumeFalse(NetworkAddress.FORCE_IPV4);
+
         String raw = Resources.read("config_with_ipv6.json", getClass());
         CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
 

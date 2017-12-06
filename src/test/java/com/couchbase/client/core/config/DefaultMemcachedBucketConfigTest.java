@@ -19,6 +19,7 @@ import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class DefaultMemcachedBucketConfigTest {
 
@@ -55,6 +57,8 @@ public class DefaultMemcachedBucketConfigTest {
 
     @Test
     public void shouldLoadConfigWithIPv6() throws Exception {
+        assumeFalse(NetworkAddress.FORCE_IPV4);
+
         String raw = Resources.read("memcached_with_ipv6.json", getClass());
         InjectableValues inject = new InjectableValues.Std()
                 .addValue("env", environment);

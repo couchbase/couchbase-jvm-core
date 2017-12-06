@@ -17,11 +17,13 @@
 package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Verifies the functionality of the {@link DefaultNodeInfo}.
@@ -66,6 +68,8 @@ public class DefaultNodeInfoTest {
 
     @Test
     public void shouldHandleIPv6() {
+        assumeFalse(NetworkAddress.FORCE_IPV4);
+
         Map<String, Integer> ports = new HashMap<String, Integer>();
         DefaultNodeInfo info = new DefaultNodeInfo(null, "[fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7]:8091", ports);
 
