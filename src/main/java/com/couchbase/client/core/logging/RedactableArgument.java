@@ -46,7 +46,16 @@ public class RedactableArgument {
     }
 
     /**
-     * A redactable argument of user data.
+     * A redactable argument of user data. User data is data that is stored into Couchbase
+     * by the application user account, including:
+     * <ul>
+     * <li>Key and value pairs in JSON documents, or the key exclusively
+     * <li>Application/Admin usernames that identify the human person
+     * <li>Query statements included in the log file collected by support that leak the document fields (Select floor_price from stock).
+     * <li>Names and email addresses asked during product registration and alerting
+     * <li>Usernames
+     * <li>Document xattrs
+     * </ul>
      *
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
@@ -56,7 +65,18 @@ public class RedactableArgument {
     }
 
     /**
-     * A redactable argument of meta data.
+     * A redactable argument of meta data. Metadata is logical data needed by Couchbase
+     * to store and process User data, including:
+     * <ul>
+     * <li>Cluster name
+     * <li>Bucket names
+     * <li>DDoc/view names
+     * <li>View code
+     * <li>Index names
+     * <li>Mapreduce Design Doc Name and Definition (IP)
+     * <li>XDCR Replication Stream Names
+     * <li>And other couchbase resource specific meta data
+     * </ul>
      *
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
@@ -66,7 +86,15 @@ public class RedactableArgument {
     }
 
     /**
-     * A redactable argument of system data.
+     * A redactable argument of system data. System data is data from other parts of the system
+     * Couchbase interacts with over the network, including:
+     * <ul>
+     * <li>IP addresses
+     * <li>IP tables
+     * <li>Hosts names
+     * <li>Ports
+     * <li>DNS topology
+     * </ul>
      *
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
