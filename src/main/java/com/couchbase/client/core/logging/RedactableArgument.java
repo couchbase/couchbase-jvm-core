@@ -32,7 +32,7 @@ public class RedactableArgument {
     /**
      * The message of the redactable argument.
      */
-    private final String message;
+    private final Object message;
 
     /**
      * Creates a new {@link RedactableArgument}.
@@ -40,7 +40,7 @@ public class RedactableArgument {
      * @param type type of the redactable argument.
      * @param message message of the redactable argument.
      */
-    private RedactableArgument(final ArgumentType type, final String message) {
+    private RedactableArgument(final ArgumentType type, final Object message) {
         this.type = type;
         this.message = message;
     }
@@ -60,7 +60,7 @@ public class RedactableArgument {
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
      */
-    public static RedactableArgument user(final String message) {
+    public static RedactableArgument user(final Object message) {
         return new RedactableArgument(ArgumentType.USER, message);
     }
 
@@ -81,7 +81,7 @@ public class RedactableArgument {
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
      */
-    public static RedactableArgument meta(final String message) {
+    public static RedactableArgument meta(final Object message) {
         return new RedactableArgument(ArgumentType.META, message);
     }
 
@@ -99,7 +99,7 @@ public class RedactableArgument {
      * @param message the message to redact.
      * @return a new {@link RedactableArgument}.
      */
-    public static RedactableArgument system(final String message) {
+    public static RedactableArgument system(final Object message) {
         return new RedactableArgument(ArgumentType.SYSTEM, message);
     }
 
@@ -114,12 +114,12 @@ public class RedactableArgument {
      * The message of this redactable argument.
      */
     public String message() {
-        return message;
+        return String.valueOf(message);
     }
 
     @Override
     public String toString() {
-        return message;
+        return message();
     }
 
     /**

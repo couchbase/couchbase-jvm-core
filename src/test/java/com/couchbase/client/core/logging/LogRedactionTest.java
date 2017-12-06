@@ -54,10 +54,10 @@ public class LogRedactionTest {
         Logger.getRootLogger().addAppender(appender);
         Log4JLogger logger = new Log4JLogger(Logger.getRootLogger(), RedactionLevel.NONE);
 
-        logger.info("Some {} stuff {} and {}", meta("meta"), user("user"), system("system"));
+        logger.info("Some {} stuff {} and {}", meta(null), user(1), system("system"));
 
         verify(appender).doAppend(logCaptor.capture());
-        assertEquals("Some meta stuff user and system", logCaptor.getValue().getRenderedMessage());
+        assertEquals("Some null stuff 1 and system", logCaptor.getValue().getRenderedMessage());
     }
 
     @Test
