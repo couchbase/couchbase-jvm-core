@@ -28,6 +28,8 @@ import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.view.GetDesignDocumentRequest;
 import com.couchbase.client.core.message.view.GetDesignDocumentResponse;
+import com.couchbase.client.core.message.view.PingRequest;
+import com.couchbase.client.core.message.view.PingResponse;
 import com.couchbase.client.core.message.view.RemoveDesignDocumentRequest;
 import com.couchbase.client.core.message.view.RemoveDesignDocumentResponse;
 import com.couchbase.client.core.message.view.UpsertDesignDocumentRequest;
@@ -133,7 +135,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
 
     @Override
     protected HttpRequest encodeRequest(final ChannelHandlerContext ctx, final ViewRequest msg) throws Exception {
-        if (msg instanceof KeepAliveRequest) {
+        if (msg instanceof KeepAliveRequest || msg instanceof PingRequest) {
             FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.HEAD, "/",
                     Unpooled.EMPTY_BUFFER);
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
@@ -258,6 +260,13 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
             response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), request);
             responseContent.clear();
             responseContent.discardReadBytes();
+        } else if (request instanceof PingRequest) {
+            if (msg instanceof LastHttpContent) {
+                response = new PingResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), request);
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
         } else if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
 

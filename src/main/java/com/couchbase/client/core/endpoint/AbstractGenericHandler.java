@@ -27,6 +27,7 @@ import com.couchbase.client.core.logging.RedactableArgument;
 import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.DiagnosticRequest;
 import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
@@ -285,6 +286,11 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         try {
             CouchbaseResponse response = decodeResponse(ctx, msg);
             if (response != null) {
+                if (currentRequest instanceof DiagnosticRequest) {
+                    ((DiagnosticRequest) currentRequest).localSocket(ctx.channel().localAddress());
+                    ((DiagnosticRequest) currentRequest).remoteSocket(ctx.channel().remoteAddress());
+                }
+
                 publishResponse(response, currentRequest.observable());
                 if (currentDecodingState == DecodingState.FINISHED) {
                     writeMetrics(response);

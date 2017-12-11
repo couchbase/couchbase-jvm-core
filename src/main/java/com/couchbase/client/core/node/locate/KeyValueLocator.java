@@ -31,6 +31,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.kv.BinaryRequest;
 import com.couchbase.client.core.message.kv.GetAllMutationTokensRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
+import com.couchbase.client.core.message.kv.NoopRequest;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.message.kv.ReplicaGetRequest;
@@ -77,6 +78,10 @@ public class KeyValueLocator implements Locator {
         }
         if (request instanceof GetAllMutationTokensRequest) {
             locateByHostname(request, ((GetAllMutationTokensRequest) request).hostname(), nodes, env, responseBuffer);
+            return;
+        }
+        if (request instanceof NoopRequest) {
+            locateByHostname(request, ((NoopRequest) request).hostname(), nodes, env, responseBuffer);
             return;
         }
 

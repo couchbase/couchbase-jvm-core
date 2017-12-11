@@ -32,6 +32,8 @@ import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
+import com.couchbase.client.core.message.query.PingRequest;
+import com.couchbase.client.core.message.query.PingResponse;
 import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.message.query.RawQueryRequest;
 import com.couchbase.client.core.message.query.RawQueryResponse;
@@ -200,7 +202,7 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
             request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
             request.content().writeBytes(query);
             query.release();
-        } else if (msg instanceof KeepAliveRequest) {
+        } else if (msg instanceof KeepAliveRequest || msg instanceof PingRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
             request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
@@ -230,6 +232,13 @@ public class QueryHandler extends AbstractGenericHandler<HttpObject, HttpRequest
         if (currentRequest() instanceof KeepAliveRequest) {
             if (msg instanceof LastHttpContent) {
                 response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
+        } else if (currentRequest() instanceof PingRequest) {
+            if (msg instanceof LastHttpContent) {
+                response = new PingResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
                 responseContent.clear();
                 responseContent.discardReadBytes();
                 finishedDecoding();

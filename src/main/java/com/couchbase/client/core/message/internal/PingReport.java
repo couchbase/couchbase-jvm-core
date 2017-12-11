@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.endpoint.Endpoint;
-import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,75 +26,56 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.couchbase.client.core.message.internal.DiagnosticsReport.VERSION;
+import static com.couchbase.client.core.message.internal.DiagnosticsReport.serviceTypeFromEnum;
+
 /**
- * Aggregates the health of all {@link Endpoint}s.
+ * Contains a report for all the internal service health states.
  *
  * @author Michael Nitschinger
- * @since 1.5.0
+ * @since 1.5.4
  */
 @InterfaceAudience.Public
 @InterfaceStability.Experimental
-public class DiagnosticsReport {
+public class PingReport {
 
-    static final ObjectMapper JACKSON = new ObjectMapper();
-
-    static final int VERSION = 1;
-
-    private final int version;
-    private final List<EndpointHealth> endpoints;
+    private final List<PingServiceHealth> services;
     private final String sdk;
     private final String id;
+    private final int version;
+    private final long configRev;
 
-    public DiagnosticsReport(List<EndpointHealth> endpoints, String sdk, String id) {
-        this.id = id == null ? UUID.randomUUID().toString() : id;
-        this.endpoints = endpoints;
+    public PingReport(List<PingServiceHealth> services, String sdk, String id, long configRev) {
+        this.services = services;
         this.version = VERSION;
         this.sdk = sdk;
+        this.configRev = configRev;
+        this.id = id == null ? UUID.randomUUID().toString() : id;
     }
 
-    public String id() {
-        return id;
-    }
-
-    public String sdk() {
-        return sdk;
-    }
-
-    public List<EndpointHealth> endpoints() {
-        return endpoints;
-    }
-
-    public List<EndpointHealth> endpoints(final ServiceType type) {
-        List<EndpointHealth> filtered = new ArrayList<EndpointHealth>(endpoints.size());
-        for (EndpointHealth h : endpoints) {
-            if (h.type().equals(type)) {
-                filtered.add(h);
-            }
-        }
-        return filtered;
+    public List<PingServiceHealth> services() {
+        return services;
     }
 
     /**
-     * Exports this report into the standard JSON format which is consistent
-     * across different language SDKs.
+     * Exports this report into the RFC JSON format.
      *
-     * @return the encoded JSON string.
+     * @return the as JSON encoded report.
      */
     public String exportToJson() {
         return exportToJson(false);
     }
 
     /**
-     * Exports this report into the standard JSON format which is consistent
-     * across different language SDKs.
+     * Exports this report into the RFC JSON format.
      *
-     * @return the encoded JSON string.
+     * @return the as JSON encoded report.
      */
     public String exportToJson(boolean pretty) {
         Map<String, Object> result = new HashMap<String, Object>();
         Map<String, List<Map<String, Object>>> services = new HashMap<String, List<Map<String, Object>>>();
 
-        for (EndpointHealth h : endpoints) {
+        for (PingServiceHealth h : this.services) {
             String type = serviceTypeFromEnum(h.type());
             if (!services.containsKey(type)) {
                 services.put(type, new ArrayList<Map<String, Object>>());
@@ -105,6 +84,7 @@ public class DiagnosticsReport {
             eps.add(h.toMap());
         }
 
+        result.put("config_rev", configRev);
         result.put("version", version);
         result.put("services", services);
         result.put("sdk", sdk);
@@ -112,39 +92,35 @@ public class DiagnosticsReport {
 
         try {
             if (pretty) {
-                return JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                return DiagnosticsReport.JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(result);
             } else {
-                return JACKSON.writeValueAsString(result);
+                return DiagnosticsReport.JACKSON.writeValueAsString(result);
             }
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Could not encode as JSON string.", e);
         }
     }
 
-    static String serviceTypeFromEnum(ServiceType type) {
-        switch(type) {
-            case VIEW:
-                return "view";
-            case BINARY:
-                return "kv";
-            case QUERY:
-                return "n1ql";
-            case CONFIG:
-                return "mgmt";
-            case SEARCH:
-                return "fts";
-            case ANALYTICS:
-                return "cbas";
-            default:
-                throw new IllegalArgumentException();
-        }
+    public String sdk() {
+        return sdk;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public int version() {
+        return version;
+    }
+
+    public long configRev() {
+        return configRev;
     }
 
     @Override
     public String toString() {
-        return "ServicesHealth{" +
-            "version=" + version +
-            ", endpoints=" + endpoints +
+        return "PingReport{" +
+            "services=" + services +
             '}';
     }
 }

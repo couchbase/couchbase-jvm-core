@@ -25,6 +25,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.message.DiagnosticRequest;
 import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.ResponseStatusDetails;
@@ -47,6 +48,8 @@ import com.couchbase.client.core.message.kv.InsertRequest;
 import com.couchbase.client.core.message.kv.InsertResponse;
 import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.message.kv.NoFailoverObserveSeqnoResponse;
+import com.couchbase.client.core.message.kv.NoopRequest;
+import com.couchbase.client.core.message.kv.NoopResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
@@ -301,9 +304,24 @@ public class KeyValueHandler
             return handleSubdocumentMultiLookupRequest(ctx, (BinarySubdocMultiLookupRequest) msg);
         } else if (msg instanceof BinarySubdocMultiMutationRequest) {
             return handleSubdocumentMultiMutationRequest(ctx, (BinarySubdocMultiMutationRequest) msg);
+        } else if (msg instanceof NoopRequest) {
+            return handleNoopRequest(ctx, (NoopRequest) msg);
         } else {
             throw new IllegalArgumentException("Unknown incoming BinaryRequest type " + msg.getClass());
         }
+    }
+
+    /**
+     * Encodes a {@link NoopRequest} into its lower level representation.
+     *
+     * @param ctx the {@link ChannelHandlerContext} to use for allocation and others.
+     * @param msg the incoming message.
+     * @return a ready {@link BinaryMemcacheRequest}.
+     */
+    private static BinaryMemcacheRequest handleNoopRequest(final ChannelHandlerContext ctx, final NoopRequest msg) {
+        BinaryMemcacheRequest request = new DefaultBinaryMemcacheRequest();
+        request.setOpcode(OP_NOOP);
+        return request;
     }
 
     /**
@@ -1130,6 +1148,9 @@ public class KeyValueHandler
         } else if (request instanceof KeepAliveRequest) {
             releaseContent(content);
             response = new KeepAliveResponse(status, statusCode, request);
+        } else if (request instanceof NoopRequest) {
+            releaseContent(content);
+            response = new NoopResponse(status, statusCode, request);
         } else if (request instanceof CounterRequest) {
             long value = status.isSuccess() ? content.readLong() : 0;
             releaseContent(content);

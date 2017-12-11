@@ -33,6 +33,8 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.analytics.AnalyticsRequest;
 import com.couchbase.client.core.message.analytics.GenericAnalyticsRequest;
 import com.couchbase.client.core.message.analytics.GenericAnalyticsResponse;
+import com.couchbase.client.core.message.analytics.PingRequest;
+import com.couchbase.client.core.message.analytics.PingResponse;
 import com.couchbase.client.core.message.analytics.RawAnalyticsRequest;
 import com.couchbase.client.core.message.analytics.RawAnalyticsResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -185,6 +187,11 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
             request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
             request.content().writeBytes(query);
             query.release();
+        } else if (msg instanceof PingRequest) {
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
+            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
+            return request;
         } else if (msg instanceof KeepAliveRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/analytics/version");
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
@@ -215,6 +222,13 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
         if (currentRequest() instanceof KeepAliveRequest) {
             if (msg instanceof LastHttpContent) {
                 response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
+        } else if (currentRequest() instanceof PingRequest) {
+            if (msg instanceof LastHttpContent) {
+                response = new PingResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
                 responseContent.clear();
                 responseContent.discardReadBytes();
                 finishedDecoding();

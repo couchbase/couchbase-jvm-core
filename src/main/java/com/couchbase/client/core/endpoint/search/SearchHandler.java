@@ -28,6 +28,8 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.search.GetSearchIndexRequest;
 import com.couchbase.client.core.message.search.GetSearchIndexResponse;
+import com.couchbase.client.core.message.search.PingRequest;
+import com.couchbase.client.core.message.search.PingResponse;
 import com.couchbase.client.core.message.search.UpsertSearchIndexRequest;
 import com.couchbase.client.core.message.search.UpsertSearchIndexResponse;
 import com.couchbase.client.core.message.search.RemoveSearchIndexRequest;
@@ -115,7 +117,7 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
 
         FullHttpRequest request;
 
-        if (msg instanceof KeepAliveRequest) {
+        if (msg instanceof KeepAliveRequest || msg instanceof PingRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, httpMethod, msg.path(), content);
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
             request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
@@ -158,6 +160,13 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
         if (currentRequest() instanceof KeepAliveRequest) {
             if (msg instanceof LastHttpContent) {
                 response = new KeepAliveResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
+                responseContent.clear();
+                responseContent.discardReadBytes();
+                finishedDecoding();
+            }
+        } else if (currentRequest() instanceof PingRequest) {
+            if (msg instanceof LastHttpContent) {
+                response = new PingResponse(ResponseStatusConverter.fromHttp(responseHeader.getStatus().code()), currentRequest());
                 responseContent.clear();
                 responseContent.discardReadBytes();
                 finishedDecoding();
