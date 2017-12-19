@@ -32,7 +32,9 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Action2;
+import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
@@ -43,6 +45,8 @@ import java.util.List;
 
 import static com.couchbase.client.core.service.PooledServiceTest.SimpleSerivceConfig.ssc;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
@@ -620,7 +624,7 @@ public class PooledServiceTest {
                 return LifecycleState.DISCONNECTING;
             }
         });
-        MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
+        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
         LifecycleState afterConnectState = ms.connect().toBlocking().single();
         assertEquals(LifecycleState.IDLE, afterConnectState);
         assertEquals(0, ef.endpointCount());
@@ -641,9 +645,12 @@ public class PooledServiceTest {
             when(ep.lastResponse()).thenReturn(now);
         }
 
-        Thread.sleep(3000);
-
-        assertEquals(0, ms.endpoints().size());
+        assertTryUntil(new Func0<Boolean>() {
+            @Override
+            public Boolean call() {
+                return ms.endpoints().size() == 0 && ms.state() == LifecycleState.IDLE;
+            }
+        });
     }
 
     @Test
@@ -661,7 +668,7 @@ public class PooledServiceTest {
                 return LifecycleState.DISCONNECTING;
             }
         });
-        MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
+        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
         LifecycleState afterConnectState = ms.connect().toBlocking().single();
         assertEquals(LifecycleState.IDLE, afterConnectState);
         assertEquals(0, ef.endpointCount());
@@ -683,13 +690,16 @@ public class PooledServiceTest {
             when(ef.endpoints().get(i).lastResponse()).thenReturn(now);
         }
 
-        Thread.sleep(3000);
-
-        assertEquals(1, ms.endpoints().size());
+        assertTryUntil(new Func0<Boolean>() {
+            @Override
+            public Boolean call() {
+                return ms.endpoints().size() == 1;
+            }
+        });
     }
 
     @Test
-    public void shouldRefillSlotsIfBelowMinimumOnIdleTimer() throws Exception {
+    public void shouldRefillSlotsIfBelowMinimumOnIdleTimer() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(ENV, null);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
             @Override
@@ -704,13 +714,24 @@ public class PooledServiceTest {
             }
         });
         SelectionStrategy ss = mock(SelectionStrategy.class);
-        MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(2, 8, 1), ss);
+        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(2, 8, 1), ss);
         when(ss.select(any(CouchbaseRequest.class), any(List.class))).thenReturn(null);
 
         LifecycleState afterConnectState = ms.connect().toBlocking().single();
         assertEquals(LifecycleState.CONNECTING, afterConnectState);
         assertEquals(2, ms.endpoints().size());
         ef.advanceAll(LifecycleState.CONNECTED);
+
+        // make sure that we stay above minimum and never actually go into a
+        // disconnected or idle state, even if some of them are below their
+        // ttl and would be recreated later on.
+        ms.states().subscribe(new Action1<LifecycleState>() {
+            @Override
+            public void call(LifecycleState lifecycleState) {
+                assertNotEquals(LifecycleState.DISCONNECTED, lifecycleState);
+                assertNotEquals(LifecycleState.IDLE, lifecycleState);
+            }
+        });
 
         Tuple2<CouchbaseRequest, TestSubscriber<CouchbaseResponse>> mr1 = mockRequest();
         Tuple2<CouchbaseRequest, TestSubscriber<CouchbaseResponse>> mr2 = mockRequest();
@@ -732,12 +753,34 @@ public class PooledServiceTest {
             when(ep.lastResponse()).thenReturn(now);
         }
 
-        Thread.sleep(3000);
-
-        assertEquals(2, ms.endpoints().size());
+        assertTryUntil(new Func0<Boolean>() {
+            @Override
+            public Boolean call() {
+                return ms.endpoints().size() == 2;
+            }
+        });
     }
 
-
+    private static void assertTryUntil(Func0<Boolean> callback) {
+        int maxIters = 50; // 50 * 100ms == Max 5000ms
+        int iters = 0;
+        while (true) {
+            if (callback.call()) {
+                assertTrue(true);
+                break;
+            } else {
+                if (iters++ <= maxIters) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                } else {
+                    assertTrue(false);
+                }
+            }
+        }
+    }
 
     /**
      * A simple service which can be mocked in all kinds of ways to test the functionality of the

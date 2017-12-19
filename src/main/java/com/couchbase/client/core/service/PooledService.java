@@ -129,6 +129,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                     public void onNext(Long aLong) {
                         List<Endpoint> toDisconnect = new ArrayList<Endpoint>();
                         synchronized (epMutex) {
+                            int maxToRemove = endpoints.size() - minEndpoints;
                             boolean removed;
                             do {
                                 removed = false;
@@ -137,6 +138,15 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                                    if (e != null) {
                                        long diffs = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - e.lastResponse());
                                        if(e.isFree() && diffs >= serviceConfig.idleTime()) {
+                                           if (maxToRemove > 0) {
+                                               maxToRemove--;
+                                           } else {
+                                               LOGGER.debug(
+                                                   "Would remove {}, but minimum threshold reached, ignoring for this run.",
+                                                   logIdent(hostname, PooledService.this)
+                                               );
+                                               continue;
+                                           }
                                            LOGGER.debug(logIdent(hostname, PooledService.this)
                                             + "Endpoint {} idle for longer than {}s, disconnecting.",
                                                e, serviceConfig.idleTime());
