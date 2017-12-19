@@ -45,6 +45,10 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     /**
      * Shutdown the {@link CoreEnvironment} with the default timeout.
      *
+     * Note: If this Environment has been created by the user, it is very important to properly close it, but
+     * only after all the related cluster and bucket resources need to be closed! Once an environment
+     * is shut down, all its contained resources cannot be used any longer!
+     *
      * This method has been converted (after a deprecation phase) from an async method into a synchronous one.
      * The async version can still be found at {@link #shutdownAsync()}.
      *
@@ -54,6 +58,10 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
 
     /**
      * Shutdown the {@link CoreEnvironment} with a custom timeout.
+     *
+     * Note: If this Environment has been created by the user, it is very important to properly close it, but
+     * only after all the related cluster and bucket resources need to be closed! Once an environment
+     * is shut down, all its contained resources cannot be used any longer!
      *
      * This method has been converted (after a deprecation phase) from an async method into a synchronous one.
      * The async version can still be found at {@link #shutdownAsync()}.
@@ -71,6 +79,10 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
 
     /**
      * Shutdown the {@link CoreEnvironment} in an asynchronous fashion.
+     *
+     * Note: If this Environment has been created by the user, it is very important to properly close it, but
+     * only after all the related cluster and bucket resources need to be closed! Once an environment
+     * is shut down, all its contained resources cannot be used any longer!
      *
      * Since this method is asynchronous and cold, it is important to subscribe to the observable to actually
      * initiate the shutdown process.
