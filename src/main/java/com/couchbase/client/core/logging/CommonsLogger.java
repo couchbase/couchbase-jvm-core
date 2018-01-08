@@ -68,8 +68,8 @@ class CommonsLogger extends AbstractCouchbaseLogger {
 
     private final transient Log logger;
 
-    CommonsLogger(Log logger, String name, RedactionLevel redactionLevel) {
-        super(name, redactionLevel);
+    CommonsLogger(Log logger, String name) {
+        super(name);
         this.logger = requireNonNull(logger, "logger");
     }
 
@@ -312,7 +312,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
 
     @Override
     public void info(String format, Object arg) {
-        if (logger.isInfoEnabled() && !infoRedacted(format, arg)) {
+        if (logger.isInfoEnabled()) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.info(ft.getMessage(), ft.getThrowable());
         }
@@ -335,7 +335,10 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object argA, Object argB) {
-        info(format, new Object[] { argA, argB });
+        if (logger.isInfoEnabled()) {
+            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+            logger.info(ft.getMessage(), ft.getThrowable());
+        }
     }
 
     /**
@@ -352,7 +355,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void info(String format, Object... arguments) {
-        if (logger.isInfoEnabled() && !infoRedacted(format, arguments)) {
+        if (logger.isInfoEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.info(ft.getMessage(), ft.getThrowable());
         }
@@ -408,7 +411,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object arg) {
-        if (logger.isWarnEnabled() && !warnRedacted(format, arg)) {
+        if (logger.isWarnEnabled()) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.warn(ft.getMessage(), ft.getThrowable());
         }
@@ -432,7 +435,10 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
-        warn(format, new Object[] { argA, argB });
+        if (logger.isWarnEnabled()) {
+            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+            logger.warn(ft.getMessage(), ft.getThrowable());
+        }
     }
 
     /**
@@ -449,7 +455,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void warn(String format, Object... arguments) {
-        if (logger.isWarnEnabled() && !warnRedacted(format, arguments)) {
+        if (logger.isWarnEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.warn(ft.getMessage(), ft.getThrowable());
         }
@@ -506,7 +512,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object arg) {
-        if (logger.isErrorEnabled() && !errorRedacted(format, arg)) {
+        if (logger.isErrorEnabled()) {
             FormattingTuple ft = MessageFormatter.format(format, arg);
             logger.error(ft.getMessage(), ft.getThrowable());
         }
@@ -530,7 +536,10 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object argA, Object argB) {
-        error(format, new Object[] { argA, argB });
+        if (logger.isErrorEnabled()) {
+            FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+            logger.error(ft.getMessage(), ft.getThrowable());
+        }
     }
 
     /**
@@ -547,7 +556,7 @@ class CommonsLogger extends AbstractCouchbaseLogger {
      */
     @Override
     public void error(String format, Object... arguments) {
-        if (logger.isErrorEnabled() && !errorRedacted(format, arguments)) {
+        if (logger.isErrorEnabled()) {
             FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
             logger.error(ft.getMessage(), ft.getThrowable());
         }

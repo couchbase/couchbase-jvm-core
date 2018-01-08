@@ -69,24 +69,17 @@ public abstract class CouchbaseLoggerFactory {
     private static CouchbaseLoggerFactory newDefaultFactory(String name) {
         CouchbaseLoggerFactory f;
         try {
-            f = new Slf4JLoggerFactory(true, redactionLevel);
+            f = new Slf4JLoggerFactory(true);
             f.newInstance(name).debug("Using SLF4J as the default logging framework");
         } catch (Throwable t1) {
             try {
-                f = new Log4JLoggerFactory(redactionLevel);
+                f = new Log4JLoggerFactory();
                 f.newInstance(name).debug("Using Log4J as the default logging framework");
             } catch (Throwable t2) {
-                f = new JdkLoggerFactory(redactionLevel);
+                f = new JdkLoggerFactory();
                 f.newInstance(name).debug("Using java.util.logging as the default logging framework");
             }
         }
-
-        if (redactionLevel != RedactionLevel.NONE) {
-            f.newInstance(name).info("Log redaction enabled. Previous log entries might not be redacted. " +
-                    "Logs have reduced identifying information. Diagnosis and support of issues may be challenging " +
-                    "or not possible in this configuration.");
-        }
-
         return f;
     }
 

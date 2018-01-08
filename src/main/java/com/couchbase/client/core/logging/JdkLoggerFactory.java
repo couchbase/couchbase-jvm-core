@@ -39,14 +39,8 @@ import java.util.logging.Logger;
  */
 public class JdkLoggerFactory extends CouchbaseLoggerFactory {
 
-    private final RedactionLevel redactionLevel;
-
-    public JdkLoggerFactory(RedactionLevel redactionLevel) {
-        this.redactionLevel = redactionLevel;
-    }
-
     @Override
     public CouchbaseLogger newInstance(String name) {
-        return new JdkLogger(Logger.getLogger(name), redactionLevel);
+        return new JdkLogger(Logger.getLogger(name));
     }
 }

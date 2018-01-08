@@ -40,8 +40,8 @@ class Slf4JLogger extends AbstractCouchbaseLogger {
 
     private final transient Logger logger;
 
-    Slf4JLogger(Logger logger, RedactionLevel redactionLevel) {
-        super(logger.getName(), redactionLevel);
+    Slf4JLogger(Logger logger) {
+        super(logger.getName());
         this.logger = logger;
     }
 
@@ -117,21 +117,17 @@ class Slf4JLogger extends AbstractCouchbaseLogger {
 
     @Override
     public void info(String format, Object arg) {
-        if(!infoRedacted(format, arg)) {
-            logger.info(format, arg);
-        }
+        logger.info(format, arg);
     }
 
     @Override
     public void info(String format, Object argA, Object argB) {
-        info(format, new Object[] { argA, argB });
+        logger.info(format, argA, argB);
     }
 
     @Override
     public void info(String format, Object... argArray) {
-        if(!infoRedacted(format, argArray)) {
-            logger.info(format, argArray);
-        }
+        logger.info(format, argArray);
     }
 
     @Override
@@ -151,21 +147,17 @@ class Slf4JLogger extends AbstractCouchbaseLogger {
 
     @Override
     public void warn(String format, Object arg) {
-        if(!warnRedacted(format, arg)) {
-            logger.warn(format, arg);
-        }
+        logger.warn(format, arg);
     }
 
     @Override
     public void warn(String format, Object... argArray) {
-        if(!warnRedacted(format, argArray)) {
-            logger.warn(format, argArray);
-        }
+        logger.warn(format, argArray);
     }
 
     @Override
     public void warn(String format, Object argA, Object argB) {
-        warn(format, new Object[] { argA, argB });
+        logger.warn(format, argA, argB);
     }
 
     @Override
@@ -185,21 +177,17 @@ class Slf4JLogger extends AbstractCouchbaseLogger {
 
     @Override
     public void error(String format, Object arg) {
-        if(!errorRedacted(format, arg)) {
-            logger.error(format, arg);
-        }
+        logger.error(format, arg);
     }
 
     @Override
     public void error(String format, Object argA, Object argB) {
-        error(format, new Object[] { argA, argB });
+        logger.error(format, argA, argB);
     }
 
     @Override
     public void error(String format, Object... argArray) {
-        if(!errorRedacted(format, argArray)) {
-            logger.error(format, argArray);
-        }
+        logger.error(format, argArray);
     }
 
     @Override
