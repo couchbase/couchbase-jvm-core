@@ -119,7 +119,24 @@ public class RedactableArgument {
 
     @Override
     public String toString() {
-        return message();
+        final RedactionLevel redactionLevel = CouchbaseLoggerFactory.getRedactionLevel();
+
+        final boolean redact;
+        switch (redactionLevel) {
+            case NONE:
+                redact = false;
+                break;
+            case PARTIAL:
+                redact = (type == ArgumentType.USER);
+                break;
+            case FULL:
+                redact = true;
+                break;
+            default:
+                throw new AssertionError("Unexpected redaction level: " + redactionLevel);
+        }
+
+        return redact ? "<" + type.tagName + ">" + message() + "</" + type.tagName + ">" : message();
     }
 
     /**
@@ -130,17 +147,25 @@ public class RedactableArgument {
          * User data is data that is stored into Couchbase by
          * the application user account.
          */
-        USER,
+        USER("ud"),
+
         /**
          * Metadata is logical data needed by Couchbase to
          * store and process user data.
          */
-        META,
+        META("md"),
+
         /**
          * System data is data from other parts of the system
          * Couchbase interacts with over the network.
          */
-        SYSTEM
+        SYSTEM("sd");
+
+        private final String tagName;
+
+        ArgumentType(String tagName) {
+            this.tagName = tagName;
+        }
     }
 
 }
