@@ -450,17 +450,20 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
                                 @Override
                                 public void onError(Throwable e) {
-                                    LOGGER.warn("Error during reconnect: ", e);
+                                    // Suppressing stack on purpose for reduced verbosity
+                                    LOGGER.warn("Error during reconnect: {}", e.toString());
                                 }
                             });
                         } else if (!disconnected && !isTransient) {
                             long delay = env.reconnectDelay().calculate(reconnectAttempt++);
                             TimeUnit delayUnit = env.reconnectDelay().unit();
+                            // Suppressing stack on purpose for reduced verbosity
+                            String cause = future.cause() == null ? "unknown" : future.cause().toString();
                             LOGGER.warn(
                                 "{}Could not connect to endpoint, retrying with delay " + delay + " "
-                                    + delayUnit + ": ",
+                                    + delayUnit + ": {}",
                                 logIdent(channel, AbstractEndpoint.this),
-                                future.cause()
+                                cause
                             );
                             if (responseBuffer != null) {
                                 responseBuffer.publishEvent(ResponseHandler.RESPONSE_TRANSLATOR,
@@ -603,7 +606,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
                 @Override
                 public void onError(Throwable e) {
-                    LOGGER.warn("Error during reconnect: ", e);
+                    // Suppressing stack on purpose for reduced verbosity
+                    LOGGER.warn("Error during reconnect: {}", e.toString());
                 }
             });
         }
