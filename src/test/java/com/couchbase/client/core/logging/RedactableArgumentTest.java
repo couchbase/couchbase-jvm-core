@@ -54,11 +54,11 @@ public class RedactableArgumentTest {
     }
 
     @Test
-    public void shouldRedactEverythingOnFull() {
+    public void forNowShouldRedactOnlyUserOnFull() {
         CouchbaseLoggerFactory.setRedactionLevel(RedactionLevel.FULL);
 
         assertEquals("<ud>user</ud>", RedactableArgument.user("user").toString());
-        assertEquals("<md>meta</md>", RedactableArgument.meta("meta").toString());
-        assertEquals("<sd>system</sd>", RedactableArgument.system("system").toString());
+        assertEquals("meta", RedactableArgument.meta("meta").toString());
+        assertEquals("system", RedactableArgument.system("system").toString());
     }
 }

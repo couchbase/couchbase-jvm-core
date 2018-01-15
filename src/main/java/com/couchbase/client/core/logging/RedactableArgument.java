@@ -119,6 +119,12 @@ public class RedactableArgument {
 
     @Override
     public String toString() {
+        // The exact syntax for "system" and "meta" redaction is yet to be determined.
+        // In the mean time, we've been asked to redact *only* "user" data.
+        if (type != ArgumentType.USER) {
+            return message();
+        }
+
         final RedactionLevel redactionLevel = CouchbaseLoggerFactory.getRedactionLevel();
 
         final boolean redact;
