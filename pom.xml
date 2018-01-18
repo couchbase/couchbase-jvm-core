@@ -29,9 +29,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <native.folder>${project.build.directory}/native</native.folder>
-        <native.original>libnetty-transport-native-epoll.so</native.original>
-        <native.renamed>libcom-couchbase-client-deps-netty-transport-native-epoll.so</native.renamed>
-
+        <native.original>libnetty_transport_native_epoll_x86_64.so</native.original>
+        <native.renamed>libcom_couchbase_client_deps_netty_transport_native_epoll_x86_64.so</native.renamed>
         <rxjava.version>1.3.4</rxjava.version>
         <netty.version>4.0.54.Final</netty.version>
         <disruptor.version>3.3.7</disruptor.version>
@@ -259,10 +258,10 @@
                                     <groupId>io.netty</groupId>
                                     <artifactId>netty-all</artifactId>
                                     <outputDirectory>${native.folder}</outputDirectory>
-                                    <includes>META-INF/native/libnetty-transport-native-epoll.so</includes>
+                                    <includes>META-INF/native/libnetty_transport_native_epoll_x86_64.so</includes>
                                 </artifactItem>
                             </artifactItems>
-                            <includes>META-INF/native/libnetty-transport-native-epoll.so</includes>
+                            <includes>META-INF/native/libnetty_transport_native_epoll_x86_64.so</includes>
                             <outputDirectory>${native.folder}</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
