@@ -70,7 +70,8 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         super(name, BucketNodeLocator.VBUCKET, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities);
         this.partitionInfo = partitionInfo;
         this.tainted = partitionInfo.tainted();
-        this.partitionHosts = buildPartitionHosts(nodeInfos, partitionInfo);
+        List<NodeInfo> extendedNodeInfos = this.nodes(); // includes ports for SSL services
+        this.partitionHosts = buildPartitionHosts(extendedNodeInfos, partitionInfo);
         this.nodesWithPrimaryPartitions = buildNodesWithPrimaryPartitions(nodeInfos, partitionInfo.partitions());
         this.rev = rev;
 
@@ -140,6 +141,11 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
                 throw new ConfigurationException("Could not resolve " + rawHost + "on config building.", e);
             }
             for (NodeInfo nodeInfo : nodeInfos) {
+                // Make sure we only take into account nodes which contain KV
+                if (!nodeInfo.services().containsKey(ServiceType.BINARY)) {
+                    continue;
+                }
+
                 if (nodeInfo.hostname().equals(convertedHost) &&
                         (nodeInfo.services().get(ServiceType.BINARY) == directPort || directPort == 0)) {
                     partitionHosts.add(nodeInfo);
