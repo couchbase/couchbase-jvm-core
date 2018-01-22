@@ -32,6 +32,8 @@ import com.lmax.disruptor.RingBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.logging.RedactableArgument.user;
@@ -46,7 +48,32 @@ public class ViewLocator implements Locator {
     private static final ServiceNotAvailableException NOT_AVAILABLE =
         new ServiceNotAvailableException("Views are not available on this bucket type.");
 
-    private volatile long counter = 0;
+    /**
+     * The Counter used to distribute view request.
+     */
+    private final AtomicLong counter;
+
+    /**
+     * Generates the random initial value for the round robin counter used.
+     *
+     * This will generate a random number between 0 and 1023 which is probably
+     * enough distribution to not make all queries hit the same first server
+     * all the time.
+     */
+    public ViewLocator() {
+        this(new Random().nextInt(1024));
+    }
+
+    /**
+     * Constructor which allows to set the initial value to something specific
+     * so it can be tested in a deterministic fashion. Should only be used
+     * for testing though.
+     *
+     * @param initialValue the initial value to use.
+     */
+    ViewLocator(final long initialValue) {
+        counter = new AtomicLong(initialValue);
+    }
 
     @Override
     public void locateAndDispatch(CouchbaseRequest request, List<Node> nodes, ClusterConfig config,
@@ -64,7 +91,7 @@ public class ViewLocator implements Locator {
         }
 
         int nodeSize = nodes.size();
-        int offset = (int) MathUtils.floorMod(counter++, nodeSize);
+        int offset = (int) MathUtils.floorMod(counter.getAndIncrement(), nodeSize);
         Node node = nodes.get(offset);
         if (node != null) {
             node.send(request);

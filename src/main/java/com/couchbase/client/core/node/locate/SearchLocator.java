@@ -26,6 +26,14 @@ import com.couchbase.client.core.service.ServiceType;
  */
 public class SearchLocator extends QueryLocator {
 
+    public SearchLocator() {
+        super();
+    }
+
+    SearchLocator(long initialValue) {
+        super(initialValue);
+    }
+
     @Override
     protected boolean checkNode(Node node) {
         return node.serviceEnabled(ServiceType.SEARCH);

@@ -28,6 +28,8 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.RingBuffer;
 
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Locates the proper CONFIG node for a given config request.
@@ -43,7 +45,32 @@ import java.util.List;
  */
 public class ConfigLocator implements Locator {
 
-    private volatile long counter = 0;
+    /**
+     * The Counter used to distribute config request.
+     */
+    private final AtomicLong counter;
+
+    /**
+     * Generates the random initial value for the round robin counter used.
+     *
+     * This will generate a random number between 0 and 1023 which is probably
+     * enough distribution to not make all queries hit the same first server
+     * all the time.
+     */
+    public ConfigLocator() {
+        this(new Random().nextInt(1024));
+    }
+
+    /**
+     * Constructor which allows to set the initial value to something specific
+     * so it can be tested in a deterministic fashion. Should only be used
+     * for testing though.
+     *
+     * @param initialValue the initial value to use.
+     */
+    ConfigLocator(final long initialValue) {
+        counter = new AtomicLong(initialValue);
+    }
 
     @Override
     public void locateAndDispatch(final CouchbaseRequest request, final List<Node> nodes, final ClusterConfig config,
@@ -59,7 +86,7 @@ public class ConfigLocator implements Locator {
             }
         } else {
             int nodeSize = nodes.size();
-            int offset = (int) counter++ % nodeSize;
+            int offset = (int) counter.getAndIncrement() % nodeSize;
 
             for (int i = offset; i < nodeSize; i++) {
                 Node node = nodes.get(i);

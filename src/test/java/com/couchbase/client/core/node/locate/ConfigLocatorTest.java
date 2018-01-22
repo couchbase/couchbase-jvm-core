@@ -49,7 +49,7 @@ public class ConfigLocatorTest {
      */
     @Test
     public void shouldRerouteBucketConfigRequestWithoutHostname() throws Exception {
-        Locator locator = new ConfigLocator();
+        Locator locator = new ConfigLocator(0);
 
         BucketConfigRequest request = mock(BucketConfigRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -80,7 +80,7 @@ public class ConfigLocatorTest {
 
     @Test
     public void shouldRouteGetDesignDocumentsRequestOnlyToViewNode() throws Exception {
-        Locator locator = new ConfigLocator();
+        Locator locator = new ConfigLocator(0);
 
         GetDesignDocumentsRequest request = mock(GetDesignDocumentsRequest.class);
         when(request.bucket()).thenReturn("default");

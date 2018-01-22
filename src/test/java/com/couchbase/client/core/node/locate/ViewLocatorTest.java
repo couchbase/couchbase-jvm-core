@@ -55,7 +55,7 @@ public class ViewLocatorTest {
 
     @Test
     public void shouldSelectNextNode() throws Exception {
-        Locator locator = new ViewLocator();
+        Locator locator = new ViewLocator(0);
 
         ViewQueryRequest request = mock(ViewQueryRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -87,7 +87,7 @@ public class ViewLocatorTest {
 
     @Test
     public void shouldSkipNodeWithoutPartition() throws Exception {
-        Locator locator = new ViewLocator();
+        Locator locator = new ViewLocator(0);
 
         ViewQueryRequest request = mock(ViewQueryRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -121,7 +121,7 @@ public class ViewLocatorTest {
 
     @Test
     public void shouldSkipNodeWithoutServiceEnabled() throws Exception {
-        Locator locator = new ViewLocator();
+        Locator locator = new ViewLocator(0);
 
         ViewQueryRequest request = mock(ViewQueryRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -167,7 +167,7 @@ public class ViewLocatorTest {
 
     @Test
     public void shouldFailWhenUsedAgainstMemcacheBucket() {
-        Locator locator = new ViewLocator();
+        Locator locator = new ViewLocator(0);
 
         ClusterConfig config = mock(ClusterConfig.class);
         when(config.bucketConfig("default")).thenReturn(mock(MemcachedBucketConfig.class));
@@ -190,7 +190,7 @@ public class ViewLocatorTest {
 
     @Test
     public void shouldDistributeFairlyUnderMDS() throws Exception {
-        Locator locator = new ViewLocator();
+        Locator locator = new ViewLocator(0);
 
         ViewQueryRequest request = mock(ViewQueryRequest.class);
         when(request.bucket()).thenReturn("default");

@@ -26,6 +26,14 @@ import com.couchbase.client.core.service.ServiceType;
  */
 public class AnalyticsLocator extends QueryLocator {
 
+    public AnalyticsLocator() {
+        super();
+    }
+
+    AnalyticsLocator(long initialValue) {
+        super(initialValue);
+    }
+
     @Override
     protected boolean checkNode(Node node) {
         return node.serviceEnabled(ServiceType.ANALYTICS);

@@ -42,7 +42,7 @@ public class SearchLocatorTest {
 
     @Test
     public void shouldSelectNextNode() throws Exception {
-        Locator locator = new SearchLocator();
+        Locator locator = new SearchLocator(0);
 
         SearchQueryRequest request = mock(SearchQueryRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
@@ -71,7 +71,7 @@ public class SearchLocatorTest {
 
     @Test
     public void shouldSkipNodeWithoutServiceEnabled() throws Exception {
-        Locator locator = new SearchLocator();
+        Locator locator = new SearchLocator(0);
 
         SearchQueryRequest request = mock(SearchQueryRequest.class);
         when(request.bucket()).thenReturn("default");
@@ -112,7 +112,7 @@ public class SearchLocatorTest {
 
     @Test
     public void shouldDistributeFairlyUnderMDS() throws Exception {
-        Locator locator = new SearchLocator();
+        Locator locator = new SearchLocator(0);
 
         SearchQueryRequest request = mock(SearchQueryRequest.class);
         when(request.bucket()).thenReturn("default");
