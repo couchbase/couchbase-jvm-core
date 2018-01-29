@@ -21,6 +21,7 @@ import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
+import com.couchbase.client.core.endpoint.util.Snappy;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -87,6 +88,7 @@ import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.time.Delay;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
+import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponse;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
@@ -198,7 +200,22 @@ public class KeyValueHandler
      */
     public static final byte SUBDOC_DOCFLAG_ACCESS_DELETED = (byte) 0x04;
 
+    /**
+     * The datatype byte used to signal snappy.
+     */
+    public static final byte DATATYPE_SNAPPY = (byte) 0x02;
+
     boolean seqOnMutation = false;
+
+    /**
+     * If snappy is enabled (got negotiated on HELLO)
+     */
+    boolean snappyEnabled = false;
+
+    /**
+     * Snappy used for encoding and decoding with compression.
+     */
+    private final Snappy snappy = new Snappy();
 
 
     /**
@@ -259,8 +276,77 @@ public class KeyValueHandler
             throw ex;
         }
 
+        if (snappyEnabled) {
+            handleSnappyCompression(ctx, request);
+        }
+
         return request;
     }
+
+    /**
+     * Helper method which performs snappy compression on the request path.
+     *
+     * Note that even if we compress and switch out the content, we are not releasing the
+     * original buffer! This is happening on the decode side and we still need to keep in mind
+     * that a NMVB could be returned and the original msg needs to be re-sent.
+     */
+    private void handleSnappyCompression(final ChannelHandlerContext ctx, final BinaryMemcacheRequest r) {
+        if (!(r instanceof FullBinaryMemcacheRequest)) {
+            // we only need to handle requests which send content
+            return;
+        }
+
+        FullBinaryMemcacheRequest request = (FullBinaryMemcacheRequest) r;
+
+        int uncompressedLength = request.content().readableBytes();
+        ByteBuf compressedContent = ctx.alloc().buffer(uncompressedLength);
+        ByteBuf uncompressedContent = request.content().slice();
+        try {
+            snappy.encode(uncompressedContent, compressedContent, uncompressedLength);
+        } catch (Exception ex) {
+            throw new RuntimeException("Could not snappy-compress value.", ex);
+        } finally {
+            snappy.reset();
+        }
+
+        if (compressedContent.readableBytes() >= uncompressedLength) {
+            // compressed is not smaller, so just send the original
+            compressedContent.release();
+        } else {
+            // compressed is smaller, so adapt and apply new content
+            request.setDataType((byte)(request.getDataType() | DATATYPE_SNAPPY));
+            request.setContent(compressedContent);
+            request.setTotalBodyLength(
+                request.getExtrasLength()
+                    + request.getKeyLength()
+                    + compressedContent.readableBytes()
+            );
+        }
+    }
+
+    /**
+     * Helper method which performs decompression for snappy compressed values.
+     */
+    private void handleSnappyDecompression(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse response) {
+        ByteBuf decompressed = ctx.alloc().buffer(response.content().readableBytes());
+        try {
+            snappy.decode(response.content(), decompressed);
+        } catch (Exception ex) {
+            throw new RuntimeException("Could not decode snappy-compressed value.", ex);
+        } finally {
+            snappy.reset();
+        }
+
+        response.content().release();
+        response.setContent(decompressed);
+        response.setTotalBodyLength(
+            response.getExtrasLength()
+                + response.getKeyLength()
+                + decompressed.readableBytes()
+        );
+        response.setDataType((byte) (response.getDataType() & ~DATATYPE_SNAPPY));
+    }
+
 
     private BinaryMemcacheRequest encodeCommonRequest(final ChannelHandlerContext ctx, final BinaryRequest msg) {
         if (msg instanceof GetRequest) {
@@ -764,6 +850,16 @@ public class KeyValueHandler
         return request;
     }
 
+    /**
+     * Helper method to check if the given datatype byte has the snappy bit set.
+     *
+     * @param datatype the datatype to check against.
+     * @return true if set, false otherwise.
+     */
+    private static boolean hasCompressionDatatype(final byte datatype) {
+        return (datatype & DATATYPE_SNAPPY) == DATATYPE_SNAPPY;
+    }
+
     @Override
     protected CouchbaseResponse decodeResponse(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse msg)
         throws Exception {
@@ -778,6 +874,14 @@ public class KeyValueHandler
             msg.getDataType(),
             msg.content()
         );
+
+        if (hasCompressionDatatype(msg.getDataType())) {
+            if (!snappyEnabled) {
+                LOGGER.debug("Snappy DataType bit set, but snappy has not been negotiated! " +
+                    "Trying to decompress nonetheless!", msg);
+            }
+            handleSnappyDecompression(ctx, msg);
+        }
 
         // Only consult the error map if we don't know what the code is!
         ErrorMap.ErrorCode errorCode = status == ResponseStatus.FAILURE ? ResponseStatusConverter.readErrorCodeFromErrorMap(msg.getStatus()) : null;
@@ -1314,6 +1418,7 @@ public class KeyValueHandler
         if (evt instanceof ServerFeaturesEvent) {
             seqOnMutation = env().mutationTokensEnabled() &&
                 ((ServerFeaturesEvent) evt).supportedFeatures().contains(ServerFeatures.MUTATION_SEQNO);
+            snappyEnabled = ((ServerFeaturesEvent) evt).supportedFeatures().contains(ServerFeatures.SNAPPY);
         }
 
         super.userEventTriggered(ctx, evt);

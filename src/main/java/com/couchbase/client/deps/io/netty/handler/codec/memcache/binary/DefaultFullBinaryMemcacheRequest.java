@@ -26,7 +26,7 @@ import static com.couchbase.client.core.lang.backport.java.util.Objects.requireN
 public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheRequest
     implements FullBinaryMemcacheRequest {
 
-    private final ByteBuf content;
+    private ByteBuf content;
 
     /**
      * Create a new {@link DefaultBinaryMemcacheRequest} with the header, key and extras.
@@ -102,5 +102,11 @@ public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheReque
             extras = extras.duplicate();
         }
         return new DefaultFullBinaryMemcacheRequest(getKey(), extras, content().duplicate());
+    }
+
+    @Override
+    public FullBinaryMemcacheRequest setContent(ByteBuf content) {
+        this.content = content;
+        return this;
     }
 }

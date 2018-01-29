@@ -67,6 +67,9 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         boolean xerrorEnabled = Boolean.parseBoolean(
             System.getProperty("com.couchbase.xerrorEnabled", "true")
         );
+        boolean snappyEnabled = Boolean.parseBoolean(
+            System.getProperty("com.couchbase.snappyEnabled", "true")
+        );
 
         userAgent = environment.userAgent();
         boolean tcpNodelay = environment.tcpNodelayEnabled();
@@ -78,6 +81,10 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         features.add(tcpNodelay ? ServerFeatures.TCPNODELAY : ServerFeatures.TCPDELAY);
         features.add(ServerFeatures.XATTR);
         features.add(ServerFeatures.SELECT_BUCKET);
+
+        if (snappyEnabled) {
+            features.add(ServerFeatures.SNAPPY);
+        }
         if (xerrorEnabled) {
             features.add(ServerFeatures.XERROR);
         }

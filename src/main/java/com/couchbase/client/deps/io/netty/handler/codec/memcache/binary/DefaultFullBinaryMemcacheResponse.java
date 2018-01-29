@@ -26,7 +26,7 @@ import static com.couchbase.client.core.lang.backport.java.util.Objects.requireN
 public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResponse
     implements FullBinaryMemcacheResponse {
 
-    private final ByteBuf content;
+    private ByteBuf content;
 
     /**
      * Create a new {@link DefaultFullBinaryMemcacheResponse} with the header, key and extras.
@@ -102,5 +102,11 @@ public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResp
             extras = extras.duplicate();
         }
         return new DefaultFullBinaryMemcacheResponse(getKey(), extras, content().duplicate());
+    }
+
+    @Override
+    public FullBinaryMemcacheResponse setContent(ByteBuf content) {
+        this.content = content;
+        return this;
     }
 }

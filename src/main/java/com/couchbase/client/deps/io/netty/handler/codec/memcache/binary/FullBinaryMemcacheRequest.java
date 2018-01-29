@@ -16,6 +16,7 @@
 package com.couchbase.client.deps.io.netty.handler.codec.memcache.binary;
 
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.FullMemcacheMessage;
+import io.netty.buffer.ByteBuf;
 
 /**
  * A {@link BinaryMemcacheRequest} that also includes the content.
@@ -33,4 +34,6 @@ public interface FullBinaryMemcacheRequest extends BinaryMemcacheRequest, FullMe
 
     @Override
     FullBinaryMemcacheRequest duplicate();
+
+    FullBinaryMemcacheRequest setContent(ByteBuf content);
 }

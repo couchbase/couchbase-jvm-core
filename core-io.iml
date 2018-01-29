@@ -31,5 +31,6 @@
     <orderEntry type="library" scope="TEST" name="Maven: org.mockito:mockito-all:1.10.19" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.assertj:assertj-core:1.7.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.couchbase.mock:CouchbaseMock:1.5.1" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: org.iq80.snappy:snappy:0.4" level="project" />
   </component>
 </module>
