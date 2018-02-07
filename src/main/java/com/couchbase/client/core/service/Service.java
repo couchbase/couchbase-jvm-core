@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -89,12 +90,10 @@ public interface Service extends Stateful<LifecycleState> {
          * @param username the user authorized for bucket access.
          * @param password the password of the user.
          * @param port the port of the endpoint.
-         * @param env the shared environment.
-         * @param responseBuffer the response buffer for messages.
+         * @param ctx the shared context.
          * @return a new {@link Endpoint}.
          */
-        Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-            RingBuffer<ResponseEvent> responseBuffer);
+        Endpoint create(String hostname, String bucket, String username, String password, int port, CoreContext ctx);
 
     }
 }

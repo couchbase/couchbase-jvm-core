@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.query.QueryEndpoint;
@@ -50,13 +51,12 @@ public class OldQueryService extends AbstractPoolingService {
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
      * @param port the port of the service.
-     * @param env the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx the core context.
      */
     @Deprecated
     public OldQueryService(final String hostname, final String bucket, final String password,
-                           final int port, final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+                           final int port, final CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
     /**
@@ -67,13 +67,11 @@ public class OldQueryService extends AbstractPoolingService {
      * @param username the user authorized for bucket access.
      * @param password the password of the user.
      * @param port the port of the service.
-     * @param env the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx the core context.
      */
     public OldQueryService(final String hostname, final String bucket, final String username, final String password,
-                           final int port, final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, env.queryEndpoints(), env.queryEndpoints(), STRATEGY,
-                responseBuffer, FACTORY);
+                           final int port, final CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, ctx.environment().queryEndpoints(), ctx.environment().queryEndpoints(), STRATEGY, FACTORY);
     }
 
 
@@ -88,8 +86,8 @@ public class OldQueryService extends AbstractPoolingService {
     static class QueryEndpointFactory implements EndpointFactory {
         @Override
         public Endpoint create(final String hostname, final String bucket, final String username, final String password, final int port,
-                               final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-            return new QueryEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
+                               final CoreContext ctx) {
+            return new QueryEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
         }
     }
 }

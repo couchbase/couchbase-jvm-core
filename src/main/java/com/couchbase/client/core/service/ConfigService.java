@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.config.ConfigEndpoint;
@@ -29,14 +30,13 @@ public class ConfigService extends AbstractOnDemandService {
     private static final EndpointFactory FACTORY = new ConfigEndpointFactory();
 
     @Deprecated
-    public ConfigService(String hostname, String bucket, String password, int port, CoreEnvironment env,
-                         RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+    public ConfigService(String hostname, String bucket, String password, int port, CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
-    public ConfigService(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-        RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, responseBuffer, FACTORY);
+    public ConfigService(String hostname, String bucket, String username, String password, int port,
+        CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, FACTORY);
     }
 
     @Override
@@ -45,9 +45,8 @@ public class ConfigService extends AbstractOnDemandService {
     }
 
     static class ConfigEndpointFactory implements EndpointFactory {
-        public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-            RingBuffer<ResponseEvent> responseBuffer) {
-            return new ConfigEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
+        public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
+            return new ConfigEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
         }
     }
 

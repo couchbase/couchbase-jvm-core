@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
@@ -58,11 +59,13 @@ public class AbstractPoolingServiceTest {
 
     private CoreEnvironment env;
     private Service.EndpointFactory factory;
+    private CoreContext ctx;
 
     @Before
     public void setup() {
         env = mock(CoreEnvironment.class);
         factory = mock(Service.EndpointFactory.class);
+        ctx = new CoreContext(env, null);
     }
 
     @Test
@@ -75,11 +78,11 @@ public class AbstractPoolingServiceTest {
         EndpointStates e2s = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint2.connect()).thenReturn(Observable.just(LifecycleState.CONNECTING));
         when(endpoint2.states()).thenReturn(e2s.states());
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint1, endpoint2);
 
         int endpoints = 2;
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
-            endpoints, null, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, endpoints,
+            endpoints, null, factory);
 
         assertEquals(LifecycleState.DISCONNECTED, service.state());
 
@@ -111,7 +114,7 @@ public class AbstractPoolingServiceTest {
         Endpoint e4 = mock(Endpoint.class);
         EndpointStates e4s = new EndpointStates(LifecycleState.CONNECTED);
         when(e4.states()).thenReturn(e4s.states());
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(e1, e2, e3, e4);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(e1, e2, e3, e4);
 
         final AtomicReference<List> foundEndpoints = new AtomicReference<List>();
         SelectionStrategy strategy = new SelectionStrategy() {
@@ -123,8 +126,8 @@ public class AbstractPoolingServiceTest {
         };
 
         int endpoints = 4;
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
-            endpoints, strategy, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, endpoints,
+            endpoints, strategy, factory);
 
         service.connect().toBlocking().single();
 
@@ -147,11 +150,11 @@ public class AbstractPoolingServiceTest {
         when(endpoint2.connect()).thenReturn(Observable.just(LifecycleState.CONNECTING));
         when(endpoint2.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(endpoint2.states()).thenReturn(e2s.states());
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint1, endpoint2);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint1, endpoint2);
 
         int endpoints = 2;
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
-            endpoints, null, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, endpoints,
+            endpoints, null, factory);
 
         assertEquals(LifecycleState.DISCONNECTED, service.state());
 
@@ -180,8 +183,9 @@ public class AbstractPoolingServiceTest {
         int endpoints = 1;
         SelectionStrategy strategy = mock(SelectionStrategy.class);
         when(strategy.select(any(CouchbaseRequest.class), any(List.class))).thenReturn(null);
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, endpoints,
-                endpoints, strategy, null, factory);
+        CoreContext ctx = new CoreContext(env, null);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, endpoints,
+                endpoints, strategy, factory);
 
         CouchbaseRequest request = mock(CouchbaseRequest.class);
         when(request.isActive()).thenReturn(true);
@@ -194,10 +198,10 @@ public class AbstractPoolingServiceTest {
 
     class InstrumentedService extends AbstractPoolingService {
 
-        public InstrumentedService(String hostname, String bucket, String password, int port, CoreEnvironment env,
-            int minEndpoints, int maxEndpoints, SelectionStrategy strategy, RingBuffer<ResponseEvent> responseBuffer,
+        public InstrumentedService(String hostname, String bucket, String password, int port, CoreContext ctx,
+            int minEndpoints, int maxEndpoints, SelectionStrategy strategy,
             EndpointFactory endpointFactory) {
-            super(hostname, bucket, bucket, password, port, env, minEndpoints, maxEndpoints, strategy, responseBuffer,
+            super(hostname, bucket, bucket, password, port, ctx, minEndpoints, maxEndpoints, strategy,
                 endpointFactory);
         }
 

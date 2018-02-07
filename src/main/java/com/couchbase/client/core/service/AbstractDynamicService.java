@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -51,16 +52,14 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
     private final String username;
     private final String password;
     private final int port;
-    private final CoreEnvironment env;
-    private final RingBuffer<ResponseEvent> responseBuffer;
+    private final CoreContext ctx;
     private final int minEndpoints;
     private final EndpointFactory endpointFactory;
     private final EndpointStateZipper endpointStates;
     private final LifecycleState initialState;
 
     protected AbstractDynamicService(final String hostname, final String bucket, final String username, final String password, final int port,
-        final CoreEnvironment env, final int minEndpoints,
-        final RingBuffer<ResponseEvent> responseBuffer, final EndpointFactory endpointFactory) {
+                                     final CoreContext ctx, final int minEndpoints, final EndpointFactory endpointFactory) {
         super(minEndpoints == 0 ? LifecycleState.IDLE : LifecycleState.DISCONNECTED);
         this.initialState = minEndpoints == 0 ? LifecycleState.IDLE : LifecycleState.DISCONNECTED;
         this.hostname = hostname;
@@ -68,9 +67,8 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
         this.username = username;
         this.password = password;
         this.port = port;
-        this.env = env;
+        this.ctx = ctx;
         this.minEndpoints = minEndpoints;
-        this.responseBuffer = responseBuffer;
         this.endpointFactory = endpointFactory;
         endpointStates = new EndpointStateZipper(initialState);
         endpoints = new Endpoint[minEndpoints];
@@ -184,7 +182,7 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
      * @return the endpoint to create.
      */
     protected Endpoint createEndpoint() {
-        return endpointFactory.create(hostname, bucket, username, password, port, env, responseBuffer);
+        return endpointFactory.create(hostname, bucket, username, password, port, ctx);
     }
 
     /**

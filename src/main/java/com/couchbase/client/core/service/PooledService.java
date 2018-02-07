@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.AbstractServiceConfig;
@@ -56,6 +57,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
     private final String password;
     private final int port;
     private final CoreEnvironment env;
+    private final CoreContext ctx;
     private final int minEndpoints;
     private final int maxEndpoints;
     private final boolean fixedEndpoints;
@@ -78,10 +80,9 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
      */
     private volatile boolean disconnect;
 
-    PooledService(final String hostname, final String bucket, final String username, final String password, final int port,
-                  final CoreEnvironment env, final AbstractServiceConfig serviceConfig,
-                  final RingBuffer<ResponseEvent> responseBuffer, final EndpointFactory endpointFactory,
-                  final SelectionStrategy selectionStrategy) {
+    PooledService(final String hostname, final String bucket, final String username, final String password,
+        final int port, final CoreContext ctx, final AbstractServiceConfig serviceConfig,
+        final EndpointFactory endpointFactory, final SelectionStrategy selectionStrategy) {
         super(serviceConfig.minEndpoints() == 0 ? LifecycleState.IDLE : LifecycleState.DISCONNECTED);
         preCheckEndpointSettings(serviceConfig);
 
@@ -91,10 +92,11 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
         this.username = username;
         this.password = password;
         this.port = port;
-        this.env = env;
+        this.env = ctx.environment();
+        this.ctx = ctx;
         this.minEndpoints = serviceConfig.minEndpoints();
         this.maxEndpoints = serviceConfig.maxEndpoints();
-        this.responseBuffer = responseBuffer;
+        this.responseBuffer = ctx.responseRingBuffer();
         this.endpointFactory = endpointFactory;
         this.endpoints = new CopyOnWriteArrayList<Endpoint>();
         this.fixedEndpoints = minEndpoints == maxEndpoints;
@@ -192,7 +194,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
 
             synchronized (epMutex) {
                 for (int i = 0; i < belowMin; i++) {
-                    Endpoint endpoint = endpointFactory.create(hostname, bucket, username, password, port, env, responseBuffer);
+                    Endpoint endpoint = endpointFactory.create(hostname, bucket, username, password, port, ctx);
                     endpoints.add(endpoint);
                     endpointStates.register(endpoint, endpoint);
                     endpoint.connect().subscribe(new Subscriber<LifecycleState>() {
@@ -253,7 +255,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                 return Observable.just(state());
             }
             for (int i = 0; i < numToConnect; i++) {
-                Endpoint endpoint = endpointFactory.create(hostname, bucket, username, password, port, env, responseBuffer);
+                Endpoint endpoint = endpointFactory.create(hostname, bucket, username, password, port, ctx);
                 endpoints.add(endpoint);
                 endpointStates.register(endpoint, endpoint);
             }
@@ -357,7 +359,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                 + "Need to open a new Endpoint (size {}), pending requests {}", endpoints.size(), pendingRequests);
 
         final Endpoint endpoint = endpointFactory.create(
-            hostname, bucket, username, password, port, env, responseBuffer
+            hostname, bucket, username, password, port, ctx
         );
 
         final Subscription subscription = whenState(endpoint, LifecycleState.CONNECTED,

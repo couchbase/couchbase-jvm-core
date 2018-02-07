@@ -16,6 +16,7 @@
 
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.kv.KeyValueEndpoint;
@@ -43,13 +44,12 @@ public class OldKeyValueService extends AbstractPoolingService {
      * @param bucket the name of the bucket.
      * @param password the password of the bucket.
      * @param port the port of the service.
-     * @param env the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx the core context.
      */
     @Deprecated
     public OldKeyValueService(final String hostname, final String bucket, final String password, final int port,
-                              final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+                              final CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
     /**
@@ -60,13 +60,12 @@ public class OldKeyValueService extends AbstractPoolingService {
      * @param username the user authorized for bucket access
      * @param password the password of the user.
      * @param port the port of the service.
-     * @param env the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx the core context.
+
      */
     public OldKeyValueService(final String hostname, final String bucket, final String username,  final String password, final int port,
-                           final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, env.kvEndpoints(), env.kvEndpoints(), STRATEGY, responseBuffer,
-                FACTORY);
+                           final CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, ctx.environment().kvEndpoints(), ctx.environment().kvEndpoints(), STRATEGY, FACTORY);
     }
 
     @Override
@@ -79,9 +78,9 @@ public class OldKeyValueService extends AbstractPoolingService {
      */
     static class KeyValueEndpointFactory implements EndpointFactory {
         @Override
-        public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-                               RingBuffer<ResponseEvent> responseBuffer) {
-            return new KeyValueEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
+        public Endpoint create(String hostname, String bucket, String username, String password, int port,
+                               CoreContext ctx) {
+            return new KeyValueEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
         }
     }
 }

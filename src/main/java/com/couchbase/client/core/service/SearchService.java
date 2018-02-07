@@ -16,6 +16,7 @@
 
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.endpoint.search.SearchEndpoint;
@@ -44,13 +45,12 @@ public class SearchService extends PooledService {
      * @param bucket         the name of the bucket.
      * @param password       the password of the bucket.
      * @param port           the port of the service.
-     * @param env            the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx            the shared context.
      */
     @Deprecated
     public SearchService(final String hostname, final String bucket, final String password, final int port,
-                         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+                         final CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
     /**
@@ -61,12 +61,11 @@ public class SearchService extends PooledService {
      * @param username       the user authorized for bucket access.
      * @param password       the password of the user.
      * @param port           the port of the service.
-     * @param env            the shared environment.
-     * @param responseBuffer the shared response buffer.
+     * @param ctx            the shared context.
      */
     public SearchService(final String hostname, final String bucket, final String username, final String password, final int port,
-                         final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, env.searchServiceConfig(), responseBuffer, FACTORY, STRATEGY);
+                         final CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, ctx.environment().searchServiceConfig(), FACTORY, STRATEGY);
 
     }
 
@@ -81,8 +80,8 @@ public class SearchService extends PooledService {
     static class SearchEndpointFactory implements EndpointFactory {
         @Override
         public Endpoint create(final String hostname, final String bucket, final String username, final String password, final int port,
-                               final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-            return new SearchEndpoint(hostname, bucket, username, password, port, env, responseBuffer);
+                               final CoreContext ctx) {
+            return new SearchEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
         }
     }
 

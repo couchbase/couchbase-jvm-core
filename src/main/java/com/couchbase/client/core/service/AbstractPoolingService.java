@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -37,13 +38,12 @@ public abstract class AbstractPoolingService extends AbstractDynamicService {
     private final CoreEnvironment env;
 
     protected AbstractPoolingService(String hostname, String bucket, String username, String password, int port,
-        CoreEnvironment env, int minEndpoints, int maxEndpoints, SelectionStrategy strategy,
-        RingBuffer<ResponseEvent> responseBuffer, EndpointFactory endpointFactory) {
-        super(hostname, bucket, username, password, port, env, minEndpoints, responseBuffer, endpointFactory);
+        CoreContext ctx, int minEndpoints, int maxEndpoints, SelectionStrategy strategy, EndpointFactory endpointFactory) {
+        super(hostname, bucket, username, password, port, ctx, minEndpoints, endpointFactory);
         this.maxEndpoints = maxEndpoints;
-        this.responseBuffer = responseBuffer;
+        this.responseBuffer = ctx.responseRingBuffer();
         this.strategy = strategy;
-        this.env = env;
+        this.env = ctx.environment();
     }
 
     @Override

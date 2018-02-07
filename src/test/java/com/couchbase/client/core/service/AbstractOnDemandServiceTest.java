@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
@@ -55,22 +56,24 @@ public class AbstractOnDemandServiceTest {
 
     private CoreEnvironment env;
     private Service.EndpointFactory factory;
+    private CoreContext ctx;
 
     @Before
     public void setup() {
         env = mock(CoreEnvironment.class);
         factory = mock(Service.EndpointFactory.class);
+        ctx = new CoreContext(env, null);
     }
 
     @Test
     public void shouldDispatchOnDemand() throws Exception {
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
 
         Endpoint endpoint = mock(Endpoint.class);
         final EndpointStates endpointStates = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint.states()).thenReturn(endpointStates.states());
         when(endpoint.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint);
 
         assertEquals(0, service.endpoints().size());
         assertEquals(LifecycleState.IDLE, service.connect().toBlocking().single());
@@ -94,13 +97,13 @@ public class AbstractOnDemandServiceTest {
 
     @Test
     public void shouldFailObservableIfCouldNotConnect() {
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
 
         Endpoint endpoint = mock(Endpoint.class);
         final EndpointStates endpointStates = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint.states()).thenReturn(endpointStates.states());
         when(endpoint.connect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint);
 
         CouchbaseRequest req = mock(CouchbaseRequest.class);
         AsyncSubject<CouchbaseResponse> reqObservable = AsyncSubject.create();
@@ -119,13 +122,13 @@ public class AbstractOnDemandServiceTest {
 
     @Test
     public void shouldFailObservableIfErrorOnConnect() {
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
 
         Endpoint endpoint = mock(Endpoint.class);
         final EndpointStates endpointStates = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint.states()).thenReturn(endpointStates.states());
         when(endpoint.connect()).thenReturn(Observable.<LifecycleState>error(new AuthenticationException()));
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint);
 
         CouchbaseRequest req = mock(CouchbaseRequest.class);
         AsyncSubject<CouchbaseResponse> reqObservable = AsyncSubject.create();
@@ -144,9 +147,8 @@ public class AbstractOnDemandServiceTest {
     }
 
     class InstrumentedService extends AbstractOnDemandService {
-        public InstrumentedService(String hostname, String bucket, String password, int port, CoreEnvironment env,
-            RingBuffer<ResponseEvent> responseBuffer, EndpointFactory endpointFactory) {
-            super(hostname, bucket, bucket, password, port, env, responseBuffer, endpointFactory);
+        public InstrumentedService(String hostname, String bucket, String password, int port, CoreContext ctx, EndpointFactory endpointFactory) {
+            super(hostname, bucket, bucket, password, port, ctx, endpointFactory);
         }
 
         @Override

@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -50,31 +51,33 @@ public class AbstractLazyServiceTest {
     private final int port = 1234;
 
     private CoreEnvironment env;
+    private CoreContext ctx;
     private Service.EndpointFactory factory;
 
     @Before
     public void setup() {
         env = mock(CoreEnvironment.class);
         factory = mock(Service.EndpointFactory.class);
+        ctx = new CoreContext(env, null);
     }
 
     @Test
     public void shouldNotHaveServiceOnStart() {
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
         assertEquals(LifecycleState.IDLE, service.state());
         assertNull(service.endpoint());
     }
 
     @Test
     public void shouldLazilyCreateAndReuseEndpoint() {
-        InstrumentedService service = new InstrumentedService(host, bucket, password, port, env, null, factory);
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
 
         Endpoint endpoint = mock(Endpoint.class);
         final EndpointStates endpointStates = new EndpointStates(LifecycleState.DISCONNECTED);
         when(endpoint.states()).thenReturn(endpointStates.states());
         when(endpoint.state()).thenReturn(endpointStates.state());
         when(endpoint.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(factory.create(host, bucket, bucket, password, port, env, null)).thenReturn(endpoint);
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint);
 
         assertEquals(0, service.endpoints().size());
         assertEquals(LifecycleState.IDLE, service.connect().toBlocking().single());
@@ -106,8 +109,8 @@ public class AbstractLazyServiceTest {
     class InstrumentedService extends AbstractLazyService {
 
         public InstrumentedService(String hostname, String bucket, String password, int port,
-            CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer, EndpointFactory endpointFactory) {
-            super(hostname, bucket, bucket, password, port, env, responseBuffer, endpointFactory);
+            CoreContext ctx, EndpointFactory endpointFactory) {
+            super(hostname, bucket, bucket, password, port, ctx, endpointFactory);
         }
 
         @Override

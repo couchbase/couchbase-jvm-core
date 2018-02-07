@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
@@ -46,40 +47,40 @@ public class ServiceFactory {
 
     private ServiceFactory() { }
 
-    public Service create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-        ServiceType type, final RingBuffer<ResponseEvent> responseBuffer) {
+    public Service create(String hostname, String bucket, String username, String password,
+        int port, CoreContext ctx, ServiceType type) {
 
         if (FORCE_OLD_SERVICES) {
             switch (type) {
                 case BINARY:
-                    return new OldKeyValueService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new OldKeyValueService(hostname, bucket, username, password, port, ctx);
                 case VIEW:
-                    return new OldViewService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new OldViewService(hostname, bucket, username, password, port, ctx);
                 case CONFIG:
-                    return new ConfigService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new ConfigService(hostname, bucket, username, password, port, ctx);
                 case QUERY:
-                    return new OldQueryService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new OldQueryService(hostname, bucket, username, password, port, ctx);
                 case SEARCH:
-                    return new OldSearchService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new OldSearchService(hostname, bucket, username, password, port, ctx);
                 case ANALYTICS:
-                    return new OldAnalyticsService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new OldAnalyticsService(hostname, bucket, username, password, port, ctx);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }
         } else {
             switch (type) {
                 case BINARY:
-                    return new KeyValueService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new KeyValueService(hostname, bucket, username, password, port, ctx);
                 case VIEW:
-                    return new ViewService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new ViewService(hostname, bucket, username, password, port, ctx);
                 case CONFIG:
-                    return new ConfigService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new ConfigService(hostname, bucket, username, password, port, ctx);
                 case QUERY:
-                    return new QueryService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new QueryService(hostname, bucket, username, password, port, ctx);
                 case SEARCH:
-                    return new SearchService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new SearchService(hostname, bucket, username, password, port, ctx);
                 case ANALYTICS:
-                    return new AnalyticsService(hostname, bucket, username, password, port, env, responseBuffer);
+                    return new AnalyticsService(hostname, bucket, username, password, port, ctx);
                 default:
                     throw new IllegalArgumentException("Unknown Service Type: " + type);
             }

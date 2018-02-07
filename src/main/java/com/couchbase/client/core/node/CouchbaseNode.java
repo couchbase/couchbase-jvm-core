@@ -283,9 +283,8 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
             request.username(),
             request.password(),
             request.port(),
-            environment,
-            request.type(),
-            responseBuffer
+            ctx,
+            request.type()
         );
 
         serviceStates.register(service, service);

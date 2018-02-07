@@ -201,7 +201,7 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-                eq(0), same(environment), eq(ServiceType.BINARY), any(RingBuffer.class))).thenReturn(binaryServiceMock);
+                eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);
@@ -270,14 +270,14 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-        eq(0), same(environment), eq(ServiceType.BINARY), any(RingBuffer.class))).thenReturn(binaryServiceMock);
+        eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
         Service configServiceMock = mock(Service.class);
         when(configServiceMock.type()).thenReturn(ServiceType.CONFIG);
         when(configServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(configServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-                eq(0), same(environment), eq(ServiceType.CONFIG), any(RingBuffer.class))).thenReturn(configServiceMock);
+                eq(0), same(ctx), eq(ServiceType.CONFIG))).thenReturn(configServiceMock);
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);
 
@@ -328,7 +328,7 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-                eq(0), same(environment), eq(ServiceType.BINARY), any(RingBuffer.class))).thenReturn(binaryServiceMock);
+                eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);

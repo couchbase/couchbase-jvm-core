@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
@@ -34,9 +35,8 @@ import rx.functions.Action1;
  */
 public abstract class AbstractOnDemandService extends AbstractDynamicService {
 
-    protected AbstractOnDemandService(String hostname, String bucket, String username, String password, int port, CoreEnvironment env,
-        RingBuffer<ResponseEvent> responseBuffer, EndpointFactory endpointFactory) {
-        super(hostname, bucket, username, password, port, env, 0, responseBuffer, endpointFactory);
+    protected AbstractOnDemandService(String hostname, String bucket, String username, String password, int port, CoreContext ctx, EndpointFactory endpointFactory) {
+        super(hostname, bucket, username, password, port, ctx, 0, endpointFactory);
     }
 
     @Override

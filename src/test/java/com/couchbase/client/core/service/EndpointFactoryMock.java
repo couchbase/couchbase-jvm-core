@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.service;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -55,18 +56,20 @@ public class EndpointFactoryMock implements Service.EndpointFactory {
     private final String password;
     private final int port;
     private final CoreEnvironment env;
+    private final CoreContext ctx;
     private final RingBuffer<ResponseEvent> responseBuffer;
     private final List<Endpoint> endpoints;
     private final List<BehaviorSubject<LifecycleState>> endpointStates;
     private final List<Action2<Endpoint, BehaviorSubject<LifecycleState>>> createActions;
 
-    EndpointFactoryMock(String hostname, String bucket, String password, int port, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
+    EndpointFactoryMock(String hostname, String bucket, String password, int port, CoreContext ctx) {
         this.hostname = hostname;
         this.bucket = bucket;
         this.password = password;
         this.port = port;
-        this.env = env;
-        this.responseBuffer = responseBuffer;
+        this.ctx = ctx;
+        this.env = ctx.environment();
+        this.responseBuffer = ctx.responseRingBuffer();
         this.endpoints = Collections.synchronizedList(new ArrayList<Endpoint>());
         this.endpointStates = Collections.synchronizedList(new ArrayList<BehaviorSubject<LifecycleState>>());
         this.createActions = Collections.synchronizedList(
@@ -74,8 +77,8 @@ public class EndpointFactoryMock implements Service.EndpointFactory {
         );
     }
 
-    public static EndpointFactoryMock simple(CoreEnvironment env, RingBuffer<ResponseEvent> rb) {
-        return new EndpointFactoryMock(DEFAULT_HOST, DEFAULT_BUCKET, DEFAULT_PASSWORD, DEFAULT_PORT, env, rb);
+    public static EndpointFactoryMock simple(CoreContext ctx) {
+        return new EndpointFactoryMock(DEFAULT_HOST, DEFAULT_BUCKET, DEFAULT_PASSWORD, DEFAULT_PORT, ctx);
     }
 
     public void onCreate(final Action2<Endpoint, BehaviorSubject<LifecycleState>> createAction) {
@@ -114,7 +117,8 @@ public class EndpointFactoryMock implements Service.EndpointFactory {
         });
     }
 
-    public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreEnvironment env, RingBuffer<ResponseEvent> responseBuffer) {
+    @Override
+    public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
         final BehaviorSubject<LifecycleState> state = BehaviorSubject.create(LifecycleState.DISCONNECTED);
         final Endpoint endpoint = mock(Endpoint.class);
         when(endpoint.states()).thenReturn(state);
@@ -193,5 +197,9 @@ public class EndpointFactoryMock implements Service.EndpointFactory {
 
     public RingBuffer<ResponseEvent> getResponseBuffer() {
         return responseBuffer;
+    }
+
+    public CoreContext getCtx() {
+        return ctx;
     }
 }
