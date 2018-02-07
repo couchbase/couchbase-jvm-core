@@ -131,6 +131,11 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     private final EventBus eventBus;
 
     /**
+     * The core context used.
+     */
+    private final CoreContext ctx;
+
+    /**
      * Contains the current cluster configuration.
      */
     private volatile ClusterConfig configuration;
@@ -154,6 +159,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         this.environment = ctx.environment();
         this.responseBuffer = ctx.responseRingBuffer();
         this.eventBus = environment.eventBus();
+        this.ctx = ctx;
         configuration = null;
 
         configObservable.subscribe(new Action1<ClusterConfig>() {
@@ -286,7 +292,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             LOGGER.debug("Node {} already registered, skipping.", hostname);
             return Observable.just(node.state());
         }
-        return addNode(new CouchbaseNode(hostname, environment, responseBuffer));
+        return addNode(new CouchbaseNode(hostname, ctx));
     }
 
     /**

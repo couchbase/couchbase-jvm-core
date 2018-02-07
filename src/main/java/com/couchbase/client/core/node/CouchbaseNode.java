@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.node;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.event.EventBus;
@@ -103,6 +104,11 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     private final ServiceStateZipper serviceStates;
 
+    /**
+     * The core context used.
+     */
+    private final CoreContext ctx;
+
     private volatile boolean connected;
 
     /**
@@ -110,19 +116,19 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      */
     private volatile int enabledServices;
 
-    public CouchbaseNode(final NetworkAddress hostname, final CoreEnvironment environment,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, new DefaultServiceRegistry(), environment, responseBuffer, ServiceFactory.INSTANCE);
+    public CouchbaseNode(final NetworkAddress hostname, final CoreContext ctx) {
+        this(hostname, new DefaultServiceRegistry(), ctx, ServiceFactory.INSTANCE);
     }
 
-    CouchbaseNode(final NetworkAddress hostname, ServiceRegistry registry, final CoreEnvironment environment,
-        final RingBuffer<ResponseEvent> responseBuffer, ServiceFactory serviceFactory) {
+    CouchbaseNode(final NetworkAddress hostname, ServiceRegistry registry, final CoreContext ctx,
+        ServiceFactory serviceFactory) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;
         this.convertedHostname = hostname.nameOrAddress();
         this.serviceRegistry = registry;
-        this.environment = environment;
-        this.responseBuffer = responseBuffer;
+        this.environment = ctx.environment();
+        this.responseBuffer = ctx.responseRingBuffer();
+        this.ctx = ctx;
         this.eventBus = environment.eventBus();
         this.serviceFactory = serviceFactory;
         this.serviceStates = new ServiceStateZipper(LifecycleState.DISCONNECTED);
