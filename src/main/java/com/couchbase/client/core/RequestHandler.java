@@ -138,9 +138,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
     /**
      * Create a new {@link RequestHandler}.
      */
-    public RequestHandler(final CoreEnvironment environment, final Observable<ClusterConfig> configObservable,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        this(new CopyOnWriteArrayList<Node>(), environment, configObservable, responseBuffer);
+    public RequestHandler(final CoreContext ctx, final Observable<ClusterConfig> configObservable) {
+        this(new CopyOnWriteArrayList<Node>(), ctx, configObservable);
     }
 
     /**
@@ -149,11 +148,11 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * This constructor should only be used for testing purposes.
      * @param nodes the node list to start with.
      */
-    RequestHandler(final CopyOnWriteArrayList<Node> nodes, final CoreEnvironment environment,
-        final Observable<ClusterConfig> configObservable, final RingBuffer<ResponseEvent> responseBuffer) {
+    RequestHandler(final CopyOnWriteArrayList<Node> nodes, final CoreContext ctx,
+        final Observable<ClusterConfig> configObservable) {
         this.nodes = nodes;
-        this.environment = environment;
-        this.responseBuffer = responseBuffer;
+        this.environment = ctx.environment();
+        this.responseBuffer = ctx.responseRingBuffer();
         this.eventBus = environment.eventBus();
         configuration = null;
 

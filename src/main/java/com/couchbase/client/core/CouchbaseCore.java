@@ -181,7 +181,9 @@ public class CouchbaseCore implements ClusterFacade {
             ProducerType.MULTI,
             environment.requestBufferWaitStrategy().newWaitStrategy()
         );
-        requestHandler = new RequestHandler(environment, configProvider.configs(), responseRingBuffer);
+
+        CoreContext ctx = new CoreContext(environment, responseRingBuffer);
+        requestHandler = new RequestHandler(ctx, configProvider.configs());
         requestDisruptor.setDefaultExceptionHandler(new ExceptionHandler<RequestEvent>() {
             @Override
             public void handleEventException(Throwable ex, long sequence, RequestEvent event) {

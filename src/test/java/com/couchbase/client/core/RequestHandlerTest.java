@@ -59,12 +59,13 @@ import static org.mockito.Mockito.when;
 public class RequestHandlerTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+    private static final CoreContext ctx = new CoreContext(environment, null);
     private static final Observable<ClusterConfig> configObservable = Observable.empty();
 
     @Test
     public void shouldAddNodes() {
         CopyOnWriteArrayList<Node> nodes = new CopyOnWriteArrayList<Node>();
-        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+        RequestHandler handler = new RequestHandler(nodes, ctx, configObservable);
 
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
@@ -76,7 +77,7 @@ public class RequestHandlerTest {
     @Test
     public void shouldIgnoreAlreadyAddedNode() throws Exception {
         CopyOnWriteArrayList<Node> nodes = new CopyOnWriteArrayList<Node>();
-        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+        RequestHandler handler = new RequestHandler(nodes, ctx, configObservable);
 
         assertEquals(0, nodes.size());
         Node nodeMock = mock(Node.class);
@@ -90,7 +91,7 @@ public class RequestHandlerTest {
     @Test
     public void shouldRemoveNodes() {
         CopyOnWriteArrayList<Node> nodes = new CopyOnWriteArrayList<Node>();
-        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+        RequestHandler handler = new RequestHandler(nodes, ctx, configObservable);
 
         Node node1 = mock(Node.class);
         when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
@@ -124,7 +125,7 @@ public class RequestHandlerTest {
     @Test
     public void shouldRemoveNodeEvenIfNotDisconnected() throws Exception {
         CopyOnWriteArrayList<Node> nodes = new CopyOnWriteArrayList<Node>();
-        RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+        RequestHandler handler = new RequestHandler(nodes, ctx, configObservable);
 
         Node node1 = mock(Node.class);
         when(node1.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
@@ -142,7 +143,7 @@ public class RequestHandlerTest {
         when(mockClusterConfig.hasBucket(anyString())).thenReturn(Boolean.TRUE);
         Observable<ClusterConfig> mockConfigObservable = Observable.just(mockClusterConfig);
 
-        RequestHandler handler = new DummyLocatorClusterNodeHandler(environment, mockConfigObservable);
+        RequestHandler handler = new DummyLocatorClusterNodeHandler(ctx, mockConfigObservable);
         Node mockNode = mock(Node.class);
         when(mockNode.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(mockNode.state()).thenReturn(LifecycleState.CONNECTED);
@@ -183,7 +184,8 @@ public class RequestHandlerTest {
         when(mockClusterConfig.hasBucket(anyString())).thenReturn(Boolean.TRUE);
         Observable<ClusterConfig> mockConfigObservable = Observable.just(mockClusterConfig);
 
-        RequestHandler handler = new DummyLocatorClusterNodeHandler(env, mockConfigObservable);
+        CoreContext ctx = new CoreContext(env, null);
+        RequestHandler handler = new DummyLocatorClusterNodeHandler(ctx, mockConfigObservable);
         Node mockNode = mock(Node.class);
         when(mockNode.connect()).thenReturn(Observable.just(LifecycleState.DISCONNECTED));
         when(mockNode.state()).thenReturn(LifecycleState.DISCONNECTED);
@@ -214,7 +216,7 @@ public class RequestHandlerTest {
         CopyOnWriteArrayList<Node> nodes = Mockito.spy(new CopyOnWriteArrayList<Node>());
         when(nodes.isEmpty()).thenReturn(false);
 
-        final RequestHandler handler = new RequestHandler(nodes, environment, configObservable, null);
+        final RequestHandler handler = new RequestHandler(nodes, ctx, configObservable);
 
         //mock and add the nodes
         final Node node1 = mock(Node.class);
@@ -254,13 +256,13 @@ public class RequestHandlerTest {
 
         private Locator LOCATOR = new DummyLocator();
 
-        DummyLocatorClusterNodeHandler(CoreEnvironment environment) {
-            super(environment, configObservable, null);
+        DummyLocatorClusterNodeHandler(CoreContext ctx) {
+            super(ctx, configObservable);
         }
 
-        DummyLocatorClusterNodeHandler(CoreEnvironment environment,
+        DummyLocatorClusterNodeHandler(CoreContext ctx,
                 Observable<ClusterConfig> specificConfigObservable) {
-            super(environment, specificConfigObservable, null);
+            super(ctx, specificConfigObservable);
         }
 
         @Override
