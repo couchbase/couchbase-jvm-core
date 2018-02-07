@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.kv;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -42,24 +43,24 @@ public class KeyValueEndpoint extends AbstractEndpoint {
      * Create a new {@link KeyValueEndpoint}.
      *
      * @param hostname the hostname to connect on this endpoint.
-     * @param env the couchbase environment.
+     * @param ctx the core context used.
      */
     @Deprecated
     public KeyValueEndpoint(final String hostname, final String bucket, final String password, int port,
-                            final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+                            final CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
     /**
      * Create a new {@link KeyValueEndpoint}.
      *
      * @param hostname the hostname to connect on this endpoint.
-     * @param env the couchbase environment.
+     * @param ctx the core context used.
      */
     public KeyValueEndpoint(final String hostname, final String bucket, final String username, final String password, int port,
-        final CoreEnvironment env, final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, responseBuffer, false,
-                env.kvIoPool() == null ? env.ioPool() : env.kvIoPool(), true);
+        final CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, false,
+                ctx.environment().kvIoPool() == null ? ctx.environment().ioPool() : ctx.environment().kvIoPool(), true);
     }
 
 

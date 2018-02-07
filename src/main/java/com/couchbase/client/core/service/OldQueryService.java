@@ -87,7 +87,7 @@ public class OldQueryService extends AbstractPoolingService {
         @Override
         public Endpoint create(final String hostname, final String bucket, final String username, final String password, final int port,
                                final CoreContext ctx) {
-            return new QueryEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
+            return new QueryEndpoint(hostname, bucket, username, password, port, ctx);
         }
     }
 }

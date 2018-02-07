@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.config;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -25,14 +26,12 @@ import io.netty.handler.codec.http.HttpClientCodec;
 public class ConfigEndpoint extends AbstractEndpoint {
 
     @Deprecated
-    public ConfigEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
-                          final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, environment, responseBuffer);
+    public ConfigEndpoint(String hostname, String bucket, String password, int port, CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
-    public ConfigEndpoint(String hostname, String bucket, String username, String password, int port, CoreEnvironment environment,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, environment, responseBuffer, true, environment.ioPool(), false);
+    public ConfigEndpoint(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, true, ctx.environment().ioPool(), false);
     }
 
     @Override

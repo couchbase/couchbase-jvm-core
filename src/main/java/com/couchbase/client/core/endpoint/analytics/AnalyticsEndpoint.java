@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.analytics;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -33,15 +34,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class AnalyticsEndpoint extends AbstractEndpoint {
 
-    public AnalyticsEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
-                             RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, environment, responseBuffer);
+    public AnalyticsEndpoint(String hostname, String bucket, String password, int port, CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
-    public AnalyticsEndpoint(String hostname, String bucket, String username, String password, int port, CoreEnvironment environment,
-        RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, environment, responseBuffer, false,
-                environment.queryIoPool() == null ? environment.ioPool() : environment.queryIoPool(), false);
+    public AnalyticsEndpoint(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, false,
+                ctx.environment().queryIoPool() == null ? ctx.environment().ioPool() : ctx.environment().queryIoPool(), false);
     }
 
     @Override

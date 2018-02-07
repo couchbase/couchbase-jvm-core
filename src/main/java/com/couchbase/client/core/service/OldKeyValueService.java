@@ -80,7 +80,7 @@ public class OldKeyValueService extends AbstractPoolingService {
         @Override
         public Endpoint create(String hostname, String bucket, String username, String password, int port,
                                CoreContext ctx) {
-            return new KeyValueEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
+            return new KeyValueEndpoint(hostname, bucket, username, password, port, ctx);
         }
     }
 }

@@ -85,8 +85,7 @@ public class ViewService extends PooledService {
         @Override
         public Endpoint create(final String hostname, final String bucket, final String username,
             final String password, final int port, final CoreContext ctx) {
-            return new ViewEndpoint(hostname, bucket, username, password, port, ctx.environment(),
-                ctx.responseRingBuffer());
+            return new ViewEndpoint(hostname, bucket, username, password, port, ctx);
         }
     }
 }

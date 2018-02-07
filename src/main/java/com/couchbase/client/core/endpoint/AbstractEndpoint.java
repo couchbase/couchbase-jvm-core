@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
@@ -142,6 +143,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private final CoreEnvironment env;
 
     /**
+     * The core context to use.
+     */
+    private final CoreContext ctx;
+
+    /**
      * Defines if the endpoint should destroy itself after one successful msg.
      */
     private final boolean isTransient;
@@ -200,7 +206,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * Constructor to which allows to pass in an artificial bootstrap adapter.
      *
      * This method should not be used outside of tests. Please use the
-     * {@link #AbstractEndpoint(String, String, String, String, int, CoreEnvironment, RingBuffer, boolean, EventLoopGroup, boolean)}
+     * {@link #AbstractEndpoint(String, String, String, String, int, CoreContext, boolean, EventLoopGroup, boolean)}
      * constructor instead.
      *
      * @param bucket the name of the bucket.
@@ -209,14 +215,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param adapter the bootstrap adapter.
      */
     protected AbstractEndpoint(final String bucket, final String username, final String password, final BootstrapAdapter adapter,
-        final boolean isTransient, CoreEnvironment env, final boolean pipeline) {
+        final boolean isTransient, CoreContext ctx, final boolean pipeline) {
         super(LifecycleState.DISCONNECTED);
         bootstrap = adapter;
         this.bucket = bucket;
         this.username = username;
         this.password = password;
         this.responseBuffer = null;
-        this.env = env;
+        this.env = ctx.environment();
+        this.ctx = ctx;
         this.isTransient = isTransient;
         this.disconnected = false;
         this.pipeline = pipeline;
@@ -235,18 +242,18 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @param username the user authorized for bucket access.
      * @param password the password of the user.
      * @param port the port of the remote channel.
-     * @param environment the environment of the core.
-     * @param responseBuffer the response buffer for passing responses up the stack.
+     * @param ctx the core context.
      */
     protected AbstractEndpoint(final String hostname, final String bucket, final String username, final String password, final int port,
-        final CoreEnvironment environment, final RingBuffer<ResponseEvent> responseBuffer, boolean isTransient,
+        final CoreContext ctx, boolean isTransient,
         final EventLoopGroup ioPool, final boolean pipeline) {
         super(LifecycleState.DISCONNECTED);
         this.bucket = bucket;
         this.username = username;
         this.password = password;
-        this.responseBuffer = responseBuffer;
-        this.env = environment;
+        this.responseBuffer = ctx.responseRingBuffer();
+        this.env = ctx.environment();
+        this.ctx = ctx;
         this.isTransient = isTransient;
         this.ioPool = ioPool;
         this.pipeline = pipeline;
@@ -257,8 +264,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         );
         LOGGER.debug("Using a connectCallbackGracePeriod of {} on Endpoint {}:{}", connectCallbackGracePeriod,
             hostname, port);
-        if (environment.sslEnabled()) {
-            this.sslEngineFactory = new SSLEngineFactory(environment);
+        if (env.sslEnabled()) {
+            this.sslEngineFactory = new SSLEngineFactory(env);
         }
 
         Class<? extends Channel> channelClass = NioSocketChannel.class;
@@ -283,7 +290,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 @Override
                 protected void initChannel(Channel channel) throws Exception {
                     ChannelPipeline pipeline = channel.pipeline();
-                    if (environment.sslEnabled()) {
+                    if (env.sslEnabled()) {
                         pipeline.addLast(new SslHandler(sslEngineFactory.get()));
                     }
                     if (LOGGER.isTraceEnabled()) {
@@ -701,6 +708,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     public CoreEnvironment environment() {
         return env;
+    }
+
+    /**
+     * The {@link CoreContext} reference.
+     *
+     * @return the context.
+     */
+    public CoreContext context() {
+        return ctx;
     }
 
     /**

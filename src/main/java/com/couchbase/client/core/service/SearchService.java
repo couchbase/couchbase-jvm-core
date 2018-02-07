@@ -81,7 +81,7 @@ public class SearchService extends PooledService {
         @Override
         public Endpoint create(final String hostname, final String bucket, final String username, final String password, final int port,
                                final CoreContext ctx) {
-            return new SearchEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
+            return new SearchEndpoint(hostname, bucket, username, password, port, ctx);
         }
     }
 

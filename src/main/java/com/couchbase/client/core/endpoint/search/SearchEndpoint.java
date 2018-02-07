@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.search;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -34,15 +35,13 @@ import java.util.concurrent.TimeUnit;
 public class SearchEndpoint extends AbstractEndpoint {
 
     @Deprecated
-    public SearchEndpoint(String hostname, String bucket, String password, int port, CoreEnvironment environment,
-                          RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, environment, responseBuffer);
+    public SearchEndpoint(String hostname, String bucket, String password, int port, CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
-    public SearchEndpoint(String hostname, String bucket, String username, String password, int port, CoreEnvironment environment,
-                          RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, environment, responseBuffer, false,
-                environment.searchIoPool() == null ? environment.ioPool() : environment.searchIoPool(), false);
+    public SearchEndpoint(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, false,
+                ctx.environment().searchIoPool() == null ? ctx.environment().ioPool() : ctx.environment().searchIoPool(), false);
     }
 
     @Override

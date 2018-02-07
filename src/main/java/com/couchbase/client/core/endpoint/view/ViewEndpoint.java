@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.view;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -31,15 +32,13 @@ import java.util.concurrent.TimeUnit;
 public class ViewEndpoint extends AbstractEndpoint {
 
     @Deprecated
-    public ViewEndpoint(final String hostname, String bucket, String password, int port, final CoreEnvironment env,
-                        final RingBuffer<ResponseEvent> responseBuffer) {
-        this(hostname, bucket, bucket, password, port, env, responseBuffer);
+    public ViewEndpoint(final String hostname, String bucket, String password, int port, final CoreContext ctx) {
+        this(hostname, bucket, bucket, password, port, ctx);
     }
 
-    public ViewEndpoint(final String hostname, String bucket, String username, String password, int port, final CoreEnvironment env,
-        final RingBuffer<ResponseEvent> responseBuffer) {
-        super(hostname, bucket, username, password, port, env, responseBuffer, false,
-                env.viewIoPool() == null ? env.ioPool() : env.viewIoPool(), false);
+    public ViewEndpoint(final String hostname, String bucket, String username, String password, int port, final CoreContext ctx) {
+        super(hostname, bucket, username, password, port, ctx, false,
+                ctx.environment().viewIoPool() == null ? ctx.environment().ioPool() : ctx.environment().viewIoPool(), false);
     }
 
     @Override

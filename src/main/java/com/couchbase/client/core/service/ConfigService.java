@@ -46,7 +46,7 @@ public class ConfigService extends AbstractOnDemandService {
 
     static class ConfigEndpointFactory implements EndpointFactory {
         public Endpoint create(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
-            return new ConfigEndpoint(hostname, bucket, username, password, port, ctx.environment(), ctx.responseRingBuffer());
+            return new ConfigEndpoint(hostname, bucket, username, password, port, ctx);
         }
     }
 
