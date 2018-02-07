@@ -19,13 +19,13 @@ import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
-import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,6 +38,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -53,11 +54,12 @@ import java.util.List;
 public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
     implements ChannelOutboundHandler {
 
+    private static final ObjectMapper JACKSON = new ObjectMapper();
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueFeatureHandler.class);
     private static final byte HELLO_CMD = 0x1f;
 
     private final List<ServerFeatures> features;
-    private final String userAgent;
+    private final CoreContext ctx;
 
     /**
      * The connect promise issued by the connect process.
@@ -71,8 +73,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         boolean snappyEnabled = Boolean.parseBoolean(
             System.getProperty("com.couchbase.snappyEnabled", "true")
         );
-
-        userAgent = ctx.environment().userAgent();
+        this.ctx = ctx;
         boolean tcpNodelay = ctx.environment().tcpNodelayEnabled();
 
         features = new ArrayList<ServerFeatures>();
@@ -113,16 +114,21 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-       ctx.writeAndFlush(helloRequest());
+       ctx.writeAndFlush(helloRequest(ctx.channel().hashCode()));
     }
 
     /**
      * Creates the HELLO request to ask for certain supported features.
      *
+     * @param connId the connection id
      * @return the request to send over the wire
      */
-    private FullBinaryMemcacheRequest helloRequest() {
-        byte[] key = userAgent.getBytes(CharsetUtil.UTF_8);
+    private FullBinaryMemcacheRequest helloRequest(int connId) throws Exception {
+        byte[] key = generateAgentJson(
+            ctx.environment().userAgent(),
+            ctx.coreId(),
+            connId
+        );
         short keyLength = (short) key.length;
 
         ByteBuf wanted = Unpooled.buffer(features.size() * 2);
@@ -136,6 +142,31 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         request.setKeyLength(keyLength);
         request.setTotalBodyLength(keyLength + wanted.readableBytes());
         return request;
+    }
+
+    /**
+     * Helper method to generate the user agent JSON.
+     */
+    static byte[] generateAgentJson(String agent, long coreId, long channelId) throws Exception {
+        String id = paddedHex(coreId) + "/" + paddedHex(channelId);
+        if (agent.length() > 200) {
+            agent = agent.substring(0, 200);
+        }
+
+        HashMap<String, String> result = new HashMap<String, String>();
+        result.put("a", agent);
+        result.put("i", id);
+        return JACKSON.writeValueAsBytes(result);
+    }
+
+    /**
+     * Helper method to create a padded hex long value.
+     *
+     * @param number number to pad.
+     * @return the padded hex number.
+     */
+    private static String paddedHex(long number) {
+        return String.format("%016X", number);
     }
 
     @Override
