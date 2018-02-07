@@ -34,17 +34,32 @@ public class CoreContext {
 
     private final CoreEnvironment environment;
     private final RingBuffer<ResponseEvent> responseRingBuffer;
+    private final int coreId;
 
     /**
-     * Creates a new {@link CoreContext}.
+     * Creates a new {@link CoreContext} with no core id.
      *
      * @param environment the environment to share.
      * @param responseRingBuffer the response ring buffer to share.
      */
     public CoreContext(final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseRingBuffer) {
+        this(environment, responseRingBuffer, 0);
+    }
+
+    /**
+     * Creates a new {@link CoreContext} with no a core id.
+     *
+     * @param environment the environment to share.
+     * @param responseRingBuffer the response ring buffer to share.
+     * @param coreId the core id to use.
+     */
+    public CoreContext(final CoreEnvironment environment,
+        final RingBuffer<ResponseEvent> responseRingBuffer,
+        final int coreId) {
         this.environment = environment;
         this.responseRingBuffer = responseRingBuffer;
+        this.coreId = coreId;
     }
 
     /**
@@ -59,5 +74,12 @@ public class CoreContext {
      */
     public RingBuffer<ResponseEvent> responseRingBuffer() {
         return responseRingBuffer;
+    }
+
+    /**
+     * The core it, 0 if not set.
+     */
+    public int coreId() {
+        return coreId;
     }
 }

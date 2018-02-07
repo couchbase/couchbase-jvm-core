@@ -64,6 +64,7 @@ import rx.functions.Func1;
 import rx.subjects.Subject;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.couchbase.client.core.logging.RedactableArgument.user;
 
@@ -74,6 +75,11 @@ import static com.couchbase.client.core.logging.RedactableArgument.user;
  * @since 1.0
  */
 public class CouchbaseCore implements ClusterFacade {
+
+    /**
+     * Core ID, increasing on every instance.
+     */
+    private static final AtomicInteger CORE_ID = new AtomicInteger();
 
     /**
      * The logger used.
@@ -120,6 +126,12 @@ public class CouchbaseCore implements ClusterFacade {
     private final CouchbaseCoreSendHook coreSendHook;
 
     /**
+     * The current core id.
+     */
+    private final int coreId;
+
+
+    /**
      * Populate the static exceptions with stack trace elements.
      */
     static {
@@ -142,6 +154,7 @@ public class CouchbaseCore implements ClusterFacade {
         LOGGER.debug(Diagnostics.collectAndFormat());
 
         this.environment = environment;
+        this.coreId = CORE_ID.incrementAndGet();
         this.coreSendHook = environment.couchbaseCoreSendHook();
         configProvider = new DefaultConfigurationProvider(this, environment);
         ThreadFactory disruptorThreadFactory = new DefaultThreadFactory("cb-core", true);
@@ -182,7 +195,7 @@ public class CouchbaseCore implements ClusterFacade {
             environment.requestBufferWaitStrategy().newWaitStrategy()
         );
 
-        CoreContext ctx = new CoreContext(environment, responseRingBuffer);
+        CoreContext ctx = new CoreContext(environment, responseRingBuffer, coreId);
         requestHandler = new RequestHandler(ctx, configProvider.configs());
         requestDisruptor.setDefaultExceptionHandler(new ExceptionHandler<RequestEvent>() {
             @Override
@@ -381,5 +394,10 @@ public class CouchbaseCore implements ClusterFacade {
                 .observable()
                 .onError(new IllegalArgumentException("Unknown request " + request));
         }
+    }
+
+    @Override
+    public int id() {
+        return coreId;
     }
 }

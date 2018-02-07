@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.kv;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
@@ -63,7 +64,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
      */
     private ChannelPromise originalPromise;
 
-    public KeyValueFeatureHandler(CoreEnvironment environment) {
+    public KeyValueFeatureHandler(CoreContext ctx) {
         boolean xerrorEnabled = Boolean.parseBoolean(
             System.getProperty("com.couchbase.xerrorEnabled", "true")
         );
@@ -71,11 +72,11 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
             System.getProperty("com.couchbase.snappyEnabled", "true")
         );
 
-        userAgent = environment.userAgent();
-        boolean tcpNodelay = environment.tcpNodelayEnabled();
+        userAgent = ctx.environment().userAgent();
+        boolean tcpNodelay = ctx.environment().tcpNodelayEnabled();
 
         features = new ArrayList<ServerFeatures>();
-        if (environment.mutationTokensEnabled()) {
+        if (ctx.environment().mutationTokensEnabled()) {
             features.add(ServerFeatures.MUTATION_SEQNO);
         }
         features.add(tcpNodelay ? ServerFeatures.TCPNODELAY : ServerFeatures.TCPDELAY);

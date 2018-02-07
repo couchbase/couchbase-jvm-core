@@ -40,4 +40,9 @@ public interface ClusterFacade {
     @InterfaceStability.Committed
     @InterfaceAudience.Public
     <R extends CouchbaseResponse> Observable<R> send(CouchbaseRequest request);
+
+    /**
+     * The core id is unique per core instance.
+     */
+    int id();
 }

@@ -89,11 +89,11 @@ public class KeyValueEndpoint extends AbstractEndpoint {
             }
 
             pipeline
-                .addLast(new KeyValueFeatureHandler(environment()))
+                .addLast(new KeyValueFeatureHandler(context()))
                 .addLast(new KeyValueErrorMapHandler());
         } else {
             pipeline
-                .addLast(new KeyValueFeatureHandler(environment()))
+                .addLast(new KeyValueFeatureHandler(context()))
                 .addLast(new KeyValueErrorMapHandler());
 
             if (!environment().certAuthEnabled()) {
