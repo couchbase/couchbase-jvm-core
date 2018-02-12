@@ -938,7 +938,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return forceSaslPlain;
     }
 
-    public static class Builder {
+    public static class Builder<SELF extends Builder<SELF>> {
 
         private boolean sslEnabled = SSL_ENABLED;
         private String sslKeystoreFile = SSL_KEYSTORE_FILE;
@@ -1013,13 +1013,18 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         protected Builder() {
         }
 
+        @SuppressWarnings({ "unchecked" })
+        protected SELF self() {
+            return (SELF) this;
+        }
+
         /**
          * Set if SSL should be enabled (default value {@value #SSL_ENABLED}).
          * If true, also set {@link #sslKeystoreFile(String)} and {@link #sslKeystorePassword(String)}.
          */
-        public Builder sslEnabled(final boolean sslEnabled) {
+        public SELF sslEnabled(final boolean sslEnabled) {
             this.sslEnabled = sslEnabled;
-            return this;
+            return self();
         }
 
         /**
@@ -1032,9 +1037,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * X.509 client cert authentication you might as well just use {@link #sslTruststoreFile(String)}
          * alone.
          */
-        public Builder sslKeystoreFile(final String sslKeystoreFile) {
+        public SELF sslKeystoreFile(final String sslKeystoreFile) {
             this.sslKeystoreFile = sslKeystoreFile;
-            return this;
+            return self();
         }
 
         /**
@@ -1046,9 +1051,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * this method over the {@link #sslKeystoreFile(String)} if you do not need
          * X.509 client auth and just need server side certificate checking.
          */
-        public Builder sslTruststoreFile(final String sslTruststoreFile) {
+        public SELF sslTruststoreFile(final String sslTruststoreFile) {
             this.sslTruststoreFile = sslTruststoreFile;
-            return this;
+            return self();
         }
 
         /**
@@ -1056,9 +1061,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @see #sslKeystoreFile(String)
          */
-        public Builder sslKeystorePassword(final String sslKeystorePassword) {
+        public SELF sslKeystorePassword(final String sslKeystorePassword) {
             this.sslKeystorePassword = sslKeystorePassword;
-            return this;
+            return self();
         }
 
         /**
@@ -1066,9 +1071,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @see #sslKeystoreFile(String)
          */
-        public Builder sslTruststorePassword(final String sslTruststorePassword) {
+        public SELF sslTruststorePassword(final String sslTruststorePassword) {
             this.sslTruststorePassword = sslTruststorePassword;
-            return this;
+            return self();
         }
 
         /**
@@ -1083,9 +1088,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param sslKeystore the keystore to use.
          */
-        public Builder sslKeystore(final KeyStore sslKeystore) {
+        public SELF sslKeystore(final KeyStore sslKeystore) {
             this.sslKeystore = sslKeystore;
-            return this;
+            return self();
         }
 
         /**
@@ -1099,61 +1104,61 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param sslTruststore the keystore to use.
          */
-        public Builder sslTruststore(final KeyStore sslTruststore) {
+        public SELF sslTruststore(final KeyStore sslTruststore) {
             this.sslTruststore = sslTruststore;
-            return this;
+            return self();
         }
 
         /**
          * Toggles bootstrap via Http (default value {@value #BOOTSTRAP_HTTP_ENABLED}).
          */
-        public Builder bootstrapHttpEnabled(final boolean bootstrapHttpEnabled) {
+        public SELF bootstrapHttpEnabled(final boolean bootstrapHttpEnabled) {
             this.bootstrapHttpEnabled = bootstrapHttpEnabled;
-            return this;
+            return self();
         }
 
         /**
          * Toggles bootstrap via carrier publication (default value {@value #BOOTSTRAP_CARRIER_ENABLED}).
          */
-        public Builder bootstrapCarrierEnabled(final boolean bootstrapCarrierEnabled) {
+        public SELF bootstrapCarrierEnabled(final boolean bootstrapCarrierEnabled) {
             this.bootstrapCarrierEnabled = bootstrapCarrierEnabled;
-            return this;
+            return self();
         }
 
         /**
          * If Http bootstrap is enabled and not SSL, sets the port to use
          * (default value {@value #BOOTSTRAP_HTTP_DIRECT_PORT}).
          */
-        public Builder bootstrapHttpDirectPort(final int bootstrapHttpDirectPort) {
+        public SELF bootstrapHttpDirectPort(final int bootstrapHttpDirectPort) {
             this.bootstrapHttpDirectPort = bootstrapHttpDirectPort;
-            return this;
+            return self();
         }
 
         /**
          * If Http bootstrap and SSL are enabled, sets the port to use
          * (default value {@value #BOOTSTRAP_HTTP_SSL_PORT}).
          */
-        public Builder bootstrapHttpSslPort(final int bootstrapHttpSslPort) {
+        public SELF bootstrapHttpSslPort(final int bootstrapHttpSslPort) {
             this.bootstrapHttpSslPort = bootstrapHttpSslPort;
-            return this;
+            return self();
         }
 
         /**
          * If carrier publication bootstrap is enabled and not SSL, sets the port to use
          * (default value {@value #BOOTSTRAP_CARRIER_DIRECT_PORT}).
          */
-        public Builder bootstrapCarrierDirectPort(final int bootstrapCarrierDirectPort) {
+        public SELF bootstrapCarrierDirectPort(final int bootstrapCarrierDirectPort) {
             this.bootstrapCarrierDirectPort = bootstrapCarrierDirectPort;
-            return this;
+            return self();
         }
 
         /**
          * If carrier publication bootstrap and SSL are enabled, sets the port to use
          * (default value {@value #BOOTSTRAP_CARRIER_SSL_PORT}).
          */
-        public Builder bootstrapCarrierSslPort(final int bootstrapCarrierSslPort) {
+        public SELF bootstrapCarrierSslPort(final int bootstrapCarrierSslPort) {
             this.bootstrapCarrierSslPort = bootstrapCarrierSslPort;
-            return this;
+            return self();
         }
 
         /**
@@ -1163,9 +1168,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * If there is more nodes in the cluster than the defined
          * ioPoolSize, multiplexing will automatically happen.
          */
-        public Builder ioPoolSize(final int ioPoolSize) {
+        public SELF ioPoolSize(final int ioPoolSize) {
             this.ioPoolSize = ioPoolSize;
-            return this;
+            return self();
         }
 
         /**
@@ -1174,18 +1179,18 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * Don't size it too small since it would significantly impact performance.
          */
-        public Builder computationPoolSize(final int computationPoolSize) {
+        public SELF computationPoolSize(final int computationPoolSize) {
             this.computationPoolSize = computationPoolSize;
-            return this;
+            return self();
         }
 
         /**
          * Sets the size of the RingBuffer structure that queues requests (default value {@value #REQUEST_BUFFER_SIZE}).
          * This is an advanced parameter that usually shouldn't need to be changed.
          */
-        public Builder requestBufferSize(final int requestBufferSize) {
+        public SELF requestBufferSize(final int requestBufferSize) {
             this.requestBufferSize = requestBufferSize;
-            return this;
+            return self();
         }
 
         /**
@@ -1193,9 +1198,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * (default value {@value #RESPONSE_BUFFER_SIZE}).
          * This is an advanced parameter that usually shouldn't need to be changed
          */
-        public Builder responseBufferSize(final int responseBufferSize) {
+        public SELF responseBufferSize(final int responseBufferSize) {
             this.responseBufferSize = responseBufferSize;
-            return this;
+            return self();
         }
 
         /**
@@ -1207,9 +1212,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @deprecated Please use {@link Builder#keyValueServiceConfig(KeyValueServiceConfig)} going forward.
          */
-        public Builder kvEndpoints(final int kvEndpoints) {
+        public SELF kvEndpoints(final int kvEndpoints) {
             this.kvEndpoints = kvEndpoints;
-            return this;
+            return self();
         }
 
         /**
@@ -1219,9 +1224,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @deprecated Please use {@link Builder#viewServiceConfig(ViewServiceConfig)} going forward.
          */
-        public Builder viewEndpoints(final int viewEndpoints) {
+        public SELF viewEndpoints(final int viewEndpoints) {
             this.viewEndpoints = viewEndpoints;
-            return this;
+            return self();
         }
 
         /**
@@ -1232,9 +1237,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @deprecated Please use {@link Builder#queryServiceConfig(QueryServiceConfig)} going forward.
          */
-        public Builder queryEndpoints(final int queryEndpoints) {
+        public SELF queryEndpoints(final int queryEndpoints) {
             this.queryEndpoints = queryEndpoints;
-            return this;
+            return self();
         }
 
         /**
@@ -1245,18 +1250,18 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @deprecated Please use {@link Builder#searchServiceConfig(SearchServiceConfig)} going forward.
          */
-        public Builder searchEndpoints(final int searchEndpoints) {
+        public SELF searchEndpoints(final int searchEndpoints) {
             this.searchEndpoints = searchEndpoints;
-            return this;
+            return self();
         }
 
         /**
          * Sets the USER-AGENT String to be sent in HTTP requests headers (should usually not be tweaked,
          * default value is computed from the SDK {@link #packageNameAndVersion()}).
          */
-        public Builder userAgent(final String userAgent) {
+        public SELF userAgent(final String userAgent) {
             this.userAgent = userAgent;
-            return this;
+            return self();
         }
 
         /**
@@ -1265,36 +1270,36 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * This is used in {@link #userAgent()} notably.
          */
-        public Builder packageNameAndVersion(final String packageNameAndVersion) {
+        public SELF packageNameAndVersion(final String packageNameAndVersion) {
             this.packageNameAndVersion = packageNameAndVersion;
-            return this;
+            return self();
         }
 
         /**
          * Sets the {@link Delay} for {@link Observe} poll operations (default value
          * is a delay growing exponentially between 10us and 100ms).
          */
-        public Builder observeIntervalDelay(final Delay observeIntervalDelay) {
+        public SELF observeIntervalDelay(final Delay observeIntervalDelay) {
             this.observeIntervalDelay = observeIntervalDelay;
-            return this;
+            return self();
         }
 
         /**
          * Sets the {@link Delay} for node reconnects (default value is a delay growing exponentially
          * between 32ms and 4096ms).
          */
-        public Builder reconnectDelay(final Delay reconnectDelay) {
+        public SELF reconnectDelay(final Delay reconnectDelay) {
             this.reconnectDelay = reconnectDelay;
-            return this;
+            return self();
         }
 
         /**
          * Sets the {@link Delay} for retries of requests (default value is a delay growing exponentially
          * between 100us and 100ms).
          */
-        public Builder retryDelay(final Delay retryDelay) {
+        public SELF retryDelay(final Delay retryDelay) {
             this.retryDelay = retryDelay;
-            return this;
+            return self();
         }
 
         /**
@@ -1304,7 +1309,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * @deprecated use {@link #ioPool(EventLoopGroup, ShutdownHook)} to also provide a shutdown hook.
          */
         @Deprecated
-        public Builder ioPool(final EventLoopGroup group) {
+        public SELF ioPool(final EventLoopGroup group) {
             return ioPool(group, new NoOpShutdownHook());
         }
 
@@ -1313,10 +1318,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder ioPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+        public SELF ioPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.ioPool = group;
             this.ioPoolShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
@@ -1324,10 +1329,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder kvIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+        public SELF kvIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.kvIoPool = group;
             this.kvIoPoolShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
@@ -1335,10 +1340,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder viewIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+        public SELF viewIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.viewIoPool = group;
             this.viewIoPoolShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
@@ -1346,10 +1351,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder queryIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+        public SELF queryIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.queryIoPool = group;
             this.queryIoPoolShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
@@ -1357,10 +1362,10 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder searchIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+        public SELF searchIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.searchIoPool = group;
             this.searchIoPoolShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
@@ -1370,7 +1375,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * @deprecated use {@link #ioPool(EventLoopGroup, ShutdownHook)} to also provide a shutdown hook.
          */
         @Deprecated
-        public Builder scheduler(final Scheduler scheduler) {
+        public SELF scheduler(final Scheduler scheduler) {
             return scheduler(scheduler, new NoOpShutdownHook());
         }
 
@@ -1379,19 +1384,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * to execute when this environment is shut down.
          * This is an advanced configuration that should only be used if you know what you are doing.
          */
-        public Builder scheduler(final Scheduler scheduler, final ShutdownHook shutdownHook) {
+        public SELF scheduler(final Scheduler scheduler, final ShutdownHook shutdownHook) {
             this.scheduler = scheduler;
             this.schedulerShutdownHook = shutdownHook;
-            return this;
+            return self();
         }
 
         /**
          * Sets the {@link RetryStrategy} to be used during request retries
          * (default value is a {@link BestEffortRetryStrategy}).
          */
-        public Builder retryStrategy(final RetryStrategy retryStrategy) {
+        public SELF retryStrategy(final RetryStrategy retryStrategy) {
             this.retryStrategy = retryStrategy;
-            return this;
+            return self();
         }
 
         /**
@@ -1403,9 +1408,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * Default is 75s.
          */
-        public Builder maxRequestLifetime(final long maxRequestLifetime) {
+        public SELF maxRequestLifetime(final long maxRequestLifetime) {
             this.maxRequestLifetime = maxRequestLifetime;
-            return this;
+            return self();
         }
 
         /**
@@ -1413,9 +1418,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * will issue a form of keep-alive request to their corresponding server/nodes
          * (default is 30s, values <= 0 deactivate the idle check).
          */
-        public Builder keepAliveInterval(long keepAliveIntervalMilliseconds) {
+        public SELF keepAliveInterval(long keepAliveIntervalMilliseconds) {
             this.keepAliveInterval = keepAliveIntervalMilliseconds;
-            return this;
+            return self();
         }
 
         /**
@@ -1423,9 +1428,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Setting this to a higher value than a few seconds is not recommended since this
          * may lead to increased garbage collection.
          */
-        public Builder autoreleaseAfter(long autoreleaseAfter) {
+        public SELF autoreleaseAfter(long autoreleaseAfter) {
             this.autoreleaseAfter = autoreleaseAfter;
-            return this;
+            return self();
         }
 
         /**
@@ -1433,9 +1438,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * This setting should only be tweaked in advanced cases.
          */
-        public Builder eventBus(final EventBus eventBus) {
+        public SELF eventBus(final EventBus eventBus) {
             this.eventBus = eventBus;
-            return this;
+            return self();
         }
 
         /**
@@ -1447,18 +1452,18 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * solution is found to the leak buffer pooling can be disabled at the cost of higher
          * GC.
          */
-        public Builder bufferPoolingEnabled(boolean bufferPoolingEnabled) {
+        public SELF bufferPoolingEnabled(boolean bufferPoolingEnabled) {
             this.bufferPoolingEnabled = bufferPoolingEnabled;
-            return this;
+            return self();
         }
 
         /**
          * If TCP_NODELAY is manually disabled, Nagle'ing will take effect on both the client
          * and (if supported) the server side.
          */
-        public Builder tcpNodelayEnabled(boolean tcpNodelayEnabled) {
+        public SELF tcpNodelayEnabled(boolean tcpNodelayEnabled) {
             this.tcpNodelayEnabled = tcpNodelayEnabled;
-            return this;
+            return self();
         }
 
         /**
@@ -1469,9 +1474,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * least Couchbase Server 4.0. Also, consider the additional overhead of 16 bytes per mutation response
          * (8 byte for the vbucket uuid and 8 byte for the sequence number).
          */
-        public Builder mutationTokensEnabled(boolean mutationTokensEnabled) {
+        public SELF mutationTokensEnabled(boolean mutationTokensEnabled) {
             this.mutationTokensEnabled = mutationTokensEnabled;
-            return this;
+            return self();
         }
 
         /**
@@ -1479,9 +1484,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param metricsCollectorConfig the custom configuration
          */
-        public Builder runtimeMetricsCollectorConfig(MetricsCollectorConfig metricsCollectorConfig) {
+        public SELF runtimeMetricsCollectorConfig(MetricsCollectorConfig metricsCollectorConfig) {
             this.runtimeMetricsCollectorConfig = metricsCollectorConfig;
-            return this;
+            return self();
         }
 
         /**
@@ -1489,21 +1494,21 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param metricsCollectorConfig the custom configuration for the collector.
          */
-        public Builder networkLatencyMetricsCollectorConfig(LatencyMetricsCollectorConfig metricsCollectorConfig) {
+        public SELF networkLatencyMetricsCollectorConfig(LatencyMetricsCollectorConfig metricsCollectorConfig) {
             this.networkLatencyMetricsCollectorConfig = metricsCollectorConfig;
-            return this;
+            return self();
         }
 
-        public Builder defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level, LoggingConsumer.OutputFormat format) {
+        public SELF defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level, LoggingConsumer.OutputFormat format) {
             if (enabled) {
                 defaultMetricsLoggingConsumer = LoggingConsumer.create(level, format);
             } else {
                 defaultMetricsLoggingConsumer = null;
             }
-            return this;
+            return self();
         }
 
-        public Builder defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level) {
+        public SELF defaultMetricsLoggingConsumer(boolean enabled, CouchbaseLogLevel level) {
             return defaultMetricsLoggingConsumer(enabled, level, LoggingConsumer.DEFAULT_FORMAT);
         }
 
@@ -1512,9 +1517,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param socketConnectTimeout the socket connect timeout in milliseconds.
          */
-        public Builder socketConnectTimeout(int socketConnectTimeout) {
+        public SELF socketConnectTimeout(int socketConnectTimeout) {
             this.socketConnectTimeout = socketConnectTimeout;
-            return this;
+            return self();
         }
 
         /**
@@ -1526,9 +1531,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * USE WITH CARE!
          */
-        public Builder callbacksOnIoPool(boolean callbacksOnIoPool) {
+        public SELF callbacksOnIoPool(boolean callbacksOnIoPool) {
             this.callbacksOnIoPool = callbacksOnIoPool;
-            return this;
+            return self();
         }
 
         /**
@@ -1536,9 +1541,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param disconnectTimeout the disconnect timeout in milliseconds.
          */
-        public Builder disconnectTimeout(long disconnectTimeout) {
+        public SELF disconnectTimeout(long disconnectTimeout) {
             this.disconnectTimeout = disconnectTimeout;
-            return this;
+            return self();
         }
 
         /**
@@ -1548,9 +1553,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceStability.Experimental
         @InterfaceAudience.Public
-        public Builder requestBufferWaitStrategy(WaitStrategyFactory waitStrategy) {
+        public SELF requestBufferWaitStrategy(WaitStrategyFactory waitStrategy) {
             this.requestBufferWaitStrategy = waitStrategy;
-            return this;
+            return self();
         }
 
         /**
@@ -1558,9 +1563,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param memcachedHashingStrategy the strategy to use.
          */
-        public Builder memcachedHashingStrategy(MemcachedHashingStrategy memcachedHashingStrategy) {
+        public SELF memcachedHashingStrategy(MemcachedHashingStrategy memcachedHashingStrategy) {
             this.memcachedHashingStrategy = memcachedHashingStrategy;
-            return this;
+            return self();
         }
 
         /**
@@ -1568,9 +1573,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param keyValueServiceConfig the config to apply.
          */
-        public Builder keyValueServiceConfig(KeyValueServiceConfig keyValueServiceConfig) {
+        public SELF keyValueServiceConfig(KeyValueServiceConfig keyValueServiceConfig) {
             this.keyValueServiceConfig = keyValueServiceConfig;
-            return this;
+            return self();
         }
 
         /**
@@ -1578,9 +1583,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param viewServiceConfig the config to apply.
          */
-        public Builder viewServiceConfig(ViewServiceConfig viewServiceConfig) {
+        public SELF viewServiceConfig(ViewServiceConfig viewServiceConfig) {
             this.viewServiceConfig = viewServiceConfig;
-            return this;
+            return self();
         }
 
         /**
@@ -1588,9 +1593,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param queryServiceConfig the config to apply.
          */
-        public Builder queryServiceConfig(QueryServiceConfig queryServiceConfig) {
+        public SELF queryServiceConfig(QueryServiceConfig queryServiceConfig) {
             this.queryServiceConfig = queryServiceConfig;
-            return this;
+            return self();
         }
 
         /**
@@ -1598,9 +1603,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          *
          * @param searchServiceConfig the config to apply.
          */
-        public Builder searchServiceConfig(SearchServiceConfig searchServiceConfig) {
+        public SELF searchServiceConfig(SearchServiceConfig searchServiceConfig) {
             this.searchServiceConfig = searchServiceConfig;
-            return this;
+            return self();
         }
 
         /**
@@ -1614,9 +1619,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceStability.Committed
         @InterfaceAudience.Public
-        public Builder configPollInterval(long configPollInterval) {
+        public SELF configPollInterval(long configPollInterval) {
             this.configPollInterval = configPollInterval;
-            return this;
+            return self();
         }
 
         /**
@@ -1629,9 +1634,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceStability.Committed
         @InterfaceAudience.Public
-        public Builder configPollFloorInterval(long configPollFloorInterval) {
+        public SELF configPollFloorInterval(long configPollFloorInterval) {
             this.configPollFloorInterval = configPollFloorInterval;
-            return this;
+            return self();
         }
 
         /**
@@ -1640,9 +1645,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceStability.Uncommitted
         @InterfaceAudience.Public
-        public Builder certAuthEnabled(boolean certAuthEnabled) {
+        public SELF certAuthEnabled(boolean certAuthEnabled) {
             this.certAuthEnabled = certAuthEnabled;
-            return this;
+            return self();
         }
 
         /**
@@ -1650,9 +1655,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceAudience.Public
         @InterfaceStability.Uncommitted
-        public Builder continuousKeepAliveEnabled(final boolean continuousKeepAliveEnabled) {
+        public SELF continuousKeepAliveEnabled(final boolean continuousKeepAliveEnabled) {
             this.continuousKeepAliveEnabled = continuousKeepAliveEnabled;
-            return this;
+            return self();
         }
 
         /**
@@ -1661,9 +1666,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceAudience.Public
         @InterfaceStability.Uncommitted
-        public Builder keepAliveErrorThreshold(final long keepAliveErrorThreshold) {
+        public SELF keepAliveErrorThreshold(final long keepAliveErrorThreshold) {
             this.keepAliveErrorThreshold = keepAliveErrorThreshold;
-            return this;
+            return self();
         }
 
         /**
@@ -1671,9 +1676,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceAudience.Public
         @InterfaceStability.Uncommitted
-        public Builder keepAliveTimeout(final long keepAliveTimeout) {
+        public SELF keepAliveTimeout(final long keepAliveTimeout) {
             this.keepAliveTimeout = keepAliveTimeout;
-            return this;
+            return self();
         }
 
         /**
@@ -1681,9 +1686,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceAudience.Public
         @InterfaceStability.Experimental
-        public Builder couchbaseCoreSendHook(final CouchbaseCoreSendHook hook) {
+        public SELF couchbaseCoreSendHook(final CouchbaseCoreSendHook hook) {
             this.couchbaseCoreSendHook = hook;
-            return this;
+            return self();
         }
 
         /**
@@ -1694,9 +1699,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         @InterfaceAudience.Public
         @InterfaceStability.Committed
-        public Builder forceSaslPlain(final boolean forceSaslPlain) {
+        public SELF forceSaslPlain(final boolean forceSaslPlain) {
             this.forceSaslPlain = forceSaslPlain;
-            return this;
+            return self();
         }
 
         public DefaultCoreEnvironment build() {
