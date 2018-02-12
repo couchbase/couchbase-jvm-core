@@ -41,4 +41,16 @@ public interface BinaryResponse extends CouchbaseResponse, ReferenceCounted {
     String bucket();
 
     short serverStatusCode();
+
+    /**
+     * Returns the reported server duration, if set.
+     */
+    long serverDuration();
+
+    /**
+     * Sets the server duration.
+     *
+     * @param duration the duration to set.
+     */
+    BinaryResponse serverDuration(long duration);
 }

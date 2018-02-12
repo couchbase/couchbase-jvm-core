@@ -35,6 +35,7 @@ import com.couchbase.client.core.message.kv.AbstractKeyValueResponse;
 import com.couchbase.client.core.message.kv.AppendRequest;
 import com.couchbase.client.core.message.kv.AppendResponse;
 import com.couchbase.client.core.message.kv.BinaryRequest;
+import com.couchbase.client.core.message.kv.BinaryResponse;
 import com.couchbase.client.core.message.kv.BinaryStoreRequest;
 import com.couchbase.client.core.message.kv.CounterRequest;
 import com.couchbase.client.core.message.kv.CounterResponse;
@@ -173,6 +174,11 @@ public class KeyValueHandler
     public static final byte OP_SUB_MULTI_LOOKUP = (byte) 0xd0;
     public static final byte OP_SUB_MULTI_MUTATION = (byte) 0xd1;
     public static final byte OP_SUB_GET_COUNT = (byte) 0xd2;
+
+    /**
+     * The byte used to signal this is a tracing extras frame.
+     */
+    public static final byte FRAMING_EXTRAS_TRACING = 0x00;
 
     /**
      * The bitmask for sub-document extras "command" section (third byte of the extras) that activates the
@@ -1008,7 +1014,40 @@ public class KeyValueHandler
             response.statusDetails(statusDetails);
         }
 
+        if (msg.getFramingExtrasLength() > 0) {
+            long duration = parseServerDurationFromFrame(msg.getFramingExtras());
+            ((BinaryResponse) response).serverDuration(duration);
+        }
+
         return response;
+    }
+
+    /**
+     * Parses the server duration from the frame.
+     *
+     * It reads through the byte stream looking for the tracing frame and if
+     * found extracts the info. If a different frame is found it is just
+     * skipped.
+     *
+     * Per algorithm, the found server duration is round up/down using
+     * the {@link Math#round(float)} function and has microsecond
+     * precision.
+     *
+     * @param frame the extras frame to parse
+     * @return the extracted duration, 0 if not found.
+     */
+    static long parseServerDurationFromFrame(final ByteBuf frame) {
+        while(frame.readableBytes() > 0) {
+            byte control = frame.readByte();
+            byte id = (byte) (control & 0xF0);
+            byte len = (byte) (control & 0x0F);
+            if (id == FRAMING_EXTRAS_TRACING) {
+                return Math.round(Math.pow(frame.readUnsignedShort(), 1.74) / 2);
+            } else {
+                frame.skipBytes(len);
+            }
+        }
+        return 0;
     }
 
     /**

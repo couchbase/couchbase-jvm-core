@@ -143,6 +143,11 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         if (extras != null) {
             extras = extras.retain();
         }
+        ByteBuf framingExtras = request.getFramingExtras();
+        if (framingExtras != null) {
+            framingExtras = framingExtras.retain();
+        }
+
         FullBinaryMemcacheRequest fullRequest = new DefaultFullBinaryMemcacheRequest(request.getKey(),
             extras, content);
 
@@ -155,6 +160,8 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         fullRequest.setOpaque(request.getOpaque());
         fullRequest.setCAS(request.getCAS());
         fullRequest.setReserved(request.getReserved());
+        fullRequest.setFramingExtras(framingExtras);
+        fullRequest.setFramingExtrasLength(request.getFramingExtrasLength());
 
         return fullRequest;
     }
@@ -164,6 +171,11 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         if (extras != null) {
             extras = extras.retain();
         }
+        ByteBuf framingExtras = response.getFramingExtras();
+        if (framingExtras != null) {
+            framingExtras = framingExtras.retain();
+        }
+
         FullBinaryMemcacheResponse fullResponse = new DefaultFullBinaryMemcacheResponse(response.getKey(),
             extras, content);
 
@@ -176,6 +188,8 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         fullResponse.setOpaque(response.getOpaque());
         fullResponse.setCAS(response.getCAS());
         fullResponse.setStatus(response.getStatus());
+        fullResponse.setFramingExtras(framingExtras);
+        fullResponse.setFramingExtrasLength(response.getFramingExtrasLength());
 
         return fullResponse;
     }

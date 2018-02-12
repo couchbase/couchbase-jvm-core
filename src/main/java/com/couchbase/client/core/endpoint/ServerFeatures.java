@@ -82,7 +82,14 @@ public enum ServerFeatures {
      *
      * @since Couchbase Server Vulcan (5.5)
      */
-    SNAPPY((short) 0x0a);
+    SNAPPY((short) 0x0a),
+
+    /**
+     * Enable tracing support.
+     *
+     * @since Couchbase Server Vulcan (5.5)
+     */
+    TRACING((short) 0x0f);
 
     /**
      * The actual byte representation on the wire.

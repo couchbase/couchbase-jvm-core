@@ -183,4 +183,36 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
      */
     BinaryMemcacheMessage setExtras(ByteBuf extras);
 
+    /**
+     * Returns a {@link ByteBuf} representation of the optional framing extras.
+     *
+     * @return the optional framing extras.
+     */
+    ByteBuf getFramingExtras();
+
+    /**
+     * Sets the framing extras buffer on the message.
+     *
+     * @param framingExtras the framing extras buffer of the document.
+     */
+    BinaryMemcacheMessage setFramingExtras(ByteBuf framingExtras);
+
+    /**
+     * Return the framing extras length of the message.
+     * <p/>
+     * This may be 0, since the extras content is optional.
+     *
+     * @return the framing extras length.
+     */
+    byte getFramingExtrasLength();
+
+    /**
+     * Set the framing extras length of the message.
+     * <p/>
+     * This may be 0, since the extras content is optional.
+     *
+     * @param framingExtrasLength the framing extras length.
+     */
+    BinaryMemcacheMessage setFramingExtrasLength(byte framingExtrasLength);
+
 }

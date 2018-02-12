@@ -24,6 +24,11 @@ import io.netty.buffer.Unpooled;
 public class BinaryMemcacheResponseDecoder
     extends AbstractBinaryMemcacheDecoder<BinaryMemcacheResponse> {
 
+    /**
+     * The magic byte used for signaling framing extras.
+     */
+    private static final byte FRAMING_MAGIC = 0x18;
+
     public BinaryMemcacheResponseDecoder() {
         this(DEFAULT_MAX_CHUNK_SIZE);
     }
@@ -37,7 +42,14 @@ public class BinaryMemcacheResponseDecoder
         BinaryMemcacheResponse header = new DefaultBinaryMemcacheResponse();
         header.setMagic(in.readByte());
         header.setOpcode(in.readByte());
-        header.setKeyLength(in.readShort());
+
+        if (header.getMagic() == FRAMING_MAGIC) {
+            header.setFramingExtrasLength(in.readByte());
+            header.setKeyLength(in.readByte());
+        } else {
+            header.setKeyLength(in.readShort());
+        }
+
         header.setExtrasLength(in.readByte());
         header.setDataType(in.readByte());
         header.setStatus(in.readShort());

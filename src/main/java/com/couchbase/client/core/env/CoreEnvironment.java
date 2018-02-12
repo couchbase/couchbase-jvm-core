@@ -500,4 +500,9 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      */
     boolean forceSaslPlain();
 
+    /**
+     * True if tracing is enabled on the environment.
+     */
+    boolean tracingEnabled();
+
 }

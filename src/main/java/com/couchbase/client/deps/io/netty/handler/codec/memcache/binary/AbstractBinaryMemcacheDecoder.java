@@ -77,6 +77,23 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                     resetDecoder();
 
                     currentMessage = decodeHeader(in);
+                    state = State.READ_FRAMING;
+                } catch (Exception e) {
+                    out.add(invalidMessage(e));
+                    return;
+                }
+                // falls through
+            case READ_FRAMING:
+                try {
+                    byte framingLength = currentMessage.getFramingExtrasLength();
+                    if (framingLength > 0) {
+                        if (in.readableBytes() < framingLength) {
+                            return;
+                        }
+
+                        currentMessage.setFramingExtras(readBytes(ctx.alloc(), in, framingLength));
+                    }
+
                     state = State.READ_EXTRAS;
                 } catch (Exception e) {
                     out.add(invalidMessage(e));
@@ -124,7 +141,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                 try {
                     int valueLength = currentMessage.getTotalBodyLength()
                         - currentMessage.getKeyLength()
-                        - currentMessage.getExtrasLength();
+                        - currentMessage.getExtrasLength()
+                        - currentMessage.getFramingExtrasLength();
                     int toRead = in.readableBytes();
                     if (valueLength > 0) {
                         if (toRead == 0) {
@@ -213,6 +231,12 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
             }
         }
 
+        if (currentMessage != null && currentMessage.getFramingExtras() != null) {
+            if (currentMessage.getFramingExtras().refCnt() > 0) {
+                currentMessage.getFramingExtras().release();
+            }
+        }
+
         resetDecoder();
     }
 
@@ -251,6 +275,11 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
          * Currently reading the header portion.
          */
         READ_HEADER,
+
+        /**
+         * Read the framing extras (optional).
+         */
+        READ_FRAMING,
 
         /**
          * Currently reading the extras portion (optional).

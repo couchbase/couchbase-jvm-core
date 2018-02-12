@@ -938,6 +938,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return forceSaslPlain;
     }
 
+    @Override
+    public boolean tracingEnabled() {
+        // this is a placeholder for now.
+        return false;
+    }
+
     public static class Builder<SELF extends Builder<SELF>> {
 
         private boolean sslEnabled = SSL_ENABLED;

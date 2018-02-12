@@ -35,10 +35,16 @@ public abstract class AbstractBinaryMemcacheMessage
      */
     private ByteBuf extras;
 
+    /**
+     * Contains the optional framing extras.
+     */
+    private ByteBuf framingExtras;
+
     private byte magic;
     private byte opcode;
     private short keyLength;
     private byte extrasLength;
+    private byte framingExtrasLength;
     private byte dataType;
     private int totalBodyLength;
     private int opaque;
@@ -166,9 +172,37 @@ public abstract class AbstractBinaryMemcacheMessage
     }
 
     @Override
+    public ByteBuf getFramingExtras() {
+        return framingExtras;
+    }
+
+    @Override
+    public BinaryMemcacheMessage setFramingExtras(ByteBuf framingExtras) {
+        this.framingExtras = framingExtras;
+        return this;
+    }
+
+    @Override
+    public byte getFramingExtrasLength() {
+        return framingExtrasLength;
+    }
+
+    @Override
+    public BinaryMemcacheMessage setFramingExtrasLength(byte framingExtrasLength) {
+        this.framingExtrasLength = framingExtrasLength;
+        return this;
+    }
+
+    @Override
     public int refCnt() {
         if (extras != null) {
+            if (framingExtras != null && (framingExtras.refCnt() != extras.refCnt())) {
+                throw new IllegalStateException("framing and extras have a different refCnt, ambiguous!");
+            }
             return extras.refCnt();
+        }
+        if (framingExtras != null) {
+            return framingExtras.refCnt();
         }
         return 1;
     }
@@ -178,6 +212,9 @@ public abstract class AbstractBinaryMemcacheMessage
         if (extras != null) {
             extras.retain();
         }
+        if (framingExtras != null) {
+            framingExtras.retain();
+        }
         return this;
     }
 
@@ -186,23 +223,34 @@ public abstract class AbstractBinaryMemcacheMessage
         if (extras != null) {
             extras.retain(increment);
         }
+        if (framingExtras != null) {
+            framingExtras.retain(increment);
+        }
         return this;
     }
 
     @Override
     public boolean release() {
+        boolean result = false;
         if (extras != null) {
-            return extras.release();
+            result = extras.release();
         }
-        return false;
+        if (framingExtras != null) {
+            result = framingExtras.release();
+        }
+        return result;
     }
 
     @Override
     public boolean release(int decrement) {
+        boolean result = false;
         if (extras != null) {
-            return extras.release(decrement);
+            result = extras.release(decrement);
         }
-        return false;
+        if (framingExtras != null) {
+            result = framingExtras.release(decrement);
+        }
+        return result;
     }
 
 }

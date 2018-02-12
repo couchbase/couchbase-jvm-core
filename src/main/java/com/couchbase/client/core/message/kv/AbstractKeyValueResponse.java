@@ -26,6 +26,7 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
     private final ByteBuf content;
     private final String bucket;
     private final short serverStatusCode;
+    private volatile long serverDuration;
 
     protected AbstractKeyValueResponse(ResponseStatus status, short serverStatusCode, String bucket, ByteBuf content,
                                        CouchbaseRequest request) {
@@ -48,6 +49,17 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
     @Override
     public short serverStatusCode() {
         return serverStatusCode;
+    }
+
+    @Override
+    public long serverDuration() {
+        return serverDuration;
+    }
+
+    @Override
+    public BinaryResponse serverDuration(long duration) {
+        this.serverDuration = duration;
+        return this;
     }
 
     @Override
@@ -84,6 +96,7 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
         sb.append(", status=").append(status()).append(" (").append(serverStatusCode()).append(')');
         sb.append(", request=").append(request());
         sb.append(", content=").append(content);
+        sb.append(", serverDuration=").append(serverDuration);
         sb.append('}');
         return sb.toString();
     }
