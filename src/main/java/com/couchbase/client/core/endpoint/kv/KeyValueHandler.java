@@ -276,11 +276,27 @@ public class KeyValueHandler
             throw ex;
         }
 
-        if (snappyEnabled) {
+        if (snappyEnabled && isEligibleForCompression(msg)) {
             handleSnappyCompression(ctx, request);
         }
 
         return request;
+    }
+
+    /**
+     * Helper method to check if the incoming request is actually allowed to be
+     * compressed.
+     *
+     * Right now the only allowed compressible ops are Insert, Upsert, Replace,
+     * Append and Prepend.
+     *
+     * @param msg the request to check against.
+     * @return true if it is, false otherwise.
+     */
+    private boolean isEligibleForCompression(final BinaryRequest msg) {
+        return msg instanceof BinaryStoreRequest
+            || msg instanceof AppendRequest
+            || msg instanceof PrependRequest;
     }
 
     /**
