@@ -25,6 +25,7 @@ import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
 import io.netty.channel.EventLoopGroup;
+import io.opentracing.Tracer;
 import rx.Observable;
 import rx.Scheduler;
 
@@ -503,6 +504,17 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     /**
      * True if tracing is enabled on the environment.
      */
+    @InterfaceStability.Experimental
+    @InterfaceAudience.Public
     boolean tracingEnabled();
+
+    /**
+     * If tracing is enabled, contains the current tracer that should be used.
+     *
+     * @return the tracer to be used.
+     */
+    @InterfaceStability.Experimental
+    @InterfaceAudience.Public
+    Tracer tracer();
 
 }

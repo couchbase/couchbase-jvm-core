@@ -50,6 +50,8 @@ import com.lmax.disruptor.WaitStrategy;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopTracerFactory;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
@@ -113,6 +115,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long CONFIG_POLL_FLOOR_INTERVAL = 50;
     public static final boolean CERT_AUTH_ENABLED = false;
     public static final boolean FORCE_SASL_PLAIN = false;
+    public static final boolean TRACING_ENABLED = true;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -131,7 +134,6 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     static final int MIN_POOL_SIZE = 3;
 
     private static final String VERSION_PROPERTIES = "com.couchbase.client.core.properties";
-
 
     /**
      * Sets up the package version and user agent.
@@ -227,6 +229,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final long configPollInterval;
     private final long configPollFloorInterval;
     private final boolean certAuthEnabled;
+    private final boolean tracingEnabled;
+    private final Tracer tracer;
 
     private static final int MAX_ALLOWED_INSTANCES = 1;
     private static volatile int instanceCounter = 0;
@@ -316,6 +320,15 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         );
         keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
         keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
+        tracingEnabled = booleanPropertyOr("tracingEnabled", builder.tracingEnabled);
+        if (!tracingEnabled) {
+            tracer = NoopTracerFactory.create();
+        } else if (builder.tracer == null) {
+            // TODO: Implement the Slowlog Tracer
+            tracer = null;
+        } else {
+            tracer = builder.tracer;
+        }
 
         if (ioPoolSize < MIN_POOL_SIZE) {
             LOGGER.info("ioPoolSize is less than {} ({}), setting to: {}", MIN_POOL_SIZE, ioPoolSize, MIN_POOL_SIZE);
@@ -940,8 +953,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     @Override
     public boolean tracingEnabled() {
-        // this is a placeholder for now.
-        return false;
+        return tracingEnabled;
+    }
+
+    @Override
+    public Tracer tracer() {
+        return tracer;
     }
 
     public static class Builder<SELF extends Builder<SELF>> {
@@ -1005,6 +1022,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean certAuthEnabled = CERT_AUTH_ENABLED;
         private CouchbaseCoreSendHook couchbaseCoreSendHook;
         private boolean forceSaslPlain = FORCE_SASL_PLAIN;
+        private boolean tracingEnabled = TRACING_ENABLED;
+        private Tracer tracer;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1707,6 +1726,35 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         @InterfaceStability.Committed
         public SELF forceSaslPlain(final boolean forceSaslPlain) {
             this.forceSaslPlain = forceSaslPlain;
+            return self();
+        }
+
+        /**
+         * Allows to enable/disable the tracing support.
+         *
+         * Note that it is enabled by default, but only activated once opentracing is
+         * on the classpath!
+         *
+         * @param tracingEnabled enable or disable the tracing.
+         * @return this builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Experimental
+        public SELF tracingEnabled(final boolean tracingEnabled) {
+            this.tracingEnabled = tracingEnabled;
+            return self();
+        }
+
+        /**
+         * Allows to specify a custom tracer.
+         *
+         * @param tracer the tracer to use.
+         * @return this builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Experimental
+        public SELF tracer(final Tracer tracer) {
+            this.tracer = tracer;
             return self();
         }
 
