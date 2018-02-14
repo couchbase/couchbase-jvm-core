@@ -31,10 +31,10 @@
         <native.folder>${project.build.directory}/native</native.folder>
         <native.original>libnetty_transport_native_epoll_x86_64.so</native.original>
         <native.renamed>libcom_couchbase_client_deps_netty_transport_native_epoll_x86_64.so</native.renamed>
-        <rxjava.version>1.3.4</rxjava.version>
-        <netty.version>4.0.54.Final</netty.version>
-        <disruptor.version>3.3.7</disruptor.version>
-        <jackson.version>2.7.9.2</jackson.version>
+        <rxjava.version>1.3.5</rxjava.version>
+        <netty.version>4.0.56.Final</netty.version>
+        <disruptor.version>3.3.8</disruptor.version>
+        <jackson.version>2.7.9.3</jackson.version>
         <latency-utils.version>2.0.3</latency-utils.version>
         <junit.version>4.12</junit.version>
         <mockito.version>1.10.19</mockito.version>

@@ -19,6 +19,7 @@ import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
+import com.couchbase.client.core.endpoint.util.FailedChannel;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.AbstractCouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLogger;
@@ -374,7 +375,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         .onErrorResumeNext(new Func1<Throwable, Single<? extends ChannelFuture>>() {
             @Override
             public Single<? extends ChannelFuture> call(Throwable throwable) {
-                ChannelPromise promise = new DefaultChannelPromise(null, ioPool.next());
+                ChannelPromise promise = new DefaultChannelPromise(new FailedChannel(), ioPool.next());
                 if (throwable instanceof TimeoutException) {
                     // Explicitly convert our timeout safeguard into a ConnectTimeoutException to simulate
                     // a socket connect timeout.
