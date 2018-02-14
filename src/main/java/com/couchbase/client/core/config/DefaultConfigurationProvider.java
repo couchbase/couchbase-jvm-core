@@ -363,7 +363,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             BucketConfig config = BucketConfigParser.parse(rawConfig, environment);
             upsertBucketConfig(config);
         } catch (Exception ex) {
-            LOGGER.warn("Could not read proposed configuration, ignoring.", ex);
+            LOGGER.warn("Could not read proposed configuration, ignoring. Message: {}", ex.getMessage());
         }
     }
 

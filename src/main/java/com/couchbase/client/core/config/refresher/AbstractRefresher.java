@@ -53,7 +53,7 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     private final ClusterFacade cluster;
 
-    private ConfigurationProvider provider;
+    private volatile ConfigurationProvider provider;
 
     private final Map<String, Credential> registrations;
 

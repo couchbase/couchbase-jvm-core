@@ -152,7 +152,6 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
         }
 
 
-
         if (msg instanceof HttpContent) {
             responseContent.writeBytes(((HttpContent) msg).content());
         }

@@ -69,7 +69,6 @@ public class KeepAliveMessageTest extends ClusterDependentTest {
 
         int keepalivesFound = 0;
         for (Map.Entry<NetworkLatencyMetricsIdentifier, LatencyMetric> metric : event.latencies().entrySet()) {
-            System.err.println(metric.getKey());
             if (metric.getKey().request().equals("KeepAliveRequest")) {
                 keepalivesFound++;
             }

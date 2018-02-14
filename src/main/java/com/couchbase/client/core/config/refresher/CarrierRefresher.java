@@ -100,7 +100,11 @@ public class CarrierRefresher extends AbstractRefresher {
                     .subscribe(new Action1<Long>() {
                         @Override
                         public void call(Long aLong) {
-                            provider().signalOutdated();
+                            if (provider() != null) {
+                                provider().signalOutdated();
+                            } else {
+                                LOGGER.debug("Provider not yet wired up, ignoring outdated signal.");
+                            }
                         }
                     });
         } else {

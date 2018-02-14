@@ -23,6 +23,7 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBina
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -40,6 +41,7 @@ public class KeyValueAuthHandlerTest {
         // Handler sends "list mechs"
         BinaryMemcacheRequest listMechsRequest = (BinaryMemcacheRequest) channel.readOutbound();
         assertEquals(KeyValueAuthHandler.SASL_LIST_MECHS_OPCODE, listMechsRequest.getOpcode());
+        ReferenceCountUtil.release(listMechsRequest);
 
         // Server returns with a bunch of them
         FullBinaryMemcacheResponse listMechsResponse = new DefaultFullBinaryMemcacheResponse(
@@ -53,6 +55,7 @@ public class KeyValueAuthHandlerTest {
         // make sure it still picks only PLAIN
         FullBinaryMemcacheRequest initialRequest = (FullBinaryMemcacheRequest) channel.readOutbound();
         assertEquals("PLAIN", new String(initialRequest.getKey()));
+        ReferenceCountUtil.release(initialRequest);
     }
 
     @Test
@@ -63,6 +66,7 @@ public class KeyValueAuthHandlerTest {
         // Handler sends "list mechs"
         BinaryMemcacheRequest listMechsRequest = (BinaryMemcacheRequest) channel.readOutbound();
         assertEquals(KeyValueAuthHandler.SASL_LIST_MECHS_OPCODE, listMechsRequest.getOpcode());
+        ReferenceCountUtil.release(listMechsRequest);
 
         // Server returns with a bunch of them
         FullBinaryMemcacheResponse listMechsResponse = new DefaultFullBinaryMemcacheResponse(
@@ -71,10 +75,12 @@ public class KeyValueAuthHandlerTest {
                 Unpooled.copiedBuffer("SCRAM-SHA1 CRAM-MD5 PLAIN", CharsetUtil.UTF_8)
         );
         listMechsResponse.setOpcode(KeyValueAuthHandler.SASL_LIST_MECHS_OPCODE);
+
         channel.writeInbound(listMechsResponse);
 
         // make sure it still picks only PLAIN
         FullBinaryMemcacheRequest initialRequest = (FullBinaryMemcacheRequest) channel.readOutbound();
         assertEquals("SCRAM-SHA1", new String(initialRequest.getKey()));
+        ReferenceCountUtil.release(initialRequest);
     }
 }

@@ -1037,6 +1037,7 @@ public class KeyValueHandlerTest {
 
         assertEquals(0, outbound.getDataType());
         assertEquals("", outbound.content().toString(CharsetUtil.UTF_8));
+        ReferenceCountUtil.release(outbound);
     }
 
     @Test
@@ -1061,6 +1062,7 @@ public class KeyValueHandlerTest {
         outbound.content().getBytes(0, compressed);
         byte[] uncompressed = Snappy.uncompress(compressed, 0, compressed.length);
         assertArrayEquals(text.getBytes(CharsetUtil.UTF_8), uncompressed);
+        ReferenceCountUtil.release(outbound);
     }
 
     @Test
@@ -1104,6 +1106,7 @@ public class KeyValueHandlerTest {
         outbound.content().getBytes(0, compressed);
         byte[] uncompressed = Snappy.uncompress(compressed, 0, compressed.length);
         assertArrayEquals(text.getBytes(CharsetUtil.UTF_8), uncompressed);
+        ReferenceCountUtil.release(outbound);
     }
 
     @Test
@@ -1121,6 +1124,7 @@ public class KeyValueHandlerTest {
 
         GetResponse event = (GetResponse) eventSink.responseEvents().get(0).getMessage();
         assertEquals("", event.content().toString(CHARSET));
+        ReferenceCountUtil.release(event);
     }
 
     @Test
@@ -1142,6 +1146,7 @@ public class KeyValueHandlerTest {
 
         GetResponse event = (GetResponse) eventSink.responseEvents().get(0).getMessage();
         assertEquals(text, event.content().toString(CHARSET));
+        ReferenceCountUtil.release(event);
     }
 
     @Test
@@ -1181,6 +1186,7 @@ public class KeyValueHandlerTest {
 
         GetResponse event = (GetResponse) eventSink.responseEvents().get(0).getMessage();
         assertEquals(text, event.content().toString(CHARSET));
+        ReferenceCountUtil.release(event);
     }
 
 
@@ -1252,6 +1258,7 @@ public class KeyValueHandlerTest {
         assertEquals("content", event.content().toString(CHARSET));
         assertEquals(119635, event.serverDuration());
         assertEquals(BUCKET, event.bucket());
+        event.release();
     }
 
     class SnappyFeatureHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse> {
