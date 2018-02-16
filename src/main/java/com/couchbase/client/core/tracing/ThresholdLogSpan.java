@@ -23,7 +23,7 @@ import io.opentracing.Span;
 import java.util.Collections;
 import java.util.Map;
 
-public class ThresholdLogSpan implements Span {
+public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
 
     /**
      * The logger used.
@@ -113,6 +113,11 @@ public class ThresholdLogSpan implements Span {
     }
 
     @Override
+    public int compareTo(final ThresholdLogSpan o) {
+        return ((Long) durationMicros()).compareTo(o.durationMicros());
+    }
+
+    @Override
     public void finish() {
         finish(ThresholdLogTracer.currentTimeMicros());
     }
@@ -138,6 +143,16 @@ public class ThresholdLogSpan implements Span {
         return Collections.unmodifiableMap(tags);
     }
 
+    /**
+     * Returns a tag if set, null otherwise.
+     *
+     * @param key the key to check.
+     * @return returns the value or null if not set.
+     */
+    public synchronized Object tag(final String key) {
+        return tags.get(key);
+    }
+
     @Override
     public void finish(long finishMicros) {
         synchronized (this) {
@@ -149,5 +164,17 @@ public class ThresholdLogSpan implements Span {
             finished = true;
         }
         tracer.reportSpan(this);
+    }
+
+    @Override
+    public String toString() {
+        return "ThresholdLogSpan{" +
+            ", tags=" + tags +
+            ", context=" + context +
+            ", startTimeMicroseconds=" + startTimeMicroseconds +
+            ", endTimeMicroseconds=" + endTimeMicroseconds +
+            ", operationName='" + operationName + '\'' +
+            ", finished=" + finished +
+            '}';
     }
 }

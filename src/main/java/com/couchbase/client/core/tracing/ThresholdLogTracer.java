@@ -39,8 +39,28 @@ public class ThresholdLogTracer implements Tracer {
      */
     private final ThresholdLogScopeManager scopeManager;
 
+    /**
+     * The Reporter used.
+     */
+    private final ThresholdLogReporter reporter;
+
+    /**
+     * Simple constructor, useful for testing. Disables the log reporter.
+     */
     ThresholdLogTracer() {
-        this.scopeManager = new ThresholdLogScopeManager();
+        this(new ThresholdLogScopeManager(), ThresholdLogReporter.disabled());
+    }
+
+    /**
+     * Creates a new {@link ThresholdLogTracer}.
+     *
+     * @param scopeManager the scope manager to use.
+     * @param reporter the log reporter to use.
+     */
+    private ThresholdLogTracer(final ThresholdLogScopeManager scopeManager,
+        final ThresholdLogReporter reporter) {
+        this.scopeManager = scopeManager;
+        this.reporter = reporter;
     }
 
     @Override
@@ -74,8 +94,8 @@ public class ThresholdLogTracer implements Tracer {
      *
      * @param span the param to report.
      */
-    public void reportSpan(final Span span) {
-        // TODO this will be done in a later changeset
+    public void reportSpan(final ThresholdLogSpan span) {
+        reporter.report(span);
     }
 
     /**

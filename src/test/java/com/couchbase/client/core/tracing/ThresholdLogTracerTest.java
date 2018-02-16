@@ -217,17 +217,17 @@ public class ThresholdLogTracerTest {
         /**
          * Contains all the reported spans.
          */
-        private final List<Span> reportedSpans = new ArrayList<Span>();
+        private final List<ThresholdLogSpan> reportedSpans = new ArrayList<ThresholdLogSpan>();
 
         @Override
-        public synchronized void reportSpan(final Span span) {
+        public synchronized void reportSpan(final ThresholdLogSpan span) {
             reportedSpans.add(span);
         }
 
         /**
          * Returns all the reported spans.
          */
-        synchronized List<Span> reportedSpans() {
+        synchronized List<ThresholdLogSpan> reportedSpans() {
             return reportedSpans;
         }
 
