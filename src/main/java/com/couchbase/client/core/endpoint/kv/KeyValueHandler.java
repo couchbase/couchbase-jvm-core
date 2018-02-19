@@ -21,7 +21,6 @@ import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
-import com.couchbase.client.core.endpoint.util.Snappy;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -100,7 +99,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.IllegalReferenceCountException;
+import org.iq80.snappy.Snappy;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -219,12 +220,6 @@ public class KeyValueHandler
     boolean snappyEnabled = false;
 
     /**
-     * Snappy used for encoding and decoding with compression.
-     */
-    private final Snappy snappy = new Snappy();
-
-
-    /**
      * Creates a new {@link KeyValueHandler} with the default queue for requests.
      *
      * @param endpoint the {@link AbstractEndpoint} to coordinate with.
@@ -319,16 +314,20 @@ public class KeyValueHandler
         }
 
         FullBinaryMemcacheRequest request = (FullBinaryMemcacheRequest) r;
-
         int uncompressedLength = request.content().readableBytes();
-        ByteBuf compressedContent = ctx.alloc().buffer(uncompressedLength);
-        ByteBuf uncompressedContent = request.content().slice();
+
+        ByteBuf compressedContent;
         try {
-            snappy.encode(uncompressedContent, compressedContent, uncompressedLength);
+            if (request.content().hasArray()) {
+                compressedContent = Unpooled.wrappedBuffer(Snappy.compress(request.content().array()));
+            } else {
+                // We don't support bytebuf encoding yet.. we can add it later but
+                // our encoding path is unpooled heap buffers anyways...
+                LOGGER.debug("Request content is not array backed, not encoding.");
+                return;
+            }
         } catch (Exception ex) {
             throw new RuntimeException("Could not snappy-compress value.", ex);
-        } finally {
-            snappy.reset();
         }
 
         if (compressedContent.readableBytes() >= uncompressedLength) {
@@ -350,14 +349,19 @@ public class KeyValueHandler
      * Helper method which performs decompression for snappy compressed values.
      */
     private void handleSnappyDecompression(final ChannelHandlerContext ctx, final FullBinaryMemcacheResponse response) {
-        ByteBuf decompressed = ctx.alloc().buffer(response.content().readableBytes());
-        try {
-            snappy.decode(response.content(), decompressed);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not decode snappy-compressed value.", ex);
-        } finally {
-            snappy.reset();
+        ByteBuf decompressed;
+        if (response.content().readableBytes() > 0) {
+            // we need to copy it on-heap...
+            byte[] compressed = Unpooled.copiedBuffer(response.content()).array();
+            try {
+                decompressed = Unpooled.wrappedBuffer(Snappy.uncompress(compressed, 0, compressed.length));
+            } catch (Exception ex) {
+                throw new RuntimeException("Could not decode snappy-compressed value.", ex);
+            }
+        } else {
+            decompressed = Unpooled.buffer(0);
         }
+
 
         response.content().release();
         response.setContent(decompressed);

@@ -61,10 +61,10 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import io.netty.util.IllegalReferenceCountException;
 import io.netty.util.ReferenceCountUtil;
-import org.iq80.snappy.Snappy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.xerial.snappy.Snappy;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
@@ -1041,7 +1041,7 @@ public class KeyValueHandlerTest {
     }
 
     @Test
-    public void shouldCompressSmallContent() {
+    public void shouldCompressSmallContent() throws Exception {
         String text = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo " +
             "ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient " +
             "montes, nascetur ridiculus mus.";
@@ -1060,13 +1060,13 @@ public class KeyValueHandlerTest {
 
         byte[] compressed = new byte[outbound.content().readableBytes()];
         outbound.content().getBytes(0, compressed);
-        byte[] uncompressed = Snappy.uncompress(compressed, 0, compressed.length);
+        byte[] uncompressed = Snappy.uncompress(compressed);
         assertArrayEquals(text.getBytes(CharsetUtil.UTF_8), uncompressed);
         ReferenceCountUtil.release(outbound);
     }
 
     @Test
-    public void shouldCompressLargeContent() {
+    public void shouldCompressLargeContent() throws Exception {
         String text = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula " +
             "eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, " +
             "nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. " +
@@ -1104,7 +1104,7 @@ public class KeyValueHandlerTest {
 
         byte[] compressed = new byte[outbound.content().readableBytes()];
         outbound.content().getBytes(0, compressed);
-        byte[] uncompressed = Snappy.uncompress(compressed, 0, compressed.length);
+        byte[] uncompressed = Snappy.uncompress(compressed);
         assertArrayEquals(text.getBytes(CharsetUtil.UTF_8), uncompressed);
         ReferenceCountUtil.release(outbound);
     }
@@ -1113,7 +1113,7 @@ public class KeyValueHandlerTest {
     public void shouldDecompressEmptyContent() {
         channel.pipeline().addFirst(new SnappyFeatureHandler());
 
-        ByteBuf content = Unpooled.copiedBuffer("", CharsetUtil.UTF_8);
+        ByteBuf content = Unpooled.directBuffer().writeBytes(Unpooled.copiedBuffer("", CharsetUtil.UTF_8));
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(KEY, Unpooled.EMPTY_BUFFER,
             content.copy());
         response.setDataType(KeyValueHandler.DATATYPE_SNAPPY);
@@ -1128,7 +1128,7 @@ public class KeyValueHandlerTest {
     }
 
     @Test
-    public void shouldDecompressSmallContent() {
+    public void shouldDecompressSmallContent() throws Exception {
         String text = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo " +
             "ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient " +
             "montes, nascetur ridiculus mus.";
@@ -1150,7 +1150,7 @@ public class KeyValueHandlerTest {
     }
 
     @Test
-    public void shouldDecompressLargeContent() {
+    public void shouldDecompressLargeContent() throws Exception {
         String text = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula " +
             "eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, " +
             "nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. " +
