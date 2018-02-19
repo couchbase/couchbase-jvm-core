@@ -17,6 +17,7 @@ package com.couchbase.client.core.env;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.encryption.EncryptionConfig;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.hooks.CouchbaseCoreSendHook;
 import com.couchbase.client.core.message.observe.Observe;
@@ -517,4 +518,11 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     @InterfaceAudience.Public
     Tracer tracer();
 
+
+    /**
+     * Returns the encryption configuration set.
+     */
+    @InterfaceStability.Uncommitted
+    @InterfaceAudience.Public
+    EncryptionConfig encryptionConfig();
 }

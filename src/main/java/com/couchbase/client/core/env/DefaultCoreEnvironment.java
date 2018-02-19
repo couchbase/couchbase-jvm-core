@@ -18,6 +18,7 @@ package com.couchbase.client.core.env;
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.encryption.EncryptionConfig;
 import com.couchbase.client.core.env.resources.IoPoolShutdownHook;
 import com.couchbase.client.core.env.resources.NettyShutdownHook;
 import com.couchbase.client.core.env.resources.NoOpShutdownHook;
@@ -264,6 +265,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final MetricsCollector runtimeMetricsCollector;
     private final NetworkLatencyMetricsCollector networkLatencyMetricsCollector;
     private final Subscription metricsCollectorSubscription;
+    private final EncryptionConfig encryptionConfig;
 
     private final boolean forceSaslPlain;
 
@@ -504,6 +506,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             int minEndpoints = searchEndpoints() == SEARCH_ENDPOINTS ? 0 : searchEndpoints();
             this.searchServiceConfig = SearchServiceConfig.create(minEndpoints, searchEndpoints());
         }
+
+        this.encryptionConfig = builder.encryptionConfig;
 
         if (emitEnvWarnMessage) {
             eventBus.publish(new TooManyEnvironmentsEvent(instanceCounter));
@@ -985,6 +989,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return tracer;
     }
 
+    @Override
+    public EncryptionConfig encryptionConfig() { return encryptionConfig; }
+
     public static class Builder<SELF extends Builder<SELF>> {
 
         private boolean sslEnabled = SSL_ENABLED;
@@ -1057,6 +1064,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private QueryServiceConfig queryServiceConfig;
         private ViewServiceConfig viewServiceConfig;
         private SearchServiceConfig searchServiceConfig;
+        private EncryptionConfig encryptionConfig;
 
 
         protected Builder() {
@@ -1779,6 +1787,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         @InterfaceStability.Experimental
         public SELF tracer(final Tracer tracer) {
             this.tracer = tracer;
+            return self();
+        }
+
+        /**
+         * Add the encryption configuration for field level encryption
+         *
+         * @param config encryption configuration to use.
+         * @return the builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public SELF encryptionConfig(final EncryptionConfig config) {
+            this.encryptionConfig = config;
             return self();
         }
 
