@@ -30,6 +30,7 @@ import com.couchbase.client.core.event.system.BucketOpenedEvent;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.databind.JsonNode;
 import rx.Observable;
@@ -348,7 +349,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 LOGGER.trace("Proposed raw config is {}", rawConfig);
             }
 
-            JsonNode configNodes = BucketConfigParser.jackson().readTree(rawConfig);
+            JsonNode configNodes = DefaultObjectMapper.readTree(rawConfig);
             String bucketName = bucket == null ? configNodes.get("name").textValue() : bucket;
 
             JsonNode revNode = configNodes.get("rev");

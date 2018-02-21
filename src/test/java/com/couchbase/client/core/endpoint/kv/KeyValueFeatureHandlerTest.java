@@ -16,11 +16,10 @@
 
 package com.couchbase.client.core.endpoint.kv;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.util.CharsetUtil;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import org.junit.Test;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,8 +31,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class KeyValueFeatureHandlerTest {
 
-    private static final ObjectMapper JACKSON = new ObjectMapper();
-
     @Test
     public void shouldConvertUserAgent() throws Exception {
         byte[] result = KeyValueFeatureHandler.generateAgentJson(
@@ -42,7 +39,7 @@ public class KeyValueFeatureHandlerTest {
             5678
         );
 
-        HashMap decoded = JACKSON.readValue(result, HashMap.class);
+        Map<String,Object> decoded = DefaultObjectMapper.readValueAsMap(result);
         assertEquals("my-agent", decoded.get("a"));
         assertEquals("00000000000004D2/000000000000162E", decoded.get("i"));
     }
@@ -59,7 +56,7 @@ public class KeyValueFeatureHandlerTest {
             5678
         );
 
-        HashMap decoded = JACKSON.readValue(result, HashMap.class);
+        Map<String,Object> decoded = DefaultObjectMapper.readValueAsMap(result);
         assertEquals(200, ((String) decoded.get("a")).length());
     }
 

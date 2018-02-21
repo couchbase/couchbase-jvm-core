@@ -17,8 +17,8 @@ package com.couchbase.client.core.message;
 
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 
 import java.util.HashMap;
@@ -31,7 +31,6 @@ import java.util.HashMap;
  */
 public class ResponseStatusDetails {
 
-    private static final ObjectMapper JACKSON = new ObjectMapper();
     private static final TypeReference<HashMap<String,HashMap<String, String>>> JACKSON_TYPEREF
             = new TypeReference<HashMap<String,HashMap<String, String>>>() {};
 
@@ -53,7 +52,7 @@ public class ResponseStatusDetails {
         try {
             byte[] inputBytes = new byte[input.readableBytes()];
             input.readBytes(inputBytes);
-            HashMap<String,HashMap<String, String>> result = JACKSON.readValue(inputBytes, JACKSON_TYPEREF);
+            HashMap<String,HashMap<String, String>> result = DefaultObjectMapper.readValue(inputBytes, JACKSON_TYPEREF);
             HashMap<String, String> errorMap = result.get("error");
             if (errorMap == null) {
                 LOGGER.warn("Exception while converting ResponseStatusDetails (no error json object), ignoring.");

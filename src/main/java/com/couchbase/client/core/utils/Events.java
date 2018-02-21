@@ -18,7 +18,6 @@ package com.couchbase.client.core.utils;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +29,6 @@ import java.util.Map;
  * @since 1.2.0
  */
 public class Events {
-
-    private static final ObjectMapper JACKSON = new ObjectMapper();
 
     /**
      * Takes a {@link CouchbaseEvent} and returns a map with event information.
@@ -60,9 +57,9 @@ public class Events {
     public static String toJson(CouchbaseEvent source, boolean pretty) {
         try {
             if (pretty) {
-                return JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(source.toMap());
+                return DefaultObjectMapper.prettyWriter().writeValueAsString(source.toMap());
             } else {
-                return JACKSON.writeValueAsString(source.toMap());
+                return DefaultObjectMapper.writeValueAsString(source.toMap());
             }
         } catch (JsonProcessingException e) {
             throw new CouchbaseException("Could not convert CouchbaseEvent " + source.toString() + " to JSON: ", e);

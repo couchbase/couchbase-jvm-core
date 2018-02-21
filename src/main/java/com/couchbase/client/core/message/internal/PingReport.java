@@ -18,6 +18,7 @@ package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
@@ -92,9 +93,9 @@ public class PingReport {
 
         try {
             if (pretty) {
-                return DiagnosticsReport.JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                return DefaultObjectMapper.prettyWriter().writeValueAsString(result);
             } else {
-                return DiagnosticsReport.JACKSON.writeValueAsString(result);
+                return DefaultObjectMapper.writeValueAsString(result);
             }
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Could not encode as JSON string.", e);

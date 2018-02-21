@@ -22,17 +22,16 @@ import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -54,7 +53,6 @@ import java.util.List;
 public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
     implements ChannelOutboundHandler {
 
-    private static final ObjectMapper JACKSON = new ObjectMapper();
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueFeatureHandler.class);
     private static final byte HELLO_CMD = 0x1f;
 
@@ -160,7 +158,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         HashMap<String, String> result = new HashMap<String, String>();
         result.put("a", agent);
         result.put("i", id);
-        return JACKSON.writeValueAsBytes(result);
+        return DefaultObjectMapper.writeValueAsBytes(result);
     }
 
     /**

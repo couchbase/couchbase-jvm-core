@@ -21,10 +21,10 @@ import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -47,7 +47,6 @@ import java.net.SocketAddress;
 public class KeyValueErrorMapHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse>
         implements ChannelOutboundHandler {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(KeyValueErrorMapHandler.class);
     private static final byte GET_ERROR_MAP_CMD = (byte) 0xfe;
     private static final short MAP_VERSION = 1; // first version of the error map
@@ -63,7 +62,7 @@ public class KeyValueErrorMapHandler extends SimpleChannelInboundHandler<FullBin
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (KeyValueStatus.SUCCESS.code() == msg.getStatus()) {
             String content = msg.content().toString(CharsetUtil.UTF_8);
-            ErrorMap errorMap = MAPPER.readValue(content, ErrorMap.class);
+            ErrorMap errorMap = DefaultObjectMapper.readValue(content, ErrorMap.class);
             LOGGER.debug("Trying to update Error Map With Version {}, Revision {}.",
                 errorMap.version(), errorMap.revision());
             ResponseStatusConverter.updateBinaryErrorMap(errorMap);

@@ -16,13 +16,11 @@
 package com.couchbase.client.core.config.parser;
 
 import com.couchbase.client.core.CouchbaseException;
-import com.couchbase.client.core.annotations.InterfaceAudience;
-import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.env.ConfigParserEnvironment;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
@@ -34,21 +32,6 @@ import java.io.IOException;
  * @since 2.0.0
  */
 public final class BucketConfigParser {
-
-    /**
-     * Jackson object mapper for JSON parsing.
-     */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    /**
-     * Accessor to the jackson object mapper.
-     */
-    @InterfaceStability.Committed
-    @InterfaceAudience.Private
-    public static ObjectMapper jackson() {
-        return OBJECT_MAPPER;
-    }
-
     /**
      * Parse a raw configuration into a {@link BucketConfig}.
      *
@@ -57,12 +40,13 @@ public final class BucketConfigParser {
      */
     public static BucketConfig parse(final String input, final ConfigParserEnvironment env) {
         try {
-            InjectableValues inject = new InjectableValues.Std().addValue("env", env);
-            return jackson()
-                .readerFor(BucketConfig.class)
-                .with(inject)
-                .with(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)
-                .readValue(input);
+            InjectableValues inject = new InjectableValues.Std()
+                    .addValue("env", env);
+            return DefaultObjectMapper.reader()
+                    .forType(BucketConfig.class)
+                    .with(inject)
+                    .with(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)
+                    .readValue(input);
         } catch (IOException e) {
             throw new CouchbaseException("Could not parse configuration", e);
         }

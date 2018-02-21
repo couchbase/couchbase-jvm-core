@@ -44,7 +44,7 @@ import com.couchbase.client.core.message.kv.subdoc.simple.SubExistRequest;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubGetRequest;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubReplaceRequest;
 import com.couchbase.client.core.util.ClusterDependentTest;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -89,8 +89,6 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
 
     /** Use this key when you want existing data that include a deep complex array*/
     private static final String testComplexSubArray = "testComplexSubArray";
-
-    private static final ObjectMapper JSON = new ObjectMapper();
 
     private static final String jsonContent = "{\"value\":\"stringValue\", \"sub\": {\"value\": \"subStringValue\",\"array\": [\"array1\", 2, true]}}";
     private static final String jsonArrayContent = "[\"v1\"]";
@@ -1143,8 +1141,8 @@ public class SubdocumentMessageTest extends ClusterDependentTest {
         //work around MB-17143 and generally fact that no order/space guarantees
         // are made for JSON production by the subdoc API.
         try {
-            Map actualMap = JSON.readValue(actual, Map.class);
-            Map expectedMap = JSON.readValue(expected, Map.class);
+            Map actualMap = DefaultObjectMapper.readValue(actual, Map.class);
+            Map expectedMap = DefaultObjectMapper.readValue(expected, Map.class);
             assertEquals("Expected mutation on " + key + " was not observed", expectedMap, actualMap);
         } catch (IOException e) {
             fail("Failure to compare JSON contents: " + e.toString());

@@ -35,7 +35,7 @@ import com.couchbase.client.core.message.query.RawQueryRequest;
 import com.couchbase.client.core.message.query.RawQueryResponse;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.util.Resources;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -108,7 +108,6 @@ public class QueryHandlerTest {
     private static final String FAKE_CLIENTID = "1234567890123456789012345678901234567890123456789012345678901234";
     private static final String FAKE_SIGNATURE = "{\"*\":\"*\"}";
 
-    private ObjectMapper mapper = new ObjectMapper();
     protected Queue<QueryRequest> queue;
     protected EmbeddedChannel channel;
     protected Disruptor<ResponseEvent> responseBuffer;
@@ -234,7 +233,7 @@ public class QueryHandlerTest {
             String metricsJson = metricList.get(0).toString(CharsetUtil.UTF_8);
             metricList.get(0).release();
             try {
-                Map metrics = mapper.readValue(metricsJson, Map.class);
+                Map<String, Object> metrics = DefaultObjectMapper.readValueAsMap(metricsJson);
                 assertEquals(7, metrics.size());
 
                 for (Map.Entry<String, Object> entry : metricsToCheck.entrySet()) {
@@ -294,7 +293,7 @@ public class QueryHandlerTest {
                     public void call(ByteBuf buf) {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         try {
-                            Map error = mapper.readValue(response, Map.class);
+                            Map<String, Object> error = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(5, error.size());
                             assertEquals(new Integer(4100), error.get("code"));
                             assertEquals(Boolean.FALSE, error.get("temp"));
@@ -337,7 +336,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         ReferenceCountUtil.releaseLater(buf);
                         try {
-                            Map error = mapper.readValue(response, Map.class);
+                            Map<String, Object> error = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(5, error.size());
                             assertEquals(new Integer(4100), error.get("code"));
                             assertEquals(Boolean.FALSE, error.get("temp"));
@@ -403,7 +402,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         buf.release();
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(12, found.size());
                             assertEquals("San Francisco", found.get("city"));
                             assertEquals("United States", found.get("country"));
@@ -453,7 +452,7 @@ public class QueryHandlerTest {
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
-                            Map decoded = mapper.readValue(content, Map.class);
+                            Map<String, Object> decoded = DefaultObjectMapper.readValueAsMap(content);
                             assertTrue(decoded.size() > 0);
                             assertTrue(decoded.containsKey("name"));
                         } catch(Exception e) {
@@ -506,7 +505,7 @@ public class QueryHandlerTest {
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
-                            Map decoded = mapper.readValue(content, Map.class);
+                            Map<String, Object> decoded = DefaultObjectMapper.readValueAsMap(content);
                             assertTrue(decoded.size() > 0);
                             assertTrue(decoded.containsKey("name"));
                         } catch(Exception e) {
@@ -550,7 +549,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         ReferenceCountUtil.releaseLater(buf);
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(12, found.size());
                             assertEquals("San Francisco", found.get("city"));
                             assertEquals("United States", found.get("country"));
@@ -597,7 +596,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         ReferenceCountUtil.releaseLater(buf);
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(12, found.size());
                             assertEquals("San Francisco", found.get("city"));
                             assertEquals("United States", found.get("country"));
@@ -642,7 +641,7 @@ public class QueryHandlerTest {
                         invokeCounter1.incrementAndGet();
                         String response = buf.toString(CharsetUtil.UTF_8);
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(12, found.size());
                             assertEquals("San Francisco", found.get("city"));
                             assertEquals("United States", found.get("country"));
@@ -689,7 +688,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         buf.release();
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(12, found.size());
                             assertEquals("San Francisco", found.get("city"));
                             assertEquals("United States", found.get("country"));
@@ -744,7 +743,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         buf.release();
                         try {
-                            Map error = mapper.readValue(response, Map.class);
+                            Map<String, Object> error = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals(5, error.size());
                             if (count.get() == 1) {
                                 assertEquals(new Integer(4100), error.get("code"));
@@ -913,7 +912,7 @@ public class QueryHandlerTest {
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
-                            Map decoded = mapper.readValue(content, Map.class);
+                            Map<String, Object> decoded = DefaultObjectMapper.readValueAsMap(content);
                             assertTrue(decoded.size() > 0);
                             assertTrue(decoded.containsKey("horseName"));
                         } catch (Exception e) {
@@ -1101,7 +1100,7 @@ public class QueryHandlerTest {
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
-                            Object object = mapper.readValue(content, Object.class);
+                            Object object = DefaultObjectMapper.readValue(content, Object.class);
                             boolean expected = object instanceof Integer || object == null ||
                                     (object instanceof String && ((String) object).startsWith("usertable")) ||
                                     (object instanceof String && ((String) object).startsWith("u,s,e,r"));
@@ -1342,7 +1341,7 @@ public class QueryHandlerTest {
                         assertNotNull(content);
                         assertTrue(!content.isEmpty());
                         try {
-                            Map decoded = mapper.readValue(content, Map.class);
+                            Map<String, Object> decoded = DefaultObjectMapper.readValueAsMap(content);
                             assertTrue(decoded.size() > 0);
                             assertTrue(decoded.containsKey("default"));
                         } catch (Exception e) {
@@ -1419,7 +1418,7 @@ public class QueryHandlerTest {
         assertEquals(1, metricList.size());
         ByteBuf metricsBuf = metricList.get(0);
         ReferenceCountUtil.releaseLater(metricsBuf);
-        Map metrics = mapper.readValue(metricsBuf.toString(CharsetUtil.UTF_8), Map.class);
+        Map<String, Object> metrics = DefaultObjectMapper.readValueAsMap(metricsBuf.toString(CharsetUtil.UTF_8));
 
         assertEquals("success", status);
 
@@ -1609,7 +1608,7 @@ public class QueryHandlerTest {
                         String response = buf.toString(CharsetUtil.UTF_8);
                         ReferenceCountUtil.releaseLater(buf);
                         try {
-                            Map found = mapper.readValue(response, Map.class);
+                            Map<String, Object> found = DefaultObjectMapper.readValueAsMap(response);
                             assertEquals("Map expected count", 1, found.size());
                         } catch (IOException e) {
                             assertFalse(true);

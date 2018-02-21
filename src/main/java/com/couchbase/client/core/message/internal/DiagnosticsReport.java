@@ -19,8 +19,8 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,8 +37,6 @@ import java.util.UUID;
 @InterfaceAudience.Public
 @InterfaceStability.Experimental
 public class DiagnosticsReport {
-
-    static final ObjectMapper JACKSON = new ObjectMapper();
 
     static final int VERSION = 1;
 
@@ -112,9 +110,9 @@ public class DiagnosticsReport {
 
         try {
             if (pretty) {
-                return JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                return DefaultObjectMapper.prettyWriter().writeValueAsString(result);
             } else {
-                return JACKSON.writeValueAsString(result);
+                return DefaultObjectMapper.writeValueAsString(result);
             }
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Could not encode as JSON string.", e);

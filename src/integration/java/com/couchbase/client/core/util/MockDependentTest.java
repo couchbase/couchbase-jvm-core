@@ -30,10 +30,9 @@ import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.message.config.ClusterConfigRequest;
 import com.couchbase.client.core.message.config.ClusterConfigResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.mock.CouchbaseMock;
 import com.couchbase.mock.JsonUtils;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.ResourceLeakDetector;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
@@ -220,10 +219,7 @@ public class MockDependentTest {
      * @return the major.minor minimum version in the cluster, as an int[2].
      */
     private static int[] minNodeVersionFromConfig(String rawConfig) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-
-        JavaType type = mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
-        Map<String, Object> result = mapper.readValue(rawConfig, type);
+        Map<String, Object> result = DefaultObjectMapper.readValueAsMap(rawConfig);
 
         List<Object> nodes = (List<Object>) result.get("nodes");
         int[] min = { 99, 99, 99 };

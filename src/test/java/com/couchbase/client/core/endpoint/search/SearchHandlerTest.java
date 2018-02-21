@@ -28,7 +28,6 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.search.SearchQueryRequest;
 import com.couchbase.client.core.message.search.SearchRequest;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -73,7 +72,6 @@ import static org.mockito.Mockito.when;
  */
 public class SearchHandlerTest {
 
-    private ObjectMapper mapper = new ObjectMapper();
     private Queue<SearchRequest> queue;
     private EmbeddedChannel channel;
     private Disruptor<ResponseEvent> responseBuffer;

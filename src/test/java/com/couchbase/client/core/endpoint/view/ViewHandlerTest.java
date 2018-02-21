@@ -32,7 +32,7 @@ import com.couchbase.client.core.message.view.ViewQueryResponse;
 import com.couchbase.client.core.message.view.ViewRequest;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.util.Resources;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -95,7 +95,6 @@ import static org.mockito.Mockito.when;
  */
 public class ViewHandlerTest {
 
-    private ObjectMapper mapper = new ObjectMapper();
     private Queue<ViewRequest> queue;
     private EmbeddedChannel channel;
     private Disruptor<ResponseEvent> responseBuffer;
@@ -221,7 +220,7 @@ public class ViewHandlerTest {
             @Override
             public void call(ByteBuf byteBuf) {
                 try {
-                    Map found = mapper.readValue(byteBuf.toString(CharsetUtil.UTF_8), Map.class);
+                    Map<String, Object> found = DefaultObjectMapper.readValueAsMap(byteBuf.toString(CharsetUtil.UTF_8));
                     assertEquals(2, found.size());
                     assertTrue(found.containsKey("debug_info"));
                     assertTrue(found.containsKey("total_rows"));
@@ -285,7 +284,7 @@ public class ViewHandlerTest {
             public void call(ByteBuf byteBuf) {
                 calledRow.incrementAndGet();
                 try {
-                    Map found = mapper.readValue(byteBuf.toString(CharsetUtil.UTF_8), Map.class);
+                    Map<String, Object> found = DefaultObjectMapper.readValueAsMap(byteBuf.toString(CharsetUtil.UTF_8));
                     assertEquals(3, found.size());
                     assertTrue(found.containsKey("id"));
                     assertTrue(found.containsKey("key"));
@@ -334,7 +333,7 @@ public class ViewHandlerTest {
             public void call(ByteBuf byteBuf) {
                 calledRow.incrementAndGet();
                 try {
-                    Map found = mapper.readValue(byteBuf.toString(CharsetUtil.UTF_8), Map.class);
+                    Map<String, Object> found = DefaultObjectMapper.readValueAsMap(byteBuf.toString(CharsetUtil.UTF_8));
                     assertEquals(3, found.size());
                     assertTrue(found.containsKey("id"));
                     assertTrue(found.containsKey("key"));
@@ -509,7 +508,6 @@ public class ViewHandlerTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldParseErrorWithEmptyRows() throws Exception {
         String response = Resources.read("error_empty_rows.json", this.getClass());
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
@@ -526,13 +524,12 @@ public class ViewHandlerTest {
         assertEquals(0, countAndRelease(inbound.rows()));
 
         String error = inbound.error().toBlocking().single();
-        Map<String, Object> parsed = mapper.readValue(error, Map.class);
+        Map<String, Object> parsed = DefaultObjectMapper.readValueAsMap(error);
         assertEquals(1, parsed.size());
         assertNotNull(parsed.get("errors"));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void shouldParseErrorAfterRows() throws Exception {
         String response = Resources.read("error_rows.json", this.getClass());
         HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
@@ -549,7 +546,7 @@ public class ViewHandlerTest {
         assertEquals(10, countAndRelease(inbound.rows()));
 
         String error = inbound.error().toBlocking().single();
-        Map<String, Object> parsed = mapper.readValue(error, Map.class);
+        Map<String, Object> parsed = DefaultObjectMapper.readValueAsMap(error);
         assertEquals(1, parsed.size());
         assertNotNull(parsed.get("errors"));
     }
@@ -596,9 +593,9 @@ public class ViewHandlerTest {
         ByteBuf singleRow = inbound.rows().toBlocking().single(); //single will blow up if not exactly one
         String singleRowData = singleRow.toString(CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(singleRow);
-        Map found = null;
+        Map<String, Object> found = null;
         try {
-            found = mapper.readValue(singleRowData, Map.class);
+            found = DefaultObjectMapper.readValueAsMap(singleRowData);
         } catch (IOException e) {
             e.printStackTrace();
             fail("Failed parsing JSON on data " + singleRowData);
