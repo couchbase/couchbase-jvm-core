@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.config;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -112,6 +113,7 @@ public class ConfigHandlerTest {
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
+        when(endpoint.context()).thenReturn(new CoreContext(environment, null, 1));
         when(environment.retryStrategy()).thenReturn(FailFastRetryStrategy.INSTANCE);
 
         eventSink = new CollectingResponseEventSink();

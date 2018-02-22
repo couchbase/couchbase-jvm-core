@@ -47,7 +47,9 @@ public class ThresholdLogReporterTest {
 
             ThresholdLogSpan span = mock(ThresholdLogSpan.class);
             when(span.getBaggageItem("couchbase.zombie")).thenReturn("false");
-            when(span.tag("couchbase.service")).thenReturn("kv");
+            when(span.tag("peer.service")).thenReturn("kv");
+            when(span.tag("couchbase.operation_id")).thenReturn("0x1234");
+            when(span.operationName()).thenReturn("get");
             when(span.durationMicros()).thenReturn(TimeUnit.SECONDS.toMicros(1));
 
             reporter.report(span);
@@ -60,7 +62,8 @@ public class ThresholdLogReporterTest {
             assertEquals("kv", kvService.get("service"));
 
             List<Map<String, Object>> top = (List<Map<String, Object>>) kvService.get("top");
-            assertEquals(1000000L, top.get(0).get("total_duration_us"));
+            assertEquals(1000000L, top.get(0).get("total_us"));
+            assertEquals("get:0x1234", top.get(0).get("operation_id"));
         } finally {
             if (reporter != null) {
                 reporter.shutdown();

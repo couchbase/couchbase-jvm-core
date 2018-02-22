@@ -86,6 +86,8 @@ import com.couchbase.client.core.message.kv.subdoc.simple.SubGetCountRequest;
 import com.couchbase.client.core.message.kv.subdoc.simple.SubGetRequest;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import com.couchbase.client.core.tracing.ThresholdLogSpan;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponse;
@@ -1021,6 +1023,15 @@ public class KeyValueHandler
         if (msg.getFramingExtrasLength() > 0) {
             long duration = parseServerDurationFromFrame(msg.getFramingExtras());
             ((BinaryResponse) response).serverDuration(duration);
+            if (env().tracingEnabled() && currentDispatchSpan() != null) {
+                currentDispatchSpan().setTag("peer.latency", duration + "us");
+                if (currentDispatchSpan() instanceof ThresholdLogSpan) {
+                    currentDispatchSpan().setBaggageItem(
+                        ThresholdLogReporter.KEY_SERVER_MICROS,
+                        Long.toString(duration)
+                    );
+                }
+            }
         }
 
         return response;

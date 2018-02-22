@@ -15,10 +15,17 @@
  */
 package com.couchbase.client.core.message;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.time.Delay;
+import io.opentracing.Span;
+import io.opentracing.log.Fields;
+import io.opentracing.tag.Tags;
 import rx.Subscriber;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Default implementation for a {@link CouchbaseRequest}, should be extended by child messages.
@@ -66,7 +73,9 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
 
     private volatile String dispatchHostname;
 
-    private Delay retryDelay;
+    private volatile Span span;
+
+    private volatile Delay retryDelay;
 
     /**
      * Create a new {@link AbstractCouchbaseRequest}.
@@ -224,6 +233,47 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     @Override
     public void fail(final Throwable throwable) {
         observable.onError(throwable);
+        if (span != null) {
+            Map<String, Object> exData = new HashMap<String, Object>();
+            exData.put(Fields.ERROR_KIND, "Exception");
+            exData.put(Fields.ERROR_OBJECT, throwable);
+            exData.put(Fields.EVENT, "failed");
+            exData.put(Fields.MESSAGE, throwable.getMessage());
+            span.log(exData);
+        }
+    }
+
+    @Override
+    public Span span() {
+        return span;
+    }
+
+    @Override
+    public void span(Span span, CoreEnvironment env) {
+        this.span = span;
+
+        this.span.setTag(Tags.DB_TYPE.getKey(), "couchbase");
+        this.span.setTag(Tags.SPAN_KIND.getKey(), "client");
+        this.span.setTag(Tags.COMPONENT.getKey(), env != null ? env.userAgent() : "couchbase.sdk.java");
+
+        if (operationId() != null) {
+            this.span.setTag("couchbase.operation_id", operationId());
+        }
+
+        afterSpanSet(this.span);
+    }
+
+    /**
+     * Use this method to add custom span values on insert.
+     */
+    protected void afterSpanSet(final Span span) { }
+
+    /**
+     * Default implementation, sub requests need to override this.
+     */
+    @Override
+    public String operationId() {
+        return null;
     }
 
     @Override

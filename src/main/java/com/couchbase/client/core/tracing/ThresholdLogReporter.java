@@ -21,6 +21,7 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.internal.shaded.org.jctools.queues.MpscUnboundedArrayQueue;
 import io.opentracing.Tracer;
+import io.opentracing.tag.Tags;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,12 @@ public class ThresholdLogReporter {
     public static final String SERVICE_VIEW = "view";
     public static final String SERVICE_ANALYTICS = "analytics";
 
+    public static final String KEY_TOTAL_MICROS = "total_us";
+    public static final String KEY_DISPATCH_MICROS = "dispatch_us";
+    public static final String KEY_ENCODE_MICROS = "encode_us";
+    public static final String KEY_DECODE_MICROS = "decode_us";
+    public static final String KEY_SERVER_MICROS = "server_us";
+
 
     private final Queue<ThresholdLogSpan> overThresholdQueue;
     private final Queue<ThresholdLogSpan> zombieQueue;
@@ -73,6 +80,9 @@ public class ThresholdLogReporter {
     private final long analyticsThreshold;
     private final long logIntervalNanos;
     private final int sampleSize;
+    private final boolean pretty;
+
+    private final Thread worker;
 
     private volatile boolean running;
 
@@ -108,13 +118,15 @@ public class ThresholdLogReporter {
         ftsThreshold = builder.ftsThreshold;
         viewThreshold = builder.viewThreshold;
         n1qlThreshold = builder.n1qlThreshold;
+        pretty = builder.pretty;
         running = true;
 
         if (logIntervalNanos > 0) {
-            Thread worker = new Thread(new Worker());
+            worker = new Thread(new Worker());
             worker.setDaemon(true);
             worker.start();
         } else {
+            worker = null;
             LOGGER.debug("ThresholdLogReporter disabled via config.");
         }
     }
@@ -157,7 +169,7 @@ public class ThresholdLogReporter {
      * @return true if it is, false otherwise.
      */
     private boolean isOverThreshold(final ThresholdLogSpan span) {
-        String service = (String) span.tag("couchbase.service");
+        String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
         if (SERVICE_KV.equals(service)) {
             return span.durationMicros() >= kvThreshold;
         } else if (SERVICE_N1QL.equals(service)) {
@@ -169,7 +181,6 @@ public class ThresholdLogReporter {
         } else if (SERVICE_ANALYTICS.equals(service)) {
             return span.durationMicros() >= analyticsThreshold;
         } else {
-            LOGGER.warn("Unknown service in span {}", span);
             return false;
         }
     }
@@ -184,7 +195,7 @@ public class ThresholdLogReporter {
      * @return true if it is, false otherwise.
      */
     private boolean isZombie(final ThresholdLogSpan span) {
-        return span.getBaggageItem("couchbase.zombie").equals("true");
+        return "true".equals(span.getBaggageItem("couchbase.zombie"));
     }
 
     /**
@@ -192,6 +203,9 @@ public class ThresholdLogReporter {
      */
     public void shutdown() {
         running = false;
+        if (worker != null) {
+            worker.interrupt();
+        }
     }
 
     /**
@@ -208,11 +222,13 @@ public class ThresholdLogReporter {
         private static final long DEFAULT_FTS_THRESHOLD = TimeUnit.SECONDS.toMicros(1);
         private static final long DEFAULT_ANALYTICS_THRESHOLD = TimeUnit.SECONDS.toMicros(1);
         private static final int DEFAULT_SAMPLE_SIZE = 10;
+        private static final boolean DEFAULT_PRETTY = false;
 
         private long logInterval = DEFAULT_LOG_INTERVAL;
         private TimeUnit logIntervalUnit = DEFAULT_LOG_INTERVAL_UNIT;
         private int spanQueueSize = DEFAULT_SPAN_QUEUE_SIZE;
         private int sampleSize = DEFAULT_SAMPLE_SIZE;
+        private boolean pretty = DEFAULT_PRETTY;
 
         private long kvThreshold = DEFAULT_KV_THRESHOLD;
         private long n1qlThreshold = DEFAULT_N1QL_THRESHOLD;
@@ -315,6 +331,18 @@ public class ThresholdLogReporter {
             return this;
         }
 
+        /**
+         * Allows to set the JSON output to pretty, making it more
+         * readable but also more verbose. Helpful during debugging.
+         *
+         * @param pretty set to true, false by default
+         * @return this builder for chaining.
+         */
+        public Builder pretty(final boolean pretty) {
+            this.pretty = pretty;
+            return this;
+        }
+
     }
 
     /**
@@ -369,6 +397,12 @@ public class ThresholdLogReporter {
                     handleOverThresholdQueue();
                     handlerZombieQueue();
                     Thread.sleep(workerSleepMs);
+                } catch (final InterruptedException ex) {
+                    if (!running) {
+                        return;
+                    } else {
+                        Thread.currentThread().interrupt();
+                    }
                 } catch (final Exception ex) {
                     LOGGER.warn("Got exception on slow operation reporter, ignoring.", ex);
                 }
@@ -390,17 +424,17 @@ public class ThresholdLogReporter {
                 if (span == null) {
                     return;
                 }
-                String service = (String) span.tag("couchbase.service");
+                String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
-                    updateSet(kvThresholdSet, span);
+                    updateSet(kvThresholdSet, span, false);
                 } else if (SERVICE_N1QL.equals(service)) {
-                    updateSet(n1qlThresholdSet, span);
+                    updateSet(n1qlThresholdSet, span, false);
                 } else if (SERVICE_VIEW.equals(service)) {
-                    updateSet(viewThresholdSet, span);
+                    updateSet(viewThresholdSet, span, false);
                 } else if (SERVICE_FTS.equals(service)) {
-                    updateSet(ftsThresholdSet, span);
+                    updateSet(ftsThresholdSet, span, false);
                 } else if (SERVICE_ANALYTICS.equals(service)) {
-                    updateSet(analyticsThresholdSet, span);
+                    updateSet(analyticsThresholdSet, span, false);
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
                 }
@@ -446,8 +480,45 @@ public class ThresholdLogReporter {
             List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
             for (ThresholdLogSpan span : set) {
                 Map<String, Object> entry = new HashMap<String, Object>();
-                // TODO: upcoming commits will flesh this out
-                entry.put("total_duration_us", span.durationMicros());
+                entry.put(KEY_TOTAL_MICROS, span.durationMicros());
+
+                String spanId = (String) span.tag("couchbase.operation_id");
+                String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
+                entry.put("operation_id", operation_id);
+
+                String local = span.getBaggageItem("local.address");
+                String peer = span.getBaggageItem("peer.address");
+                if (local != null) {
+                    entry.put("local_address", local);
+                }
+                if (peer != null) {
+                    entry.put("remote_address", peer);
+                }
+
+                String localId = span.getBaggageItem("local.id");
+                if (localId != null) {
+                    entry.put("local_id", localId);
+                }
+
+                String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);
+                if (decode_duration != null) {
+                    entry.put(KEY_DECODE_MICROS, Long.parseLong(decode_duration));
+                }
+
+                String encode_duration = span.getBaggageItem(KEY_ENCODE_MICROS);
+                if (encode_duration != null) {
+                    entry.put(KEY_ENCODE_MICROS, Long.parseLong(encode_duration));
+                }
+
+                String dispatch_duration = span.getBaggageItem(KEY_DISPATCH_MICROS);
+                if (dispatch_duration != null) {
+                    entry.put(KEY_DISPATCH_MICROS, Long.parseLong(dispatch_duration));
+                }
+
+                String server_duration = span.getBaggageItem(KEY_SERVER_MICROS);
+                if (server_duration != null) {
+                    entry.put(KEY_SERVER_MICROS, Long.parseLong(server_duration));
+                }
                 top.add(entry);
             }
             output.put("service", ident);
@@ -471,17 +542,17 @@ public class ThresholdLogReporter {
                 if (span == null) {
                     return;
                 }
-                String service = (String) span.tag("couchbase.service");
+                String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
-                    updateSet(kvZombieSet, span);
+                    updateSet(kvZombieSet, span, true);
                 } else if (SERVICE_N1QL.equals(service)) {
-                    updateSet(n1qlZombieSet, span);
+                    updateSet(n1qlZombieSet, span, true);
                 } else if (SERVICE_VIEW.equals(service)) {
-                    updateSet(viewZombieSet, span);
+                    updateSet(viewZombieSet, span, true);
                 } else if (SERVICE_FTS.equals(service)) {
-                    updateSet(ftsZombieSet, span);
+                    updateSet(ftsZombieSet, span, true);
                 } else if (SERVICE_ANALYTICS.equals(service)) {
-                    updateSet(analyticsZombieSet, span);
+                    updateSet(analyticsZombieSet, span, true);
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
                 }
@@ -495,12 +566,17 @@ public class ThresholdLogReporter {
          * @param set the set to work with.
          * @param span the span to store.
          */
-        private void updateSet(final SortedSet<ThresholdLogSpan> set, final ThresholdLogSpan span) {
+        private void updateSet(final SortedSet<ThresholdLogSpan> set, final ThresholdLogSpan span,
+                               boolean zombie) {
             set.add(span);
             while(set.size() > sampleSize) {
                 set.remove(set.first());
             }
-            hasZombieWritten = true;
+            if (zombie) {
+                hasZombieWritten = true;
+            } else {
+                hasThresholdWritten = true;
+            }
         }
 
         /**
@@ -547,8 +623,46 @@ public class ThresholdLogReporter {
         List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
         for (ThresholdLogSpan span : set) {
             Map<String, Object> entry = new HashMap<String, Object>();
-            // TODO: upcoming commits will flesh this out
-            entry.put("total_duration_us", span.durationMicros());
+            entry.put(KEY_TOTAL_MICROS, span.durationMicros());
+
+            String spanId = (String) span.tag("couchbase.operation_id");
+            String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
+            entry.put("operation_id", operation_id);
+
+            String local = span.getBaggageItem("local.address");
+            String peer = span.getBaggageItem("peer.address");
+            if (local != null) {
+                entry.put("local_address", local);
+            }
+            if (peer != null) {
+                entry.put("remote_address", peer);
+            }
+
+            String localId = span.getBaggageItem("local.id");
+            if (localId != null) {
+                entry.put("local_id", localId);
+            }
+
+            String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);
+            if (decode_duration != null) {
+                entry.put(KEY_DECODE_MICROS, Long.parseLong(decode_duration));
+            }
+
+            String encode_duration = span.getBaggageItem(KEY_ENCODE_MICROS);
+            if (encode_duration != null) {
+                entry.put(KEY_ENCODE_MICROS, Long.parseLong(encode_duration));
+            }
+
+            String dispatch_duration = span.getBaggageItem(KEY_DISPATCH_MICROS);
+            if (dispatch_duration != null) {
+                entry.put(KEY_DISPATCH_MICROS, Long.parseLong(dispatch_duration));
+            }
+
+            String server_duration = span.getBaggageItem(KEY_SERVER_MICROS);
+            if (server_duration != null) {
+                entry.put(KEY_SERVER_MICROS, Long.parseLong(server_duration));
+            }
+
             top.add(entry);
         }
         output.put("service", ident);
@@ -564,7 +678,10 @@ public class ThresholdLogReporter {
      */
     void logOverThreshold(final List<Map<String, Object>> toLog) {
         try {
-            LOGGER.warn("Operations over threshold: {}", JACKSON.writeValueAsString(toLog));
+            String result = pretty
+                ? JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(toLog)
+                : JACKSON.writeValueAsString(toLog);
+            LOGGER.warn("Operations over threshold: {}", result);
         } catch (Exception ex) {
             LOGGER.warn("Could not write threshold log.", ex);
         }
@@ -576,7 +693,10 @@ public class ThresholdLogReporter {
      */
     void logZombies(final List<Map<String, Object>> toLog) {
         try {
-            LOGGER.warn("Zombie responses observed: {}", JACKSON.writeValueAsString(toLog));
+            String result = pretty
+                ? JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(toLog)
+                : JACKSON.writeValueAsString(toLog);
+            LOGGER.warn("Zombie responses observed: {}", result);
         } catch (Exception ex) {
             LOGGER.warn("Could not write zombie log.", ex);
         }

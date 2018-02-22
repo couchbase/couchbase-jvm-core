@@ -17,7 +17,9 @@ package com.couchbase.client.core.message;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.time.Delay;
+import io.opentracing.Span;
 import rx.Subscriber;
 import rx.subjects.Subject;
 
@@ -37,6 +39,8 @@ public interface CouchbaseRequest extends CouchbaseMessage {
      * @return the observable which will complete the response.
      */
     Subject<CouchbaseResponse, CouchbaseResponse> observable();
+
+
 
     /**
      * Emits the {@link CouchbaseResponse} into the underlying state holder (like a subject)
@@ -161,4 +165,27 @@ public interface CouchbaseRequest extends CouchbaseMessage {
     String dispatchHostname();
 
     void dispatchHostname(String hostname);
+
+    /**
+     * Returns the {@link Span} for this request if set.
+     *
+     * @return the span used.
+     */
+    Span span();
+
+    /**
+     * Allows to set a custom span that should be used.
+     *
+     * @param span the span to use.
+     * @param env the core env used for context-sensitive stuff, may be null.
+     */
+    void span(Span span, CoreEnvironment env);
+
+    /**
+     * A unique operation id, used for tracing purposes.
+     *
+     * May or may not be null depending on the service implementation.
+     * @return the operation id or null.
+     */
+    String operationId();
 }

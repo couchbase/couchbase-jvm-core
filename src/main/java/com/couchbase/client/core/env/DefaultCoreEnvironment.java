@@ -45,6 +45,8 @@ import com.couchbase.client.core.node.MemcachedHashingStrategy;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import com.couchbase.client.core.tracing.ThresholdLogTracer;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import io.netty.channel.EventLoopGroup;
@@ -63,6 +65,7 @@ import com.couchbase.client.core.utils.Blocking;
 
 import java.security.KeyStore;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultCoreEnvironment implements CoreEnvironment {
@@ -248,6 +251,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook queryIoPoolShutdownHook;
     private final ShutdownHook viewIoPoolShutdownHook;
     private final ShutdownHook searchIoPoolShutdownHook;
+    private final ShutdownHook tracerShutdownHook;
 
     private final KeyValueServiceConfig keyValueServiceConfig;
     private final QueryServiceConfig queryServiceConfig;
@@ -323,11 +327,31 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         tracingEnabled = booleanPropertyOr("tracingEnabled", builder.tracingEnabled);
         if (!tracingEnabled) {
             tracer = NoopTracerFactory.create();
+            tracerShutdownHook = new NoOpShutdownHook();
         } else if (builder.tracer == null) {
-            // TODO: Implement the Slowlog Tracer
-            tracer = null;
+            tracer = ThresholdLogTracer.create();
+            tracerShutdownHook = new ShutdownHook() {
+                private volatile boolean shutdown = false;
+                @Override
+                public Observable<Boolean> shutdown() {
+                    return Observable.fromCallable(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() {
+                            ((ThresholdLogTracer) tracer).shutdown();
+                            shutdown = true;
+                            return true;
+                        }
+                    });
+                }
+
+                @Override
+                public boolean isShutdown() {
+                    return shutdown;
+                }
+            };
         } else {
             tracer = builder.tracer;
+            tracerShutdownHook = new NoOpShutdownHook();
         }
 
         if (ioPoolSize < MIN_POOL_SIZE) {
@@ -563,7 +587,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             metricsCollectorSubscription.unsubscribe();
         }
 
-        Observable<Boolean> result = Observable.merge(
+        Observable<Boolean> result = Observable.merge(Observable.merge(
                 wrapShutdown(ioPoolShutdownHook.shutdown(), "IoPool"),
                 wrapBestEffortShutdown(nettyShutdownHook.shutdown(), "Netty"),
                 wrapShutdown(kvIoPoolShutdownHook.shutdown(), "kvIoPool"),
@@ -572,7 +596,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 wrapShutdown(searchIoPoolShutdownHook.shutdown(), "searchIoPool"),
                 wrapShutdown(coreSchedulerShutdownHook.shutdown(), "Core Scheduler"),
                 wrapShutdown(Observable.just(runtimeMetricsCollector.shutdown()), "Runtime Metrics Collector"),
-                wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector"))
+                wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector")), wrapShutdown(tracerShutdownHook.shutdown(), "Tracer"))
                 .reduce(true,
                         new Func2<Boolean, ShutdownStatus, Boolean>() {
                             @Override

@@ -17,7 +17,10 @@ package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import io.netty.util.CharsetUtil;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
 
@@ -102,6 +105,11 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
     }
 
     @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_KV);
+    }
+
+    @Override
     public String key() {
         return key;
     }
@@ -131,5 +139,10 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
     @Override
     public int opaque() {
         return opaque;
+    }
+
+    @Override
+    public String operationId() {
+        return "0x" + Integer.toHexString(opaque);
     }
 }

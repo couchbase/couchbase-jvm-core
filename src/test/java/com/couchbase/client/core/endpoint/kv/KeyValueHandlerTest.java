@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.kv;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
@@ -143,6 +144,7 @@ public class KeyValueHandlerTest {
         requestQueue = new ArrayDeque<BinaryRequest>();
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(ENVIRONMENT);
+        when(endpoint.context()).thenReturn(new CoreContext(ENVIRONMENT, null, 1));
         channel = new EmbeddedChannel(new KeyValueHandler(endpoint, eventSink, requestQueue, false, true));
     }
 

@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.query;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
@@ -143,6 +144,7 @@ public class QueryHandlerTest {
         when(environment.retryStrategy()).thenReturn(FailFastRetryStrategy.INSTANCE);
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
+        when(endpoint.context()).thenReturn(new CoreContext(environment, null, 1));
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
 
         queue = new ArrayDeque<QueryRequest>();

@@ -19,6 +19,9 @@ package com.couchbase.client.core.message.analytics;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.DiagnosticRequest;
 import com.couchbase.client.core.message.PrelocatedRequest;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 
 import java.net.InetAddress;
 import java.net.SocketAddress;
@@ -35,6 +38,12 @@ public class PingRequest
         super(bucket, password);
         this.sendTo = sendTo;
     }
+
+    @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_ANALYTICS);
+    }
+
 
     @Override
     public SocketAddress localSocket() {

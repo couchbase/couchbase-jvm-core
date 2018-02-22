@@ -18,6 +18,9 @@ package com.couchbase.client.core.message.search;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.BootstrapMessage;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 
 /**
  * Retrieves full text index definition.
@@ -32,6 +35,11 @@ public class GetSearchIndexRequest extends AbstractCouchbaseRequest implements S
     public GetSearchIndexRequest(String indexName, String username, String password) {
         super(null, username, password);
         this.indexName = indexName;
+    }
+
+    @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_FTS);
     }
 
     @Override

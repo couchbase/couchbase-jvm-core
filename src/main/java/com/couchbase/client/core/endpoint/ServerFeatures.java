@@ -119,6 +119,7 @@ public enum ServerFeatures {
             case 0x07: return XERROR;
             case 0x08: return SELECT_BUCKET;
             case 0x0a: return SNAPPY;
+            case 0x0f: return TRACING;
             default: throw new IllegalStateException("Unrequested server feature: " + input);
         }
     }

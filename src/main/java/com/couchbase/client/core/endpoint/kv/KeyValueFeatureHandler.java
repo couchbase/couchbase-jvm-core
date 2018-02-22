@@ -169,7 +169,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
      * @param number number to pad.
      * @return the padded hex number.
      */
-    private static String paddedHex(long number) {
+    public static String paddedHex(long number) {
         return String.format("%016X", number);
     }
 

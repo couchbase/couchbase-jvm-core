@@ -19,6 +19,9 @@ package com.couchbase.client.core.message.search;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.BootstrapMessage;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 
 /**
  * Runs query against search index.
@@ -35,6 +38,11 @@ public class SearchQueryRequest extends AbstractCouchbaseRequest implements Sear
         super(bucket, username, password);
         this.indexName = indexName;
         this.payload = payload;
+    }
+
+    @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_FTS);
     }
 
     @Override

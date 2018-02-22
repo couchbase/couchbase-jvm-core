@@ -20,6 +20,9 @@ import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.PrelocatedRequest;
 import com.couchbase.client.core.message.query.QueryRequest;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 
 import java.net.InetAddress;
 
@@ -43,6 +46,11 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
         this.query = query;
         this.jsonFormat = jsonFormat;
         this.targetNode = targetNode;
+    }
+
+    @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_ANALYTICS);
     }
 
     public String query() {

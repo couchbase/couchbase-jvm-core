@@ -16,6 +16,9 @@
 package com.couchbase.client.core.message.view;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 
 public class UpsertDesignDocumentRequest extends AbstractCouchbaseRequest implements ViewRequest {
 
@@ -32,6 +35,11 @@ public class UpsertDesignDocumentRequest extends AbstractCouchbaseRequest implem
         this.name = name;
         this.development = development;
         this.body = body;
+    }
+
+    @Override
+    protected void afterSpanSet(Span span) {
+        span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_VIEW);
     }
 
     public String name() {

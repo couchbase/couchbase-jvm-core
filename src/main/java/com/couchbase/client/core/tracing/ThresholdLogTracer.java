@@ -45,21 +45,35 @@ public class ThresholdLogTracer implements Tracer {
     private final ThresholdLogReporter reporter;
 
     /**
+     * Creates a new tracer with default settings.
+     */
+    public static ThresholdLogTracer create() {
+        return create(ThresholdLogReporter.create());
+    }
+
+    /**
+     * Creates a new tracer with a custom reporter.
+     *
+     * @param reporter the reporter to use.
+     */
+    public static ThresholdLogTracer create(final ThresholdLogReporter reporter) {
+        return new ThresholdLogTracer(reporter);
+    }
+
+    /**
      * Simple constructor, useful for testing. Disables the log reporter.
      */
     ThresholdLogTracer() {
-        this(new ThresholdLogScopeManager(), ThresholdLogReporter.disabled());
+        this(ThresholdLogReporter.disabled());
     }
 
     /**
      * Creates a new {@link ThresholdLogTracer}.
      *
-     * @param scopeManager the scope manager to use.
      * @param reporter the log reporter to use.
      */
-    private ThresholdLogTracer(final ThresholdLogScopeManager scopeManager,
-        final ThresholdLogReporter reporter) {
-        this.scopeManager = scopeManager;
+    private ThresholdLogTracer(final ThresholdLogReporter reporter) {
+        this.scopeManager = new ThresholdLogScopeManager();
         this.reporter = reporter;
     }
 
@@ -103,6 +117,10 @@ public class ThresholdLogTracer implements Tracer {
      */
     public static long currentTimeMicros() {
         return TimeUnit.NANOSECONDS.toMicros(System.nanoTime());
+    }
+
+    public void shutdown() {
+        reporter.shutdown();
     }
 
 }

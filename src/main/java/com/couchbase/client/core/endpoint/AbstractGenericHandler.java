@@ -33,6 +33,8 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsIdentifier;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.tracing.ThresholdLogReporter;
+import com.couchbase.client.core.tracing.ThresholdLogSpan;
 import com.lmax.disruptor.EventSink;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -48,6 +50,9 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.opentracing.Scope;
+import io.opentracing.Span;
+import io.opentracing.tag.Tags;
 import rx.Scheduler;
 import rx.Subscriber;
 import rx.functions.Action0;
@@ -67,6 +72,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.couchbase.client.core.endpoint.kv.KeyValueFeatureHandler.paddedHex;
 import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.logging.RedactableArgument.user;
@@ -117,6 +123,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     private final Queue<Long> sentRequestTimings;
 
     /**
+     * Contains all the outstanding dispatch spans.
+     */
+    private final Queue<Span> dispatchSpans;
+
+    /**
+     * Holds the current dispatch span during the decode phase.
+     */
+    private Span currentDispatchSpan;
+
+    /**
      * If this handler is transient (will close after one request).
      */
     private final boolean isTransient;
@@ -152,6 +168,21 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * Contains the stringified version of the remote node's hostname. Used for metrics.
      */
     private String remoteHostname;
+
+    /**
+     * Remote socket, stringified with host and port.
+     */
+    private String remoteSocket;
+
+    /**
+     * Local socket, stringified with host and port.
+     */
+    private String localSocket;
+
+    /**
+     * Local id combination of cluster ID and channel.
+     */
+    private String localId;
 
     /**
      * The future which is used to eventually signal a connected channel.
@@ -204,6 +235,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         this.isTransient = isTransient;
         this.traceEnabled = LOGGER.isTraceEnabled();
         this.sentRequestTimings = new ArrayDeque<Long>();
+        this.dispatchSpans = new ArrayDeque<Span>();
         this.classNameCache = new IdentityHashMap<Class<? extends CouchbaseRequest>, String>();
         this.moveResponseOut = env() == null || !env().callbacksOnIoPool();
         this.sentQueueLimit = Integer.parseInt(System.getProperty("com.couchbase.sentRequestQueueLimit", "5120"));
@@ -275,6 +307,27 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         sentRequestQueue.offer(msg);
         out.add(request);
         sentRequestTimings.offer(System.nanoTime());
+
+        if (env().tracingEnabled() && msg.span() != null) {
+            Scope scope = env().tracer()
+                .buildSpan("dispatch_to_server")
+                .asChildOf(msg.span())
+                .withTag("peer.address", remoteSocket)
+                .withTag("local.address", localSocket)
+                .withTag("local.id", localId)
+                .startActive(false);
+            if (msg.span() instanceof ThresholdLogSpan) {
+                // we need it in the local baggage for threshold
+                // log reporting. Not needed with other tracer
+                // implementations.
+                msg.span()
+                    .setBaggageItem("peer.address", remoteSocket)
+                    .setBaggageItem("local.address", localSocket)
+                    .setBaggageItem("local.id", localId);
+            }
+            dispatchSpans.offer(scope.span());
+            scope.close();
+        }
     }
 
     @Override
@@ -289,6 +342,19 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 if (currentRequest instanceof DiagnosticRequest) {
                     ((DiagnosticRequest) currentRequest).localSocket(ctx.channel().localAddress());
                     ((DiagnosticRequest) currentRequest).remoteSocket(ctx.channel().remoteAddress());
+                }
+
+                if (currentDispatchSpan != null) {
+                    env().tracer().scopeManager()
+                        .activate(currentDispatchSpan, true)
+                        .close();
+                    if (currentDispatchSpan instanceof ThresholdLogSpan) {
+                        currentDispatchSpan.setBaggageItem(
+                            ThresholdLogReporter.KEY_DISPATCH_MICROS,
+                            Long.toString(((ThresholdLogSpan) currentDispatchSpan).durationMicros())
+                        );
+                    }
+                    currentDispatchSpan = null;
                 }
 
                 publishResponse(response, currentRequest.observable());
@@ -358,6 +424,10 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         currentDecodingState = DecodingState.INITIAL;
     }
 
+    protected Span currentDispatchSpan() {
+        return currentDispatchSpan;
+    }
+
     /**
      * Helper method which performs the initial decoding process.
      *
@@ -373,6 +443,13 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 currentOpTime = System.nanoTime() - st;
             } else {
                 currentOpTime = -1;
+            }
+        }
+
+        if (env().tracingEnabled()) {
+            Span dispatchSpan = dispatchSpans.poll();
+            if (dispatchSpan != null) {
+                currentDispatchSpan = dispatchSpan;
             }
         }
 
@@ -411,8 +488,22 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * When called directly, this method completes on the event loop, but it can also be used in a callback (see
      * {@link #scheduleDirect(CoreScheduler, CouchbaseResponse, Subject)} for example.
      */
-    private static void completeResponse(final CouchbaseResponse response,
+    private void completeResponse(final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
+
+        // the following observable complete will go into nirvana since
+        // no one is subscribing anymore.. set zombie = true and complete
+        // the span!
+        if (env().tracingEnabled()
+            && response.request() != null
+            && !response.request().isActive()
+            && response.request().span() != null) {
+            Scope scope = env().tracer().scopeManager()
+                .activate(response.request().span(), true);
+            scope.span().setBaggageItem("couchbase.zombie", "true");
+            scope.close();
+        }
+
         try {
             observable.onNext(response);
             observable.onCompleted();
@@ -428,7 +519,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * This method has less GC overhead compared to {@link #scheduleWorker(Scheduler, CouchbaseResponse, Subject)}
      * since no worker needs to be generated explicitly (but is not part of the public Scheduler interface).
      */
-    private static void scheduleDirect(CoreScheduler scheduler, final CouchbaseResponse response,
+    private void scheduleDirect(CoreScheduler scheduler, final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
         scheduler.scheduleDirect(new Action0() {
             @Override
@@ -441,21 +532,14 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     /**
      * Dispatches the response on a generic scheduler through creating a worker.
      */
-    private static void scheduleWorker(Scheduler scheduler, final CouchbaseResponse response,
+    private void scheduleWorker(Scheduler scheduler, final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
         final Scheduler.Worker worker = scheduler.createWorker();
         worker.schedule(new Action0() {
             @Override
             public void call() {
-                try {
-                    observable.onNext(response);
-                    observable.onCompleted();
-                } catch (Exception ex) {
-                    LOGGER.warn("Caught exception while onNext on observable", ex);
-                    observable.onError(ex);
-                } finally {
-                    worker.unsubscribe();
-                }
+                completeResponse(response, observable);
+                worker.unsubscribe();
             }
         });
     }
@@ -481,15 +565,34 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.debug(logIdent(ctx, endpoint) + "Channel Active.");
-
+        try {
+            localId = paddedHex(endpoint.context().coreId()) + "/" + paddedHex(ctx.channel().hashCode());
+        } catch (Exception ex) {
+            // can happen during testing in some cases
+            LOGGER.info("Could not define channel ID, ignoring.");
+            localId = paddedHex(0) + "/" + paddedHex(0);
+        }
         SocketAddress addr = ctx.channel().remoteAddress();
         if (addr instanceof InetSocketAddress) {
             // Avoid lookup, so just use the address
-            remoteHostname = ((InetSocketAddress) addr).getAddress().getHostAddress();
+            InetSocketAddress ia = ((InetSocketAddress) addr);
+            remoteHostname = ia.getAddress().getHostAddress();
+            remoteSocket = remoteHostname + ":" + ia.getPort();
         } else {
             // Should not happen in production, but in testing it might be different
             remoteHostname = addr.toString();
+            remoteSocket = addr.toString();
         }
+
+        SocketAddress localAddr = ctx.channel().localAddress();
+        if (localAddr instanceof InetSocketAddress) {
+            // Avoid lookup, so just use the address
+            InetSocketAddress ia = ((InetSocketAddress) localAddr);
+            localSocket = ia.getAddress().getHostAddress() + ":" + ia.getPort();
+        } else {
+            localSocket = localAddr.toString();
+        }
+
         channelActiveSideEffects(ctx);
         ctx.fireChannelActive();
     }

@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint;
 
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -100,6 +101,8 @@ public class AbstractGenericHandlerTest {
         when(environment.scheduler()).thenReturn(Schedulers.computation());
         AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(environment);
+        when(endpoint.context()).thenReturn(new CoreContext(environment, null, 1));
+
         when(environment.userAgent()).thenReturn("Couchbase Client Mock");
 
         ArrayDeque<Q> queue = new ArrayDeque<Q>();

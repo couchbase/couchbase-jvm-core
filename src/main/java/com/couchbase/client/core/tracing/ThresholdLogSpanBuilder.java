@@ -26,6 +26,7 @@ import io.opentracing.Tracer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Allows to build a {@link Span} in a builder fashion.
@@ -145,6 +146,10 @@ public class ThresholdLogSpanBuilder implements Tracer.SpanBuilder {
             context = followRef.spanContext();
         } else {
             context = new ThresholdLogSpanContext();
+        }
+
+        if (startTimeMicroseconds == 0) {
+            startTimeMicroseconds = TimeUnit.NANOSECONDS.toMicros(System.nanoTime());
         }
 
         return new ThresholdLogSpan(tracer, context, operationName, tags, startTimeMicroseconds);
