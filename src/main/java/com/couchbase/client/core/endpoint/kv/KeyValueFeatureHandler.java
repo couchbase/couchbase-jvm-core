@@ -71,7 +71,7 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
             System.getProperty("com.couchbase.xerrorEnabled", "true")
         );
         boolean snappyEnabled = Boolean.parseBoolean(
-            System.getProperty("com.couchbase.snappyEnabled", "true")
+            System.getProperty("com.couchbase.snappyEnabled", "false")
         );
         this.ctx = ctx;
         boolean tcpNodelay = ctx.environment().tcpNodelayEnabled();
