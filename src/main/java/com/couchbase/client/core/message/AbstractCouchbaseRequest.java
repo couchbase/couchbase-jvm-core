@@ -17,6 +17,7 @@ package com.couchbase.client.core.message;
 
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.tracing.ThresholdLogSpan;
 import io.opentracing.Span;
 import io.opentracing.log.Fields;
 import io.opentracing.tag.Tags;
@@ -76,6 +77,12 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     private volatile Span span;
 
     private volatile Delay retryDelay;
+
+    private volatile String lastLocalSocket;
+
+    private volatile String lastRemoteSocket;
+
+    private volatile String lastLocalId;
 
     /**
      * Create a new {@link AbstractCouchbaseRequest}.
@@ -252,6 +259,10 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
     public void span(Span span, CoreEnvironment env) {
         this.span = span;
 
+        if (this.span instanceof ThresholdLogSpan) {
+            ((ThresholdLogSpan) this.span).request(this);
+        }
+
         this.span.setTag(Tags.DB_TYPE.getKey(), "couchbase");
         this.span.setTag(Tags.SPAN_KIND.getKey(), "client");
         this.span.setTag(Tags.COMPONENT.getKey(), env != null ? env.userAgent() : "couchbase.sdk.java");
@@ -261,6 +272,36 @@ public abstract class AbstractCouchbaseRequest implements CouchbaseRequest {
         }
 
         afterSpanSet(this.span);
+    }
+
+    @Override
+    public String lastLocalSocket() {
+        return lastLocalSocket;
+    }
+
+    @Override
+    public String lastRemoteSocket() {
+        return lastRemoteSocket;
+    }
+
+    @Override
+    public String lastLocalId() {
+        return lastLocalId;
+    }
+
+    @Override
+    public void lastLocalSocket(String local) {
+        this.lastLocalSocket = local;
+    }
+
+    @Override
+    public void lastRemoteSocket(String remote) {
+        this.lastRemoteSocket = remote;
+    }
+
+    @Override
+    public void lastLocalId(String localId) {
+        this.lastLocalId = localId;
     }
 
     /**

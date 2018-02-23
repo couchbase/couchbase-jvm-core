@@ -188,4 +188,16 @@ public interface CouchbaseRequest extends CouchbaseMessage {
      * @return the operation id or null.
      */
     String operationId();
+
+    String lastLocalSocket();
+
+    String lastRemoteSocket();
+
+    String lastLocalId();
+
+    void lastLocalSocket(String local);
+
+    void lastRemoteSocket(String remote);
+
+    void lastLocalId(String localId);
 }

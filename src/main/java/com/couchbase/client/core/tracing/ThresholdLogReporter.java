@@ -482,12 +482,12 @@ public class ThresholdLogReporter {
                 Map<String, Object> entry = new HashMap<String, Object>();
                 entry.put(KEY_TOTAL_MICROS, span.durationMicros());
 
-                String spanId = (String) span.tag("couchbase.operation_id");
+                String spanId = span.request().operationId();
                 String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
                 entry.put("operation_id", operation_id);
 
-                String local = span.getBaggageItem("local.address");
-                String peer = span.getBaggageItem("peer.address");
+                String local = span.request().lastLocalSocket();
+                String peer = span.request().lastRemoteSocket();
                 if (local != null) {
                     entry.put("local_address", local);
                 }
@@ -495,7 +495,7 @@ public class ThresholdLogReporter {
                     entry.put("remote_address", peer);
                 }
 
-                String localId = span.getBaggageItem("local.id");
+                String localId = span.request().lastLocalId();
                 if (localId != null) {
                     entry.put("local_id", localId);
                 }
@@ -625,12 +625,12 @@ public class ThresholdLogReporter {
             Map<String, Object> entry = new HashMap<String, Object>();
             entry.put(KEY_TOTAL_MICROS, span.durationMicros());
 
-            String spanId = (String) span.tag("couchbase.operation_id");
+            String spanId = span.request().operationId();
             String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
             entry.put("operation_id", operation_id);
 
-            String local = span.getBaggageItem("local.address");
-            String peer = span.getBaggageItem("peer.address");
+            String local = span.request().lastLocalSocket();
+            String peer = span.request().lastRemoteSocket();
             if (local != null) {
                 entry.put("local_address", local);
             }
@@ -638,7 +638,7 @@ public class ThresholdLogReporter {
                 entry.put("remote_address", peer);
             }
 
-            String localId = span.getBaggageItem("local.id");
+            String localId = span.request().lastLocalId();
             if (localId != null) {
                 entry.put("local_id", localId);
             }

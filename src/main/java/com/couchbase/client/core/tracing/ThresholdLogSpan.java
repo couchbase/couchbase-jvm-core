@@ -18,6 +18,7 @@ package com.couchbase.client.core.tracing;
 
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.CouchbaseRequest;
 import io.opentracing.Span;
 
 import java.util.Collections;
@@ -37,6 +38,11 @@ public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
     private long endTimeMicroseconds;
     private String operationName;
     private boolean finished;
+
+    /**
+     * If set, associates this span with a couchbase request.
+     */
+    private volatile CouchbaseRequest request;
 
     ThresholdLogSpan(final ThresholdLogTracer tracer, final ThresholdLogSpanContext context,
         final String operationName, final Map<String, Object> tags, final long startTimeMicroseconds) {
@@ -151,6 +157,14 @@ public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
      */
     public synchronized Object tag(final String key) {
         return tags.get(key);
+    }
+
+    public CouchbaseRequest request() {
+        return request;
+    }
+
+    public void request(CouchbaseRequest request) {
+        this.request = request;
     }
 
     @Override

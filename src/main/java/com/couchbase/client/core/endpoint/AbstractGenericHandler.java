@@ -308,6 +308,10 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         out.add(request);
         sentRequestTimings.offer(System.nanoTime());
 
+        msg.lastLocalSocket(localSocket);
+        msg.lastRemoteSocket(remoteSocket);
+        msg.lastLocalId(localId);
+
         if (env().tracingEnabled() && msg.span() != null) {
             Scope scope = env().tracer()
                 .buildSpan("dispatch_to_server")
@@ -316,15 +320,6 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 .withTag("local.address", localSocket)
                 .withTag("local.id", localId)
                 .startActive(false);
-            if (msg.span() instanceof ThresholdLogSpan) {
-                // we need it in the local baggage for threshold
-                // log reporting. Not needed with other tracer
-                // implementations.
-                msg.span()
-                    .setBaggageItem("peer.address", remoteSocket)
-                    .setBaggageItem("local.address", localSocket)
-                    .setBaggageItem("local.id", localId);
-            }
             dispatchSpans.offer(scope.span());
             scope.close();
         }
