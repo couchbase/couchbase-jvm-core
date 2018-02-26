@@ -16,6 +16,7 @@
 
 package com.couchbase.client.core.tracing;
 
+import com.couchbase.client.core.message.CouchbaseRequest;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -45,12 +46,15 @@ public class ThresholdLogReporterTest {
                 .logInterval(1, TimeUnit.MILLISECONDS)
             );
 
+            CouchbaseRequest request = mock(CouchbaseRequest.class);
+            when(request.operationId()).thenReturn("0x1234");
+
             ThresholdLogSpan span = mock(ThresholdLogSpan.class);
             when(span.getBaggageItem("couchbase.zombie")).thenReturn("false");
             when(span.tag("peer.service")).thenReturn("kv");
-            when(span.tag("couchbase.operation_id")).thenReturn("0x1234");
             when(span.operationName()).thenReturn("get");
             when(span.durationMicros()).thenReturn(TimeUnit.SECONDS.toMicros(1));
+            when(span.request()).thenReturn(request);
 
             reporter.report(span);
             reporter.waitUntilOverThreshold(1);

@@ -34,17 +34,24 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
     private final String query;
     private final boolean jsonFormat;
     private final InetAddress targetNode;
+    private final String contextId;
 
-    protected GenericQueryRequest(String query, boolean jsonFormat, String bucket, String username, String password, InetAddress targetNode) {
+    protected GenericQueryRequest(String query, boolean jsonFormat, String bucket, String username, String password, InetAddress targetNode, String contextId) {
         super(bucket, username, password);
         this.query = query;
         this.jsonFormat = jsonFormat;
         this.targetNode = targetNode;
+        this.contextId = contextId;
     }
 
     @Override
     protected void afterSpanSet(Span span) {
         span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_N1QL);
+    }
+
+    @Override
+    public String operationId() {
+        return contextId;
     }
 
     public String query() {
@@ -70,7 +77,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @return a {@link GenericQueryRequest} for this simple statement.
      */
     public static GenericQueryRequest simpleStatement(String statement, String bucket, String password) {
-        return new GenericQueryRequest(statement, false, bucket, bucket, password, null);
+        return new GenericQueryRequest(statement, false, bucket, bucket, password, null, null);
     }
 
     /**
@@ -84,7 +91,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @return a {@link GenericQueryRequest} for this simple statement.
      */
     public static GenericQueryRequest simpleStatement(String statement, String bucket, String username, String password) {
-        return new GenericQueryRequest(statement, false, bucket, username, password, null);
+        return new GenericQueryRequest(statement, false, bucket, username, password, null, null);
     }
 
     /**
@@ -97,10 +104,11 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param jsonQuery the N1QL query in json form.
      * @param bucket the bucket on which to perform the query.
      * @param password the password for the target bucket.
+     * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password) {
-        return new GenericQueryRequest(jsonQuery, true, bucket, bucket, password, null);
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password, String contextId) {
+        return new GenericQueryRequest(jsonQuery, true, bucket, bucket, password, null, contextId);
     }
 
     /**
@@ -114,10 +122,11 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param bucket the bucket on which to perform the query.
      * @param username the user authorized for bucket access.
      * @param password the password for the user.
+     * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password) {
-        return new GenericQueryRequest(jsonQuery, true, bucket, username, password, null);
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, String contextId) {
+        return new GenericQueryRequest(jsonQuery, true, bucket, username, password, null, contextId);
     }
 
 
@@ -132,10 +141,11 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param bucket the bucket on which to perform the query.
      * @param password the password for the target bucket.
      * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
+     * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode) {
-        return new GenericQueryRequest(jsonQuery, true, bucket, bucket, password, targetNode);
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode, String contextId) {
+        return new GenericQueryRequest(jsonQuery, true, bucket, bucket, password, targetNode, contextId);
     }
 
     /**
@@ -150,9 +160,10 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param username the user authorized for bucket access.
      * @param password the password for the user.
      * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
+     * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
-        return new GenericQueryRequest(jsonQuery, true, bucket, username, password, targetNode);
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode, String contextId) {
+        return new GenericQueryRequest(jsonQuery, true, bucket, username, password, targetNode, contextId);
     }
 }

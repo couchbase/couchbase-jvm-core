@@ -308,6 +308,10 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         out.add(request);
         sentRequestTimings.offer(System.nanoTime());
 
+        if (localId == null) {
+            populateInfo(ctx);
+        }
+
         msg.lastLocalSocket(localSocket);
         msg.lastRemoteSocket(remoteSocket);
         msg.lastLocalId(localId);
@@ -560,6 +564,12 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         LOGGER.debug(logIdent(ctx, endpoint) + "Channel Active.");
+        populateInfo(ctx);
+        channelActiveSideEffects(ctx);
+        ctx.fireChannelActive();
+    }
+
+    private void populateInfo(final ChannelHandlerContext ctx) {
         try {
             localId = paddedHex(endpoint.context().coreId()) + "/" + paddedHex(ctx.channel().hashCode());
         } catch (Exception ex) {
@@ -588,8 +598,6 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             localSocket = localAddr.toString();
         }
 
-        channelActiveSideEffects(ctx);
-        ctx.fireChannelActive();
     }
 
     @Override

@@ -171,7 +171,7 @@ public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
     public void finish(long finishMicros) {
         synchronized (this) {
             if (finished) {
-                LOGGER.warn("Span has already been finished; will not be reported again.");
+                // Span has already been finished; will not be reported again.
                 return;
             }
             endTimeMicroseconds = finishMicros;

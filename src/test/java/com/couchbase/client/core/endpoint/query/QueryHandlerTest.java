@@ -191,7 +191,7 @@ public class QueryHandlerTest {
 
     @Test
     public void shouldEncodeJsonQueryToGenericQueryRequest() {
-        GenericQueryRequest request = GenericQueryRequest.jsonQuery("query", "bucket", "password");
+        GenericQueryRequest request = GenericQueryRequest.jsonQuery("query", "bucket", "password", "contextId");
         assertGenericQueryRequest(request, true);
     }
 

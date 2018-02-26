@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.endpoint.query.parser;
 
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
@@ -139,16 +140,19 @@ public class YasjlQueryResponseParser {
      */
     private ByteBuf responseContent;
 
+    private final CoreEnvironment env;
+
     /**
      * Create a new {@link YasjlQueryResponseParser}.
      *
      * @param scheduler the scheduler which should be used when computations are moved out.
      * @param ttl the ttl used for the subjects until their contents are garbage collected.
      */
-    public YasjlQueryResponseParser(final Scheduler scheduler, final long ttl) {
+    public YasjlQueryResponseParser(final Scheduler scheduler, final long ttl, final CoreEnvironment env) {
         this.scheduler = scheduler;
         this.ttl = ttl;
         this.response = null;
+        this.env = env;
 
         JsonPointer[] jsonPointers = {
                 new JsonPointer("/requestID", new JsonPointerCB1() {
@@ -251,6 +255,14 @@ public class YasjlQueryResponseParser {
                     public void call(ByteBuf buf) {
                         if (queryInfoObservable != null) {
                             queryInfoObservable.onNext(buf);
+                        }
+
+                        if (currentRequest.span() != null) {
+                            if (env.tracingEnabled()) {
+                                env.tracer().scopeManager()
+                                    .activate(response.request().span(), true)
+                                    .close();
+                            }
                         }
                     }
                 }),
