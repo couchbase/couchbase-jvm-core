@@ -63,8 +63,8 @@ import rx.Observable;
 import rx.functions.Func1;
 import rx.subjects.Subject;
 
+import java.util.Random;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.couchbase.client.core.logging.RedactableArgument.user;
 
@@ -75,11 +75,6 @@ import static com.couchbase.client.core.logging.RedactableArgument.user;
  * @since 1.0
  */
 public class CouchbaseCore implements ClusterFacade {
-
-    /**
-     * Core ID, increasing on every instance.
-     */
-    private static final AtomicInteger CORE_ID = new AtomicInteger();
 
     /**
      * The logger used.
@@ -128,7 +123,7 @@ public class CouchbaseCore implements ClusterFacade {
     /**
      * The current core id.
      */
-    private final int coreId;
+    private final long coreId;
 
 
     /**
@@ -154,7 +149,8 @@ public class CouchbaseCore implements ClusterFacade {
         LOGGER.debug(Diagnostics.collectAndFormat());
 
         this.environment = environment;
-        this.coreId = CORE_ID.incrementAndGet();
+
+        this.coreId = Math.abs(new Random().nextLong());
         this.coreSendHook = environment.couchbaseCoreSendHook();
         configProvider = new DefaultConfigurationProvider(this, environment);
         ThreadFactory disruptorThreadFactory = new DefaultThreadFactory("cb-core", true);
@@ -397,7 +393,7 @@ public class CouchbaseCore implements ClusterFacade {
     }
 
     @Override
-    public int id() {
+    public long id() {
         return coreId;
     }
 }
