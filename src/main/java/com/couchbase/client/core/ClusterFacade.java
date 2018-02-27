@@ -44,5 +44,5 @@ public interface ClusterFacade {
     /**
      * The core id is unique per core instance.
      */
-    int id();
+    long id();
 }

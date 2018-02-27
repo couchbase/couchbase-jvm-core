@@ -34,7 +34,7 @@ public class CoreContext {
 
     private final CoreEnvironment environment;
     private final RingBuffer<ResponseEvent> responseRingBuffer;
-    private final int coreId;
+    private final long coreId;
 
     /**
      * Creates a new {@link CoreContext} with no core id.
@@ -56,7 +56,7 @@ public class CoreContext {
      */
     public CoreContext(final CoreEnvironment environment,
         final RingBuffer<ResponseEvent> responseRingBuffer,
-        final int coreId) {
+        final long coreId) {
         this.environment = environment;
         this.responseRingBuffer = responseRingBuffer;
         this.coreId = coreId;
@@ -79,7 +79,7 @@ public class CoreContext {
     /**
      * The core it, 0 if not set.
      */
-    public int coreId() {
+    public long coreId() {
         return coreId;
     }
 }
