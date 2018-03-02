@@ -33,6 +33,8 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+
 /**
  * The {@link ThresholdLogReporter} retrieves spans from (usually) a {@link Tracer}
  * and stores them for threshold-based aggregation and logging.
@@ -484,20 +486,20 @@ public class ThresholdLogReporter {
 
                 String spanId = span.request().operationId();
                 String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
-                entry.put("operation_id", operation_id);
+                entry.put("operation_id", system(operation_id));
 
                 String local = span.request().lastLocalSocket();
                 String peer = span.request().lastRemoteSocket();
                 if (local != null) {
-                    entry.put("local_address", local);
+                    entry.put("local_address", system(local));
                 }
                 if (peer != null) {
-                    entry.put("remote_address", peer);
+                    entry.put("remote_address", system(peer));
                 }
 
                 String localId = span.request().lastLocalId();
                 if (localId != null) {
-                    entry.put("local_id", localId);
+                    entry.put("local_id", system(localId));
                 }
 
                 String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);
@@ -627,20 +629,20 @@ public class ThresholdLogReporter {
 
             String spanId = span.request().operationId();
             String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
-            entry.put("operation_id", operation_id);
+            entry.put("operation_id", system(operation_id));
 
             String local = span.request().lastLocalSocket();
             String peer = span.request().lastRemoteSocket();
             if (local != null) {
-                entry.put("local_address", local);
+                entry.put("local_address", system(local));
             }
             if (peer != null) {
-                entry.put("remote_address", peer);
+                entry.put("remote_address", system(peer));
             }
 
             String localId = span.request().lastLocalId();
             if (localId != null) {
-                entry.put("local_id", localId);
+                entry.put("local_id", system(localId));
             }
 
             String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);

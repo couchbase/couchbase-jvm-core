@@ -67,7 +67,7 @@ public class ThresholdLogReporterTest {
 
             List<Map<String, Object>> top = (List<Map<String, Object>>) kvService.get("top");
             assertEquals(1000000L, top.get(0).get("total_us"));
-            assertEquals("get:0x1234", top.get(0).get("operation_id"));
+            assertEquals("get:0x1234", top.get(0).get("operation_id").toString());
         } finally {
             if (reporter != null) {
                 reporter.shutdown();
