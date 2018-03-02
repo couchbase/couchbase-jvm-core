@@ -213,7 +213,7 @@ public class ThresholdLogReporter {
      */
     public static class Builder {
 
-        private static final long DEFAULT_LOG_INTERVAL = 10;
+        private static final long DEFAULT_LOG_INTERVAL = 60;
         private static final TimeUnit DEFAULT_LOG_INTERVAL_UNIT = TimeUnit.SECONDS;
         private static final int DEFAULT_SPAN_QUEUE_SIZE = 1024;
         private static final long DEFAULT_KV_THRESHOLD = TimeUnit.MILLISECONDS.toMicros(500);
