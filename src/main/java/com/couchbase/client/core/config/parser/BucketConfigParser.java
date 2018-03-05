@@ -20,6 +20,7 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.env.ConfigParserEnvironment;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -56,9 +57,12 @@ public final class BucketConfigParser {
      */
     public static BucketConfig parse(final String input, final ConfigParserEnvironment env) {
         try {
-            InjectableValues inject = new InjectableValues.Std()
-                    .addValue("env", env);
-            return jackson().readerFor(BucketConfig.class).with(inject).readValue(input);
+            InjectableValues inject = new InjectableValues.Std().addValue("env", env);
+            return jackson()
+                .readerFor(BucketConfig.class)
+                .with(inject)
+                .with(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)
+                .readValue(input);
         } catch (IOException e) {
             throw new CouchbaseException("Could not parse configuration", e);
         }
