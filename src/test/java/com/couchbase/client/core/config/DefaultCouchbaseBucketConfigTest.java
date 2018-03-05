@@ -16,24 +16,29 @@
 
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.config.parser.BucketConfigParser;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
 import com.couchbase.client.core.utils.NetworkAddress;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
+/**
+ * Verifies that parsing various bucket configs works as expected through the
+ * {@link BucketConfigParser}.
+ */
 public class DefaultCouchbaseBucketConfigTest {
 
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     @Test
-    public void shouldHavePrimaryPartitionsOnNode() throws Exception {
+    public void shouldHavePrimaryPartitionsOnNode() {
         String raw = Resources.read("config_with_mixed_partitions.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
 
         assertTrue(config.hasPrimaryPartitionsOnNode(NetworkAddress.create("1.2.3.4")));
         assertFalse(config.hasPrimaryPartitionsOnNode(NetworkAddress.create("2.3.4.5")));
@@ -42,9 +47,10 @@ public class DefaultCouchbaseBucketConfigTest {
     }
 
     @Test
-    public void shouldFallbackToNodeHostnameIfNotInNodesExt() throws Exception {
+    public void shouldFallbackToNodeHostnameIfNotInNodesExt() {
         String raw = Resources.read("nodes_ext_without_hostname.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
 
         NetworkAddress expected = NetworkAddress.create("1.2.3.4");
         assertEquals(1, config.nodes().size());
@@ -54,9 +60,10 @@ public class DefaultCouchbaseBucketConfigTest {
     }
 
     @Test
-    public void shouldGracefullyHandleEmptyPartitions() throws Exception {
+    public void shouldGracefullyHandleEmptyPartitions() {
         String raw = Resources.read("config_with_no_partitions.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
 
         assertEquals(DefaultCouchbaseBucketConfig.PARTITION_NOT_EXISTENT, config.nodeIndexForMaster(24, false));
         assertEquals(DefaultCouchbaseBucketConfig.PARTITION_NOT_EXISTENT, config.nodeIndexForReplica(24, 1, false));
@@ -64,18 +71,22 @@ public class DefaultCouchbaseBucketConfigTest {
     }
 
     @Test
-    public void shouldLoadEphemeralBucketConfig() throws Exception {
+    public void shouldLoadEphemeralBucketConfig() {
         String raw = Resources.read("ephemeral_bucket_config.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+
         assertTrue(config.ephemeral());
         assertTrue(config.serviceEnabled(ServiceType.BINARY));
         assertFalse(config.serviceEnabled(ServiceType.VIEW));
     }
 
     @Test
-    public void shouldLoadConfigWithoutBucketCapabilities() throws Exception {
+    public void shouldLoadConfigWithoutBucketCapabilities() {
         String raw = Resources.read("config_without_capabilities.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+
         assertFalse(config.ephemeral());
         assertEquals(0, config.numberOfReplicas());
         assertEquals(64, config.numberOfPartitions());
@@ -85,9 +96,11 @@ public class DefaultCouchbaseBucketConfigTest {
     }
 
     @Test
-    public void shouldLoadConfigWithSameNodesButDifferentPorts() throws Exception {
+    public void shouldLoadConfigWithSameNodesButDifferentPorts() {
         String raw = Resources.read("cluster_run_two_nodes_same_host.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+
         assertFalse(config.ephemeral());
         assertEquals(1, config.numberOfReplicas());
         assertEquals(1024, config.numberOfPartitions());
@@ -99,9 +112,11 @@ public class DefaultCouchbaseBucketConfigTest {
     }
 
     @Test
-    public void shouldLoadConfigWithMDS() throws Exception {
+    public void shouldLoadConfigWithMDS() {
         String raw = Resources.read("cluster_run_three_nodes_mds_with_localhost.json", getClass());
-        CouchbaseBucketConfig config = JSON_MAPPER.readValue(raw, CouchbaseBucketConfig.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+
         assertEquals(3, config.nodes().size());
         assertEquals("192.168.0.102", config.nodes().get(0).hostname().address());
         assertEquals("127.0.0.1", config.nodes().get(1).hostname().address());
@@ -110,4 +125,16 @@ public class DefaultCouchbaseBucketConfigTest {
         assertTrue(config.nodes().get(1).services().containsKey(ServiceType.BINARY));
         assertFalse(config.nodes().get(2).services().containsKey(ServiceType.BINARY));
     }
+
+    /**
+     * This is a regression test. It has been added to make sure a config with a bucket
+     * capability that is not known to the client still makes it parse properly.
+     */
+    @Test
+    public void shouldIgnoreUnknownBucketCapabilities() {
+        String raw = Resources.read("config_with_invalid_capability.json", getClass());
+        BucketConfig config = BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+        assertEquals(1, config.nodes().size());
+    }
+
 }
