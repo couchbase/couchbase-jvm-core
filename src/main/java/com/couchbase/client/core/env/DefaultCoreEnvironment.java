@@ -62,6 +62,7 @@ import com.couchbase.client.core.utils.Blocking;
 import java.security.KeyStore;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultCoreEnvironment implements CoreEnvironment {
 
@@ -228,8 +229,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final long configPollFloorInterval;
     private final boolean certAuthEnabled;
 
-    private static final int MAX_ALLOWED_INSTANCES = 1;
-    private static volatile int instanceCounter = 0;
+    private static volatile int MAX_ALLOWED_INSTANCES = 1;
+    private static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
 
     private final EventLoopGroup ioPool;
     private final EventLoopGroup kvIoPool;
@@ -263,8 +264,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     protected DefaultCoreEnvironment(final Builder builder) {
         boolean emitEnvWarnMessage = false;
-        if (++instanceCounter > MAX_ALLOWED_INSTANCES) {
-            LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found (" + instanceCounter
+        if (INSTANCE_COUNT.incrementAndGet() > MAX_ALLOWED_INSTANCES) {
+            LOGGER.warn("More than " + MAX_ALLOWED_INSTANCES + " Couchbase Environments found (" + INSTANCE_COUNT.get()
                 + "), this can have severe impact on performance and stability. Reuse environments!");
             emitEnvWarnMessage = true;
         }
@@ -469,7 +470,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         if (emitEnvWarnMessage) {
-            eventBus.publish(new TooManyEnvironmentsEvent(instanceCounter));
+            eventBus.publish(new TooManyEnvironmentsEvent(INSTANCE_COUNT.get()));
         }
 
         this.couchbaseCoreSendHook = builder.couchbaseCoreSendHook;
@@ -570,7 +571,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 .doOnTerminate(new Action0() {
                     @Override
                     public void call() {
-                        instanceCounter--;
+                        INSTANCE_COUNT.decrementAndGet();
                     }
                 });
         return result;
@@ -871,7 +872,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     public static int instanceCounter() {
-        return instanceCounter;
+        return INSTANCE_COUNT.get();
     }
 
     @Override
@@ -936,6 +937,24 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     public boolean forceSaslPlain() {
         return forceSaslPlain;
+    }
+
+    /**
+     * Returns the number of maximal allowed instances before warning log will be
+     * emitted.
+     */
+    public static int maxAllowedInstances() {
+        return MAX_ALLOWED_INSTANCES;
+    }
+
+    /**
+     * Allows to set the maximum allowed instances to higher than 1 to silence
+     * warning logs in environments where it can be disregarded.
+     *
+     * @param max the number of envs to allow.
+     */
+    public static void maxAllowedInstances(int max) {
+        MAX_ALLOWED_INSTANCES = max;
     }
 
     public static class Builder<SELF extends Builder<SELF>> {
