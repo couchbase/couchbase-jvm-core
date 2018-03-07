@@ -17,6 +17,9 @@
 package com.couchbase.client.core.utils;
 
 import com.couchbase.client.core.CouchbaseException;
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,17 +36,21 @@ import java.util.regex.Pattern;
  */
 public class ConnectionString {
 
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ConnectionString.class);
+
     public static final String DEFAULT_SCHEME = "couchbase://";
 
     private final Scheme scheme;
     private final List<InetSocketAddress> hosts;
+    private final List<InetSocketAddress> allHosts;
     private final Map<String, String> params;
     private final String username;
 
     protected ConnectionString(final String input) {
         this.scheme = parseScheme(input);
         this.username = parseUser(input);
-        this.hosts = parseHosts(input);
+        this.allHosts = parseHosts(input);
+        this.hosts = tryResolveHosts(this.allHosts);
         this.params = parseParams(input);
     }
 
@@ -124,6 +131,20 @@ public class ConnectionString {
         return hosts;
     }
 
+    //Make sure the address is resolvable
+    static List<InetSocketAddress> tryResolveHosts(final List<InetSocketAddress> hosts) {
+        List<InetSocketAddress> resolvableHosts = new ArrayList<InetSocketAddress>();
+        for (InetSocketAddress node : hosts) {
+            try {
+                node.getAddress().getHostAddress();
+                resolvableHosts.add(node);
+            } catch (NullPointerException ex) {
+                LOGGER.error("Unable to resolve address " + node.toString());
+            }
+        }
+        return resolvableHosts;
+    }
+
     static Map<String, String> parseParams(final String input) {
         try {
             String[] parts = input.split("\\?");
@@ -150,12 +171,26 @@ public class ConnectionString {
         return username;
     }
 
+    /**
+     * Get the list of hosts that could be resolved
+     *
+     * @return hosts
+     */
     public List<InetSocketAddress> hosts() {
         return hosts;
     }
 
     public Map<String, String> params() {
         return params;
+    }
+
+    /**
+     * Get the list of all hosts set on the connection string.
+     *
+     * @return hosts
+     */
+    public List<InetSocketAddress> allHosts() {
+        return allHosts;
     }
 
     public enum Scheme {
