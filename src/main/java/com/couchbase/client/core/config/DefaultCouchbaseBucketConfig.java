@@ -60,6 +60,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     @JsonCreator
     public DefaultCouchbaseBucketConfig(
         @JsonProperty("rev") long rev,
+        @JsonProperty("uuid") String uuid,
         @JsonProperty("name") String name,
         @JsonProperty("uri") String uri,
         @JsonProperty("streamingUri") String streamingUri,
@@ -67,7 +68,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         @JsonProperty("nodes") List<NodeInfo> nodeInfos,
         @JsonProperty("nodesExt") List<PortInfo> portInfos,
         @JsonProperty("bucketCapabilities") List<BucketCapabilities> bucketCapabilities) {
-        super(name, BucketNodeLocator.VBUCKET, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities);
+        super(uuid, name, BucketNodeLocator.VBUCKET, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities);
         this.partitionInfo = partitionInfo;
         this.tainted = partitionInfo.tainted();
         List<NodeInfo> extendedNodeInfos = this.nodes(); // includes ports for SSL services

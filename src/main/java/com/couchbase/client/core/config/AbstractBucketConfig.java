@@ -27,6 +27,7 @@ import java.util.Map;
 public abstract class AbstractBucketConfig implements BucketConfig {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(AbstractBucketConfig.class);
 
+    private final String uuid;
     private final String name;
     private String username;
     private String password;
@@ -37,8 +38,9 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final int enabledServices;
     private final List<BucketCapabilities> bucketCapabilities;
 
-    protected AbstractBucketConfig(String name, BucketNodeLocator locator, String uri, String streamingUri,
+    protected AbstractBucketConfig(String uuid, String name, BucketNodeLocator locator, String uri, String streamingUri,
         List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities) {
+        this.uuid = uuid;
         this.name = name;
         this.locator = locator;
         this.uri = uri;
@@ -91,6 +93,11 @@ public abstract class AbstractBucketConfig implements BucketConfig {
             converted.add(new DefaultNodeInfo(hostname, ports, sslPorts));
         }
         return converted;
+    }
+
+    @Override
+    public String uuid() {
+        return uuid;
     }
 
     @Override

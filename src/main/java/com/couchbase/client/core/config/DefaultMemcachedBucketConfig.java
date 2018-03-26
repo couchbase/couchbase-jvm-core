@@ -53,13 +53,14 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
     public DefaultMemcachedBucketConfig(
             @JacksonInject("env")ConfigParserEnvironment env,
             @JsonProperty("rev") long rev,
+            @JsonProperty("uuid") String uuid,
             @JsonProperty("name") String name,
             @JsonProperty("uri") String uri,
             @JsonProperty("streamingUri") String streamingUri,
             @JsonProperty("nodes") List<NodeInfo> nodeInfos,
             @JsonProperty("nodesExt") List<PortInfo> portInfos,
             @JsonProperty("bucketCapabilities") List<BucketCapabilities> bucketCapabilities) {
-        super(name, BucketNodeLocator.KETAMA, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities);
+        super(uuid, name, BucketNodeLocator.KETAMA, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities);
         this.env = env;
         this.rev = rev;
         this.ketamaNodes = new TreeMap<Long, NodeInfo>();

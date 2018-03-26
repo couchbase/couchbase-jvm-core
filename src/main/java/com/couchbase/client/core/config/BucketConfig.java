@@ -35,6 +35,17 @@ import java.util.List;
 public interface BucketConfig {
 
     /**
+     * Returns the UUID of the bucket, or {@code null} if the bucket does not have a UUID.
+     * <p>
+     * The UUID is an opaque value assigned when the bucket is created.
+     * If the bucket is deleted and a new bucket is created with the same name,
+     * the new bucket will have a different UUID.
+     *
+     * @return bucket UUID, or {@code null}.
+     */
+    String uuid();
+
+    /**
      * The name of the bucket.
      *
      * @return name of the bucket.

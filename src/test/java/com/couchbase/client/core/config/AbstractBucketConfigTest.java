@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class AbstractBucketConfigTest {
 
+    private static final String UUID = "aa4b515529fa706f1e5f09f21abb5c06";
     private static final String NAME = "name";
     private static final BucketNodeLocator LOCATOR = BucketNodeLocator.VBUCKET;
     private static final String URI = "http://foobar:8091/foo";
@@ -64,7 +65,7 @@ public class AbstractBucketConfigTest {
     static class SampleBucketConfig extends AbstractBucketConfig {
 
         public SampleBucketConfig(List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
-            super(NAME, LOCATOR, URI, STREAMING_URI, nodeInfos, portInfos, null);
+            super(UUID, NAME, LOCATOR, URI, STREAMING_URI, nodeInfos, portInfos, null);
         }
 
         @Override
