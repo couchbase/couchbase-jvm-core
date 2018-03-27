@@ -902,6 +902,21 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     }
 
     /**
+     * Helper method to complete the request span, called from child instances.
+     *
+     * @param request the corresponding request.
+     */
+    protected void completeRequestSpan(final CouchbaseRequest request) {
+        if (request != null && request.span() != null) {
+            if (env().tracingEnabled()) {
+                env().tracer().scopeManager()
+                    .activate(request.span(), true)
+                    .close();
+            }
+        }
+    }
+
+    /**
      * Helper method to return the remote http host, cached.
      *
      * @param ctx the handler context.

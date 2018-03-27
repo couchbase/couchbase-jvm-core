@@ -739,6 +739,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
      * Clean up the query states after all rows have been consumed.
      */
     private void cleanupQueryStates() {
+        completeRequestSpan(currentRequest());
         finishedDecoding();
         queryInfoObservable = null;
         queryRowObservable = null;

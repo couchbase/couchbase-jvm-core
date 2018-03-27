@@ -383,6 +383,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
      * Clean up the query states after all rows have been consumed.
      */
     private void cleanupViewStates() {
+        completeRequestSpan(currentRequest());
         finishedDecoding();
         viewInfoObservable = null;
         viewRowObservable = null;
