@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
 import com.couchbase.client.core.utils.NetworkAddress;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
@@ -56,6 +57,11 @@ public class AbstractLoaderTest {
     @BeforeClass
     public static void setup() throws Exception {
         host = NetworkAddress.localhost();
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        environment.shutdown();
     }
 
     @Test

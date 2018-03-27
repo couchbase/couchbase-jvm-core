@@ -16,12 +16,16 @@
 package com.couchbase.client.core;
 
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.CloseBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
+import org.junit.AfterClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Func0;
@@ -40,9 +44,16 @@ import static org.junit.Assert.assertEquals;
  */
 public class BucketLifecycleTest {
 
+    private static final CoreEnvironment ENV = DefaultCoreEnvironment.create();
+
+    @AfterClass
+    public static final void cleanup() {
+        ENV.shutdown();
+    }
+
     @Test
     public void shouldSuccessfullyOpenBucket() throws Exception {
-        CouchbaseCore core = new CouchbaseCore();
+        CouchbaseCore core = new CouchbaseCore(ENV);
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
         OpenBucketRequest request;
@@ -53,17 +64,18 @@ public class BucketLifecycleTest {
         }
         Observable<OpenBucketResponse> response = core.send(request);
         assertEquals(ResponseStatus.SUCCESS, response.toBlocking().single().status());
+        core.send(new CloseBucketRequest(TestProperties.bucket())).toBlocking().single();
     }
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailWithNoSeedNodeList() {
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
-        new CouchbaseCore().send(request).toBlocking().single();
+        new CouchbaseCore(ENV).send(request).toBlocking().single();
     }
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailWithEmptySeedNodeList() {
-        CouchbaseCore core = new CouchbaseCore();
+        CouchbaseCore core = new CouchbaseCore(ENV);
         core.send(new SeedNodesRequest(Collections.<String>emptyList()));
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password());
         core.send(request).toBlocking().single();
@@ -71,7 +83,7 @@ public class BucketLifecycleTest {
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailOpeningNonExistentBucket() {
-        CouchbaseCore core = new CouchbaseCore();
+        CouchbaseCore core = new CouchbaseCore(ENV);
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket() + "asd", TestProperties.password());
@@ -80,7 +92,7 @@ public class BucketLifecycleTest {
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailOpeningBucketWithWrongPassword() {
-        CouchbaseCore core = new CouchbaseCore();
+        CouchbaseCore core = new CouchbaseCore(ENV);
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password() + "asd");
@@ -89,7 +101,7 @@ public class BucketLifecycleTest {
 
     @Test(expected = ConfigurationException.class)
     public void shouldFailOpeningWithWrongHost() {
-        CouchbaseCore core = new CouchbaseCore();
+        CouchbaseCore core = new CouchbaseCore(ENV);
 
         core.send(new SeedNodesRequest(Arrays.asList("certainlyInvalidHostname")));
         OpenBucketRequest request = new OpenBucketRequest(TestProperties.bucket(), TestProperties.username(), TestProperties.password() + "asd");
@@ -98,7 +110,7 @@ public class BucketLifecycleTest {
 
     @Test
     public void shouldSucceedSubsequentlyAfterFailedAttempt() throws Exception {
-        final CouchbaseCore core = new CouchbaseCore();
+        final CouchbaseCore core = new CouchbaseCore(ENV);
 
         core.send(new SeedNodesRequest(Arrays.asList(TestProperties.seedNode())));
 
@@ -125,6 +137,7 @@ public class BucketLifecycleTest {
             .single();
 
         assertEquals(ResponseStatus.SUCCESS, response.status());
+        core.send(new CloseBucketRequest(TestProperties.bucket())).toBlocking().single();
     }
 
 }

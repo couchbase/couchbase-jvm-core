@@ -165,7 +165,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * Factory which handles {@link SSLEngine} creation.
      */
-    private SSLEngineFactory sslEngineFactory;
+    private final SSLEngineFactory sslEngineFactory;
 
     /**
      * The underlying IO (netty) channel.
@@ -233,6 +233,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.lastResponse = 0;
         this.free = true;
         this.hostname = "127.0.0.1"; // let's consider its localhost for testing, use other constructor if not.
+        this.sslEngineFactory = null;
     }
 
     /**
@@ -265,9 +266,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         );
         LOGGER.debug("Using a connectCallbackGracePeriod of {} on Endpoint {}:{}", connectCallbackGracePeriod,
             hostname, port);
-        if (env.sslEnabled()) {
-            this.sslEngineFactory = new SSLEngineFactory(env);
-        }
+        this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env) : null;
 
         Class<? extends Channel> channelClass = NioSocketChannel.class;
         if (ioPool instanceof EpollEventLoopGroup) {

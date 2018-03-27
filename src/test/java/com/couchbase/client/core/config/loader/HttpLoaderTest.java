@@ -24,6 +24,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.utils.NetworkAddress;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
@@ -48,6 +49,11 @@ public class HttpLoaderTest {
     @BeforeClass
     public static void setup() throws Exception {
         host = NetworkAddress.localhost();
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        environment.shutdown();
     }
 
     @Test

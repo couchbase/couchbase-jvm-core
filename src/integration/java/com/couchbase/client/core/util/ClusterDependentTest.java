@@ -179,6 +179,7 @@ public class ClusterDependentTest {
     @AfterClass
     public static void disconnect() throws InterruptedException {
         cluster.send(new DisconnectRequest()).toBlocking().first();
+        env().shutdown();
     }
 
     public static String password() {

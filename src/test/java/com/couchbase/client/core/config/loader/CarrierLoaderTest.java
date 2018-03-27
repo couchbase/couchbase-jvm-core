@@ -28,6 +28,7 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
@@ -52,6 +53,11 @@ public class CarrierLoaderTest {
     @BeforeClass
     public static void setup() throws Exception {
         host = NetworkAddress.localhost();
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        environment.shutdown();
     }
 
     @Test

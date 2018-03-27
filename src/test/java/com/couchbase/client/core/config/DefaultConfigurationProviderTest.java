@@ -24,6 +24,7 @@ import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.util.Resources;
 import com.couchbase.client.core.utils.NetworkAddress;
+import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;
@@ -58,6 +59,11 @@ import static org.mockito.Mockito.when;
 public class DefaultConfigurationProviderTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+
+    @AfterClass
+    public static void cleanup() {
+        environment.shutdown();
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -399,18 +405,6 @@ public class DefaultConfigurationProviderTest {
     }
 
     @Test
-    @Ignore
-    public void shouldCloseBucket() {
-
-    }
-
-    @Test
-    @Ignore
-    public void shouldCloseBuckets() {
-
-    }
-
-    @Test
     public void shouldAcceptProposedConfigIfNoneExists() {
         DefaultConfigurationProvider provider = new DefaultConfigurationProvider(
             mock(ClusterFacade.class),
@@ -461,7 +455,6 @@ public class DefaultConfigurationProviderTest {
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         provider.proposeBucketConfig(null, raw);
         assertTrue(provider.config().bucketConfigs().isEmpty());
-
 
         String v1 = raw.replace("$REV", "1");
         provider.proposeBucketConfig(null, v1);
