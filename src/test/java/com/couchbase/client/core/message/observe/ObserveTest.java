@@ -16,12 +16,15 @@
 package com.couchbase.client.core.message.observe;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.DocumentConcurrentlyModifiedException;
 import com.couchbase.client.core.ReplicaNotConfiguredException;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
+import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
@@ -30,6 +33,7 @@ import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
+import org.junit.AfterClass;
 import org.junit.Test;
 import rx.Observable;
 
@@ -49,6 +53,13 @@ import static org.mockito.Mockito.when;
  * @since 1.1.1
  */
 public class ObserveTest {
+
+    private static final CoreEnvironment ENV = DefaultCoreEnvironment.create();
+
+    @AfterClass
+    public static void cleanup() {
+        ENV.shutdown();
+    }
 
     @Test(expected = ReplicaNotConfiguredException.class)
     public void shouldFailFastWhenReplicateToGreaterThanBucketReplicas() {
@@ -102,7 +113,9 @@ public class ObserveTest {
      */
     @Test(expected = DocumentConcurrentlyModifiedException.class)
     public void shouldFailWhenConcurrentlyModified() {
+        CoreContext ctx = new CoreContext(ENV, null);
         ClusterFacade cluster = mock(ClusterFacade.class);
+        when(cluster.ctx()).thenReturn(ctx);
 
         // Setup a mocked config which returns no replica configured
         CouchbaseBucketConfig bucketConfig = mock(CouchbaseBucketConfig.class);
@@ -139,7 +152,9 @@ public class ObserveTest {
 
     @Test
     public void shouldAlwaysAskActiveNode() {
+        CoreContext ctx = new CoreContext(ENV, null);
         ClusterFacade cluster = mock(ClusterFacade.class);
+        when(cluster.ctx()).thenReturn(ctx);
 
         // Setup a mocked config which returns no replica configured
         CouchbaseBucketConfig bucketConfig = mock(CouchbaseBucketConfig.class);

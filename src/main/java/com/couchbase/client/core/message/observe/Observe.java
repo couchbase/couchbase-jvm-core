@@ -22,6 +22,7 @@ import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.message.kv.MutationToken;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import io.opentracing.Span;
 import rx.Observable;
 
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ public class Observe {
      * @author Michael Nitschinger
      * @since 1.0.1
      */
-    public static enum PersistTo {
+    public enum PersistTo {
         /**
          * Observe disk persistence to the master node of the document only.
          */
@@ -117,7 +118,7 @@ public class Observe {
      * @author Michael Nitschinger
      * @since 1.0.1
      */
-    public static enum ReplicateTo {
+    public enum ReplicateTo {
 
         /**
          * Do not observe any replication constraint.
@@ -185,12 +186,30 @@ public class Observe {
     }
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
+        final long cas, final boolean remove, MutationToken token, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final Delay delay, final RetryStrategy retryStrategy) {
+        return call(core, bucket, id, cas, remove, token, persistTo, replicateTo, delay, retryStrategy, null);
+    }
+
+    public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
+        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final RetryStrategy retryStrategy, Span parent) {
+        return call(core, bucket, id, cas, remove, persistTo, replicateTo, DEFAULT_DELAY, retryStrategy, parent);
+    }
+
+    public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
+        final long cas, final boolean remove, final PersistTo persistTo, final ReplicateTo replicateTo,
+        final Delay delay, final RetryStrategy retryStrategy, Span parent) {
+        return call(core, bucket, id, cas, remove, null, persistTo, replicateTo, delay, retryStrategy, parent);
+    }
+
+    public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
        final long cas, final boolean remove, MutationToken token, final PersistTo persistTo, final ReplicateTo replicateTo,
-       final Delay delay, final RetryStrategy retryStrategy) {
+       final Delay delay, final RetryStrategy retryStrategy, Span parent) {
         if (token == null) {
-            return ObserveViaCAS.call(core, bucket, id, cas, remove, persistTo, replicateTo, delay, retryStrategy);
+            return ObserveViaCAS.call(core, bucket, id, cas, remove, persistTo, replicateTo, delay, retryStrategy, parent);
         } else {
-            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy);
+            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy, parent);
         }
     }
 

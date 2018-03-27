@@ -62,7 +62,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
     @BeforeClass
     public static void setup() throws Exception {
         connect();
-        assertTrue(cluster().id() > 0);
+        assertTrue(cluster().ctx().coreId() > 0);
     }
 
     @Test

@@ -17,6 +17,7 @@ package com.couchbase.client.core;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import rx.Observable;
@@ -43,6 +44,16 @@ public interface ClusterFacade {
 
     /**
      * The core id is unique per core instance.
+     *
+     * @deprecated Use {@link #ctx()} which also contains the ID.
      */
+    @Deprecated
     long id();
+
+    /**
+     * Exposes the currently used environment.
+     *
+     * @return the environment used.
+     */
+    CoreContext ctx();
 }

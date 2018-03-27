@@ -23,6 +23,7 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.ResponseStatusDetails;
@@ -34,7 +35,10 @@ import com.couchbase.client.core.message.kv.NoFailoverObserveSeqnoResponse;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import rx.Observable;
+import rx.functions.Action0;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -53,12 +57,11 @@ import java.util.List;
 public class ObserveViaMutationToken {
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
-       final MutationToken token, final Observe.PersistTo persistTo,
-       final Observe.ReplicateTo replicateTo, final Delay delay, final RetryStrategy retryStrategy) {
-
+       final MutationToken token, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
+        final Delay delay, final RetryStrategy retryStrategy, final Span parent) {
 
         Observable<CouchbaseResponse> observeResponses = sendObserveRequests(core, bucket, id, token, persistTo,
-                replicateTo, retryStrategy);
+                replicateTo, retryStrategy, parent);
 
         return observeResponses
                 .map(new Func1<CouchbaseResponse, ObserveItem>() {
@@ -128,7 +131,7 @@ public class ObserveViaMutationToken {
 
     private static Observable<CouchbaseResponse> sendObserveRequests(final ClusterFacade core, final String bucket, final String id,
         final MutationToken token, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
-        RetryStrategy retryStrategy) {
+        RetryStrategy retryStrategy, final Span parent) {
         final boolean swallowErrors = retryStrategy.shouldRetryObserve();
         return Observable.defer(new Func0<Observable<CouchbaseResponse>>() {
             @Override
@@ -161,7 +164,28 @@ public class ObserveViaMutationToken {
                             @Override
                             public Observable<CouchbaseResponse> call(Integer replicas) {
                                 List<Observable<CouchbaseResponse>> obs = new ArrayList<Observable<CouchbaseResponse>>();
-                                Observable<CouchbaseResponse> masterRes = core.send(new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket));
+                                final ObserveSeqnoRequest activeReq = new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket);
+                                final CoreEnvironment env = core.ctx().environment();
+                                if (env.tracingEnabled() && parent != null) {
+                                    Scope scope = env.tracer()
+                                        .buildSpan("observe_seqno")
+                                        .asChildOf(parent)
+                                        .withTag("couchbase.active", true)
+                                        .startActive(false);
+                                    activeReq.span(scope.span(), env);
+                                    scope.close();
+                                }
+                                Observable<CouchbaseResponse> masterRes = core.<CouchbaseResponse>send(activeReq).doOnUnsubscribe(new Action0() {
+                                    @Override
+                                    public void call() {
+                                        // termination may not be triggered if
+                                        // early unsubscribed for some reason.
+                                        if (env.tracingEnabled() && parent != null) {
+                                            env.tracer().scopeManager()
+                                                .activate(activeReq.span(), true)
+                                                .close();
+                                        }                                        }
+                                });
                                 if (swallowErrors) {
                                     obs.add(masterRes.onErrorResumeNext(Observable.<CouchbaseResponse>empty()));
                                 } else {
@@ -170,7 +194,27 @@ public class ObserveViaMutationToken {
 
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
                                     for (short i = 1; i <= replicas; i++) {
-                                        Observable<CouchbaseResponse> res = core.send(new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket));
+                                        final ObserveSeqnoRequest replReq = new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket);
+                                        if (env.tracingEnabled() && parent != null) {
+                                            Scope scope = env.tracer()
+                                                .buildSpan("observe_seqno")
+                                                .asChildOf(parent)
+                                                .withTag("couchbase.active", false)
+                                                .startActive(false);
+                                            replReq.span(scope.span(), env);
+                                            scope.close();
+                                        }
+                                        Observable<CouchbaseResponse> res = core.send(replReq).doOnUnsubscribe(new Action0() {
+                                            @Override
+                                            public void call() {
+                                                // termination may not be triggered if
+                                                // early unsubscribed for some reason.
+                                                if (env.tracingEnabled() && parent != null) {
+                                                    env.tracer().scopeManager()
+                                                        .activate(replReq.span(), true)
+                                                        .close();
+                                                }                                        }
+                                        });
                                         if (swallowErrors) {
                                             obs.add(res.onErrorResumeNext(Observable.<CouchbaseResponse>empty()));
                                         } else {

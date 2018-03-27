@@ -119,6 +119,7 @@ public class CouchbaseCore implements ClusterFacade {
 
     private volatile boolean sharedEnvironment = true;
     private final CouchbaseCoreSendHook coreSendHook;
+    private final CoreContext ctx;
 
     /**
      * The current core id.
@@ -191,7 +192,7 @@ public class CouchbaseCore implements ClusterFacade {
             environment.requestBufferWaitStrategy().newWaitStrategy()
         );
 
-        CoreContext ctx = new CoreContext(environment, responseRingBuffer, coreId);
+        ctx = new CoreContext(environment, responseRingBuffer, coreId);
         requestHandler = new RequestHandler(ctx, configProvider.configs());
         requestDisruptor.setDefaultExceptionHandler(new ExceptionHandler<RequestEvent>() {
             @Override
@@ -394,6 +395,11 @@ public class CouchbaseCore implements ClusterFacade {
 
     @Override
     public long id() {
-        return coreId;
+        return ctx().coreId();
+    }
+
+    @Override
+    public CoreContext ctx() {
+        return ctx;
     }
 }

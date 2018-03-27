@@ -24,6 +24,7 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.config.CouchbaseBucketConfig;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
+import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.ResponseStatusDetails;
 import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
@@ -32,7 +33,11 @@ import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import io.opentracing.Scope;
+import io.opentracing.Span;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -52,7 +57,7 @@ public class ObserveViaCAS {
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
         final long cas, final boolean remove, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
-        final Delay delay, final RetryStrategy retryStrategy) {
+        final Delay delay, final RetryStrategy retryStrategy, final Span parent) {
 
         final ObserveResponse.ObserveStatus persistIdentifier;
         final ObserveResponse.ObserveStatus replicaIdentifier;
@@ -65,7 +70,7 @@ public class ObserveViaCAS {
         }
 
         Observable<ObserveResponse> observeResponses = sendObserveRequests(core, bucket, id, cas, persistTo,
-            replicateTo, retryStrategy);
+            replicateTo, retryStrategy, parent);
 
         return observeResponses
                 //each response is converted into an ObserveItem state
@@ -124,7 +129,7 @@ public class ObserveViaCAS {
 
     private static Observable<ObserveResponse> sendObserveRequests(final ClusterFacade core, final String bucket,
         final String id, final long cas, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
-        final RetryStrategy retryStrategy) {
+        final RetryStrategy retryStrategy, final Span parent) {
         final boolean swallowErrors = retryStrategy.shouldRetryObserve();
         return Observable.defer(new Func0<Observable<ObserveResponse>>() {
             @Override
@@ -157,7 +162,29 @@ public class ObserveViaCAS {
                             @Override
                             public Observable<ObserveResponse> call(Integer replicas) {
                                 List<Observable<ObserveResponse>> obs = new ArrayList<Observable<ObserveResponse>>();
-                                Observable<ObserveResponse> masterRes = core.send(new ObserveRequest(id, cas, true, (short) 0, bucket));
+                                final ObserveRequest activeReq = new ObserveRequest(id, cas, true, (short) 0, bucket);
+                                final CoreEnvironment env = core.ctx().environment();
+                                if (env.tracingEnabled() && parent != null) {
+                                    Scope scope = env.tracer()
+                                        .buildSpan("observe_cas")
+                                        .asChildOf(parent)
+                                        .withTag("couchbase.active", true)
+                                        .startActive(false);
+                                    activeReq.span(scope.span(), env);
+                                    scope.close();
+                                }
+                                Observable<ObserveResponse> masterRes = core.<ObserveResponse>send(activeReq)
+                                    .doOnUnsubscribe(new Action0() {
+                                        @Override
+                                        public void call() {
+                                            // termination may not be triggered if
+                                            // early unsubscribed for some reason.
+                                            if (env.tracingEnabled() && parent != null) {
+                                                env.tracer().scopeManager()
+                                                    .activate(activeReq.span(), true)
+                                                    .close();
+                                            }                                        }
+                                    });
                                 if (swallowErrors) {
                                     obs.add(masterRes.onErrorResumeNext(Observable.<ObserveResponse>empty()));
                                 } else {
@@ -166,7 +193,27 @@ public class ObserveViaCAS {
 
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
                                     for (short i = 1; i <= replicas; i++) {
-                                        Observable<ObserveResponse> res = core.send(new ObserveRequest(id, cas, false, i, bucket));
+                                        final ObserveRequest replReq  = new ObserveRequest(id, cas, false, i, bucket);
+                                        if (env.tracingEnabled() && parent != null) {
+                                            Scope scope = env.tracer()
+                                                .buildSpan("observe_cas")
+                                                .asChildOf(parent)
+                                                .withTag("couchbase.active", false)
+                                                .startActive(false);
+                                            replReq.span(scope.span(), env);
+                                            scope.close();
+                                        }
+                                        Observable<ObserveResponse> res = core.<ObserveResponse>send(replReq)
+                                            .doOnUnsubscribe(new Action0() {
+                                                @Override
+                                                public void call() {
+                                                    if (env.tracingEnabled() && parent != null) {
+                                                        env.tracer().scopeManager()
+                                                            .activate(replReq.span(), true)
+                                                            .close();
+                                                    }
+                                                }
+                                            });
                                         if (swallowErrors) {
                                             obs.add(res.onErrorResumeNext(Observable.<ObserveResponse>empty()));
                                         } else {
