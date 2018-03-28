@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.couchbase.client.core.logging.RedactableArgument.system;
+import static com.couchbase.client.core.utils.DefaultObjectMapper.prettyWriter;
+import static com.couchbase.client.core.utils.DefaultObjectMapper.writer;
 
 /**
  * The {@link ThresholdLogReporter} retrieves spans from (usually) a {@link Tracer}
@@ -50,11 +52,6 @@ public class ThresholdLogReporter {
     private static final CouchbaseLogger LOGGER =
         CouchbaseLoggerFactory.getInstance(ThresholdLogReporter.class);
 
-    /**
-     * TODO: refactor me away once the global jackson is merged
-     */
-    private static final ObjectMapper JACKSON = new ObjectMapper();
-
     private static final AtomicInteger REPORTER_ID = new AtomicInteger();
 
     private static final long MIN_LOG_INTERVAL = TimeUnit.SECONDS.toNanos(1);
@@ -66,11 +63,10 @@ public class ThresholdLogReporter {
     public static final String SERVICE_ANALYTICS = "analytics";
 
     public static final String KEY_TOTAL_MICROS = "total_us";
-    public static final String KEY_DISPATCH_MICROS = "dispatch_us";
+    public static final String KEY_DISPATCH_MICROS = "last_dispatch_us";
     public static final String KEY_ENCODE_MICROS = "encode_us";
     public static final String KEY_DECODE_MICROS = "decode_us";
     public static final String KEY_SERVER_MICROS = "server_us";
-
 
     private final Queue<ThresholdLogSpan> overThresholdQueue;
     private final Queue<ThresholdLogSpan> zombieQueue;
@@ -273,8 +269,8 @@ public class ThresholdLogReporter {
          * @param kvThreshold the threshold to set.
          * @return this builder for chaining.
          */
-        public Builder kvThreshold(final long kvThreshold) {
-            this.kvThreshold = kvThreshold;
+        public Builder kvThreshold(final long kvThreshold, final TimeUnit timeUnit) {
+            this.kvThreshold = timeUnit.toMicros(kvThreshold);
             return this;
         }
 
@@ -284,8 +280,8 @@ public class ThresholdLogReporter {
          * @param n1qlThreshold the threshold to set.
          * @return this builder for chaining.
          */
-        public Builder n1qlThreshold(final long n1qlThreshold) {
-            this.n1qlThreshold = n1qlThreshold;
+        public Builder n1qlThreshold(final long n1qlThreshold, final TimeUnit timeUnit) {
+            this.n1qlThreshold = timeUnit.toMicros(n1qlThreshold);
             return this;
         }
 
@@ -295,8 +291,8 @@ public class ThresholdLogReporter {
          * @param viewThreshold the threshold to set.
          * @return this builder for chaining.
          */
-        public Builder viewThreshold(final long viewThreshold) {
-            this.viewThreshold = viewThreshold;
+        public Builder viewThreshold(final long viewThreshold, final TimeUnit timeUnit) {
+            this.viewThreshold = timeUnit.toMicros(viewThreshold);
             return this;
         }
 
@@ -306,8 +302,8 @@ public class ThresholdLogReporter {
          * @param ftsThreshold the threshold to set.
          * @return this builder for chaining.
          */
-        public Builder ftsThreshold(final long ftsThreshold) {
-            this.ftsThreshold = ftsThreshold;
+        public Builder ftsThreshold(final long ftsThreshold, final TimeUnit timeUnit) {
+            this.ftsThreshold = timeUnit.toMicros(ftsThreshold);
             return this;
         }
 
@@ -317,8 +313,8 @@ public class ThresholdLogReporter {
          * @param analyticsThreshold the threshold to set.
          * @return this builder for chaining.
          */
-        public Builder analyticsThreshold(final long analyticsThreshold) {
-            this.analyticsThreshold = analyticsThreshold;
+        public Builder analyticsThreshold(final long analyticsThreshold, final TimeUnit timeUnit) {
+            this.analyticsThreshold = timeUnit.toMicros(analyticsThreshold);
             return this;
         }
 
@@ -361,35 +357,21 @@ public class ThresholdLogReporter {
             System.getProperty("com.couchbase.thresholdLogReporterSleep", "100")
         );
 
-        private long lastThresholdLog;
-        private boolean hasThresholdWritten;
-        private final SortedSet<ThresholdLogSpan> kvThresholdSet;
-        private final SortedSet<ThresholdLogSpan> n1qlThresholdSet;
-        private final SortedSet<ThresholdLogSpan> viewThresholdSet;
-        private final SortedSet<ThresholdLogSpan> ftsThresholdSet;
-        private final SortedSet<ThresholdLogSpan> analyticsThresholdSet;
+        private final SortedSet<ThresholdLogSpan> kvThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> n1qlThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> viewThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> ftsThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> analyticsThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> kvZombieSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> n1qlZombieSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> viewZombieSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> ftsZombieSet = new TreeSet<ThresholdLogSpan>();
+        private final SortedSet<ThresholdLogSpan> analyticsZombieSet = new TreeSet<ThresholdLogSpan>();
 
         private long lastZombieLog;
         private boolean hasZombieWritten;
-        private final SortedSet<ThresholdLogSpan> kvZombieSet;
-        private final SortedSet<ThresholdLogSpan> n1qlZombieSet;
-        private final SortedSet<ThresholdLogSpan> viewZombieSet;
-        private final SortedSet<ThresholdLogSpan> ftsZombieSet;
-        private final SortedSet<ThresholdLogSpan> analyticsZombieSet;
-
-        Worker() {
-            kvThresholdSet = new TreeSet<ThresholdLogSpan>();
-            n1qlThresholdSet = new TreeSet<ThresholdLogSpan>();
-            viewThresholdSet = new TreeSet<ThresholdLogSpan>();
-            ftsThresholdSet = new TreeSet<ThresholdLogSpan>();
-            analyticsThresholdSet = new TreeSet<ThresholdLogSpan>();
-
-            kvZombieSet = new TreeSet<ThresholdLogSpan>();
-            n1qlZombieSet = new TreeSet<ThresholdLogSpan>();
-            viewZombieSet = new TreeSet<ThresholdLogSpan>();
-            ftsZombieSet = new TreeSet<ThresholdLogSpan>();
-            analyticsZombieSet = new TreeSet<ThresholdLogSpan>();
-        }
+        private long lastThresholdLog;
+        private boolean hasThresholdWritten;
 
         @Override
         public void run() {
@@ -485,21 +467,27 @@ public class ThresholdLogReporter {
                 entry.put(KEY_TOTAL_MICROS, span.durationMicros());
 
                 String spanId = span.request().operationId();
-                String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
-                entry.put("operation_id", system(operation_id).toString());
+                if (spanId != null) {
+                    entry.put("operation_id", spanId);
+                }
+
+                String operationName = span.operationName();
+                if (operationName != null) {
+                    entry.put("operation_name", operationName);
+                }
 
                 String local = span.request().lastLocalSocket();
                 String peer = span.request().lastRemoteSocket();
                 if (local != null) {
-                    entry.put("local_address", system(local).toString());
+                    entry.put("last_local_address", system(local).toString());
                 }
                 if (peer != null) {
-                    entry.put("remote_address", system(peer).toString());
+                    entry.put("last_remote_address", system(peer).toString());
                 }
 
                 String localId = span.request().lastLocalId();
                 if (localId != null) {
-                    entry.put("local_id", system(localId).toString());
+                    entry.put("last_local_id", system(localId).toString());
                 }
 
                 String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);
@@ -593,23 +581,23 @@ public class ThresholdLogReporter {
             List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
 
             if (!kvZombieSet.isEmpty()) {
-                output.add(convertZombieSet(kvZombieSet, SERVICE_KV));
+                output.add(convertThresholdSet(kvZombieSet, SERVICE_KV));
                 kvZombieSet.clear();
             }
             if (!n1qlZombieSet.isEmpty()) {
-                output.add(convertZombieSet(n1qlZombieSet, SERVICE_N1QL));
+                output.add(convertThresholdSet(n1qlZombieSet, SERVICE_N1QL));
                 n1qlZombieSet.clear();
             }
             if (!viewZombieSet.isEmpty()) {
-                output.add(convertZombieSet(viewZombieSet, SERVICE_VIEW));
+                output.add(convertThresholdSet(viewZombieSet, SERVICE_VIEW));
                 viewZombieSet.clear();
             }
             if (!ftsZombieSet.isEmpty()) {
-                output.add(convertZombieSet(ftsZombieSet, SERVICE_FTS));
+                output.add(convertThresholdSet(ftsZombieSet, SERVICE_FTS));
                 ftsZombieSet.clear();
             }
             if (!analyticsZombieSet.isEmpty()) {
-                output.add(convertZombieSet(analyticsZombieSet, SERVICE_ANALYTICS));
+                output.add(convertThresholdSet(analyticsZombieSet, SERVICE_ANALYTICS));
                 analyticsZombieSet.clear();
             }
 
@@ -618,71 +606,14 @@ public class ThresholdLogReporter {
     }
 
     /**
-     * Helper method to conver the span set into the log output format.
-     */
-    private Map<String, Object> convertZombieSet(SortedSet<ThresholdLogSpan> set, String ident) {
-        Map<String, Object> output = new HashMap<String, Object>();
-        List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
-        for (ThresholdLogSpan span : set) {
-            Map<String, Object> entry = new HashMap<String, Object>();
-            entry.put(KEY_TOTAL_MICROS, span.durationMicros());
-
-            String spanId = span.request().operationId();
-            String operation_id = span.operationName() + (spanId == null ? "" : ":" + spanId);
-            entry.put("operation_id", system(operation_id).toString());
-
-            String local = span.request().lastLocalSocket();
-            String peer = span.request().lastRemoteSocket();
-            if (local != null) {
-                entry.put("local_address", system(local).toString());
-            }
-            if (peer != null) {
-                entry.put("remote_address", system(peer).toString());
-            }
-
-            String localId = span.request().lastLocalId();
-            if (localId != null) {
-                entry.put("local_id", system(localId).toString());
-            }
-
-            String decode_duration = span.getBaggageItem(KEY_DECODE_MICROS);
-            if (decode_duration != null) {
-                entry.put(KEY_DECODE_MICROS, Long.parseLong(decode_duration));
-            }
-
-            String encode_duration = span.getBaggageItem(KEY_ENCODE_MICROS);
-            if (encode_duration != null) {
-                entry.put(KEY_ENCODE_MICROS, Long.parseLong(encode_duration));
-            }
-
-            String dispatch_duration = span.getBaggageItem(KEY_DISPATCH_MICROS);
-            if (dispatch_duration != null) {
-                entry.put(KEY_DISPATCH_MICROS, Long.parseLong(dispatch_duration));
-            }
-
-            String server_duration = span.getBaggageItem(KEY_SERVER_MICROS);
-            if (server_duration != null) {
-                entry.put(KEY_SERVER_MICROS, Long.parseLong(server_duration));
-            }
-
-            top.add(entry);
-        }
-        output.put("service", ident);
-        output.put("count", set.size());
-        output.put("top", top);
-        return output;
-    }
-
-
-    /**
      * This method is intended to be overridden in test implementations
      * to assert against the output.
      */
     void logOverThreshold(final List<Map<String, Object>> toLog) {
         try {
             String result = pretty
-                ? JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(toLog)
-                : JACKSON.writeValueAsString(toLog);
+                ? prettyWriter().writeValueAsString(toLog)
+                : writer().writeValueAsString(toLog);
             LOGGER.warn("Operations over threshold: {}", result);
         } catch (Exception ex) {
             LOGGER.warn("Could not write threshold log.", ex);
@@ -696,8 +627,8 @@ public class ThresholdLogReporter {
     void logZombies(final List<Map<String, Object>> toLog) {
         try {
             String result = pretty
-                ? JACKSON.writerWithDefaultPrettyPrinter().writeValueAsString(toLog)
-                : JACKSON.writeValueAsString(toLog);
+                ? prettyWriter().writeValueAsString(toLog)
+                : writer().writeValueAsString(toLog);
             LOGGER.warn("Zombie responses observed: {}", result);
         } catch (Exception ex) {
             LOGGER.warn("Could not write zombie log.", ex);
