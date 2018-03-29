@@ -525,4 +525,21 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     @InterfaceStability.Uncommitted
     @InterfaceAudience.Public
     EncryptionConfig encryptionConfig();
+
+    /**
+     * Returns the minimum size of a document to be considered for
+     * compression in the first place.
+     *
+     * @return the minimum size to be considered for compression, in bytes.
+     */
+    int compressionMinSize();
+
+    /**
+     * If the document is greater than the min compression size it is used
+     * for compression, but only sent if the compressed document has a greater
+     * compression ratio as the one provided.
+     *
+     * @return the minimum compression ratio for compression
+     */
+    double compressionMinRatio();
 }

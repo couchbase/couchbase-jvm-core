@@ -116,6 +116,8 @@ public class KeyValueHandlerTest {
     static {
         ENVIRONMENT = mock(CoreEnvironment.class);
         when(ENVIRONMENT.scheduler()).thenReturn(Schedulers.computation());
+        when(ENVIRONMENT.compressionMinRatio()).thenReturn(DefaultCoreEnvironment.MIN_COMPRESSION_RATIO);
+        when(ENVIRONMENT.compressionMinSize()).thenReturn(DefaultCoreEnvironment.MIN_COMPRESSION_SIZE);
     }
 
     /**
@@ -899,7 +901,9 @@ public class KeyValueHandlerTest {
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
 
-        KeyValueHandler testHandler = new KeyValueHandler(mock(AbstractEndpoint.class), eventSink,
+        AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
+        when(endpoint.environment()).thenReturn(ENVIRONMENT);
+        KeyValueHandler testHandler = new KeyValueHandler(endpoint, eventSink,
                 requestQueue, false, true) {
 
             @Override

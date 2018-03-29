@@ -46,7 +46,6 @@ import com.couchbase.client.core.node.MemcachedHashingStrategy;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
-import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import com.couchbase.client.core.tracing.ThresholdLogTracer;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
@@ -121,6 +120,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean CERT_AUTH_ENABLED = false;
     public static final boolean FORCE_SASL_PLAIN = false;
     public static final boolean TRACING_ENABLED = true;
+    public static final int MIN_COMPRESSION_SIZE = 32;
+    public static final double MIN_COMPRESSION_RATIO = 0.83;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -236,6 +237,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean certAuthEnabled;
     private final boolean tracingEnabled;
     private final Tracer tracer;
+    private final int minCompressionSize;
+    private final double minCompressionRatio;
 
     private static volatile int MAX_ALLOWED_INSTANCES = 1;
     private static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
@@ -328,6 +331,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
         keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
         tracingEnabled = booleanPropertyOr("tracingEnabled", builder.tracingEnabled);
+        minCompressionRatio = doublePropertyOr("compressionMinRatio", builder.minCompressionRatio);
+        minCompressionSize = intPropertyOr("compressionMinSize", builder.minCompressionSize);
+
         if (!tracingEnabled) {
             tracer = NoopTracerFactory.create();
             tracerShutdownHook = new NoOpShutdownHook();
@@ -993,6 +999,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     public EncryptionConfig encryptionConfig() { return encryptionConfig; }
 
+    @Override
+    public int compressionMinSize() {
+        return minCompressionSize;
+    }
+
+    @Override
+    public double compressionMinRatio() {
+        return minCompressionRatio;
+    }
+
     /**
      * Returns the number of maximal allowed instances before warning log will be
      * emitted.
@@ -1074,6 +1090,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean forceSaslPlain = FORCE_SASL_PLAIN;
         private boolean tracingEnabled = TRACING_ENABLED;
         private Tracer tracer;
+        private double minCompressionRatio = MIN_COMPRESSION_RATIO;
+        private int minCompressionSize = MIN_COMPRESSION_SIZE;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1822,6 +1840,34 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return self();
         }
 
+        /**
+         * Allows to adjust the minimum size of a document to be considered
+         * for compression - in bytes.
+         *
+         * @param minCompressionSize min compression size in bytes.
+         * @return the builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public SELF minCompressionSize(final int minCompressionSize) {
+            this.minCompressionSize = minCompressionSize;
+            return self();
+        }
+
+        /**
+         * Allows to adjust the ratio over which the document is sent
+         * compressed over the wire - in percent.
+         *
+         * @param minCompressionRatio the compression ratio in percent.
+         * @return the builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public SELF minCompressionRatio(final double minCompressionRatio) {
+            this.minCompressionRatio = minCompressionRatio;
+            return self();
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1923,6 +1969,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", coreSendHook=").append(couchbaseCoreSendHook == null ? "null" :
             couchbaseCoreSendHook.getClass().getSimpleName());
         sb.append(", forceSaslPlain=").append(forceSaslPlain);
+        sb.append(", compressionMinRatio=").append(minCompressionRatio);
+        sb.append(", compressionMinSize=").append(minCompressionSize);
         return sb;
     }
 

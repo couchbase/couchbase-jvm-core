@@ -25,7 +25,6 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.message.DiagnosticRequest;
 import com.couchbase.client.core.message.KeepAlive;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.ResponseStatusDetails;
@@ -90,7 +89,6 @@ import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import com.couchbase.client.core.tracing.ThresholdLogSpan;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheOpcodes;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
-import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponse;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
@@ -103,7 +101,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.IllegalReferenceCountException;
 import org.iq80.snappy.Snappy;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -118,7 +115,6 @@ import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.FETC
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.ITEM_LOCKED;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_LATER;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.RETRY_NOW;
-import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.SUBDOC;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.ErrorAttribute.TEMP;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.RetryStrategy.CONSTANT;
 import static com.couchbase.client.core.endpoint.kv.ErrorMap.RetryStrategy.EXPONENTIAL;
@@ -221,6 +217,9 @@ public class KeyValueHandler
      */
     boolean snappyEnabled = false;
 
+    final int minCompressionSize;
+    final double minCompressionRatio;
+
     /**
      * Creates a new {@link KeyValueHandler} with the default queue for requests.
      *
@@ -228,8 +227,10 @@ public class KeyValueHandler
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      */
     public KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, boolean isTransient,
-                           final boolean pipeline) {
+        final boolean pipeline) {
         super(endpoint, responseBuffer, isTransient, pipeline);
+        minCompressionRatio = endpoint.environment().compressionMinRatio();
+        minCompressionSize = endpoint.environment().compressionMinSize();
     }
 
     /**
@@ -239,8 +240,11 @@ public class KeyValueHandler
      * @param responseBuffer the {@link RingBuffer} to push responses into.
      * @param queue the queue which holds all outstanding open requests.
      */
-    KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<BinaryRequest> queue, boolean isTransient, final boolean pipeline) {
+    KeyValueHandler(AbstractEndpoint endpoint, EventSink<ResponseEvent> responseBuffer, Queue<BinaryRequest> queue,
+        boolean isTransient, final boolean pipeline) {
         super(endpoint, responseBuffer, queue, isTransient, pipeline);
+        minCompressionRatio = endpoint.environment().compressionMinRatio();
+        minCompressionSize = endpoint.environment().compressionMinSize();
     }
 
     @Override
@@ -318,6 +322,11 @@ public class KeyValueHandler
         FullBinaryMemcacheRequest request = (FullBinaryMemcacheRequest) r;
         int uncompressedLength = request.content().readableBytes();
 
+        // don't bother compressing if below the min compression size
+        if (uncompressedLength < minCompressionSize || uncompressedLength == 0) {
+            return;
+        }
+
         ByteBuf compressedContent;
         try {
             if (request.content().hasArray()) {
@@ -332,8 +341,9 @@ public class KeyValueHandler
             throw new RuntimeException("Could not snappy-compress value.", ex);
         }
 
-        if (compressedContent.readableBytes() >= uncompressedLength) {
-            // compressed is not smaller, so just send the original
+        double ratio = compressedContent.readableBytes() / uncompressedLength;
+        if (ratio > minCompressionRatio) {
+            // compressed is not smaller per ratio, so just send the original
             compressedContent.release();
         } else {
             // compressed is smaller, so adapt and apply new content
