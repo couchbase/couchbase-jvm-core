@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.cluster.SeedNodesResponse;
 import com.couchbase.client.core.message.config.ClusterConfigRequest;
 import com.couchbase.client.core.message.config.ClusterConfigResponse;
 import com.couchbase.client.core.message.config.FlushRequest;
+import com.couchbase.client.core.metrics.DefaultLatencyMetricsCollectorConfig;
 import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.mock.CouchbaseMock;
 import com.couchbase.mock.JsonUtils;
@@ -162,6 +163,7 @@ public class ClusterDependentTest {
         env = envBuilder
                 .mutationTokensEnabled(true)
                 .keepAliveInterval(KEEPALIVE_INTERVAL)
+                .networkLatencyMetricsCollectorConfig(DefaultLatencyMetricsCollectorConfig.create())
                 .build();
 
         cluster = new CouchbaseCore(env);

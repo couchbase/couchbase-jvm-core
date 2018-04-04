@@ -459,7 +459,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             eventBus,
             coreScheduler,
             builder.networkLatencyMetricsCollectorConfig == null
-                ? DefaultLatencyMetricsCollectorConfig.create()
+                ? DefaultLatencyMetricsCollectorConfig.disabled()
                 : builder.networkLatencyMetricsCollectorConfig
         );
 
