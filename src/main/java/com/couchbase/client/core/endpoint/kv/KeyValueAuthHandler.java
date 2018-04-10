@@ -174,10 +174,8 @@ public class KeyValueAuthHandler
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (msg.getOpcode() == SASL_LIST_MECHS_OPCODE) {
             handleListMechsResponse(ctx, msg);
-        } else if (msg.getOpcode() == SASL_AUTH_OPCODE) {
+        } else if (msg.getOpcode() == SASL_AUTH_OPCODE || msg.getOpcode() == SASL_STEP_OPCODE) {
             handleAuthResponse(ctx, msg);
-        } else if (msg.getOpcode() == SASL_STEP_OPCODE) {
-            checkIsAuthed(msg);
         }
     }
 
@@ -234,14 +232,15 @@ public class KeyValueAuthHandler
      * @throws Exception if something goes wrong during negotiation.
      */
     private void handleAuthResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
-        if (saslClient.isComplete()) {
-            checkIsAuthed(msg);
-            return;
-        }
 
         byte[] response = new byte[msg.content().readableBytes()];
         msg.content().readBytes(response);
         byte[] evaluatedBytes = saslClient.evaluateChallenge(response);
+
+        if (saslClient.isComplete()) {
+            checkIsAuthed(msg);
+            return;
+        }
 
         if (evaluatedBytes != null) {
             ByteBuf content;
