@@ -174,10 +174,12 @@ public class KeyValueAuthHandler
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (msg.getOpcode() == SASL_LIST_MECHS_OPCODE) {
             handleListMechsResponse(ctx, msg);
-        } else if (msg.getOpcode() == SASL_AUTH_OPCODE) {
+        }
+        // It is necessary to call handleAuthResponse() for evaluate Auth Response and
+        // Step Response returned by the server. If this step is not done, the client
+        // doesn't authenticate the server.
+        else if (msg.getOpcode() == SASL_AUTH_OPCODE || msg.getOpcode() == SASL_STEP_OPCODE) {
             handleAuthResponse(ctx, msg);
-        } else if (msg.getOpcode() == SASL_STEP_OPCODE) {
-            checkIsAuthed(msg);
         }
     }
 
@@ -234,14 +236,19 @@ public class KeyValueAuthHandler
      * @throws Exception if something goes wrong during negotiation.
      */
     private void handleAuthResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
-        if (saslClient.isComplete()) {
-            checkIsAuthed(msg);
-            return;
-        }
 
         byte[] response = new byte[msg.content().readableBytes()];
         msg.content().readBytes(response);
         byte[] evaluatedBytes = saslClient.evaluateChallenge(response);
+
+        
+        // This condition is needed for evaluate SASL Step Response. 
+        // After saslClient.evaluateChallenge(), if SaslException is not thrown and 
+        // if ShaSaslClient.serverFinalMessage is not null, authentication is completed
+        if (saslClient.isComplete()) {
+            checkIsAuthed(msg);
+            return;
+        }
 
         if (evaluatedBytes != null) {
             ByteBuf content;
@@ -284,7 +291,8 @@ public class KeyValueAuthHandler
     }
 
     /**
-     * Once authentication is completed, check the response and react appropriately to the upper layers.
+     * Once authentication is completed, check the response and react appropriately
+     * to the upper layers.
      *
      * @param msg the incoming message to investigate.
      */
