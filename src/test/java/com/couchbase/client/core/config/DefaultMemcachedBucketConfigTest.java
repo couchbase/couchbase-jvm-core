@@ -56,7 +56,7 @@ public class DefaultMemcachedBucketConfigTest {
     @Test
     public void shouldOnlyUseDataNodesForKetama() throws Exception {
         String raw = Resources.read("memcached_mixed_sherlock.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV);
+        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, null);
 
         assertEquals(4, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {
@@ -71,7 +71,7 @@ public class DefaultMemcachedBucketConfigTest {
         assumeFalse(NetworkAddress.FORCE_IPV4);
 
         String raw = Resources.read("memcached_with_ipv6.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV);
+        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, null);
 
         assertEquals(2, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {
@@ -85,7 +85,7 @@ public class DefaultMemcachedBucketConfigTest {
     @Test
     public void shouldReadBucketUuid() throws Exception {
         String raw = Resources.read("memcached_mixed_sherlock.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV);
+        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
 
         assertEquals("7b6c811c94f985b685d99596816a7a9f", config.uuid());
     }
@@ -93,7 +93,7 @@ public class DefaultMemcachedBucketConfigTest {
     @Test
     public void shouldHandleMissingBucketUuid() throws Exception {
         String raw = Resources.read("memcached_without_uuid.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV);
+        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
 
         assertNull(config.uuid());
     }
@@ -104,7 +104,7 @@ public class DefaultMemcachedBucketConfigTest {
     @Test
     public void shouldIncludeExternalIfPresent() {
         String raw = Resources.read("config_with_external_memcache.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV);
+        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
 
         List<NodeInfo> nodes = config.nodes();
         assertEquals(3, nodes.size());

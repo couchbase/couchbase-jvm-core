@@ -46,7 +46,7 @@ public class ProposedBucketConfigContext {
         this.config = config;
         this.origin = origin;
     }
-    
+
     public String bucketName() {
         return bucketName;
     }

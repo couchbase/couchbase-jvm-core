@@ -37,16 +37,19 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final List<NodeInfo> nodeInfo;
     private final int enabledServices;
     private final List<BucketCapabilities> bucketCapabilities;
+    private final NetworkAddress origin;
+
     private volatile String useAlternateNetwork;
 
     protected AbstractBucketConfig(String uuid, String name, BucketNodeLocator locator, String uri, String streamingUri,
-        List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities) {
+        List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities,  NetworkAddress origin) {
         this.uuid = uuid;
         this.name = name;
         this.locator = locator;
         this.uri = uri;
         this.streamingUri = streamingUri;
         this.bucketCapabilities = bucketCapabilities;
+        this.origin = origin;
         this.nodeInfo = portInfos == null ? nodeInfos : nodeInfoFromExtended(portInfos, nodeInfos);
         int es = 0;
         for (NodeInfo info : nodeInfo) {
@@ -78,8 +81,8 @@ public abstract class AbstractBucketConfig implements BucketConfig {
                     hostname = nodeInfos.get(i).hostname();
                 } else {
                     // If hostname missing, then node configured using localhost
-                    LOGGER.debug("Hostname is for nodesExt[{}] is not available, falling back to localhost.", i);
-                    hostname = NetworkAddress.localhost();
+                    LOGGER.debug("Hostname is for nodesExt[{}] is not available, falling back to origin.", i);
+                    hostname = origin;
                 }
             }
             Map<ServiceType, Integer> ports = nodesExt.get(i).ports();

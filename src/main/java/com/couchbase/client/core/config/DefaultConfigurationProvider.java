@@ -370,7 +370,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 return;
             }
 
-            BucketConfig config = BucketConfigParser.parse(ctx.config(), environment);
+            BucketConfig config = BucketConfigParser.parse(ctx.config(), environment, ctx.origin());
             upsertBucketConfig(config);
         } catch (Exception ex) {
             LOGGER.warn("Could not read proposed configuration, ignoring. Message: {}", ex.getMessage());

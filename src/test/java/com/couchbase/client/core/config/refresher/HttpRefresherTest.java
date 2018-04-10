@@ -76,7 +76,7 @@ public class HttpRefresherTest {
             .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
                 public BucketConfig call(ProposedBucketConfigContext ctx) {
-                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class), null);
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -118,7 +118,7 @@ public class HttpRefresherTest {
             .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
                 public BucketConfig call(ProposedBucketConfigContext ctx) {
-                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class), null);
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -163,7 +163,7 @@ public class HttpRefresherTest {
             .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
                 public BucketConfig call(ProposedBucketConfigContext ctx) {
-                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class), null);
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -203,7 +203,7 @@ public class HttpRefresherTest {
             .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
                 public BucketConfig call(ProposedBucketConfigContext ctx) {
-                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class), null);
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
