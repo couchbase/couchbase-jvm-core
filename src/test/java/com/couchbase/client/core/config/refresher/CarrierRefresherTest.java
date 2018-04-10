@@ -22,6 +22,7 @@ import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
 import com.couchbase.client.core.config.DefaultNodeInfo;
 import com.couchbase.client.core.config.NodeInfo;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.CoreScheduler;
@@ -36,6 +37,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import rx.Observable;
@@ -52,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -107,7 +110,7 @@ public class CarrierRefresherTest {
 
         Thread.sleep(1500);
 
-        verify(provider, times(1)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(1)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals(0, bufRef.get().refCnt());
     }
 
@@ -141,7 +144,8 @@ public class CarrierRefresherTest {
 
         Thread.sleep(1500);
 
-        verify(provider, never()).proposeBucketConfig("bucket", "");
+        ProposedBucketConfigContext ctx = new ProposedBucketConfigContext("bucket", "", null);
+        verify(provider, never()).proposeBucketConfig(ctx);
         assertEquals(0, content.refCnt());
     }
 
@@ -180,7 +184,7 @@ public class CarrierRefresherTest {
 
         Thread.sleep(200);
 
-        verify(provider, times(1)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(1)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals(0, content.refCnt());
     }
 
@@ -220,7 +224,8 @@ public class CarrierRefresherTest {
 
         Thread.sleep(200);
 
-        verify(provider, never()).proposeBucketConfig("bucket", "");
+        ProposedBucketConfigContext ctx = new ProposedBucketConfigContext("bucket", "", null);
+        verify(provider, never()).proposeBucketConfig(ctx);
         assertEquals(0, content.refCnt());
     }
 
@@ -263,7 +268,7 @@ public class CarrierRefresherTest {
 
         Thread.sleep(1500);
 
-        verify(provider, times(1)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(1)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals(0, content.refCnt());
     }
 
@@ -298,7 +303,7 @@ public class CarrierRefresherTest {
 
         Thread.sleep(1500);
 
-        verify(provider, times(1)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(1)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals(0, content.refCnt());
     }
 
@@ -334,7 +339,7 @@ public class CarrierRefresherTest {
 
         Thread.sleep(1500);
 
-        verify(provider, times(1)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(1)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals(0, content.refCnt());
     }
 
@@ -545,7 +550,7 @@ public class CarrierRefresherTest {
         refresher.refresh(clusterConfig);
         Thread.sleep(500);
 
-        verify(provider, times(4)).proposeBucketConfig("bucket", "{\"config\": true}");
+        verify(provider, times(4)).proposeBucketConfig(any(ProposedBucketConfigContext.class));
         assertEquals("1.2.3.4", nodesRequested.get(0));
         assertEquals("2.3.4.5", nodesRequested.get(1));
         assertEquals("1.2.3.4", nodesRequested.get(2));

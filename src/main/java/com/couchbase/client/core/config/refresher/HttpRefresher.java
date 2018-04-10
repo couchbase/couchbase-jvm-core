@@ -19,11 +19,13 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
+import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -103,17 +105,18 @@ public class HttpRefresher extends AbstractRefresher {
      * @param response the response source observable to resubscribe if needed.
      */
     private void repeatConfigUntilUnsubscribed(final String name, Observable<BucketStreamingResponse> response) {
-        response.flatMap(new Func1<BucketStreamingResponse, Observable<String>>() {
+        response.flatMap(new Func1<BucketStreamingResponse, Observable<ProposedBucketConfigContext>>() {
             @Override
-            public Observable<String> call(final BucketStreamingResponse response) {
+            public Observable<ProposedBucketConfigContext> call(final BucketStreamingResponse response) {
                 LOGGER.debug("Config stream started for {} on {}.", name, response.host());
 
                 return response
                     .configs()
-                    .map(new Func1<String, String>() {
+                    .map(new Func1<String, ProposedBucketConfigContext>() {
                         @Override
-                        public String call(String s) {
-                            return s.replace("$HOST", response.host());
+                        public ProposedBucketConfigContext call(String s) {
+                            String raw = s.replace("$HOST", response.host());
+                            return new ProposedBucketConfigContext(name, raw, NetworkAddress.create(response.host()));
                         }
                     })
                     .doOnCompleted(new Action0() {
@@ -140,10 +143,10 @@ public class HttpRefresher extends AbstractRefresher {
                     }
                 });
             }
-        }).subscribe(new Action1<String>() {
+        }).subscribe(new Action1<ProposedBucketConfigContext>() {
             @Override
-            public void call(String rawConfig) {
-                pushConfig(rawConfig);
+            public void call(ProposedBucketConfigContext ctx) {
+                pushConfig(ctx);
             }
         });
     }

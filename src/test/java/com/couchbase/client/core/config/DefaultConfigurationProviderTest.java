@@ -80,7 +80,7 @@ public class DefaultConfigurationProviderTest {
             .thenReturn(Observable.just(Tuple.create(LoaderType.Carrier, bucketConfig)));
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
@@ -114,7 +114,7 @@ public class DefaultConfigurationProviderTest {
         errorSubject.onError(new IllegalStateException());
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
@@ -139,7 +139,7 @@ public class DefaultConfigurationProviderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
@@ -205,7 +205,7 @@ public class DefaultConfigurationProviderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
@@ -262,7 +262,7 @@ public class DefaultConfigurationProviderTest {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
@@ -344,7 +344,7 @@ public class DefaultConfigurationProviderTest {
 
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
@@ -384,7 +384,7 @@ public class DefaultConfigurationProviderTest {
         errorSubject.onError(new IllegalStateException());
 
         final Refresher refresher = mock(Refresher.class);
-        when(refresher.configs()).thenReturn(Observable.<String>empty());
+        when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
         when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
@@ -422,7 +422,7 @@ public class DefaultConfigurationProviderTest {
 
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         raw = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", raw, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(1, provider.config().bucketConfig("default").rev());
@@ -439,13 +439,13 @@ public class DefaultConfigurationProviderTest {
         provider.seedHosts(seeds, true);
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         String v1 = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, v1);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v1, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(1, provider.config().bucketConfig("default").rev());
 
         String v2 = raw.replace("$REV", "2");
-        provider.proposeBucketConfig(null, v2);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v2, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(2, provider.config().bucketConfig("default").rev());
@@ -465,18 +465,18 @@ public class DefaultConfigurationProviderTest {
 
 
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
-        provider.proposeBucketConfig(null, raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", raw, null));
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String v1 = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, v1);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v1, null));
         assertFalse(provider.config().bucketConfigs().isEmpty());
 
-        provider.proposeBucketConfig(null, raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", raw, null));
         assertFalse(provider.config().bucketConfigs().isEmpty());
 
         String v2 = raw.replace("$REV", "2");
-        provider.proposeBucketConfig(null, v2);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v2, null));
         assertFalse(provider.config().bucketConfigs().isEmpty());
 
         assertEquals(2, provider.config().bucketConfig("default").rev());
@@ -494,13 +494,13 @@ public class DefaultConfigurationProviderTest {
 
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         String v2 = raw.replace("$REV", "2");
-        provider.proposeBucketConfig(null, v2);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v2, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(2, provider.config().bucketConfig("default").rev());
 
         String v1 = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, v1);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v1, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(2, provider.config().bucketConfig("default").rev());
@@ -521,19 +521,19 @@ public class DefaultConfigurationProviderTest {
 
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         String v1 = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, v1);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v1, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(1, provider.config().bucketConfig("default").rev());
 
         String v2 = raw.replace("$REV", "1");
-        provider.proposeBucketConfig(null, v2);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v2, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(1, provider.config().bucketConfig("default").rev());
 
         String v3 = raw.replace("$REV", "2");
-        provider.proposeBucketConfig(null, v3);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("default", v3, null));
 
         assertFalse(provider.config().bucketConfigs().isEmpty());
         assertEquals(2, provider.config().bucketConfig("default").rev());
@@ -563,7 +563,7 @@ public class DefaultConfigurationProviderTest {
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String raw = Resources.read("config_with_external.json", getClass());
-        provider.proposeBucketConfig("bucket", raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("bucket", raw, null));
 
         assertNull(provider.config().bucketConfig("default").useAlternateNetwork());
     }
@@ -588,7 +588,7 @@ public class DefaultConfigurationProviderTest {
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String raw = Resources.read("config_with_external.json", getClass());
-        provider.proposeBucketConfig("bucket", raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("bucket", raw, null));
 
         assertNotNull(provider.config().bucketConfig("default").useAlternateNetwork());
     }
@@ -617,7 +617,7 @@ public class DefaultConfigurationProviderTest {
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String raw = Resources.read("config_with_external.json", getClass());
-        provider.proposeBucketConfig("bucket", raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("bucket", raw, null));
 
         assertNotNull(provider.config().bucketConfig("default").useAlternateNetwork());
     }
@@ -645,7 +645,7 @@ public class DefaultConfigurationProviderTest {
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String raw = Resources.read("config_with_external.json", getClass());
-        provider.proposeBucketConfig("bucket", raw);
+        provider.proposeBucketConfig(new ProposedBucketConfigContext("bucket", raw, null));
 
         assertNull(provider.config().bucketConfig("default").useAlternateNetwork());
     }

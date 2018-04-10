@@ -195,15 +195,15 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                     refresher.provider(DefaultConfigurationProvider.this);
                 }
             })
-            .flatMap(new Func1<Refresher, Observable<String>>() {
+            .flatMap(new Func1<Refresher, Observable<ProposedBucketConfigContext>>() {
                 @Override
-                public Observable<String> call(Refresher refresher) {
+                public Observable<ProposedBucketConfigContext> call(Refresher refresher) {
                     return refresher.configs();
                 }
-            }).subscribe(new Action1<String>() {
+            }).subscribe(new Action1<ProposedBucketConfigContext>() {
                 @Override
-                public void call(String bucketConfig) {
-                    proposeBucketConfig(null, bucketConfig);
+                public void call(ProposedBucketConfigContext ctx) {
+                    proposeBucketConfig(ctx);
                 }
             });
     }
@@ -351,15 +351,15 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public void proposeBucketConfig(String bucket, String rawConfig) {
+    public void proposeBucketConfig(ProposedBucketConfigContext ctx) {
         try {
-            LOGGER.debug("New Bucket {} config proposed.", bucket);
+            LOGGER.debug("New Bucket {} config proposed.", ctx.bucketName());
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("Proposed raw config is {}", rawConfig);
+                LOGGER.trace("Proposed raw config is {}", ctx.config());
             }
 
-            JsonNode configNodes = DefaultObjectMapper.readTree(rawConfig);
-            String bucketName = bucket == null ? configNodes.get("name").textValue() : bucket;
+            JsonNode configNodes = DefaultObjectMapper.readTree(ctx.config());
+            String bucketName = ctx.bucketName() == null ? configNodes.get("name").textValue() : ctx.bucketName();
 
             JsonNode revNode = configNodes.get("rev");
             long newRev = revNode == null ? 0 : revNode.asLong();
@@ -370,7 +370,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                 return;
             }
 
-            BucketConfig config = BucketConfigParser.parse(rawConfig, environment);
+            BucketConfig config = BucketConfigParser.parse(ctx.config(), environment);
             upsertBucketConfig(config);
         } catch (Exception ex) {
             LOGGER.warn("Could not read proposed configuration, ignoring. Message: {}", ex.getMessage());

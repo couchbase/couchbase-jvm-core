@@ -17,6 +17,7 @@ package com.couchbase.client.core.config.refresher;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
@@ -72,10 +73,10 @@ public class HttpRefresherTest {
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs()
-            .map(new Func1<String, BucketConfig>() {
+            .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
-                public BucketConfig call(String s) {
-                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                public BucketConfig call(ProposedBucketConfigContext ctx) {
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -114,10 +115,10 @@ public class HttpRefresherTest {
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs()
-            .map(new Func1<String, BucketConfig>() {
+            .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
-                public BucketConfig call(String s) {
-                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                public BucketConfig call(ProposedBucketConfigContext ctx) {
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -159,10 +160,10 @@ public class HttpRefresherTest {
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs()
-            .map(new Func1<String, BucketConfig>() {
+            .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
-                public BucketConfig call(String s) {
-                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                public BucketConfig call(ProposedBucketConfigContext ctx) {
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
                 }
             })
             .subscribe(new Action1<BucketConfig>() {
@@ -199,10 +200,10 @@ public class HttpRefresherTest {
 
         final CountDownLatch latch = new CountDownLatch(3);
         refresher.configs()
-            .map(new Func1<String, BucketConfig>() {
+            .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
-                public BucketConfig call(String s) {
-                    return BucketConfigParser.parse(s, mock(CoreEnvironment.class));
+                public BucketConfig call(ProposedBucketConfigContext ctx) {
+                    return BucketConfigParser.parse(ctx.config(), mock(CoreEnvironment.class));
                 }
             })
             .subscribe(new Action1<BucketConfig>() {

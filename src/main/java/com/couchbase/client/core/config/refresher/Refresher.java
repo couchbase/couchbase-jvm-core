@@ -18,6 +18,7 @@ package com.couchbase.client.core.config.refresher;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import rx.Observable;
 
 /**
@@ -36,7 +37,7 @@ public interface Refresher {
      *
      * @return the config observable.
      */
-    Observable<String> configs();
+    Observable<ProposedBucketConfigContext> configs();
 
     /**
      * Registers a bucket to be watched for new configurations.

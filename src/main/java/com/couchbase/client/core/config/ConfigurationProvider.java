@@ -79,7 +79,12 @@ public interface ConfigurationProvider {
      */
     Observable<Boolean> shutdown();
 
-    void proposeBucketConfig(String bucket, String config);
+    /**
+     * Propose a new bucket config with surrounding context.
+     *
+     * @param ctx the raw config including context.
+     */
+    void proposeBucketConfig(ProposedBucketConfigContext ctx);
 
     void signalOutdated();
 }

@@ -19,6 +19,7 @@ package com.couchbase.client.core;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.env.CoreEnvironment;
@@ -74,7 +75,8 @@ public class ResponseHandlerTest {
         retryEvent.setObservable(mock(Subject.class));
         handler.onEvent(retryEvent, 1, true);
 
-        verify(providerMock, times(1)).proposeBucketConfig("bucket", "{\"json\": true}");
+        ProposedBucketConfigContext ctx = new ProposedBucketConfigContext("bucket", "{\"json\": true}", null);
+        verify(providerMock, times(1)).proposeBucketConfig(ctx);
         assertEquals(0, config.refCnt());
         assertNull(retryEvent.getMessage());
         assertNull(retryEvent.getObservable());
@@ -93,7 +95,8 @@ public class ResponseHandlerTest {
         retryEvent.setObservable(mock(Subject.class));
         handler.onEvent(retryEvent, 1, true);
 
-        verify(providerMock, never()).proposeBucketConfig("bucket", "Not my Vbucket");
+        ProposedBucketConfigContext ctx = new ProposedBucketConfigContext("bucket", "Not my Vbucket", null);
+        verify(providerMock, never()).proposeBucketConfig(ctx);
         assertEquals(0, config.refCnt());
         assertNull(retryEvent.getMessage());
         assertNull(retryEvent.getObservable());

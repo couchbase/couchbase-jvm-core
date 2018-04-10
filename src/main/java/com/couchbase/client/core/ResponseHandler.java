@@ -18,6 +18,7 @@ package com.couchbase.client.core;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
@@ -28,6 +29,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.kv.BinaryResponse;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorTwoArg;
 import io.netty.util.CharsetUtil;
@@ -147,7 +149,15 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                     try {
                         String config = response.content().toString(CharsetUtil.UTF_8).trim();
                         if (config.startsWith("{")) {
-                            configurationProvider.proposeBucketConfig(response.bucket(), config);
+                            NetworkAddress origin = null;
+                            if (request != null && request.dispatchHostname() != null) {
+                                origin = NetworkAddress.create(request.dispatchHostname());
+                            }
+                            configurationProvider.proposeBucketConfig(new ProposedBucketConfigContext(
+                                response.bucket(),
+                                config,
+                                origin
+                            ));
                         }
                     } finally {
                         response.content().release();

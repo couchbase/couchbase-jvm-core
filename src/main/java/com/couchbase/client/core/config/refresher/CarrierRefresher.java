@@ -20,6 +20,7 @@ import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.NodeInfo;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
@@ -155,9 +156,9 @@ public class CarrierRefresher extends AbstractRefresher {
                     }
                     return allowed;
                 }
-            }).flatMap(new Func1<Long, Observable<String>>() {
+            }).flatMap(new Func1<Long, Observable<ProposedBucketConfigContext>>() {
                 @Override
-                public Observable<String> call(Long aLong) {
+                public Observable<ProposedBucketConfigContext> call(Long aLong) {
                     List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>(config.nodes());
                     if (nodeInfos.isEmpty()) {
                         LOGGER.debug("Cannot poll bucket, because node list contains no nodes.");
@@ -166,7 +167,7 @@ public class CarrierRefresher extends AbstractRefresher {
                     shiftNodeList(nodeInfos);
                     return buildRefreshFallbackSequence(nodeInfos, bucketName);
                 }
-            }).subscribe(new Subscriber<String>() {
+            }).subscribe(new Subscriber<ProposedBucketConfigContext>() {
                 @Override
                 public void onCompleted() {
                     LOGGER.debug("Completed polling for bucket \"{}\".", bucketName);
@@ -178,9 +179,9 @@ public class CarrierRefresher extends AbstractRefresher {
                 }
 
                 @Override
-                public void onNext(String rawConfig) {
-                    if (rawConfig.startsWith("{")) {
-                        provider().proposeBucketConfig(bucketName, rawConfig);
+                public void onNext(ProposedBucketConfigContext ctx) {
+                    if (ctx.config().startsWith("{")) {
+                        provider().proposeBucketConfig(ctx);
                     }
                 }
             });
@@ -228,8 +229,8 @@ public class CarrierRefresher extends AbstractRefresher {
                         return;
                     }
                     shiftNodeList(nodeInfos);
-                    Observable<String> refreshSequence = buildRefreshFallbackSequence(nodeInfos, bucketName);
-                    refreshSequence.subscribe(new Subscriber<String>() {
+                    Observable<ProposedBucketConfigContext> refreshSequence = buildRefreshFallbackSequence(nodeInfos, bucketName);
+                    refreshSequence.subscribe(new Subscriber<ProposedBucketConfigContext>() {
                         @Override
                         public void onCompleted() {
                             LOGGER.debug("Completed refreshing config for bucket \"{}\"", bucketName);
@@ -241,9 +242,9 @@ public class CarrierRefresher extends AbstractRefresher {
                         }
 
                         @Override
-                        public void onNext(String rawConfig) {
-                            if (rawConfig.startsWith("{")) {
-                                provider().proposeBucketConfig(config.name(), rawConfig);
+                        public void onNext(ProposedBucketConfigContext ctx) {
+                            if (ctx.config().startsWith("{")) {
+                                provider().proposeBucketConfig(ctx);
                             }
                         }
                     });
@@ -258,8 +259,8 @@ public class CarrierRefresher extends AbstractRefresher {
      * @param bucketName the name of the bucket.
      * @return an observable containing flatMapped failback sequences.
      */
-    private Observable<String> buildRefreshFallbackSequence(List<NodeInfo> nodeInfos, String bucketName) {
-        Observable<String> failbackSequence = null;
+    private Observable<ProposedBucketConfigContext> buildRefreshFallbackSequence(List<NodeInfo> nodeInfos, String bucketName) {
+        Observable<ProposedBucketConfigContext> failbackSequence = null;
         for (final NodeInfo nodeInfo : nodeInfos) {
             if (!isValidCarrierNode(environment.sslEnabled(), nodeInfo)) {
                 continue;
@@ -324,7 +325,7 @@ public class CarrierRefresher extends AbstractRefresher {
      * @param hostname the hostname of the node to fetch from.
      * @return a raw configuration or an error.
      */
-    private Observable<String> refreshAgainstNode(final String bucketName, final NetworkAddress hostname) {
+    private Observable<ProposedBucketConfigContext> refreshAgainstNode(final String bucketName, final NetworkAddress hostname) {
         return Buffers.wrapColdWithAutoRelease(Observable.defer(new Func0<Observable<GetBucketConfigResponse>>() {
             @Override
             public Observable<GetBucketConfigResponse> call() {
@@ -342,14 +343,16 @@ public class CarrierRefresher extends AbstractRefresher {
                 }
             }
         })
-        .map(new Func1<GetBucketConfigResponse, String>() {
+        .map(new Func1<GetBucketConfigResponse, ProposedBucketConfigContext>() {
             @Override
-            public String call(GetBucketConfigResponse response) {
+            public ProposedBucketConfigContext call(GetBucketConfigResponse response) {
                 String raw = response.content().toString(CharsetUtil.UTF_8).trim();
                 if (response.content().refCnt() > 0) {
                     response.content().release();
                 }
-                return raw.replace("$HOST", response.hostname().address());
+
+                raw = raw.replace("$HOST", response.hostname().address());
+                return new ProposedBucketConfigContext(bucketName, raw, hostname);
             }
         })
         .doOnError(new Action1<Throwable>() {

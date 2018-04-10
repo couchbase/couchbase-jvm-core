@@ -19,6 +19,7 @@ import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ConfigurationProvider;
+import com.couchbase.client.core.config.ProposedBucketConfigContext;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
@@ -46,7 +47,7 @@ public abstract  class AbstractRefresher implements Refresher {
     /**
      * The config stream where the provider subscribes to.
      */
-    private final Subject<String, String> configStream;
+    private final Subject<ProposedBucketConfigContext, ProposedBucketConfigContext> configStream;
 
     /**
      * Cluster reference so that implementations can call requests.
@@ -67,7 +68,7 @@ public abstract  class AbstractRefresher implements Refresher {
      */
     protected AbstractRefresher(final CoreEnvironment env, final ClusterFacade cluster) {
         this.env = env;
-        this.configStream = PublishSubject.<String>create().toSerialized();
+        this.configStream = PublishSubject.<ProposedBucketConfigContext>create().toSerialized();
         this.cluster = cluster;
         registrations = new ConcurrentHashMap<String, Credential>();
     }
@@ -99,18 +100,18 @@ public abstract  class AbstractRefresher implements Refresher {
     }
 
     @Override
-    public Observable<String> configs() {
+    public Observable<ProposedBucketConfigContext> configs() {
         return configStream;
     }
 
     /**
      * Push a {@link BucketConfig} into the config stream.
      *
-     * @param config the config to push.
+     * @param ctx the config context to push.
      */
-    protected void pushConfig(final String config) {
+    protected void pushConfig(final ProposedBucketConfigContext ctx) {
         try {
-            configStream.onNext(config);
+            configStream.onNext(ctx);
         } catch (Exception e) {
             LOGGER.warn("Exception while pushing new configuration - ignoring.", e);
         }
