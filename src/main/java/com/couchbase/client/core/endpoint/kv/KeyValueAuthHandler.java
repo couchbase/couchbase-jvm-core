@@ -237,6 +237,10 @@ public class KeyValueAuthHandler
         msg.content().readBytes(response);
         byte[] evaluatedBytes = saslClient.evaluateChallenge(response);
 
+        
+        // This condition is needed for evaluate SASL Step Response. 
+        // After saslClient.evaluateChallenge(), if SaslException is not thrown and 
+        // if ShaSaslClient.serverFinalMessage is not null, authentication is completed
         if (saslClient.isComplete()) {
             checkIsAuthed(msg);
             return;
