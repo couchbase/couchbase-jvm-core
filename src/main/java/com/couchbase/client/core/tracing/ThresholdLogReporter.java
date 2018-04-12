@@ -468,7 +468,7 @@ public class ThresholdLogReporter {
 
                 String spanId = span.request().operationId();
                 if (spanId != null) {
-                    entry.put("operation_id", spanId);
+                    entry.put("last_operation_id", spanId);
                 }
 
                 String operationName = span.operationName();
