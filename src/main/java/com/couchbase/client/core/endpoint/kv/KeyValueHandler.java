@@ -329,14 +329,11 @@ public class KeyValueHandler
 
         ByteBuf compressedContent;
         try {
-            if (request.content().hasArray()) {
-                compressedContent = Unpooled.wrappedBuffer(Snappy.compress(request.content().array()));
-            } else {
-                // We don't support bytebuf encoding yet.. we can add it later but
-                // our encoding path is unpooled heap buffers anyways...
-                LOGGER.debug("Request content is not array backed, not encoding.");
-                return;
-            }
+            byte[] data = new byte[request.content().readableBytes()];
+            int readerIdx = request.content().readerIndex();
+            request.content().readBytes(data);
+            request.content().readerIndex(readerIdx);
+            compressedContent = Unpooled.wrappedBuffer(Snappy.compress(data));
         } catch (Exception ex) {
             throw new RuntimeException("Could not snappy-compress value.", ex);
         }
