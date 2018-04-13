@@ -338,7 +338,7 @@ public class KeyValueHandler
             throw new RuntimeException("Could not snappy-compress value.", ex);
         }
 
-        double ratio = compressedContent.readableBytes() / uncompressedLength;
+        double ratio = (double) compressedContent.readableBytes() / uncompressedLength;
         if (ratio > minCompressionRatio) {
             // compressed is not smaller per ratio, so just send the original
             compressedContent.release();
