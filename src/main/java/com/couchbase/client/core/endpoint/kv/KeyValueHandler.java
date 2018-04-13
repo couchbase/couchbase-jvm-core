@@ -102,6 +102,7 @@ import io.netty.util.IllegalReferenceCountException;
 import org.iq80.snappy.Snappy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
@@ -329,20 +330,12 @@ public class KeyValueHandler
 
         ByteBuf compressedContent;
         try {
-            byte[] data = new byte[request.content().readableBytes()];
-            int readerIdx = request.content().readerIndex();
-            request.content().readBytes(data);
-            request.content().readerIndex(readerIdx);
-            compressedContent = Unpooled.wrappedBuffer(Snappy.compress(data));
+            compressedContent = tryCompress(request.content());
         } catch (Exception ex) {
             throw new RuntimeException("Could not snappy-compress value.", ex);
         }
 
-        double ratio = (double) compressedContent.readableBytes() / uncompressedLength;
-        if (ratio > minCompressionRatio) {
-            // compressed is not smaller per ratio, so just send the original
-            compressedContent.release();
-        } else {
+        if (compressedContent != null) {
             // compressed is smaller, so adapt and apply new content
             request.setDataType((byte)(request.getDataType() | DATATYPE_SNAPPY));
             request.setContent(compressedContent);
@@ -352,6 +345,36 @@ public class KeyValueHandler
                     + compressedContent.readableBytes()
             );
         }
+    }
+
+    /**
+     * Returns a new buffer with the Snappy-compressed contents of the given buffer starting from the reader index,
+     * or {@code null} if the compression ratio is not satisfactory.
+     */
+    private ByteBuf tryCompress(ByteBuf buf) {
+        final int uncompressedLength = buf.readableBytes();
+        final byte[] compressed = new byte[Snappy.maxCompressedLength(uncompressedLength)];
+        final int compressedLength;
+
+        if (buf.hasArray()) {
+            // Save a memory copy by reading directly from the backing array.
+            compressedLength = Snappy.compress(
+                    buf.array(), buf.arrayOffset() + buf.readerIndex(), uncompressedLength, compressed, 0);
+        } else {
+            final byte[] data = new byte[buf.readableBytes()];
+            buf.getBytes(buf.readerIndex(), data);
+            compressedLength = Snappy.compress(data, 0, data.length, compressed, 0);
+        }
+
+        final double ratio = (double) compressedLength / uncompressedLength;
+        if (ratio > minCompressionRatio) {
+            // Compression doesn't make enough of a difference.
+            return null;
+        }
+
+        // Save a memory copy by deferring trimming until we know the result will be used.
+        final byte[] trimmedCompressed = Arrays.copyOf(compressed, compressedLength);
+        return Unpooled.wrappedBuffer(trimmedCompressed);
     }
 
     /**
