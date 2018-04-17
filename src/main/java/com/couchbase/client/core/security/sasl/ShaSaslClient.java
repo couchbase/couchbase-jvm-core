@@ -116,7 +116,12 @@ public class ShaSaslClient implements SaslClient {
             serverFirstMessage = new String(challenge);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
-            decodeAttributes(attributes, serverFirstMessage);
+            try {
+                decodeAttributes(attributes, serverFirstMessage);
+            } catch (Exception ex) {
+                throw new SaslException("Could not decode attributes from server message \""
+                    + serverFirstMessage + "\"", ex);
+            }
 
             for (Map.Entry<String, String> entry : attributes.entrySet()) {
                 switch (entry.getKey().charAt(0)) {
@@ -149,7 +154,12 @@ public class ShaSaslClient implements SaslClient {
             serverFinalMessage = new String(challenge);
 
             HashMap<String, String> attributes = new HashMap<String, String>();
-            decodeAttributes(attributes, serverFinalMessage);
+            try {
+                decodeAttributes(attributes, serverFinalMessage);
+            } catch (Exception ex) {
+                throw new SaslException("Could not decode attributes from server message \""
+                    + serverFinalMessage + "\"", ex);
+            }
 
             if (attributes.containsKey("e")) {
                 throw new SaslException("Authentication failure: " + attributes.get("e"));
