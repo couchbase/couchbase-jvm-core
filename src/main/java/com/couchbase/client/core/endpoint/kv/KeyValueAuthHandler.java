@@ -174,7 +174,11 @@ public class KeyValueAuthHandler
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (msg.getOpcode() == SASL_LIST_MECHS_OPCODE) {
             handleListMechsResponse(ctx, msg);
-        } else if (msg.getOpcode() == SASL_AUTH_OPCODE || msg.getOpcode() == SASL_STEP_OPCODE) {
+        }
+        // It is necessary to call handleAuthResponse() for evaluate Auth Response and
+        // Step Response returned by the server. If this step is not done, the client
+        // doesn't authenticate the server.
+        else if (msg.getOpcode() == SASL_AUTH_OPCODE || msg.getOpcode() == SASL_STEP_OPCODE) {
             handleAuthResponse(ctx, msg);
         }
     }
@@ -287,7 +291,8 @@ public class KeyValueAuthHandler
     }
 
     /**
-     * Once authentication is completed, check the response and react appropriately to the upper layers.
+     * Once authentication is completed, check the response and react appropriately
+     * to the upper layers.
      *
      * @param msg the incoming message to investigate.
      */
