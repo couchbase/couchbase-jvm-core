@@ -190,15 +190,15 @@ public class KeyValueLocator implements Locator {
         if (nodeId == DefaultCouchbaseBucketConfig.PARTITION_NOT_EXISTENT) {
             if (request instanceof ReplicaGetRequest) {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                        + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + name));
+                        + ((ReplicaGetRequest) request).replica() + " not configured for bucket " + name, null));
                 return;
             } else if (request instanceof ObserveRequest) {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                        + ((ObserveRequest) request).replica() + " not configured for bucket " + name));
+                        + ((ObserveRequest) request).replica() + " not configured for bucket " + name, ((ObserveRequest) request).cas()));
                 return;
             } else if (request instanceof ObserveSeqnoRequest) {
                 request.observable().onError(new ReplicaNotConfiguredException("Replica number "
-                        + ((ObserveSeqnoRequest) request).replica() + " not configured for bucket " + name));
+                        + ((ObserveSeqnoRequest) request).replica() + " not configured for bucket " + name, ((ObserveSeqnoRequest) request).cas()));
                 return;
             }
 
@@ -209,15 +209,16 @@ public class KeyValueLocator implements Locator {
         if (nodeId == -1) {
             if (request instanceof ObserveRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
-                        + ((ObserveRequest) request).replica() + " not available for bucket " + name));
+                        + ((ObserveRequest) request).replica() + " not available for bucket " + name,
+                    ((ObserveRequest) request).cas()));
                 return;
             } else if (request instanceof ReplicaGetRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
-                        + ((ReplicaGetRequest) request).replica() + " not available for bucket " + name));
+                        + ((ReplicaGetRequest) request).replica() + " not available for bucket " + name, null));
                 return;
             } else if (request instanceof ObserveSeqnoRequest) {
                 request.observable().onError(new ReplicaNotAvailableException("Replica number "
-                        + ((ObserveSeqnoRequest) request).replica() + " not available for bucket " + name));
+                        + ((ObserveSeqnoRequest) request).replica() + " not available for bucket " + name, ((ObserveSeqnoRequest) request).cas()));
                 return;
             }
 

@@ -21,21 +21,23 @@ package com.couchbase.client.core;
  * @author Michael Nitschinger
  * @since 1.1.0
  */
-public class DocumentConcurrentlyModifiedException extends CouchbaseException {
+public class DocumentConcurrentlyModifiedException
+    extends CouchbaseException
+    implements OriginalMutationResult {
 
-    public DocumentConcurrentlyModifiedException() {
-        super();
-    }
+    private final Long cas;
 
-    public DocumentConcurrentlyModifiedException(String message) {
+    public DocumentConcurrentlyModifiedException(final String message, final Long cas) {
         super(message);
+        this.cas = cas;
     }
 
-    public DocumentConcurrentlyModifiedException(String message, Throwable cause) {
-        super(message, cause);
+    @Override
+    public long mutationCas() {
+        if (cas == null) {
+            throw new IllegalStateException("Mutation CAS not available");
+        }
+        return cas;
     }
 
-    public DocumentConcurrentlyModifiedException(Throwable cause) {
-        super(cause);
-    }
 }

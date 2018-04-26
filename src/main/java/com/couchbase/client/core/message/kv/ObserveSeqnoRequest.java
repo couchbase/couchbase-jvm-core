@@ -27,7 +27,13 @@ public class ObserveSeqnoRequest extends AbstractKeyValueRequest {
     private final boolean master;
     private final short replica;
 
-    public ObserveSeqnoRequest(long vbucketUUID, boolean master, short replica, String key, String bucket) {
+    /**
+     * The cas value from the original mutation. Used to propagate it
+     * to the user later on (not used for actual polling).
+     */
+    private final long cas;
+
+    public ObserveSeqnoRequest(long vbucketUUID, boolean master, short replica, String key, String bucket, long cas) {
         super(key, bucket);
         if (master && replica > 0) {
             throw new IllegalArgumentException("Either master or a replica node needs to be given");
@@ -36,6 +42,7 @@ public class ObserveSeqnoRequest extends AbstractKeyValueRequest {
         this.vbucketUUID = vbucketUUID;
         this.master = master;
         this.replica = replica;
+        this.cas = cas;
     }
 
     public long vbucketUUID() {
@@ -50,4 +57,7 @@ public class ObserveSeqnoRequest extends AbstractKeyValueRequest {
         return master;
     }
 
+    public long cas() {
+        return cas;
+    }
 }

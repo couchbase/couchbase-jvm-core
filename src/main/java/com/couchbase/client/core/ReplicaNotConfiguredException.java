@@ -22,21 +22,22 @@ package com.couchbase.client.core;
  * @author Michael Nitschinger
  * @since 1.0.0
  */
-public class ReplicaNotConfiguredException extends CouchbaseException {
+public class ReplicaNotConfiguredException
+    extends CouchbaseException
+    implements OriginalMutationResult {
 
-    public ReplicaNotConfiguredException() {
-        super();
-    }
+    private final Long cas;
 
-    public ReplicaNotConfiguredException(String message) {
+    public ReplicaNotConfiguredException(final String message, final Long cas) {
         super(message);
+        this.cas = cas;
     }
 
-    public ReplicaNotConfiguredException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ReplicaNotConfiguredException(Throwable cause) {
-        super(cause);
+    @Override
+    public long mutationCas() {
+        if (cas == null) {
+            throw new IllegalStateException("Mutation CAS not available");
+        }
+        return cas;
     }
 }

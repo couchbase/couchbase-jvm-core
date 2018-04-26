@@ -190,7 +190,7 @@ public class Observe {
         if (token == null) {
             return ObserveViaCAS.call(core, bucket, id, cas, remove, persistTo, replicateTo, delay, retryStrategy);
         } else {
-            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy);
+            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy, cas);
         }
     }
 
