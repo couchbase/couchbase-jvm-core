@@ -36,7 +36,9 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Verifies the functionality of the {@link Observe} related method overloads.
@@ -231,11 +233,12 @@ public class ObserveTest extends ClusterDependentTest {
      *
      * This test can only be run if less than 3 replicas are defined on the bucket.
      */
-    @Test(expected = ReplicaNotConfiguredException.class)
+    @Test
     public void shouldFailReplicaIfLessReplicaConfigureOnBucket() {
         Assume.assumeTrue(numberOfReplicas < 3);
 
-        Observe.call(
+        try {
+            Observe.call(
                 cluster(),
                 bucket(),
                 "someDoc",
@@ -244,7 +247,11 @@ public class ObserveTest extends ClusterDependentTest {
                 Observe.PersistTo.NONE,
                 Observe.ReplicateTo.THREE,
                 BestEffortRetryStrategy.INSTANCE
-        ).timeout(5, TimeUnit.SECONDS).toBlocking().single();
+            ).timeout(5, TimeUnit.SECONDS).toBlocking().single();
+            fail("Expected a ReplicaNotConfiguredException");
+        } catch (ReplicaNotConfiguredException ex) {
+            assertEquals(1234, ex.mutationCas());
+        }
     }
 
     /**
@@ -253,11 +260,12 @@ public class ObserveTest extends ClusterDependentTest {
      *
      * This test can only be run if less than 3 replicas are defined on the bucket.
      */
-    @Test(expected = ReplicaNotConfiguredException.class)
+    @Test
     public void shouldFailPersistIfLessReplicaConfigureOnBucket() {
         Assume.assumeTrue(numberOfReplicas < 3);
 
-        Observe.call(
+        try {
+            Observe.call(
                 cluster(),
                 bucket(),
                 "someDoc",
@@ -266,7 +274,11 @@ public class ObserveTest extends ClusterDependentTest {
                 Observe.PersistTo.FOUR,
                 Observe.ReplicateTo.NONE,
                 BestEffortRetryStrategy.INSTANCE
-        ).timeout(5, TimeUnit.SECONDS).toBlocking().single();
+            ).timeout(5, TimeUnit.SECONDS).toBlocking().single();
+            fail("Expected a ReplicaNotConfiguredException");
+        } catch (ReplicaNotConfiguredException ex) {
+            assertEquals(1234, ex.mutationCas());
+        }
     }
 
 }

@@ -21,21 +21,22 @@ package com.couchbase.client.core;
  * @author Michael Nitschinger
  * @since 1.2.0
  */
-public class DocumentMutationLostException extends CouchbaseException {
+public class DocumentMutationLostException
+    extends CouchbaseException
+    implements OriginalMutationResult {
 
-    public DocumentMutationLostException() {
-        super();
-    }
+    private final Long cas;
 
-    public DocumentMutationLostException(String message) {
+    public DocumentMutationLostException(final String message, final Long cas) {
         super(message);
+        this.cas = cas;
     }
 
-    public DocumentMutationLostException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public DocumentMutationLostException(Throwable cause) {
-        super(cause);
+    @Override
+    public long mutationCas() {
+        if (cas == null) {
+            throw new IllegalStateException("Mutation CAS not available");
+        }
+        return cas;
     }
 }

@@ -149,11 +149,11 @@ public class ObserveViaCAS {
                                 }
                                 if (replicateTo.touchesReplica() && replicateTo.value() > numReplicas) {
                                     throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
-                                            "the bucket.");
+                                            "the bucket.", cas);
                                 }
                                 if (persistTo.touchesReplica() && persistTo.value() - 1 > numReplicas) {
                                     throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
-                                            "the bucket.");
+                                            "the bucket.", cas);
                                 }
                                 return numReplicas;
                             }
@@ -292,7 +292,7 @@ public class ObserveViaCAS {
                 if (!validCas) {
                     throw new DocumentConcurrentlyModifiedException("The CAS on the active node "
                             + "changed for ID \"" + id + "\", indicating it has been modified in the "
-                            + "meantime.");
+                            + "meantime.", cas);
                 }
 
                 if (status == persistIdentifier) {

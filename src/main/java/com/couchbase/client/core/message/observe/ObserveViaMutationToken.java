@@ -58,10 +58,10 @@ public class ObserveViaMutationToken {
 
     public static Observable<Boolean> call(final ClusterFacade core, final String bucket, final String id,
        final MutationToken token, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
-        final Delay delay, final RetryStrategy retryStrategy, final Span parent) {
+        final Delay delay, final RetryStrategy retryStrategy, final Span parent, final long cas) {
 
         Observable<CouchbaseResponse> observeResponses = sendObserveRequests(core, bucket, id, token, persistTo,
-                replicateTo, retryStrategy, parent);
+                replicateTo, retryStrategy, parent, cas);
 
         return observeResponses
                 .map(new Func1<CouchbaseResponse, ObserveItem>() {
@@ -76,7 +76,7 @@ public class ObserveViaMutationToken {
                         if (response instanceof FailoverObserveSeqnoResponse) {
                             FailoverObserveSeqnoResponse fr = (FailoverObserveSeqnoResponse) response;
                             if (fr.lastSeqNoReceived() < token.sequenceNumber()) {
-                                throw new DocumentMutationLostException("Document Mutation lost during a hard failover.");
+                                throw new DocumentMutationLostException("Document Mutation lost during a hard failover.", cas);
                             }
                             return ObserveItem.from(token, fr);
                         } else if (response instanceof NoFailoverObserveSeqnoResponse) {
@@ -131,7 +131,7 @@ public class ObserveViaMutationToken {
 
     private static Observable<CouchbaseResponse> sendObserveRequests(final ClusterFacade core, final String bucket, final String id,
         final MutationToken token, final Observe.PersistTo persistTo, final Observe.ReplicateTo replicateTo,
-        RetryStrategy retryStrategy, final Span parent) {
+        RetryStrategy retryStrategy, final Span parent, final long cas) {
         final boolean swallowErrors = retryStrategy.shouldRetryObserve();
         return Observable.defer(new Func0<Observable<CouchbaseResponse>>() {
             @Override
@@ -151,11 +151,11 @@ public class ObserveViaMutationToken {
                                 }
                                 if (replicateTo.touchesReplica() && replicateTo.value() > numReplicas) {
                                     throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
-                                            "the bucket.");
+                                            "the bucket.", cas);
                                 }
                                 if (persistTo.touchesReplica() && persistTo.value() - 1 > numReplicas) {
                                     throw new ReplicaNotConfiguredException("Not enough replicas configured on " +
-                                            "the bucket.");
+                                            "the bucket.", cas);
                                 }
                                 return numReplicas;
                             }
@@ -164,7 +164,7 @@ public class ObserveViaMutationToken {
                             @Override
                             public Observable<CouchbaseResponse> call(Integer replicas) {
                                 List<Observable<CouchbaseResponse>> obs = new ArrayList<Observable<CouchbaseResponse>>();
-                                final ObserveSeqnoRequest activeReq = new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket);
+                                final ObserveSeqnoRequest activeReq = new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket, cas);
                                 final CoreEnvironment env = core.ctx().environment();
                                 if (env.tracingEnabled() && parent != null) {
                                     Scope scope = env.tracer()
@@ -194,7 +194,7 @@ public class ObserveViaMutationToken {
 
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
                                     for (short i = 1; i <= replicas; i++) {
-                                        final ObserveSeqnoRequest replReq = new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket);
+                                        final ObserveSeqnoRequest replReq = new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket, cas);
                                         if (env.tracingEnabled() && parent != null) {
                                             Scope scope = env.tracer()
                                                 .buildSpan("observe_seqno")
@@ -213,8 +213,10 @@ public class ObserveViaMutationToken {
                                                     env.tracer().scopeManager()
                                                         .activate(replReq.span(), true)
                                                         .close();
-                                                }                                        }
+                                                }
+                                            }
                                         });
+
                                         if (swallowErrors) {
                                             obs.add(res.onErrorResumeNext(Observable.<CouchbaseResponse>empty()));
                                         } else {

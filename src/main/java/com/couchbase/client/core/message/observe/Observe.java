@@ -209,7 +209,7 @@ public class Observe {
         if (token == null) {
             return ObserveViaCAS.call(core, bucket, id, cas, remove, persistTo, replicateTo, delay, retryStrategy, parent);
         } else {
-            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy, parent);
+            return ObserveViaMutationToken.call(core, bucket, id, token, persistTo, replicateTo, delay, retryStrategy, parent, cas);
         }
     }
 
