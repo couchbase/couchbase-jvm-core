@@ -137,11 +137,6 @@ public abstract class AbstractDynamicService extends AbstractStateMachine<Lifecy
     @Override
     public Observable<LifecycleState> disconnect() {
         LOGGER.debug(logIdent(hostname, this) + "Got instructed to disconnect.");
-        if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
-            LOGGER.debug(logIdent(hostname, this) + "Already disconnected or disconnecting, skipping disconnect.");
-            return Observable.just(state());
-        }
-
         return Observable
                 .from(endpoints)
                 .flatMap(new Func1<Endpoint, Observable<LifecycleState>>() {

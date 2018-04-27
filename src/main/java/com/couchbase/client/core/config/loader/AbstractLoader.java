@@ -24,13 +24,18 @@ import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.AddServiceResponse;
+import com.couchbase.client.core.message.internal.RemoveServiceRequest;
+import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
+import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.net.InetAddress;
@@ -165,9 +170,22 @@ public abstract class AbstractLoader implements Loader {
                         return Observable.error(new IllegalStateException("Could not add node for config loading."));
                     }
                     LOGGER.debug("Successfully added Node {}", response.hostname());
-                    return cluster.send(
+                    return cluster.<AddServiceResponse>send(
                         new AddServiceRequest(serviceType, bucket, username, password, port(), response.hostname())
-                    );
+                    ).onErrorResumeNext(new Func1<Throwable, Observable<AddServiceResponse>>() {
+                        @Override
+                        public Observable<AddServiceResponse> call(Throwable throwable) {
+                            LOGGER.debug("Could not add service on {} because of {}, removing it again.",
+                                node, throwable);
+                            return cluster.<RemoveServiceResponse>send(new RemoveServiceRequest(serviceType, bucket, node))
+                                .map(new Func1<RemoveServiceResponse, AddServiceResponse>() {
+                                    @Override
+                                    public AddServiceResponse call(RemoveServiceResponse removeServiceResponse) {
+                                        return new AddServiceResponse(ResponseStatus.FAILURE, response.hostname());
+                                    }
+                                });
+                        }
+                    });
                 }
             }).flatMap(new Func1<AddServiceResponse, Observable<String>>() {
                 @Override
