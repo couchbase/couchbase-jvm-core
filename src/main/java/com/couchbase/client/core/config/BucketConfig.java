@@ -111,9 +111,10 @@ public interface BucketConfig {
     List<NodeInfo> nodes();
 
     /**
-     * If a config is marked as tainted.
+     * Returns true if the config indicates the cluster is undergoing
+     * a transition (such as a rebalance operation).
      *
-     * @return true if tainted.
+     * @return true if a transition is in progress.
      */
     boolean tainted();
 
@@ -140,7 +141,8 @@ public interface BucketConfig {
     boolean serviceEnabled(ServiceType type);
 
     /**
-     * If this config instance contains a fast forward map.
+     * Returns true if the config has a fast forward map that describes what the
+     * topology of the cluster will be after the current rebalance operation completes.
      *
      * @return true if it does, false otherwise.
      */
