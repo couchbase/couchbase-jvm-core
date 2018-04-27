@@ -367,8 +367,9 @@ public class ByteBufJsonParser {
         if (lastValidIndex == -1) {
             if (mode == Mode.JSON_NUMBER_VALUE && content.readableBytes() > 2) {
                 length = 1;
-                level.setCurrentValue(content.copy(readerIndex - 1, length), length);
+                level.setCurrentValue(this.content.copy(readerIndex - 1, length), length);
                 //no need to skip here
+                this.content.discardReadBytes();
                 level.emitJsonPointerValue();
             } else {
                 throw NEED_MORE_DATA;
@@ -384,24 +385,27 @@ public class ByteBufJsonParser {
 
                 length = lastValidIndex - readerIndex + 1;
                 if (shouldSaveValue) {
-                    level.setCurrentValue(content.copy(readerIndex - 1, length + 1), length);
+                    level.setCurrentValue(this.content.copy(readerIndex - 1, length + 1), length);
                     level.emitJsonPointerValue();
                 }
-                content.skipBytes(length);
+                this.content.skipBytes(length);
+                this.content.discardReadBytes();
             } else {
                 //special handling for number as they don't need structural tokens intact
                 //and the processor returns only on an unacceptable value rather than a finite state automaton
                 length = lastValidIndex - readerIndex;
                 if (length > 0) {
                     if (shouldSaveValue) {
-                        level.setCurrentValue(content.copy(readerIndex - 1, length + 1), length);
+                        level.setCurrentValue(this.content.copy(readerIndex - 1, length + 1), length);
                         level.emitJsonPointerValue();
                     }
                     this.content.skipBytes(length);
+                    this.content.discardReadBytes();
                 } else {
                     length = 1;
                     if (shouldSaveValue) {
-                        level.setCurrentValue(content.copy(readerIndex - 1, length), length);
+                        level.setCurrentValue(this.content.copy(readerIndex - 1, length), length);
+                        this.content.discardReadBytes();
                         level.emitJsonPointerValue();
                     }
                 }
@@ -427,10 +431,10 @@ public class ByteBufJsonParser {
         }
         if (lastBOMIndex > readerIndex) {
             this.content.skipBytes(lastBOMIndex - readerIndex + 1);
+            this.content.discardReadBytes();
         }
 
         this.levelStack.pop();
-        this.content.discardReadBytes();
     }
 
     /**
@@ -448,6 +452,7 @@ public class ByteBufJsonParser {
         }
         if (lastWsIndex > readerIndex) {
             this.content.skipBytes(lastWsIndex - readerIndex);
+            this.content.discardReadBytes();
         }
 
         this.currentChar = this.content.readByte();

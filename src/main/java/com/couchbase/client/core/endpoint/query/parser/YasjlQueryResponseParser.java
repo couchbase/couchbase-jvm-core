@@ -336,7 +336,7 @@ public class YasjlQueryResponseParser {
         try {
             parser.parse();
             //discard only if EOF is not thrown
-            responseContent.discardSomeReadBytes();
+            responseContent.discardReadBytes();
             LOGGER.trace("Received last chunk and completed parsing for requestId {}", requestID);
         } catch (EOFException ex) {
             //ignore as we expect chunked responses
