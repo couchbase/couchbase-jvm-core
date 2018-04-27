@@ -15,12 +15,16 @@
  */
 package com.couchbase.client.core.endpoint.query;
 
+import com.couchbase.client.core.logging.CouchbaseLogger;
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.GenericQueryResponse;
 import com.couchbase.client.core.util.Resources;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
@@ -30,16 +34,22 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.CharsetUtil;
 import org.junit.Before;
 import org.junit.Test;
+import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func2;
+import rx.subjects.AsyncSubject;
+import rx.subjects.Subject;
 
-import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Verifies the correct functionality of the {@link QueryHandlerV2} with V2 parser
@@ -48,7 +58,10 @@ import static org.mockito.Mockito.mock;
  * @since 1.4.3
  */
 public class QueryHandlerV2Test extends QueryHandlerTest {
-   @Override
+
+    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(QueryHandlerV2Test.class);
+
+    @Override
    @Before
    @SuppressWarnings("unchecked")
    public void setup() {
@@ -96,4 +109,112 @@ public class QueryHandlerV2Test extends QueryHandlerTest {
         latch.await(1, TimeUnit.SECONDS);
         assertEquals(1, invokeCounter1.get());
     }
+
+
+    @Test
+    public void shouldDiscardReadBytesOnChunkedResponse() throws Throwable {
+        String response = Resources.read("chunked.json", this.getClass());
+        ArrayList<String> chunks = new ArrayList<String>();
+        int i = 0;
+        while(i+100 < response.length()) {
+            chunks.add(response.substring(i, i+100));
+            i = i+100;
+        }
+        chunks.add(response.substring(i));
+        HttpResponse responseHeader = new DefaultHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
+        Object[] httpChunks = new Object[chunks.size() + 1];
+        httpChunks[0] = responseHeader;
+        for (i = 1; i <= chunks.size(); i++) {
+            String chunk = chunks.get(i - 1);
+            if (i == chunks.size()) {
+                httpChunks[i] = new DefaultLastHttpContent(Unpooled.copiedBuffer(chunk, CharsetUtil.UTF_8));
+            } else {
+                httpChunks[i] = new DefaultHttpContent(Unpooled.copiedBuffer(chunk, CharsetUtil.UTF_8));
+            }
+        }
+
+        Subject<CouchbaseResponse, CouchbaseResponse> obs = AsyncSubject.create();
+        GenericQueryRequest requestMock = mock(GenericQueryRequest.class);
+        when(requestMock.observable()).thenReturn(obs);
+        queue.add(requestMock);
+        final CountDownLatch latch1 = new CountDownLatch(chunks.size() + 5 + 4);
+
+        obs.subscribe(new Action1<CouchbaseResponse>() {
+                          @Override
+                          public void call(CouchbaseResponse couchbaseResponse) {
+                              GenericQueryResponse response = (GenericQueryResponse) couchbaseResponse;
+                              response.rows().subscribe(new Action1<ByteBuf>() {
+                                  @Override
+                                  public void call(ByteBuf byteBuf) {
+                                      byteBuf.release();
+                                      if (((QueryHandlerV2) handler).getResponseContent() != null) {
+                                          assertTrue(((QueryHandlerV2) handler).getResponseContent().readerIndex() == 1);
+                                      }
+                                      latch1.countDown();
+                                  }
+                              }, new Action1<Throwable>() {
+                                  @Override
+                                  public void call(Throwable throwable) {
+                                  }
+                              });
+                              response.errors().subscribe(new Action1<ByteBuf>() {
+                                  @Override
+                                  public void call(ByteBuf byteBuf) {
+                                      byteBuf.release();
+                                      if (((QueryHandlerV2) handler).getResponseContent() != null) {
+                                          assertTrue(((QueryHandlerV2) handler).getResponseContent().readerIndex() == 1);
+                                      }
+                                      latch1.countDown();
+                                  }
+                              }, new Action1<Throwable>() {
+                                  @Override
+                                  public void call(Throwable throwable) {
+
+                                  }
+                              });
+                              response.info().subscribe(new Action1<ByteBuf>() {
+                                  @Override
+                                  public void call(ByteBuf byteBuf) {
+                                      byteBuf.release();
+                                  }
+                              }, new Action1<Throwable>() {
+                                  @Override
+                                  public void call(Throwable throwable) {
+
+                                  }
+                              });
+                              response.signature().subscribe(new Action1<ByteBuf>() {
+                                  @Override
+                                  public void call(ByteBuf byteBuf) {
+                                      byteBuf.release();
+                                  }
+                              }, new Action1<Throwable>() {
+                                  @Override
+                                  public void call(Throwable throwable) {
+
+                                  }
+                              });
+
+                          }
+                      }
+        );
+
+        Observable.from(httpChunks).zipWith(Observable.interval(1, TimeUnit.SECONDS),
+                new Func2<Object, Long, Object>() {
+                    @Override
+                    public Object call(Object o, Long aLong) {
+
+                        return channel.writeInbound(o);
+                    }
+                }).subscribe(new Action1<Object>() {
+
+            @Override
+            public void call(Object s) {
+                latch1.countDown();
+            }
+
+        });
+        latch1.await();
+    }
+
 }

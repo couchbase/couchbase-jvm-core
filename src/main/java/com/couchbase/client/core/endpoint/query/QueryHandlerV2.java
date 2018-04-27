@@ -16,6 +16,7 @@
 package com.couchbase.client.core.endpoint.query;
 
 import com.couchbase.client.core.ResponseEvent;
+import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
 import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.ResponseStatusConverter;
@@ -234,5 +235,10 @@ public class QueryHandlerV2 extends AbstractGenericHandler<HttpObject, HttpReque
     @Override
     protected ServiceType serviceType() {
         return ServiceType.QUERY;
+    }
+
+    @InterfaceAudience.Private
+    public ByteBuf getResponseContent() {
+        return responseContent;
     }
 }

@@ -62,6 +62,7 @@ import io.netty.util.ReferenceCountUtil;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import rx.functions.Action1;
 import rx.observers.TestSubscriber;
@@ -99,13 +100,14 @@ import static org.mockito.Mockito.when;
  * @author Michael Nitschinger
  * @since 1.0
  */
+@Ignore("V2 Query Handler is the default")
 public class QueryHandlerTest {
 
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(QueryHandlerTest.class);
 
-    private static final String FAKE_REQUESTID = "1234test-7802-4fc2-acd6-dfcd1c05a288";
-    private static final String FAKE_CLIENTID = "1234567890123456789012345678901234567890123456789012345678901234";
-    private static final String FAKE_SIGNATURE = "{\"*\":\"*\"}";
+    protected static final String FAKE_REQUESTID = "1234test-7802-4fc2-acd6-dfcd1c05a288";
+    protected static final String FAKE_CLIENTID = "1234567890123456789012345678901234567890123456789012345678901234";
+    protected static final String FAKE_SIGNATURE = "{\"*\":\"*\"}";
 
     private ObjectMapper mapper = new ObjectMapper();
     protected Queue<QueryRequest> queue;
@@ -206,7 +208,7 @@ public class QueryHandlerTest {
      * @param assertErrors
      * @param metricsToCheck null to expect no metrics
      */
-    private void assertResponse(GenericQueryResponse inbound,
+    protected void assertResponse(GenericQueryResponse inbound,
             boolean expectedSuccess, ResponseStatus expectedStatus,
             String expectedRequestId, String expectedClientId,
             String expectedFinalStatus, String expectedSignature,
@@ -260,7 +262,7 @@ public class QueryHandlerTest {
         assertEquals(0, inbound.profileInfo().timeout(1, TimeUnit.SECONDS).toList().toBlocking().single().size());
     }
 
-    private static Map<String, Object> expectedMetricsCounts(int expectedErrors, int expectedResults) {
+    protected static Map<String, Object> expectedMetricsCounts(int expectedErrors, int expectedResults) {
         Map<String, Object> result = new HashMap<String, Object>(2);
         result.put("errorCount", expectedErrors);
         result.put("resultCount", expectedResults);
