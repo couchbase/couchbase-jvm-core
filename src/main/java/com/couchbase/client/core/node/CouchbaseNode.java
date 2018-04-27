@@ -303,11 +303,16 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     public Observable<Service> removeService(final RemoveServiceRequest request) {
         LOGGER.debug(logIdent(hostname) + "Removing Service " + request.type());
 
-        Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
+        final Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
         serviceStates.deregister(service);
         enabledServices &= ~(1 << service.type().ordinal());
-        return Observable.just(service);
+        return service.disconnect().map(new Func1<LifecycleState, Service>() {
+            @Override
+            public Service call(LifecycleState lifecycleState) {
+                return service;
+            }
+        });
     }
 
     @Override

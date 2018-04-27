@@ -216,6 +216,7 @@ public class CouchbaseNodeTest {
     public void shouldRemoveGlobalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
+        when(serviceMock.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(serviceMock.type()).thenReturn(ServiceType.CONFIG);
         when(registryMock.serviceBy(ServiceType.CONFIG, null)).thenReturn(serviceMock);
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, ServiceFactory.INSTANCE);
@@ -229,6 +230,7 @@ public class CouchbaseNodeTest {
     public void shouldRemoveLocalService() {
         ServiceRegistry registryMock = mock(ServiceRegistry.class);
         Service serviceMock = mock(Service.class);
+        when(serviceMock.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(serviceMock.type()).thenReturn(ServiceType.BINARY);
         when(registryMock.serviceBy(ServiceType.BINARY, "bucket")).thenReturn(serviceMock);
         when(serviceMock.states()).thenReturn(Observable.<LifecycleState>empty());
@@ -266,6 +268,7 @@ public class CouchbaseNodeTest {
         ServiceFactory serviceFactory = mock(ServiceFactory.class);
 
         Service binaryServiceMock = mock(Service.class);
+        when(binaryServiceMock.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(binaryServiceMock.type()).thenReturn(ServiceType.BINARY);
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
@@ -273,6 +276,7 @@ public class CouchbaseNodeTest {
         eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
         Service configServiceMock = mock(Service.class);
+        when(configServiceMock.disconnect()).thenReturn(Observable.just(LifecycleState.DISCONNECTING));
         when(configServiceMock.type()).thenReturn(ServiceType.CONFIG);
         when(configServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(configServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));

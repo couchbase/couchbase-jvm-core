@@ -286,10 +286,6 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
     @Override
     public Observable<LifecycleState> disconnect() {
         disconnect = true;
-        if (state() == LifecycleState.DISCONNECTED || state() == LifecycleState.DISCONNECTING) {
-            LOGGER.debug(logIdent(hostname, this) + "Already disconnected or disconnecting, skipping disconnect.");
-            return Observable.just(state());
-        }
         LOGGER.debug(logIdent(hostname, this) + "Got instructed to disconnect.");
 
         List<Endpoint> endpoints;
