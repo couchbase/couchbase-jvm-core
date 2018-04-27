@@ -237,6 +237,23 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>com.couchbase.client.core</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                    <excludes>
+                        <!-- Not required, and doesn't work with Java 9 modules (JVMCBC-530) -->
+                        <exclude>META-INF/service/*jackson*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.3</version>
                 <executions>
@@ -384,18 +401,6 @@
                 <configuration>
                     <source>${java-compat.version}</source>
                     <target>${java-compat.version}</target>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.3</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>false</autoReleaseAfterClose>
                 </configuration>
             </plugin>
 
