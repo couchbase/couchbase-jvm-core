@@ -1822,13 +1822,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Allows to adjust the minimum size of a document to be considered
          * for compression - in bytes.
          *
-         * @param minCompressionSize min compression size in bytes.
+         * @param compressionMinSize min compression size in bytes.
          * @return the builder for chaining purposes.
          */
         @InterfaceAudience.Public
         @InterfaceStability.Uncommitted
-        public SELF minCompressionSize(final int minCompressionSize) {
-            this.minCompressionSize = minCompressionSize;
+        public SELF compressionMinSize(final int compressionMinSize) {
+            this.minCompressionSize = compressionMinSize;
             return self();
         }
 
@@ -1836,13 +1836,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Allows to adjust the ratio over which the document is sent
          * compressed over the wire - in percent.
          *
-         * @param minCompressionRatio the compression ratio in percent.
+         * @param compressionMinRatio the compression ratio in percent.
          * @return the builder for chaining purposes.
          */
         @InterfaceAudience.Public
         @InterfaceStability.Uncommitted
-        public SELF minCompressionRatio(final double minCompressionRatio) {
-            this.minCompressionRatio = minCompressionRatio;
+        public SELF compressionMinRatio(final double compressionMinRatio) {
+            this.minCompressionRatio = compressionMinRatio;
             return self();
         }
 
