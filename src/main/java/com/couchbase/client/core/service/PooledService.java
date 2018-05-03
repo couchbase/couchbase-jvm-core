@@ -71,11 +71,6 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
     private final Object epMutex = new Object();
 
     /**
-     * Pending requests to account for requests waiting for a socket to be connected.
-     */
-    private volatile int pendingRequests;
-
-    /**
      * Full disconnect has been initiated.
      */
     private volatile boolean disconnect;
@@ -101,7 +96,6 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
         this.endpoints = new CopyOnWriteArrayList<Endpoint>();
         this.fixedEndpoints = minEndpoints == maxEndpoints;
         this.selectionStrategy = selectionStrategy;
-        this.pendingRequests = 0;
         this.disconnect = false;
         endpointStates = new EndpointStateZipper(initialState);
         endpointStates.states().subscribe(new Action1<LifecycleState>() {
@@ -335,7 +329,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
         }
 
         if (endpoint == null) {
-            if (fixedEndpoints || ((endpoints.size() + pendingRequests) >= maxEndpoints)) {
+            if (fixedEndpoints || (endpoints.size() >= maxEndpoints)) {
                 RetryHelper.retryOrCancel(env, request, responseBuffer);
             } else {
                 maybeOpenAndSend(request);
@@ -350,34 +344,27 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
      * them into the state of the service.
      */
     private void maybeOpenAndSend(final CouchbaseRequest request) {
-        pendingRequests++;
         LOGGER.debug(logIdent(hostname, PooledService.this)
-                + "Need to open a new Endpoint (size {}), pending requests {}", endpoints.size(), pendingRequests);
+                + "Need to open a new Endpoint (current size {})", endpoints.size());
 
         final Endpoint endpoint = endpointFactory.create(
             hostname, bucket, username, password, port, ctx
         );
 
+        synchronized (epMutex) {
+            endpoints.add(endpoint);
+            endpointStates.register(endpoint, endpoint);
+        }
+
         final Subscription subscription = whenState(endpoint, LifecycleState.CONNECTED,
             new Action1<LifecycleState>() {
                 @Override
                 public void call(LifecycleState lifecycleState) {
-                    try {
-                        if (disconnect) {
-                            RetryHelper.retryOrCancel(env, request, responseBuffer);
-                        } else {
-                            endpoint.send(request);
-                            endpoint.send(SignalFlush.INSTANCE);
-
-                            synchronized (epMutex) {
-                                endpoints.add(endpoint);
-                                endpointStates.register(endpoint, endpoint);
-                                LOGGER.debug(logIdent(hostname, PooledService.this)
-                                        + "New number of endpoints is {}", endpoints.size());
-                            }
-                        }
-                    } finally {
-                        pendingRequests--;
+                    if (disconnect) {
+                        RetryHelper.retryOrCancel(env, request, responseBuffer);
+                    } else {
+                        endpoint.send(request);
+                        endpoint.send(SignalFlush.INSTANCE);
                     }
                 }
             }
@@ -410,7 +397,6 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
         if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
-        pendingRequests--;
         RetryHelper.retryOrCancel(env, request, responseBuffer);
     }
 
