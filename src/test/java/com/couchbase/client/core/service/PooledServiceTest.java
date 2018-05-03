@@ -26,6 +26,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.internal.SignalFlush;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
+import com.couchbase.client.core.service.strategies.RoundRobinSelectionStrategy;
 import com.couchbase.client.core.service.strategies.SelectionStrategy;
 import com.couchbase.client.core.state.LifecycleState;
 import org.junit.BeforeClass;
@@ -42,6 +43,7 @@ import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
 import rx.subjects.BehaviorSubject;
 
+import java.net.ConnectException;
 import java.util.List;
 
 import static com.couchbase.client.core.service.PooledServiceTest.SimpleSerivceConfig.ssc;
@@ -349,7 +351,7 @@ public class PooledServiceTest {
         ms.send(request);
 
         assertEquals(0, ef.endpointSendCalled());
-        assertEquals(0, ms.endpoints().size());
+        assertEquals(1, ms.endpoints().size());
         ef.advanceAll(LifecycleState.CONNECTED);
         assertEquals(2, ef.endpointSendCalled()); // request & flush
         assertEquals(1, ms.endpoints().size());
@@ -416,6 +418,7 @@ public class PooledServiceTest {
         ms.send(mr3.value1());
         ef.advanceAll(LifecycleState.CONNECTED);
 
+        // 2 request sends + 2 flushes
         assertEquals(4, ef.endpointSendCalled());
 
         mr1.value2().assertNoTerminalEvent();
@@ -590,7 +593,8 @@ public class PooledServiceTest {
                 return LifecycleState.DISCONNECTING;
             }
         });
-        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
+        SelectionStrategy ss = mock(SelectionStrategy.class);
+        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), ss);
         LifecycleState afterConnectState = ms.connect().toBlocking().single();
         assertEquals(LifecycleState.IDLE, afterConnectState);
         assertEquals(0, ef.endpointCount());
@@ -634,7 +638,8 @@ public class PooledServiceTest {
                 return LifecycleState.DISCONNECTING;
             }
         });
-        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), null);
+        SelectionStrategy ss = mock(SelectionStrategy.class);
+        final MockedService ms = new MockedService(ServiceType.BINARY, ef, ssc(0, 4, 1), ss);
         LifecycleState afterConnectState = ms.connect().toBlocking().single();
         assertEquals(LifecycleState.IDLE, afterConnectState);
         assertEquals(0, ef.endpointCount());
@@ -644,6 +649,8 @@ public class PooledServiceTest {
 
         ms.send(mr1.value1());
         ms.send(mr2.value1());
+
+        assertEquals(0, ef.endpointSendCalled());
 
         ef.advanceAll(LifecycleState.CONNECTED);
         assertEquals(2, ms.endpoints().size());
@@ -725,6 +732,45 @@ public class PooledServiceTest {
                 return ms.endpoints().size() == 2;
             }
         });
+    }
+
+    @Test
+    public void shouldNotCreateNewEndpointOrAcceptRequestIfNodeIsDown() {
+        EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
+        ef.onCreate(new Action2<Endpoint, BehaviorSubject<LifecycleState>>() {
+            @Override
+            public void call(final Endpoint endpoint, final BehaviorSubject<LifecycleState> states) {
+                when(endpoint.connect()).then(new Answer<Observable<LifecycleState>>() {
+                    @Override
+                    public Observable<LifecycleState> answer(InvocationOnMock invocation) throws Throwable {
+                        states.onNext(LifecycleState.DISCONNECTING);
+                        return Observable.error(new ConnectException("could not connect to remote"));
+                    }
+                });
+            }
+        });
+
+        SelectionStrategy ss = new RoundRobinSelectionStrategy();
+        MockedService ms = new MockedService(ServiceType.QUERY, ef, ssc(0, 1), ss);
+        ms.connect().toBlocking().single();
+
+        Tuple2<CouchbaseRequest, TestSubscriber<CouchbaseResponse>> mr1 = mockRequest();
+
+        ms.send(mr1.value1());
+        ef.advanceAll(LifecycleState.CONNECTED);
+
+        assertEquals(1, ef.endpointCount());
+
+        mr1.value2().assertError(RequestCancelledException.class);
+
+        Tuple2<CouchbaseRequest, TestSubscriber<CouchbaseResponse>> mr2 = mockRequest();
+        ms.send(mr2.value1());
+
+        // Second request should not create another endpoint
+        assertEquals(1, ef.endpointCount());
+        assertEquals(0, ef.endpointSendCalled());
+
+        mr1.value2().assertError(RequestCancelledException.class);
     }
 
     private static void assertTryUntil(Func0<Boolean> callback) {

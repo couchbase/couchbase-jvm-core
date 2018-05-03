@@ -467,9 +467,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             // Suppressing stack on purpose for reduced verbosity
                             String cause = future.cause() == null ? "unknown" : future.cause().toString();
                             LOGGER.warn(
-                                "{}Could not connect to endpoint, retrying with delay " + delay + " "
+                                "{}Could not connect to endpoint on reconnect attempt {}, retrying with delay " + delay + " "
                                     + delayUnit + ": {}",
                                 logIdent(channel, AbstractEndpoint.this),
+                                reconnectAttempt,
                                 cause
                             );
                             if (responseBuffer != null) {
@@ -736,7 +737,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @return a prefix string for logs.
      */
     protected static RedactableArgument logIdent(final Channel chan, final Endpoint endpoint) {
-        String addr = chan != null ? chan.remoteAddress().toString() : "";
+        String addr = chan != null ? chan.remoteAddress().toString() : String.valueOf(System.identityHashCode(endpoint));
         return system("[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ");
     }
 
