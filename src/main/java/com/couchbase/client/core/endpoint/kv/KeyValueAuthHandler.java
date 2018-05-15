@@ -238,6 +238,15 @@ public class KeyValueAuthHandler
     private void handleAuthResponse(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         byte[] response = new byte[msg.content().readableBytes()];
         msg.content().readBytes(response);
+
+        // Under PLAIN it might be already complete, so bail out early if so.
+        // Also, make sure that auth failure response codes are covered early
+        // and bailed out before evaluating the challenge.
+        if (saslClient.isComplete() || msg.getStatus() == SASL_AUTH_FAILURE) {
+            checkIsAuthed(msg);
+            return;
+        }
+
         byte[] evaluatedBytes = saslClient.evaluateChallenge(response);
         
         // This condition is needed for evaluate SASL Step Response. 
