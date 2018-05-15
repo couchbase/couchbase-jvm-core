@@ -891,6 +891,13 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     public static void addHttpBasicAuth(final ChannelHandlerContext ctx, final HttpRequest request, final String user,
         final String password) {
+
+        // if both user and password are null or empty, don't add http basic auth
+        // this is usually the case when certificate auth is used.
+        if ((user == null || user.isEmpty()) && (password == null || password.isEmpty())) {
+            return;
+        }
+
         final String pw = password == null ? "" : password;
 
         ByteBuf raw = ctx.alloc().buffer(user.length() + pw.length() + 1);
