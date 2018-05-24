@@ -57,7 +57,7 @@ public class NetworkAddress {
      * preferred.
      */
     public static final boolean FORCE_IPV4 = Boolean.parseBoolean(
-        System.getProperty(FORCE_IPV4_PROPERTY, "true")
+        System.getProperty(FORCE_IPV4_PROPERTY, "false")
     );
 
     private final InetAddress inner;
