@@ -164,7 +164,7 @@ public class ObserveViaCAS {
                                 List<Observable<ObserveResponse>> obs = new ArrayList<Observable<ObserveResponse>>();
                                 final ObserveRequest activeReq = new ObserveRequest(id, cas, true, (short) 0, bucket);
                                 final CoreEnvironment env = core.ctx().environment();
-                                if (env.tracingEnabled() && parent != null) {
+                                if (env.operationTracingEnabled() && parent != null) {
                                     Scope scope = env.tracer()
                                         .buildSpan("observe_cas")
                                         .asChildOf(parent)
@@ -179,7 +179,7 @@ public class ObserveViaCAS {
                                         public void call() {
                                             // termination may not be triggered if
                                             // early unsubscribed for some reason.
-                                            if (env.tracingEnabled() && parent != null) {
+                                            if (env.operationTracingEnabled() && parent != null) {
                                                 env.tracer().scopeManager()
                                                     .activate(activeReq.span(), true)
                                                     .close();
@@ -194,7 +194,7 @@ public class ObserveViaCAS {
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
                                     for (short i = 1; i <= replicas; i++) {
                                         final ObserveRequest replReq  = new ObserveRequest(id, cas, false, i, bucket);
-                                        if (env.tracingEnabled() && parent != null) {
+                                        if (env.operationTracingEnabled() && parent != null) {
                                             Scope scope = env.tracer()
                                                 .buildSpan("observe_cas")
                                                 .asChildOf(parent)
@@ -207,7 +207,7 @@ public class ObserveViaCAS {
                                             .doOnUnsubscribe(new Action0() {
                                                 @Override
                                                 public void call() {
-                                                    if (env.tracingEnabled() && parent != null) {
+                                                    if (env.operationTracingEnabled() && parent != null) {
                                                         env.tracer().scopeManager()
                                                             .activate(replReq.span(), true)
                                                             .close();

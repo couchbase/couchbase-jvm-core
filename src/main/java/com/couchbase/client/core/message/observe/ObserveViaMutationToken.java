@@ -166,7 +166,7 @@ public class ObserveViaMutationToken {
                                 List<Observable<CouchbaseResponse>> obs = new ArrayList<Observable<CouchbaseResponse>>();
                                 final ObserveSeqnoRequest activeReq = new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket, cas);
                                 final CoreEnvironment env = core.ctx().environment();
-                                if (env.tracingEnabled() && parent != null) {
+                                if (env.operationTracingEnabled() && parent != null) {
                                     Scope scope = env.tracer()
                                         .buildSpan("observe_seqno")
                                         .asChildOf(parent)
@@ -180,7 +180,7 @@ public class ObserveViaMutationToken {
                                     public void call() {
                                         // termination may not be triggered if
                                         // early unsubscribed for some reason.
-                                        if (env.tracingEnabled() && parent != null) {
+                                        if (env.operationTracingEnabled() && parent != null) {
                                             env.tracer().scopeManager()
                                                 .activate(activeReq.span(), true)
                                                 .close();
@@ -195,7 +195,7 @@ public class ObserveViaMutationToken {
                                 if (persistTo.touchesReplica() || replicateTo.touchesReplica()) {
                                     for (short i = 1; i <= replicas; i++) {
                                         final ObserveSeqnoRequest replReq = new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket, cas);
-                                        if (env.tracingEnabled() && parent != null) {
+                                        if (env.operationTracingEnabled() && parent != null) {
                                             Scope scope = env.tracer()
                                                 .buildSpan("observe_seqno")
                                                 .asChildOf(parent)
@@ -209,7 +209,7 @@ public class ObserveViaMutationToken {
                                             public void call() {
                                                 // termination may not be triggered if
                                                 // early unsubscribed for some reason.
-                                                if (env.tracingEnabled() && parent != null) {
+                                                if (env.operationTracingEnabled() && parent != null) {
                                                     env.tracer().scopeManager()
                                                         .activate(replReq.span(), true)
                                                         .close();

@@ -118,7 +118,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final long CONFIG_POLL_FLOOR_INTERVAL = 50;
     public static final boolean CERT_AUTH_ENABLED = false;
     public static final boolean FORCE_SASL_PLAIN = false;
-    public static final boolean TRACING_ENABLED = true;
+    public static final boolean OPERATION_TRACING_ENABLED = true;
+    public static final boolean OPERATION_TRACING_SERVER_DUR_ENABLED = true;
     public static final int MIN_COMPRESSION_SIZE = 32;
     public static final double MIN_COMPRESSION_RATIO = 0.83;
 
@@ -234,7 +235,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final long configPollInterval;
     private final long configPollFloorInterval;
     private final boolean certAuthEnabled;
-    private final boolean tracingEnabled;
+    private final boolean operationTracingEnabled;
+    private final boolean operationTracingServerDurationEnabled;
     private final Tracer tracer;
     private final int minCompressionSize;
     private final double minCompressionRatio;
@@ -328,11 +330,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         );
         keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
         keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
-        tracingEnabled = booleanPropertyOr("tracingEnabled", builder.tracingEnabled);
+        operationTracingEnabled = booleanPropertyOr("operationTracingEnabled", builder.operationTracingEnabled);
+        operationTracingServerDurationEnabled = booleanPropertyOr("operationTracingServerDurationEnabled", builder.operationTracingServerDurationEnabled);
         minCompressionRatio = doublePropertyOr("compressionMinRatio", builder.minCompressionRatio);
         minCompressionSize = intPropertyOr("compressionMinSize", builder.minCompressionSize);
 
-        if (!tracingEnabled) {
+        if (!operationTracingEnabled) {
             tracer = NoopTracerFactory.create();
             tracerShutdownHook = new NoOpShutdownHook();
         } else if (builder.tracer == null) {
@@ -983,8 +986,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
-    public boolean tracingEnabled() {
-        return tracingEnabled;
+    public boolean operationTracingEnabled() {
+        return operationTracingEnabled;
+    }
+
+    @Override
+    public boolean operationTracingServerDurationEnabled() {
+        return operationTracingServerDurationEnabled;
     }
 
     @Override
@@ -1081,7 +1089,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private boolean certAuthEnabled = CERT_AUTH_ENABLED;
         private CouchbaseCoreSendHook couchbaseCoreSendHook;
         private boolean forceSaslPlain = FORCE_SASL_PLAIN;
-        private boolean tracingEnabled = TRACING_ENABLED;
+        private boolean operationTracingEnabled = OPERATION_TRACING_ENABLED;
+        private boolean operationTracingServerDurationEnabled = OPERATION_TRACING_SERVER_DUR_ENABLED;
         private Tracer tracer;
         private double minCompressionRatio = MIN_COMPRESSION_RATIO;
         private int minCompressionSize = MIN_COMPRESSION_SIZE;
@@ -1795,13 +1804,27 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * Note that it is enabled by default, but only activated once opentracing is
          * on the classpath!
          *
-         * @param tracingEnabled enable or disable the tracing.
+         * @param operationTracingEnabled enable or disable the tracing.
          * @return this builder for chaining purposes.
          */
-        @InterfaceAudience.Public
-        @InterfaceStability.Experimental
-        public SELF tracingEnabled(final boolean tracingEnabled) {
-            this.tracingEnabled = tracingEnabled;
+        @InterfaceStability.Committed
+        public SELF tracingEnabled(final boolean operationTracingEnabled) {
+            this.operationTracingEnabled = operationTracingEnabled;
+            return self();
+        }
+
+        /**
+         * Allows to enable/disable the negotiation of server duration-enabled tracing.
+         *
+         * Note that this is enabled by default, but depending on the server version
+         * may or may not be available (it is negotiated at runtime)!
+         *
+         * @param operationTracingServerDurationEnabled enable or disable the server duration.
+         * @return this builder for chaining purposes.
+         */
+        @InterfaceStability.Committed
+        public SELF operationTracingServerDurationEnabled(final boolean operationTracingServerDurationEnabled) {
+            this.operationTracingServerDurationEnabled = operationTracingServerDurationEnabled;
             return self();
         }
 
@@ -1811,8 +1834,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * @param tracer the tracer to use.
          * @return this builder for chaining purposes.
          */
-        @InterfaceAudience.Public
-        @InterfaceStability.Experimental
+        @InterfaceStability.Committed
         public SELF tracer(final Tracer tracer) {
             this.tracer = tracer;
             return self();
@@ -1949,6 +1971,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", forceSaslPlain=").append(forceSaslPlain);
         sb.append(", compressionMinRatio=").append(minCompressionRatio);
         sb.append(", compressionMinSize=").append(minCompressionSize);
+        sb.append(", operationTracingEnabled=").append(operationTracingEnabled);
+        sb.append(", operationTracingServerDurationEnabled=").append(operationTracingServerDurationEnabled);
+        sb.append(", tracer=").append(tracer != null ? tracer.getClass().getSimpleName() : "null");
         return sb;
     }
 

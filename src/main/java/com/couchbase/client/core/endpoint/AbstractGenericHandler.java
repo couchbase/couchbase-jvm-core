@@ -316,7 +316,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         msg.lastRemoteSocket(remoteSocket);
         msg.lastLocalId(localId);
 
-        if (env().tracingEnabled() && msg.span() != null) {
+        if (env().operationTracingEnabled() && msg.span() != null) {
             Scope scope = env().tracer()
                 .buildSpan("dispatch_to_server")
                 .asChildOf(msg.span())
@@ -445,7 +445,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             }
         }
 
-        if (env().tracingEnabled()) {
+        if (env().operationTracingEnabled()) {
             Span dispatchSpan = dispatchSpans.poll();
             if (dispatchSpan != null) {
                 currentDispatchSpan = dispatchSpan;
@@ -493,7 +493,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         // the following observable complete will go into nirvana since
         // no one is subscribing anymore.. set zombie = true and complete
         // the span!
-        if (env().tracingEnabled()
+        if (env().operationTracingEnabled()
             && response.request() != null
             && !response.request().isActive()
             && response.request().span() != null) {
@@ -915,7 +915,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected void completeRequestSpan(final CouchbaseRequest request) {
         if (request != null && request.span() != null) {
-            if (env().tracingEnabled()) {
+            if (env().operationTracingEnabled()) {
                 env().tracer().scopeManager()
                     .activate(request.span(), true)
                     .close();

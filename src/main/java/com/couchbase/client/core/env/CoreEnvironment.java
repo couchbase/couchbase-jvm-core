@@ -504,17 +504,21 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     /**
      * True if tracing is enabled on the environment.
      */
-    @InterfaceStability.Experimental
-    @InterfaceAudience.Public
-    boolean tracingEnabled();
+    @InterfaceStability.Committed
+    boolean operationTracingEnabled();
+
+    /**
+     * True if additional server duration tracing is enabled.
+     */
+    @InterfaceStability.Committed
+    boolean operationTracingServerDurationEnabled();
 
     /**
      * If tracing is enabled, contains the current tracer that should be used.
      *
      * @return the tracer to be used.
      */
-    @InterfaceStability.Experimental
-    @InterfaceAudience.Public
+    @InterfaceStability.Committed
     Tracer tracer();
 
     /**

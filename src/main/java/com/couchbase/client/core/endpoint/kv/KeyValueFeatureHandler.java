@@ -82,7 +82,8 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
         features.add(ServerFeatures.XATTR);
         features.add(ServerFeatures.SELECT_BUCKET);
 
-        if (ctx.environment().tracingEnabled()) {
+        if (ctx.environment().operationTracingEnabled() &&
+            ctx.environment().operationTracingServerDurationEnabled()) {
             features.add(ServerFeatures.TRACING);
         }
 

@@ -1053,7 +1053,7 @@ public class KeyValueHandler
         if (msg.getFramingExtrasLength() > 0) {
             long duration = parseServerDurationFromFrame(msg.getFramingExtras());
             ((BinaryResponse) response).serverDuration(duration);
-            if (env().tracingEnabled() && currentDispatchSpan() != null) {
+            if (env().operationTracingEnabled() && currentDispatchSpan() != null) {
                 currentDispatchSpan().setTag("peer.latency", duration + "us");
                 if (currentDispatchSpan() instanceof ThresholdLogSpan) {
                     currentDispatchSpan().setBaggageItem(
