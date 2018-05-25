@@ -368,6 +368,17 @@ public class ThresholdLogReporter {
         private final SortedSet<ThresholdLogSpan> ftsZombieSet = new TreeSet<ThresholdLogSpan>();
         private final SortedSet<ThresholdLogSpan> analyticsZombieSet = new TreeSet<ThresholdLogSpan>();
 
+        private int kvThresholdCount = 0;
+        private int n1qlThresholdCount = 0;
+        private int viewThresoldCount = 0;
+        private int ftsThresholdCount = 0;
+        private int analyticsThresholdCount = 0;
+        private int kvZombieCount = 0;
+        private int n1qlZombieCount = 0;
+        private int viewZombieCount = 0;
+        private int ftsZombieCount = 0;
+        private int analyticsZombieCount = 0;
+
         private long lastZombieLog;
         private boolean hasZombieWritten;
         private long lastThresholdLog;
@@ -379,7 +390,7 @@ public class ThresholdLogReporter {
             while (running) {
                 try {
                     handleOverThresholdQueue();
-                    handlerZombieQueue();
+                    handleZombieQueue();
                     Thread.sleep(workerSleepMs);
                 } catch (final InterruptedException ex) {
                     if (!running) {
@@ -411,14 +422,19 @@ public class ThresholdLogReporter {
                 String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
                     updateSet(kvThresholdSet, span, false);
+                    kvThresholdCount += 1;
                 } else if (SERVICE_N1QL.equals(service)) {
                     updateSet(n1qlThresholdSet, span, false);
+                    n1qlThresholdCount += 1;
                 } else if (SERVICE_VIEW.equals(service)) {
                     updateSet(viewThresholdSet, span, false);
+                    viewThresoldCount += 1;
                 } else if (SERVICE_FTS.equals(service)) {
                     updateSet(ftsThresholdSet, span, false);
+                    ftsThresholdCount += 1;
                 } else if (SERVICE_ANALYTICS.equals(service)) {
                     updateSet(analyticsThresholdSet, span, false);
+                    analyticsThresholdCount += 1;
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
                 }
@@ -437,29 +453,34 @@ public class ThresholdLogReporter {
             List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
 
             if (!kvThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(kvThresholdSet, SERVICE_KV));
+                output.add(convertThresholdSet(kvThresholdSet, kvThresholdCount, SERVICE_KV));
                 kvThresholdSet.clear();
+                kvThresholdCount = 0;
             }
             if (!n1qlThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(n1qlThresholdSet, SERVICE_N1QL));
+                output.add(convertThresholdSet(n1qlThresholdSet, n1qlThresholdCount, SERVICE_N1QL));
                 n1qlThresholdSet.clear();
+                n1qlThresholdCount = 0;
             }
             if (!viewThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(viewThresholdSet, SERVICE_VIEW));
+                output.add(convertThresholdSet(viewThresholdSet, viewThresoldCount, SERVICE_VIEW));
                 viewThresholdSet.clear();
+                viewThresoldCount = 0;
             }
             if (!ftsThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(ftsThresholdSet, SERVICE_FTS));
+                output.add(convertThresholdSet(ftsThresholdSet, ftsThresholdCount, SERVICE_FTS));
                 ftsThresholdSet.clear();
+                ftsThresholdCount = 0;
             }
             if (!analyticsThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(analyticsThresholdSet, SERVICE_ANALYTICS));
+                output.add(convertThresholdSet(analyticsThresholdSet, analyticsThresholdCount, SERVICE_ANALYTICS));
                 analyticsThresholdSet.clear();
+                analyticsThresholdCount = 0;
             }
             logOverThreshold(output);
         }
 
-        private Map<String, Object> convertThresholdSet(SortedSet<ThresholdLogSpan> set, String ident) {
+        private Map<String, Object> convertThresholdSet(SortedSet<ThresholdLogSpan> set, int count, String ident) {
             Map<String, Object> output = new HashMap<String, Object>();
             List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
             for (ThresholdLogSpan span : set) {
@@ -512,7 +533,7 @@ public class ThresholdLogReporter {
                 top.add(entry);
             }
             output.put("service", ident);
-            output.put("count", set.size());
+            output.put("count", count);
             output.put("top", top);
             return output;
         }
@@ -520,7 +541,7 @@ public class ThresholdLogReporter {
         /**
          * Helper method which drains the queue, handles the sets and logs if needed.
          */
-        private void handlerZombieQueue() {
+        private void handleZombieQueue() {
             long now = System.nanoTime();
             if ((now - lastZombieLog + logIntervalNanos) > 0) {
                 prepareAndLogZombies();
@@ -535,14 +556,19 @@ public class ThresholdLogReporter {
                 String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
                     updateSet(kvZombieSet, span, true);
+                    kvZombieCount += 1;
                 } else if (SERVICE_N1QL.equals(service)) {
                     updateSet(n1qlZombieSet, span, true);
+                    n1qlZombieCount += 1;
                 } else if (SERVICE_VIEW.equals(service)) {
                     updateSet(viewZombieSet, span, true);
+                    viewZombieCount += 1;
                 } else if (SERVICE_FTS.equals(service)) {
                     updateSet(ftsZombieSet, span, true);
+                    ftsZombieCount += 1;
                 } else if (SERVICE_ANALYTICS.equals(service)) {
                     updateSet(analyticsZombieSet, span, true);
+                    analyticsThresholdCount += 1;
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
                 }
@@ -581,24 +607,29 @@ public class ThresholdLogReporter {
             List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
 
             if (!kvZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(kvZombieSet, SERVICE_KV));
+                output.add(convertThresholdSet(kvZombieSet, kvZombieCount, SERVICE_KV));
                 kvZombieSet.clear();
+                kvZombieCount = 0;
             }
             if (!n1qlZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(n1qlZombieSet, SERVICE_N1QL));
+                output.add(convertThresholdSet(n1qlZombieSet, n1qlZombieCount, SERVICE_N1QL));
                 n1qlZombieSet.clear();
+                n1qlZombieCount = 0;
             }
             if (!viewZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(viewZombieSet, SERVICE_VIEW));
+                output.add(convertThresholdSet(viewZombieSet, viewZombieCount, SERVICE_VIEW));
                 viewZombieSet.clear();
+                viewZombieCount = 0;
             }
             if (!ftsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(ftsZombieSet, SERVICE_FTS));
+                output.add(convertThresholdSet(ftsZombieSet, ftsZombieCount, SERVICE_FTS));
                 ftsZombieSet.clear();
+                ftsZombieCount = 0;
             }
             if (!analyticsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(analyticsZombieSet, SERVICE_ANALYTICS));
+                output.add(convertThresholdSet(analyticsZombieSet, analyticsZombieCount, SERVICE_ANALYTICS));
                 analyticsZombieSet.clear();
+                analyticsZombieCount = 0;
             }
 
             logZombies(output);
