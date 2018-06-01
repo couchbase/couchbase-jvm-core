@@ -66,6 +66,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
+import rx.Subscriber;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.subjects.AsyncSubject;
@@ -83,6 +84,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -137,6 +139,11 @@ public class KeyValueHandlerTest {
     private CollectingResponseEventSink eventSink;
 
     /**
+     * The handler used.
+     */
+    private KeyValueHandler handler;
+
+    /**
      *  A mock endpoint.
      */
     private AbstractEndpoint endpoint;
@@ -148,7 +155,8 @@ public class KeyValueHandlerTest {
         endpoint = mock(AbstractEndpoint.class);
         when(endpoint.environment()).thenReturn(ENVIRONMENT);
         when(endpoint.context()).thenReturn(new CoreContext(ENVIRONMENT, null, 1));
-        channel = new EmbeddedChannel(new KeyValueHandler(endpoint, eventSink, requestQueue, false, true));
+        handler = new KeyValueHandler(endpoint, eventSink, requestQueue, false, true);
+        channel = new EmbeddedChannel(handler);
     }
 
     @After
@@ -1285,6 +1293,44 @@ public class KeyValueHandlerTest {
         assertEquals(119635, event.serverDuration());
         assertEquals(BUCKET, event.bucket());
         event.release();
+    }
+
+    /**
+     * Make sure that if nothing is in the request queue that a keepalive should be sent.
+     */
+    @Test
+    public void shouldSendKeepaliveIfEmpty() {
+        assertTrue(handler.shouldSendKeepAlive());
+    }
+
+    /**
+     * Make sure that if an operation is in-flight and active, since pipelining IS
+     * available, a keepalive request should be sent.
+     */
+    @Test
+    public void shouldSendKeepaliveIfActiveInFlight() {
+        Subscriber subscriber = new TestSubscriber();
+        GetRequest request = new GetRequest("key", "bucket");
+        request.subscriber(subscriber);
+        requestQueue.add(request);
+        channel.writeOutbound();
+        assertTrue(handler.shouldSendKeepAlive());
+    }
+
+    /**
+     * Make sure that if an operation is in-flight and inactive, since pipelining
+     * IS enabled, a keepalive request is sent to proactively check the socket.
+     */
+    @Test
+    public void shouldSendKeepaliveIfInactiveInFlight() {
+        Subscriber subscriber = new TestSubscriber();
+        GetRequest request = new GetRequest("key", "bucket");
+        request.subscriber(subscriber);
+        requestQueue.add(request);
+        channel.writeOutbound();
+        assertTrue(handler.shouldSendKeepAlive());
+        subscriber.unsubscribe();
+        assertTrue(handler.shouldSendKeepAlive());
     }
 
     class SnappyFeatureHandler extends SimpleChannelInboundHandler<FullBinaryMemcacheResponse> {

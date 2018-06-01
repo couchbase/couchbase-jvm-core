@@ -19,6 +19,7 @@ import com.couchbase.client.core.CoreContext;
 import com.couchbase.client.core.RequestCancelledException;
 import com.couchbase.client.core.ResponseEvent;
 import com.couchbase.client.core.endpoint.AbstractEndpoint;
+import com.couchbase.client.core.endpoint.AbstractGenericHandler;
 import com.couchbase.client.core.endpoint.DecodingState;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
@@ -65,6 +66,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import rx.Subscriber;
 import rx.functions.Action1;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
@@ -117,7 +119,7 @@ public class QueryHandlerTest {
     protected List<CouchbaseMessage> firedEvents;
     protected CountDownLatch latch;
     protected AbstractEndpoint endpoint;
-    protected ChannelHandler handler;
+    protected AbstractGenericHandler handler;
 
     protected void commonSetup() {
         responseBuffer = new Disruptor<ResponseEvent>(new EventFactory<ResponseEvent>() {
@@ -1626,5 +1628,43 @@ public class QueryHandlerTest {
                 expectedMetricsCounts(0, 0)
         );
         assertEquals(1, invokeCounter1.get());
+    }
+
+    /**
+     * Make sure that if nothing is in the request queue that a keepalive should be sent.
+     */
+    @Test
+    public void shouldSendKeepaliveIfEmpty() {
+        assertTrue(handler.shouldSendKeepAlive());
+    }
+
+    /**
+     * Make sure that if an operation is in-flight and active, since pipelining is
+     * not available, a keepalive request should not be sent.
+     */
+    @Test
+    public void shouldNotSendKeepaliveIfActiveInFlight() {
+        Subscriber subscriber = new TestSubscriber();
+        GenericQueryRequest request = GenericQueryRequest.simpleStatement("select 1=1", "bucket", "pw");
+        request.subscriber(subscriber);
+        queue.add(request);
+        channel.writeOutbound();
+        assertFalse(handler.shouldSendKeepAlive());
+    }
+
+    /**
+     * Make sure that if an operation is in-flight and inactive, even if pipelining
+     * is not available, a keepalive request is sent to proactively check the socket.
+     */
+    @Test
+    public void shouldSendKeepaliveIfInactiveInFlight() {
+        Subscriber subscriber = new TestSubscriber();
+        GenericQueryRequest request = GenericQueryRequest.simpleStatement("select 1=1", "bucket", "pw");
+        request.subscriber(subscriber);
+        queue.add(request);
+        channel.writeOutbound();
+        assertFalse(handler.shouldSendKeepAlive());
+        subscriber.unsubscribe();
+        assertTrue(handler.shouldSendKeepAlive());
     }
 }
