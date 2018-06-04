@@ -162,6 +162,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
     private final String hostname;
 
+    private final int port;
+
     /**
      * Factory which handles {@link SSLEngine} creation.
      */
@@ -233,6 +235,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.lastResponse = 0;
         this.free = true;
         this.hostname = "127.0.0.1"; // let's consider its localhost for testing, use other constructor if not.
+        this.port = 0;
         this.sslEngineFactory = null;
     }
 
@@ -261,6 +264,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         this.pipeline = pipeline;
         this.free = true;
         this.hostname = hostname;
+        this.port = port;
         this.connectCallbackGracePeriod = Integer.parseInt(
             System.getProperty("com.couchbase.connectCallbackGracePeriod", DEFAULT_CONNECT_CALLBACK_GRACE_PERIOD)
         );
@@ -402,37 +406,37 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     } else {
                         if (future.cause() instanceof AuthenticationException) {
                             LOGGER.warn(
-                                "{}Authentication Failure.",
-                                logIdent(channel, AbstractEndpoint.this)
+                                "{}Authentication Failure: {}",
+                                logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof SSLHandshakeException) {
                             LOGGER.warn(
-                                "{}SSL Handshake Failure during connect.",
-                                logIdent(channel, AbstractEndpoint.this)
+                                "{}SSL Handshake Failure during connect: {}",
+                                logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ClosedChannelException) {
                             LOGGER.warn(
-                                "{}Generic Failure.",
-                                logIdent(channel, AbstractEndpoint.this)
+                                "{}Generic Failure: {}",
+                                logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ConnectTimeoutException) {
                             LOGGER.warn(
-                                "{}Socket connect took longer than specified timeout..",
-                                logIdent(channel, AbstractEndpoint.this)
+                                "{}Socket connect took longer than specified timeout: {}",
+                                logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
                         } else if (future.cause() instanceof ConnectException) {
                             LOGGER.warn(
-                                "{}Could not connect to remote socket.",
-                                logIdent(channel, AbstractEndpoint.this)
+                                "{}Could not connect to remote socket: {}",
+                                logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
@@ -729,6 +733,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         return responseBuffer;
     }
 
+    @Override
+    public String remoteAddress() {
+        return this.hostname + ":" + this.port;
+    }
+
     /**
      * Simple log helper to give logs a common prefix.
      *
@@ -737,7 +746,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      * @return a prefix string for logs.
      */
     protected static RedactableArgument logIdent(final Channel chan, final Endpoint endpoint) {
-        String addr = chan != null ? chan.remoteAddress().toString() : String.valueOf(System.identityHashCode(endpoint));
+        String addr = chan != null ? chan.remoteAddress().toString() : endpoint.remoteAddress();
         return system("[" + addr + "][" + endpoint.getClass().getSimpleName() + "]: ");
     }
 
