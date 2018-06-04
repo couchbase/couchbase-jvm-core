@@ -71,4 +71,9 @@ public interface Endpoint extends Stateful<LifecycleState> {
      */
     Single<EndpointHealth> diagnostics(ServiceType type);
 
+    /**
+     * Returns the remote address as String representation. Hostname and port
+     * separated by colon.
+     */
+    String remoteAddress();
 }
