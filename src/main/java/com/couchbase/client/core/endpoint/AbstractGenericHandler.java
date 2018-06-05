@@ -50,6 +50,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import rx.Scheduler;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.subjects.Subject;
@@ -245,7 +246,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!pipeline && (!sentRequestQueue.isEmpty() || currentDecodingState != DecodingState.INITIAL)) {
+        if (!pipeline && !(msg instanceof KeepAlive) && (!sentRequestQueue.isEmpty() || currentDecodingState != DecodingState.INITIAL)) {
             if (traceEnabled) {
                 LOGGER.trace("Rescheduling {} because pipelining disable and a request is in-flight.", msg);
             }
@@ -620,12 +621,15 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      * Helper method to create, write and flush the keepalive message.
      */
     private void createAndWriteKeepAlive(final ChannelHandlerContext ctx) {
-        CouchbaseRequest keepAlive = createKeepAliveRequest();
+        final CouchbaseRequest keepAlive = createKeepAliveRequest();
         if (keepAlive != null) {
+            Subscriber<CouchbaseResponse> subscriber = new KeepAliveResponseAction(ctx);
+            keepAlive.subscriber(subscriber);
             keepAlive
                 .observable()
                 .timeout(env().keepAliveTimeout(), TimeUnit.MILLISECONDS)
-                .subscribe(new KeepAliveResponseAction(ctx));
+                .subscribe(subscriber);
+
             onKeepAliveFired(ctx, keepAlive);
 
             Channel channel = ctx.channel();
@@ -636,18 +640,27 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     }
 
     /**
+     * Returns true if there is at least one active request in the queue.
+     */
+    private boolean atLeastOneActiveInRequestQueue() {
+        for (REQUEST elem : sentRequestQueue) {
+            if (elem.isActive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Helper method to check if conditions are met to send a keepalive right now.
      *
      * @return true if keepalive can be sent, false otherwise.
      */
-    private boolean shouldSendKeepAlive() {
+    public boolean shouldSendKeepAlive() {
         if (pipeline) {
             return true; // always send if pipelining is enabled
         }
-
-        // if pipelining is disabled, only send if the request queue is empty and no response
-        // is currently being decoded.
-        return sentRequestQueue.isEmpty() && currentDecodingState == DecodingState.INITIAL;
+        return (sentRequestQueue.isEmpty() || !atLeastOneActiveInRequestQueue()) && currentDecodingState == DecodingState.INITIAL;
     }
 
     /**
