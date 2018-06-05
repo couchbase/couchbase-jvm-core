@@ -139,5 +139,4 @@ public class BucketLifecycleTest {
         assertEquals(ResponseStatus.SUCCESS, response.status());
         core.send(new CloseBucketRequest(TestProperties.bucket())).toBlocking().single();
     }
-
 }

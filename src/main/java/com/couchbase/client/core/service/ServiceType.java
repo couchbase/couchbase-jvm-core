@@ -53,6 +53,8 @@ public enum ServiceType {
      */
     ANALYTICS(BucketServiceMapping.ONE_FOR_ALL);
 
+    // If adding a new ServiceType, add to RingBufferMonitor
+
     private final BucketServiceMapping mapping;
 
     private ServiceType(BucketServiceMapping mapping) {

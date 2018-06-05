@@ -49,6 +49,7 @@ import com.couchbase.client.core.node.locate.ViewLocator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.tracing.RingBufferMonitor;
 import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -226,6 +227,8 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param request the request to dispatch.
      */
     private void dispatchRequest(final CouchbaseRequest request) {
+        RingBufferMonitor.instance().removeRequest(request);
+
         ClusterConfig config = configuration;
 
         //prevent non-bootstrap requests to go through if bucket not part of config

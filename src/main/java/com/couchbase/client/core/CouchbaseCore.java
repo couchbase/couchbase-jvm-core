@@ -53,6 +53,7 @@ import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.tracing.RingBufferMonitor;
 import com.lmax.disruptor.EventTranslatorOneArg;
 import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.RingBuffer;
@@ -229,10 +230,13 @@ public class CouchbaseCore implements ClusterFacade {
             handleClusterRequest(request);
             return (Observable<R>) request.observable().observeOn(environment.scheduler());
         } else {
+            RingBufferMonitor ringBufferMonitor = RingBufferMonitor.instance();
+            ringBufferMonitor.addRequest(request);
+
             if (coreSendHook == null) {
                 boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, request);
                 if (!published) {
-                    request.observable().onError(BACKPRESSURE_EXCEPTION);
+                    request.observable().onError(ringBufferMonitor.createException());
                 }
                 return (Observable<R>) request.observable();
             } else {
@@ -241,7 +245,7 @@ public class CouchbaseCore implements ClusterFacade {
                         .beforeSend(request, response);
                 boolean published = requestRingBuffer.tryPublishEvent(REQUEST_TRANSLATOR, hook.value1());
                 if (!published) {
-                    response.onError(BACKPRESSURE_EXCEPTION);
+                    response.onError(ringBufferMonitor.createException());
                 }
                 return (Observable<R>) hook.value2();
             }

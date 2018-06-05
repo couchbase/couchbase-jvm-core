@@ -15,6 +15,11 @@
  */
 package com.couchbase.client.core;
 
+import com.couchbase.client.core.annotations.InterfaceAudience;
+import com.couchbase.client.core.annotations.InterfaceStability;
+import com.couchbase.client.core.env.Diagnostics;
+import com.couchbase.client.core.tracing.RingBufferDiagnostics;
+
 /**
  * Identifies the need to back off on the supplier side when using a service, because the consumer is overloaded.
  *
@@ -22,4 +27,33 @@ package com.couchbase.client.core;
  * @since 1.0
  */
 public class BackpressureException extends CouchbaseException {
+    private RingBufferDiagnostics diagnostics;
+
+    public BackpressureException() {}
+
+    public BackpressureException(RingBufferDiagnostics diagnostics) {
+        super(makeString(diagnostics));
+        this.diagnostics = diagnostics;
+    }
+
+    /**
+     * Returns a {@link RingBufferDiagnostics} which, if non-null, gives a granular breakdown of the contents of the
+     * ringbuffer at the time of this exception
+     */
+    @InterfaceAudience.Public
+    @InterfaceStability.Experimental
+    public RingBufferDiagnostics diagostics() {
+        return diagnostics;
+    }
+
+    @Override
+    public String toString() {
+        return makeString(diagnostics);
+    }
+
+    private static String makeString(RingBufferDiagnostics diag) {
+        StringBuilder sb = new StringBuilder("Backpressure, ringbuffer contains ");
+        sb.append(diag == null ? "unavailable" : diag.toString());
+        return sb.toString();
+    }
 }
