@@ -77,4 +77,11 @@ public class DefaultClusterConfig implements ClusterConfig {
         }
         return nodes;
     }
+
+    @Override
+    public String toString() {
+        return "DefaultClusterConfig{" +
+            "bucketConfigs=" + bucketConfigs +
+            '}';
+    }
 }

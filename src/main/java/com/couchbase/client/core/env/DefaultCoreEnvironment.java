@@ -125,6 +125,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int MIN_COMPRESSION_SIZE = 32;
     public static final double MIN_COMPRESSION_RATIO = 0.83;
     public static final boolean ORPHAN_REPORTING_ENABLED = true;
+    public static final NetworkResolution NETWORK_RESOLUTION = NetworkResolution.AUTO;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -243,6 +244,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final Tracer tracer;
     private final int minCompressionSize;
     private final double minCompressionRatio;
+    private final NetworkResolution networkResolution;
 
     private static volatile int MAX_ALLOWED_INSTANCES = 1;
     private static final AtomicInteger INSTANCE_COUNT = new AtomicInteger();
@@ -566,6 +568,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 "), which means that some config polling will " +
                 "be skipped. Please adjust both settings in a logical fashion.");
         }
+
+        this.networkResolution = builder.networkResolution;
     }
 
     public static DefaultCoreEnvironment create() {
@@ -1056,6 +1060,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     @Override
     public OrphanResponseReporter orphanResponseReporter() { return orphanResponseReporter; }
 
+    @Override
+    public NetworkResolution networkResolution() {
+        return networkResolution;
+    }
+
     /**
      * Returns the number of maximal allowed instances before warning log will be
      * emitted.
@@ -1142,6 +1151,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private int minCompressionSize = MIN_COMPRESSION_SIZE;
         private boolean orphanResponseReportingEnabled = ORPHAN_REPORTING_ENABLED;
         private OrphanResponseReporter orphanResponseReporter;
+        private NetworkResolution networkResolution = NETWORK_RESOLUTION;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1931,6 +1941,23 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return self();
         }
 
+        /**
+         * Allows to tune the network resolution setting, pinning it to either
+         * internal or external instead of relying on the automatic mechanism.
+         *
+         * @param networkResolution the network resolution to use.
+         * @return the builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public SELF networkResolution(final NetworkResolution networkResolution) {
+            if (networkResolution == null) {
+                throw new IllegalArgumentException("NetworkResolution must not be null!");
+            }
+            this.networkResolution = networkResolution;
+            return self();
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1967,6 +1994,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", searchServiceEndpoints=").append(searchServiceEndpoints);
         sb.append(", configPollInterval=").append(configPollInterval);
         sb.append(", configPollFloorInterval=").append(configPollFloorInterval);
+        sb.append(", networkResolution=").append(networkResolution);
         sb.append(", ioPool=").append(ioPool.getClass().getSimpleName());
         if (ioPoolShutdownHook == null || ioPoolShutdownHook instanceof  NoOpShutdownHook) {
             sb.append("!unmanaged");

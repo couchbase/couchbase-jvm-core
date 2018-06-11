@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core.config;
 
+import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.service.ServiceType;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -147,5 +148,19 @@ public interface BucketConfig {
      * @return true if it does, false otherwise.
      */
     boolean hasFastForwardMap();
+
+    /**
+     * Non null if alternate addresses should be used, false otherwise.
+     */
+    String useAlternateNetwork();
+
+    /**
+     * Setter to set if external networking should be used or not.
+     *
+     * @param useAlternateNetwork if an alternate network should be used.
+     */
+    @InterfaceAudience.Private
+    void useAlternateNetwork(String useAlternateNetwork);
+
 
 }

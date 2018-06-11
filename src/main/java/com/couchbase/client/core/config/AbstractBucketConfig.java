@@ -37,6 +37,7 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final List<NodeInfo> nodeInfo;
     private final int enabledServices;
     private final List<BucketCapabilities> bucketCapabilities;
+    private volatile String useAlternateNetwork;
 
     protected AbstractBucketConfig(String uuid, String name, BucketNodeLocator locator, String uri, String streamingUri,
         List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities) {
@@ -90,7 +91,13 @@ public abstract class AbstractBucketConfig implements BucketConfig {
                 sslPorts.remove(ServiceType.VIEW);
             }
 
-            converted.add(new DefaultNodeInfo(hostname, ports, sslPorts));
+            Map<String, AlternateAddress> aa = null;
+            for (NodeInfo ni : nodeInfos) {
+                if (ni.hostname().equals(hostname)) {
+                    aa = ni.alternateAddresses();
+                }
+            }
+            converted.add(new DefaultNodeInfo(hostname, ports, sslPorts, aa));
         }
         return converted;
     }
@@ -145,6 +152,19 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     public BucketConfig username(final String username) {
         this.username = username;
         return this;
+    }
+
+    @Override
+    public String useAlternateNetwork() {
+        return useAlternateNetwork;
+    }
+
+    @Override
+    public void useAlternateNetwork(String useAlternateNetwork) {
+        this.useAlternateNetwork = useAlternateNetwork;
+        for (NodeInfo node : nodes()) {
+            node.useAlternateNetwork(useAlternateNetwork);
+        }
     }
 
     @Override

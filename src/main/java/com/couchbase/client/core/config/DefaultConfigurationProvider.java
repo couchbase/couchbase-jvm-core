@@ -24,6 +24,7 @@ import com.couchbase.client.core.config.refresher.CarrierRefresher;
 import com.couchbase.client.core.config.refresher.HttpRefresher;
 import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.NetworkResolution;
 import com.couchbase.client.core.event.EventBus;
 import com.couchbase.client.core.event.system.BucketClosedEvent;
 import com.couchbase.client.core.event.system.BucketOpenedEvent;
@@ -128,6 +129,13 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * List of initial bootstrap seed hostnames.
      */
     private volatile Set<NetworkAddress> seedHosts;
+
+    /**
+     * If null means not decided yet, true and false mean decided.
+     *
+     * Optional is not available in java 6, go figure.
+     */
+    private volatile String externalNetwork;
 
     /**
      * Create a new {@link DefaultConfigurationProvider}.
@@ -470,6 +478,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             newConfig.username(oldConfig.username());
         }
 
+        // this is the first config, decide on external networking
+        if (oldConfig == null) {
+            externalNetwork = determineNetworkResolution(newConfig, environment.networkResolution(), seedHosts);
+            LOGGER.info("Selected network configuration: {}", externalNetwork != null ? externalNetwork : "default");
+        }
+
+        if (externalNetwork != null) {
+            newConfig.useAlternateNetwork(environment.networkResolution().name());
+        }
+
         cluster.setBucketConfig(newConfig.name(), newConfig);
         LOGGER.debug("Applying new configuration {}", newConfig);
 
@@ -485,6 +503,45 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
 
         configObservable.onNext(currentConfig);
+    }
+
+    /**
+     * Helper method to figure out which network resolution should be used.
+     *
+     * if DEFAULT is selected, then null is returned which is equal to the "internal" or default
+     * config mode. If AUTO is used then we perform the select heuristic based off of the seed
+     * hosts given. All other resolution settings (i.e. EXTERNAL) are returned directly and are
+     * considered to be part of the alternate address configs.
+     *
+     * @param config the config to check against
+     * @param nr the network resolution setting from the environment
+     * @param seedHosts the seed hosts from bootstrap for autoconfig.
+     * @return the found setting if external is used, null if internal/default is used.
+     */
+    public static String determineNetworkResolution(final BucketConfig config, final NetworkResolution nr,
+        final Set<NetworkAddress> seedHosts) {
+        if (nr.equals(NetworkResolution.DEFAULT)) {
+            return null;
+        } else if (nr.equals(NetworkResolution.AUTO)) {
+            for (NodeInfo info : config.nodes()) {
+                if (seedHosts.contains(info.hostname())) {
+                    return null;
+                }
+
+                Map<String, AlternateAddress> aa = info.alternateAddresses();
+                if (aa != null && !aa.isEmpty()) {
+                    for (Map.Entry<String, AlternateAddress> entry : aa.entrySet()) {
+                        AlternateAddress alternateAddress = entry.getValue();
+                        if (alternateAddress != null && seedHosts.contains(alternateAddress.hostname())) {
+                            return entry.getKey();
+                        }
+                    }
+                }
+            }
+            return null;
+        } else {
+            return nr.name();
+        }
     }
 
     /**

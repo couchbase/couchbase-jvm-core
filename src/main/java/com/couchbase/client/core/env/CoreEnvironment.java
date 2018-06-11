@@ -554,4 +554,11 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      */
     @InterfaceStability.Committed
     OrphanResponseReporter orphanResponseReporter();
+
+    /**
+     * Allows to configure the network resolution, default being automatic.
+     */
+    @InterfaceAudience.Public
+    @InterfaceStability.Uncommitted
+    NetworkResolution networkResolution();
 }

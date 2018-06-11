@@ -20,12 +20,12 @@ import com.couchbase.client.core.config.loader.Loader;
 import com.couchbase.client.core.config.refresher.Refresher;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
+import com.couchbase.client.core.env.NetworkResolution;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.util.Resources;
 import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;
 import org.mockito.invocation.InvocationOnMock;
@@ -38,12 +38,16 @@ import rx.subjects.AsyncSubject;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -411,6 +415,9 @@ public class DefaultConfigurationProviderTest {
             environment
         );
 
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.localhost()));
+        provider.seedHosts(seeds, true);
+
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
@@ -428,6 +435,8 @@ public class DefaultConfigurationProviderTest {
             environment
         );
 
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.localhost()));
+        provider.seedHosts(seeds, true);
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         String v1 = raw.replace("$REV", "1");
         provider.proposeBucketConfig(null, v1);
@@ -448,6 +457,9 @@ public class DefaultConfigurationProviderTest {
             mock(ClusterFacade.class),
             environment
         );
+
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.localhost()));
+        provider.seedHosts(seeds, true);
 
         assertTrue(provider.config().bucketConfigs().isEmpty());
 
@@ -477,6 +489,9 @@ public class DefaultConfigurationProviderTest {
             environment
         );
 
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.localhost()));
+        provider.seedHosts(seeds, true);
+
         String raw = Resources.read("config_with_rev_placeholder.json", getClass());
         String v2 = raw.replace("$REV", "2");
         provider.proposeBucketConfig(null, v2);
@@ -497,6 +512,9 @@ public class DefaultConfigurationProviderTest {
             mock(ClusterFacade.class),
             environment
         );
+
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.localhost()));
+        provider.seedHosts(seeds, true);
 
         TestSubscriber<ClusterConfig> subscriber = new TestSubscriber<ClusterConfig>();
         provider.configs().subscribe(subscriber);
@@ -523,6 +541,113 @@ public class DefaultConfigurationProviderTest {
         Thread.sleep(100);
 
         assertEquals(2, subscriber.getOnNextEvents().size());
+    }
+
+    @Test
+    public void shouldForcePickServerDefault() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        final Loader loader = mock(Loader.class);
+        final Refresher refresher = mock(Refresher.class);
+        final CoreEnvironment env = mock(CoreEnvironment.class);
+        when(env.networkResolution()).thenReturn(NetworkResolution.DEFAULT);
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            env,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, refresher);
+            }}
+        );
+
+        // No configs available
+        assertTrue(provider.config().bucketConfigs().isEmpty());
+
+        String raw = Resources.read("config_with_external.json", getClass());
+        provider.proposeBucketConfig("bucket", raw);
+
+        assertNull(provider.config().bucketConfig("default").useAlternateNetwork());
+    }
+
+    @Test
+    public void shouldForcePickExternal() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        final Loader loader = mock(Loader.class);
+        final Refresher refresher = mock(Refresher.class);
+        final CoreEnvironment env = mock(CoreEnvironment.class);
+        when(env.networkResolution()).thenReturn(NetworkResolution.EXTERNAL);
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            env,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, refresher);
+            }}
+        );
+
+        // No configs available
+        assertTrue(provider.config().bucketConfigs().isEmpty());
+
+        String raw = Resources.read("config_with_external.json", getClass());
+        provider.proposeBucketConfig("bucket", raw);
+
+        assertNotNull(provider.config().bucketConfig("default").useAlternateNetwork());
+    }
+
+    @Test
+    public void shouldAutoPickExternal() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        final Loader loader = mock(Loader.class);
+        final Refresher refresher = mock(Refresher.class);
+        final CoreEnvironment env = mock(CoreEnvironment.class);
+        when(env.networkResolution()).thenReturn(NetworkResolution.AUTO);
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            env,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, refresher);
+            }}
+        );
+
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>();
+        seeds.add(NetworkAddress.create("192.168.132.234"));
+        provider.seedHosts(seeds, true);
+
+        // No configs available
+        assertTrue(provider.config().bucketConfigs().isEmpty());
+
+        String raw = Resources.read("config_with_external.json", getClass());
+        provider.proposeBucketConfig("bucket", raw);
+
+        assertNotNull(provider.config().bucketConfig("default").useAlternateNetwork());
+    }
+
+    @Test
+    public void shouldAutoPickServerDefault() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        final Loader loader = mock(Loader.class);
+        final Refresher refresher = mock(Refresher.class);
+        final CoreEnvironment env = mock(CoreEnvironment.class);
+        when(env.networkResolution()).thenReturn(NetworkResolution.AUTO);
+        ConfigurationProvider provider = new DefaultConfigurationProvider(
+            cluster,
+            env,
+            Arrays.asList(loader),
+            new HashMap<LoaderType, Refresher>() {{
+                put(LoaderType.Carrier, refresher);
+            }}
+        );
+
+        Set<NetworkAddress> seeds = new HashSet<NetworkAddress>(Arrays.asList(NetworkAddress.create("172.17.0.3")));
+        provider.seedHosts(seeds, true);
+
+        // No configs available
+        assertTrue(provider.config().bucketConfigs().isEmpty());
+
+        String raw = Resources.read("config_with_external.json", getClass());
+        provider.proposeBucketConfig("bucket", raw);
+
+        assertNull(provider.config().bucketConfig("default").useAlternateNetwork());
     }
 
 }

@@ -18,13 +18,18 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
+import com.couchbase.client.core.env.NetworkResolution;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.util.Resources;
 import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -46,6 +51,7 @@ public class DefaultCouchbaseBucketConfigTest {
         assertFalse(config.hasPrimaryPartitionsOnNode(NetworkAddress.create("2.3.4.5")));
         assertEquals(BucketNodeLocator.VBUCKET, config.locator());
         assertFalse(config.ephemeral());
+        assertTrue(config.nodes().get(0).alternateAddresses().isEmpty());
     }
 
     @Test
@@ -171,5 +177,27 @@ public class DefaultCouchbaseBucketConfigTest {
                 BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
 
         assertNull(config.uuid());
+    }
+
+    /**
+     * This test makes sure that the external hosts are present if set.
+     */
+    @Test
+    public void shouldIncludeExternalIfPresent() {
+        String raw = Resources.read("config_with_external.json", getClass());
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class));
+
+        List<NodeInfo> nodes = config.nodes();
+        assertEquals(3, nodes.size());
+        for (NodeInfo node : nodes) {
+            Map<String, AlternateAddress> addrs = node.alternateAddresses();
+            assertEquals(1, addrs.size());
+            AlternateAddress addr = addrs.get(NetworkResolution.EXTERNAL.name());
+            assertNotNull(addr.hostname());
+            assertNotNull(addr.rawHostname());
+            assertFalse(addr.services().isEmpty());
+            assertTrue(addr.sslServices().isEmpty());
+        }
     }
 }

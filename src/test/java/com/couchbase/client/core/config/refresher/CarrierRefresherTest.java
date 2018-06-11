@@ -81,7 +81,7 @@ public class CarrierRefresherTest {
         List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>();
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports, null));
         when(config.nodes()).thenReturn(nodeInfos);
 
         final AtomicReference<ByteBuf> bufRef = new AtomicReference<ByteBuf>(null);
@@ -124,7 +124,7 @@ public class CarrierRefresherTest {
         List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>();
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports, null));
         when(config.nodes()).thenReturn(nodeInfos);
 
         ByteBuf content = Unpooled.copiedBuffer("", CharsetUtil.UTF_8);
@@ -159,7 +159,7 @@ public class CarrierRefresherTest {
         List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>();
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -199,7 +199,7 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -239,8 +239,8 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -281,8 +281,8 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
         when(config.nodes()).thenReturn(nodeInfos);
 
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
@@ -316,9 +316,9 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "6.7.8.9:8091", new HashMap<String, Integer>()));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "6.7.8.9:8091", new HashMap<String, Integer>(), null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
         when(config.nodes()).thenReturn(nodeInfos);
 
         ByteBuf content = Unpooled.copiedBuffer("{\"config\": true}", CharsetUtil.UTF_8);
@@ -364,7 +364,7 @@ public class CarrierRefresherTest {
         List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>();
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "localhost:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -461,8 +461,8 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -511,8 +511,8 @@ public class CarrierRefresherTest {
 
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
         when(bucketConfig.nodes()).thenReturn(nodeInfos);
         Map<String, BucketConfig> bucketConfigs = new HashMap<String, BucketConfig>();
         bucketConfigs.put("bucket", bucketConfig);
@@ -566,8 +566,8 @@ public class CarrierRefresherTest {
         List<NodeInfo> nodeInfos = new ArrayList<NodeInfo>();
         Map<String, Integer> ports = new HashMap<String, Integer>();
         ports.put("direct", 11210);
-        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports));
-        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports));
+        nodeInfos.add(new DefaultNodeInfo(null, "1.2.3.4:8091", ports, null));
+        nodeInfos.add(new DefaultNodeInfo(null, "2.3.4.5:8091", ports, null));
 
 
         ClusterConfig cc = mock(ClusterConfig.class);

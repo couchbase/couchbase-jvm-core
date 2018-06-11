@@ -51,7 +51,19 @@ public class DefaultPortInfo implements PortInfo {
             throw new CouchbaseException("Could not analyze hostname from config.", e);
         }
 
-        for (Map.Entry<String, Integer> entry : services.entrySet()) {
+        extractPorts(services, ports, sslPorts);
+    }
+
+    /**
+     * Helper method to extract ports from the raw services port mapping.
+     *
+     * @param input the raw input ports
+     * @param ports the output direct ports
+     * @param sslPorts the output ssl ports
+     */
+    static void extractPorts(final Map<String, Integer> input, final Map<ServiceType, Integer> ports,
+        final Map<ServiceType, Integer> sslPorts) {
+        for (Map.Entry<String, Integer> entry : input.entrySet()) {
             String service = entry.getKey();
             int port = entry.getValue();
             if (service.equals("mgmt")) {

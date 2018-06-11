@@ -52,7 +52,7 @@ public class AbstractBucketConfigTest {
         direct.put(ServiceType.CONFIG, 1235);
         ssl.put(ServiceType.BINARY, 4567);
 
-        nodeInfos.add(new DefaultNodeInfo(NetworkAddress.localhost(), direct, ssl));
+        nodeInfos.add(new DefaultNodeInfo(NetworkAddress.localhost(), direct, ssl, null));
 
         BucketConfig bc = new SampleBucketConfig(nodeInfos, null);
 

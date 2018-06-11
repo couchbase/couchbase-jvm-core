@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Couchbase, Inc.
+ * Copyright (c) 2018 Couchbase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -24,8 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonDeserialize(as = DefaultNodeInfo.class)
-public interface NodeInfo {
+@JsonDeserialize(as = DefaultAlternateAddress.class)
+public interface AlternateAddress {
 
     /**
      * The inet address of the node.
@@ -55,26 +55,5 @@ public interface NodeInfo {
      * @return a map containing all services with secured ports.
      */
     Map<ServiceType, Integer> sslServices();
-
-    /**
-     * Contains alternate addresses, if set.
-     *
-     * @return a map containing alternate addresses.
-     */
-    Map<String, AlternateAddress> alternateAddresses();
-
-    /**
-     * True if alternate addresses should be used, false otherwise.
-     */
-    String useAlternateNetwork();
-
-    /**
-     * Setter to set if external networking should be used or not.
-     *
-     * @param useAlternateNetwork if not null will be used.
-     */
-    @InterfaceAudience.Private
-    void useAlternateNetwork(String useAlternateNetwork);
-
 
 }

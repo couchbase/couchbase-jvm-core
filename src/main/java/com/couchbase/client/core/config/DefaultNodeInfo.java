@@ -21,10 +21,8 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +38,10 @@ public class DefaultNodeInfo implements NodeInfo {
     private final NetworkAddress hostname;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
+    private final Map<String, AlternateAddress> alternateAddresses;
     private int configPort;
+    private volatile String useAlternateNetwork;
+
 
     /**
      * Creates a new {@link DefaultNodeInfo} with no SSL services.
@@ -53,10 +54,14 @@ public class DefaultNodeInfo implements NodeInfo {
     public DefaultNodeInfo(
         @JsonProperty("couchApiBase") String viewUri,
         @JsonProperty("hostname") String hostname,
-        @JsonProperty("ports") Map<String, Integer> ports) {
+        @JsonProperty("ports") Map<String, Integer> ports,
+        @JsonProperty("alternateAddresses") Map<String, AlternateAddress> alternateAddresses) {
         if (hostname == null) {
             throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
         }
+        this.alternateAddresses = alternateAddresses == null
+            ? Collections.<String, AlternateAddress>emptyMap()
+            : alternateAddresses;
 
         try {
             this.rawHostname = trimPort(hostname);
@@ -76,7 +81,7 @@ public class DefaultNodeInfo implements NodeInfo {
      * @param ssl      the port list of the ssl node services.
      */
     public DefaultNodeInfo(NetworkAddress hostname, Map<ServiceType, Integer> direct,
-        Map<ServiceType, Integer> ssl) {
+        Map<ServiceType, Integer> ssl, Map<String, AlternateAddress> alternateAddresses) {
         if (hostname == null) {
             throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
         }
@@ -85,21 +90,56 @@ public class DefaultNodeInfo implements NodeInfo {
         this.rawHostname = hostname.nameOrAddress();
         this.directServices = direct;
         this.sslServices = ssl;
+        this.alternateAddresses = alternateAddresses == null
+            ? Collections.<String, AlternateAddress>emptyMap()
+            : alternateAddresses;
     }
 
     @Override
     public NetworkAddress hostname() {
-        return hostname;
+        if (useAlternateNetwork != null) {
+            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
+            if (aa == null) {
+                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
+            } else {
+                return aa.hostname();
+            }
+        } else {
+            return hostname;
+        }
     }
 
     @Override
     public Map<ServiceType, Integer> services() {
-        return directServices;
+        if (useAlternateNetwork != null) {
+            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
+            if (aa == null) {
+                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
+            } else {
+                return aa.services().isEmpty() ? directServices : aa.services();
+            }
+        } else {
+            return directServices;
+        }
     }
 
     @Override
     public Map<ServiceType, Integer> sslServices() {
-        return sslServices;
+        if (useAlternateNetwork != null) {
+            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
+            if (aa == null) {
+                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
+            } else {
+                return aa.sslServices().isEmpty() ? sslServices : aa.sslServices();
+            }
+        } else {
+            return sslServices;
+        }
+    }
+
+    @Override
+    public Map<String, AlternateAddress> alternateAddresses() {
+        return alternateAddresses;
     }
 
     private Map<ServiceType, Integer> parseDirectServices(final String viewUri, final Map<String, Integer> input) {
@@ -142,17 +182,38 @@ public class DefaultNodeInfo implements NodeInfo {
 
     @Override
     public String rawHostname() {
-        return rawHostname;
+        if (useAlternateNetwork != null) {
+            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
+            if (aa == null) {
+                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
+            } else {
+                return aa.rawHostname();
+            }
+        } else {
+            return rawHostname;
+        }
+    }
+
+    @Override
+    public String useAlternateNetwork() {
+        return useAlternateNetwork;
+    }
+
+    @Override
+    public void useAlternateNetwork(final String useAlternateNetwork) {
+        this.useAlternateNetwork = useAlternateNetwork;
     }
 
     @Override
     public String toString() {
-        return "NodeInfo{"
-            + ", rawHostname" + rawHostname
-            + ", hostname=" + hostname
-            + ", configPort=" + configPort
-            + ", directServices=" + directServices
-            + ", sslServices=" + sslServices
-            + '}';
+        return "DefaultNodeInfo{" +
+            "rawHostname='" + rawHostname + '\'' +
+            ", hostname=" + hostname +
+            ", directServices=" + directServices +
+            ", sslServices=" + sslServices +
+            ", alternateAddresses=" + alternateAddresses +
+            ", configPort=" + configPort +
+            ", useAlternateNetwork=" + useAlternateNetwork +
+            '}';
     }
 }
