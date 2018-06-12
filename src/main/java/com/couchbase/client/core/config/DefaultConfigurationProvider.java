@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -217,11 +218,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
         LOGGER.debug("Setting seed hosts to {}", hosts);
         if (shuffle) {
-            List<NetworkAddress> hostsList = new ArrayList<NetworkAddress>(hosts);
+            final List<NetworkAddress> hostsList = new ArrayList<NetworkAddress>(hosts);
             Collections.shuffle(hostsList);
-            seedHosts = new HashSet<NetworkAddress>(hostsList);
+            seedHosts = new LinkedHashSet<NetworkAddress>(hostsList);
         } else {
-            seedHosts = hosts;
+            seedHosts = new LinkedHashSet<NetworkAddress>(hosts);
         }
         return true;
     }
