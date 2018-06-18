@@ -1808,7 +1808,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          * @return this builder for chaining purposes.
          */
         @InterfaceStability.Committed
-        public SELF tracingEnabled(final boolean operationTracingEnabled) {
+        public SELF operationTracingEnabled(final boolean operationTracingEnabled) {
             this.operationTracingEnabled = operationTracingEnabled;
             return self();
         }
