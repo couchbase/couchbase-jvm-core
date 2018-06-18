@@ -24,7 +24,6 @@ import com.couchbase.client.core.env.CoreScheduler;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.logging.RedactableArgument;
-import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.DiagnosticRequest;
@@ -52,13 +51,9 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.opentracing.Scope;
 import io.opentracing.Span;
-import io.opentracing.tag.Tags;
-import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.subjects.Subject;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -493,18 +488,19 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     private void completeResponse(final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
-
-        // the following observable complete will go into nirvana since
-        // no one is subscribing anymore.. set zombie = true and complete
-        // the span!
-        if (env().operationTracingEnabled()
-            && response.request() != null
-            && !response.request().isActive()
-            && response.request().span() != null) {
-            Scope scope = env().tracer().scopeManager()
-                .activate(response.request().span(), true);
-            scope.span().setBaggageItem("couchbase.zombie", "true");
-            scope.close();
+        // Noone is listening anymore, handle tracing and/or zombie reporting
+        // depending on if enabled or not.
+        CouchbaseRequest request = response.request();
+        if (request != null && !request.isActive()) {
+            if (env().operationTracingEnabled() && request.span() != null) {
+                Scope scope = env().tracer().scopeManager()
+                        .activate(request.span(), true);
+                scope.span().setBaggageItem("couchbase.zombie", "true");
+                scope.close();
+            }
+            if (env().zombieResponseReportingEnabled()) {
+                env().zombieResponseReporter().report(response);
+            }
         }
 
         try {

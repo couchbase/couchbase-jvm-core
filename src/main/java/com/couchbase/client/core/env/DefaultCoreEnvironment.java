@@ -45,7 +45,9 @@ import com.couchbase.client.core.node.MemcachedHashingStrategy;
 import com.couchbase.client.core.retry.BestEffortRetryStrategy;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.tracing.DefaultZombieResponseReporter;
 import com.couchbase.client.core.tracing.ThresholdLogTracer;
+import com.couchbase.client.core.tracing.ZombieResponseReporter;
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.WaitStrategy;
 import io.netty.channel.EventLoopGroup;
@@ -122,6 +124,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean OPERATION_TRACING_SERVER_DUR_ENABLED = true;
     public static final int MIN_COMPRESSION_SIZE = 32;
     public static final double MIN_COMPRESSION_RATIO = 0.83;
+    public static final boolean ZOMBIE_REPORTING_ENABLED = true;
 
     public static String CORE_VERSION;
     public static String CORE_GIT_VERSION;
@@ -258,6 +261,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook viewIoPoolShutdownHook;
     private final ShutdownHook searchIoPoolShutdownHook;
     private final ShutdownHook tracerShutdownHook;
+    private final ShutdownHook zombieReporterShutdownHook;
 
     private final KeyValueServiceConfig keyValueServiceConfig;
     private final QueryServiceConfig queryServiceConfig;
@@ -274,6 +278,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final boolean forceSaslPlain;
 
     private final CouchbaseCoreSendHook couchbaseCoreSendHook;
+
+    private final boolean zombieResponseReportingEnabled;
+    private final ZombieResponseReporter zombieResponseReporter;
 
     protected DefaultCoreEnvironment(final Builder builder) {
         boolean emitEnvWarnMessage = false;
@@ -331,6 +338,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
         keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
         operationTracingEnabled = booleanPropertyOr("operationTracingEnabled", builder.operationTracingEnabled);
+        zombieResponseReportingEnabled = booleanPropertyOr("zombieResponseReportingEnabled", builder.operationTracingEnabled);
         operationTracingServerDurationEnabled = booleanPropertyOr("operationTracingServerDurationEnabled", builder.operationTracingServerDurationEnabled);
         minCompressionRatio = doublePropertyOr("compressionMinRatio", builder.minCompressionRatio);
         minCompressionSize = intPropertyOr("compressionMinSize", builder.minCompressionSize);
@@ -362,6 +370,36 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } else {
             tracer = builder.tracer;
             tracerShutdownHook = new NoOpShutdownHook();
+        }
+
+        if (!zombieResponseReportingEnabled) {
+            zombieResponseReporter = null;
+            zombieReporterShutdownHook = new NoOpShutdownHook();
+        } else if (builder.zombieResponseReporter == null){
+            zombieResponseReporter = DefaultZombieResponseReporter.create();
+            zombieReporterShutdownHook = new ShutdownHook() {
+                private volatile boolean shutdown = false;
+
+                @Override
+                public Observable<Boolean> shutdown() {
+                    return Observable.fromCallable(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            zombieResponseReporter.shutdown();
+                            shutdown = true;
+                            return true;
+                        }
+                    });
+                }
+
+                @Override
+                public boolean isShutdown() {
+                    return shutdown;
+                }
+            };
+        } else {
+            zombieResponseReporter = builder.zombieResponseReporter;
+            zombieReporterShutdownHook = new NoOpShutdownHook();
         }
 
         if (ioPoolSize < MIN_POOL_SIZE) {
@@ -606,7 +644,9 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 wrapShutdown(searchIoPoolShutdownHook.shutdown(), "searchIoPool"),
                 wrapShutdown(coreSchedulerShutdownHook.shutdown(), "Core Scheduler"),
                 wrapShutdown(Observable.just(runtimeMetricsCollector.shutdown()), "Runtime Metrics Collector"),
-                wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector")), wrapShutdown(tracerShutdownHook.shutdown(), "Tracer"))
+                wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector")),
+                wrapShutdown(tracerShutdownHook.shutdown(), "Tracer"),
+                wrapShutdown(zombieReporterShutdownHook.shutdown(), "ZombieReporter"))
                 .reduce(true,
                         new Func2<Boolean, ShutdownStatus, Boolean>() {
                             @Override
@@ -1010,6 +1050,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return minCompressionRatio;
     }
 
+    @Override
+    public boolean zombieResponseReportingEnabled() { return zombieResponseReportingEnabled; }
+
+    @Override
+    public ZombieResponseReporter zombieResponseReporter() { return zombieResponseReporter; }
+
     /**
      * Returns the number of maximal allowed instances before warning log will be
      * emitted.
@@ -1094,6 +1140,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private Tracer tracer;
         private double minCompressionRatio = MIN_COMPRESSION_RATIO;
         private int minCompressionSize = MIN_COMPRESSION_SIZE;
+        private boolean zombieResponseReportingEnabled = ZOMBIE_REPORTING_ENABLED;
+        private ZombieResponseReporter zombieResponseReporter;
 
         private MetricsCollectorConfig runtimeMetricsCollectorConfig;
         private LatencyMetricsCollectorConfig networkLatencyMetricsCollectorConfig;
@@ -1103,6 +1151,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private QueryServiceConfig queryServiceConfig;
         private ViewServiceConfig viewServiceConfig;
         private SearchServiceConfig searchServiceConfig;
+
 
         protected Builder() {
         }
@@ -1868,6 +1917,20 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return self();
         }
 
+        @InterfaceAudience.Public
+        @InterfaceStability.Committed
+        public SELF zombieResponseReportingEnabled(final boolean zombieResponseReportingEnabled) {
+            this.zombieResponseReportingEnabled = zombieResponseReportingEnabled;
+            return self();
+        }
+
+        @InterfaceAudience.Public
+        @InterfaceStability.Committed
+        public SELF zombieResponseReporter(final ZombieResponseReporter zombieResponseReporter) {
+            this.zombieResponseReporter = zombieResponseReporter;
+            return self();
+        }
+
         public DefaultCoreEnvironment build() {
             return new DefaultCoreEnvironment(this);
         }
@@ -1974,6 +2037,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", operationTracingEnabled=").append(operationTracingEnabled);
         sb.append(", operationTracingServerDurationEnabled=").append(operationTracingServerDurationEnabled);
         sb.append(", tracer=").append(tracer != null ? tracer.getClass().getSimpleName() : "null");
+        sb.append(", zombieResponseReportingEnabled=").append(zombieResponseReportingEnabled);
+        sb.append(", zombieResponseReporter=").append(zombieResponseReporter != null ? zombieResponseReporter.getClass().getSimpleName() : "null");
         return sb;
     }
 

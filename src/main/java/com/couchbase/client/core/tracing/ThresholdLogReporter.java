@@ -18,7 +18,6 @@ package com.couchbase.client.core.tracing;
 
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.util.internal.shaded.org.jctools.queues.MpscUnboundedArrayQueue;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
@@ -69,7 +68,6 @@ public class ThresholdLogReporter {
     public static final String KEY_SERVER_MICROS = "server_us";
 
     private final Queue<ThresholdLogSpan> overThresholdQueue;
-    private final Queue<ThresholdLogSpan> zombieQueue;
 
     private final long kvThreshold;
     private final long n1qlThreshold;
@@ -110,7 +108,6 @@ public class ThresholdLogReporter {
         }
 
         overThresholdQueue = new MpscUnboundedArrayQueue<ThresholdLogSpan>(builder.spanQueueSize);
-        zombieQueue = new MpscUnboundedArrayQueue<ThresholdLogSpan>(builder.spanQueueSize);
         kvThreshold = builder.kvThreshold;
         analyticsThreshold = builder.analyticsThreshold;
         ftsThreshold = builder.ftsThreshold;
@@ -139,8 +136,7 @@ public class ThresholdLogReporter {
     }
 
     /**
-     * Reports the given span, but it doesn't have to be a potential slow or
-     * zombie operation.
+     * Reports the given span, but it doesn't have to be a potential slow.
      *
      * This method, based on its configuration, will figure out if the given
      * span is indeed eligible for being part in the log.
@@ -148,11 +144,7 @@ public class ThresholdLogReporter {
      * @param span the span to report.
      */
     public void report(final ThresholdLogSpan span) {
-        if (isZombie(span)) {
-            if (!zombieQueue.offer(span)) {
-                LOGGER.debug("Could not enqueue span {} for zombie reporting, discarding.", span);
-            }
-        } else if (isOverThreshold(span)) {
+        if (isOverThreshold(span)) {
             if (!overThresholdQueue.offer(span)) {
                 LOGGER.debug("Could not enqueue span {} for over threshold reporting, discarding.", span);
             }
@@ -181,19 +173,6 @@ public class ThresholdLogReporter {
         } else {
             return false;
         }
-    }
-
-    /**
-     * Checks if the given span is a zombie span.
-     *
-     *      "It's not too late for you. My offer still stands: you can join us ... or you can die."
-     *          -- Rick
-     *
-     * @param span the span to check.
-     * @return true if it is, false otherwise.
-     */
-    private boolean isZombie(final ThresholdLogSpan span) {
-        return "true".equals(span.getBaggageItem("couchbase.zombie"));
     }
 
     /**
@@ -253,7 +232,7 @@ public class ThresholdLogReporter {
 
         /**
          * Allows to configure the queue size for the individual span queues
-         * used to track the spans over threshold/zombies.
+         * used to track the spans over threshold.
          *
          * @param spanQueueSize the queue size to use.
          * @return this builder for chaining.
@@ -362,25 +341,13 @@ public class ThresholdLogReporter {
         private final SortedSet<ThresholdLogSpan> viewThresholdSet = new TreeSet<ThresholdLogSpan>();
         private final SortedSet<ThresholdLogSpan> ftsThresholdSet = new TreeSet<ThresholdLogSpan>();
         private final SortedSet<ThresholdLogSpan> analyticsThresholdSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> kvZombieSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> n1qlZombieSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> viewZombieSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> ftsZombieSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> analyticsZombieSet = new TreeSet<ThresholdLogSpan>();
 
         private int kvThresholdCount = 0;
         private int n1qlThresholdCount = 0;
         private int viewThresoldCount = 0;
         private int ftsThresholdCount = 0;
         private int analyticsThresholdCount = 0;
-        private int kvZombieCount = 0;
-        private int n1qlZombieCount = 0;
-        private int viewZombieCount = 0;
-        private int ftsZombieCount = 0;
-        private int analyticsZombieCount = 0;
 
-        private long lastZombieLog;
-        private boolean hasZombieWritten;
         private long lastThresholdLog;
         private boolean hasThresholdWritten;
 
@@ -390,7 +357,6 @@ public class ThresholdLogReporter {
             while (running) {
                 try {
                     handleOverThresholdQueue();
-                    handleZombieQueue();
                     Thread.sleep(workerSleepMs);
                 } catch (final InterruptedException ex) {
                     if (!running) {
@@ -421,19 +387,19 @@ public class ThresholdLogReporter {
                 }
                 String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
-                    updateSet(kvThresholdSet, span, false);
+                    updateSet(kvThresholdSet, span);
                     kvThresholdCount += 1;
                 } else if (SERVICE_N1QL.equals(service)) {
-                    updateSet(n1qlThresholdSet, span, false);
+                    updateSet(n1qlThresholdSet, span);
                     n1qlThresholdCount += 1;
                 } else if (SERVICE_VIEW.equals(service)) {
-                    updateSet(viewThresholdSet, span, false);
+                    updateSet(viewThresholdSet, span);
                     viewThresoldCount += 1;
                 } else if (SERVICE_FTS.equals(service)) {
-                    updateSet(ftsThresholdSet, span, false);
+                    updateSet(ftsThresholdSet, span);
                     ftsThresholdCount += 1;
                 } else if (SERVICE_ANALYTICS.equals(service)) {
-                    updateSet(analyticsThresholdSet, span, false);
+                    updateSet(analyticsThresholdSet, span);
                     analyticsThresholdCount += 1;
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
@@ -539,100 +505,18 @@ public class ThresholdLogReporter {
         }
 
         /**
-         * Helper method which drains the queue, handles the sets and logs if needed.
-         */
-        private void handleZombieQueue() {
-            long now = System.nanoTime();
-            if ((now - lastZombieLog + logIntervalNanos) > 0) {
-                prepareAndLogZombies();
-                lastZombieLog = now;
-            }
-
-            while (true) {
-                ThresholdLogSpan span = zombieQueue.poll();
-                if (span == null) {
-                    return;
-                }
-                String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
-                if (SERVICE_KV.equals(service)) {
-                    updateSet(kvZombieSet, span, true);
-                    kvZombieCount += 1;
-                } else if (SERVICE_N1QL.equals(service)) {
-                    updateSet(n1qlZombieSet, span, true);
-                    n1qlZombieCount += 1;
-                } else if (SERVICE_VIEW.equals(service)) {
-                    updateSet(viewZombieSet, span, true);
-                    viewZombieCount += 1;
-                } else if (SERVICE_FTS.equals(service)) {
-                    updateSet(ftsZombieSet, span, true);
-                    ftsZombieCount += 1;
-                } else if (SERVICE_ANALYTICS.equals(service)) {
-                    updateSet(analyticsZombieSet, span, true);
-                    analyticsThresholdCount += 1;
-                } else {
-                    LOGGER.warn("Unknown service in span {}", service);
-                }
-            }
-        }
-
-        /**
          * Helper method which updates the set with the span and ensures that the sample
          * size is respected.
          *
          * @param set the set to work with.
          * @param span the span to store.
          */
-        private void updateSet(final SortedSet<ThresholdLogSpan> set, final ThresholdLogSpan span,
-                               boolean zombie) {
+        private void updateSet(final SortedSet<ThresholdLogSpan> set, final ThresholdLogSpan span) {
             set.add(span);
             while(set.size() > sampleSize) {
                 set.remove(set.first());
             }
-            if (zombie) {
-                hasZombieWritten = true;
-            } else {
-                hasThresholdWritten = true;
-            }
-        }
-
-        /**
-         * Logs the zombie data and resets the sets.
-         */
-        private void prepareAndLogZombies() {
-            if (!hasZombieWritten) {
-                return;
-            }
-            hasZombieWritten = false;
-
-            List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
-
-            if (!kvZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(kvZombieSet, kvZombieCount, SERVICE_KV));
-                kvZombieSet.clear();
-                kvZombieCount = 0;
-            }
-            if (!n1qlZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(n1qlZombieSet, n1qlZombieCount, SERVICE_N1QL));
-                n1qlZombieSet.clear();
-                n1qlZombieCount = 0;
-            }
-            if (!viewZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(viewZombieSet, viewZombieCount, SERVICE_VIEW));
-                viewZombieSet.clear();
-                viewZombieCount = 0;
-            }
-            if (!ftsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(ftsZombieSet, ftsZombieCount, SERVICE_FTS));
-                ftsZombieSet.clear();
-                ftsZombieCount = 0;
-            }
-            if (!analyticsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(analyticsZombieSet, analyticsZombieCount, SERVICE_ANALYTICS));
-                analyticsZombieSet.clear();
-                analyticsZombieCount = 0;
-            }
-
-            logZombies(output);
+            hasThresholdWritten = true;
         }
     }
 
@@ -650,20 +534,4 @@ public class ThresholdLogReporter {
             LOGGER.warn("Could not write threshold log.", ex);
         }
     }
-
-    /**
-     * This method is intended to be overridden in test implementations
-     * to assert against the output.
-     */
-    void logZombies(final List<Map<String, Object>> toLog) {
-        try {
-            String result = pretty
-                ? prettyWriter().writeValueAsString(toLog)
-                : writer().writeValueAsString(toLog);
-            LOGGER.warn("Zombie responses observed: {}", result);
-        } catch (Exception ex) {
-            LOGGER.warn("Could not write zombie log.", ex);
-        }
-    }
-
 }

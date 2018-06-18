@@ -50,7 +50,6 @@ public class ThresholdLogReporterTest {
             when(request.operationId()).thenReturn("0x1234");
 
             ThresholdLogSpan span = mock(ThresholdLogSpan.class);
-            when(span.getBaggageItem("couchbase.zombie")).thenReturn("false");
             when(span.tag("peer.service")).thenReturn("kv");
             when(span.operationName()).thenReturn("get");
             when(span.durationMicros()).thenReturn(TimeUnit.SECONDS.toMicros(1));
@@ -80,8 +79,6 @@ public class ThresholdLogReporterTest {
 
         private final List<List<Map<String, Object>>> overThreshold = Collections.synchronizedList(new ArrayList<List<Map<String, Object>>>());
 
-        private final List<List<Map<String, Object>>> zombies = Collections.synchronizedList(new ArrayList<List<Map<String, Object>>>());
-
         public TestReporter(final Builder builder) {
             super(builder);
         }
@@ -91,17 +88,8 @@ public class ThresholdLogReporterTest {
             overThreshold.add(toLog);
         }
 
-        @Override
-        void logZombies(List<Map<String, Object>> toLog) {
-            zombies.add(toLog);
-        }
-
         List<List<Map<String, Object>>> overThreshold() {
             return overThreshold;
-        }
-
-        List<List<Map<String, Object>>> zombies() {
-            return zombies;
         }
 
         void waitUntilOverThreshold(int amount) {
@@ -111,15 +99,6 @@ public class ThresholdLogReporterTest {
                 }
             }
         }
-
-        void waitUntilZombies(int amount) {
-            while (true) {
-                if (zombies.size() >= amount) {
-                    return;
-                }
-            }
-        }
-
 
         @Override
         long minLogInterval() {

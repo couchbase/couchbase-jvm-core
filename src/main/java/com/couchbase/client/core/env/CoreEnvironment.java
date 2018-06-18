@@ -24,6 +24,7 @@ import com.couchbase.client.core.metrics.MetricsCollector;
 import com.couchbase.client.core.metrics.NetworkLatencyMetricsCollector;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
+import com.couchbase.client.core.tracing.ZombieResponseReporter;
 import io.netty.channel.EventLoopGroup;
 import io.opentracing.Tracer;
 import rx.Observable;
@@ -537,4 +538,20 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
      * @return the minimum compression ratio for compression
      */
     double compressionMinRatio();
+
+    /**
+     * Check if zombie response reporting is enabled. If it is, operations
+     * that are not listened to anymore are being fed into the zombie reporter
+     * and depending on the implementation (by default) logged.
+     *
+     * @return true if enabled.
+     */
+    @InterfaceStability.Committed
+    boolean zombieResponseReportingEnabled();
+
+    /**
+     * Returns the current zombie response reporter implementation.
+     */
+    @InterfaceStability.Committed
+    ZombieResponseReporter zombieResponseReporter();
 }
