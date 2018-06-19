@@ -23,6 +23,7 @@ import io.opentracing.Span;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
 
@@ -125,7 +126,7 @@ public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
 
     @Override
     public void finish() {
-        finish(ThresholdLogTracer.currentTimeMicros());
+        finish(TimeUnit.NANOSECONDS.toMicros(System.nanoTime()));
     }
 
     /**
