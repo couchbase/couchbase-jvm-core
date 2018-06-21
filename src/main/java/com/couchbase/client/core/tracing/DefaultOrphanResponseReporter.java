@@ -48,16 +48,16 @@ import static com.couchbase.client.core.utils.DefaultObjectMapper.prettyWriter;
 import static com.couchbase.client.core.utils.DefaultObjectMapper.writer;
 
 /**
- * The {@link DefaultZombieResponseReporter} receives requests's of zombie responses
+ * The {@link DefaultOrphanResponseReporter} receives requests's of orphan responses
  * and stores them for aggregation and logging.
  *
  * @author Mike Goldsmith
  * @since 1.6.0
  */
-public class DefaultZombieResponseReporter implements ZombieResponseReporter {
+public class DefaultOrphanResponseReporter implements OrphanResponseReporter {
 
     private static final CouchbaseLogger LOGGER =
-            CouchbaseLoggerFactory.getInstance(DefaultZombieResponseReporter.class);
+            CouchbaseLoggerFactory.getInstance(DefaultOrphanResponseReporter.class);
 
     private static final AtomicInteger REPORTER_ID = new AtomicInteger();
 
@@ -73,22 +73,22 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
 
     private volatile boolean running;
 
-    public static DefaultZombieResponseReporter.Builder builder() {
-        return new DefaultZombieResponseReporter.Builder();
+    public static DefaultOrphanResponseReporter.Builder builder() {
+        return new DefaultOrphanResponseReporter.Builder();
     }
 
-    public static DefaultZombieResponseReporter disabled() {
+    public static DefaultOrphanResponseReporter disabled() {
         return builder().logInterval(0, TimeUnit.SECONDS).build();
     }
 
-    public static DefaultZombieResponseReporter create() {
+    public static DefaultOrphanResponseReporter create() {
         return builder().build();
     }
 
     /**
-     * Creates the {@link ZombieResponseReporter} using the given config.
+     * Creates the {@link OrphanResponseReporter} using the given config.
      */
-    public DefaultZombieResponseReporter(final Builder builder) {
+    public DefaultOrphanResponseReporter(final Builder builder) {
         logIntervalNanos = builder.logIntervalUnit.toNanos(builder.logInterval);
         sampleSize = builder.sampleSize;
         if (logIntervalNanos > 0 && logIntervalNanos < minLogInterval()) {
@@ -106,7 +106,7 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
             worker.start();
         } else {
             worker = null;
-            LOGGER.debug("ZombieResponseLogReporter disabled via config.");
+            LOGGER.debug("OrphanResponseLogReporter disabled via config.");
         }
     }
 
@@ -120,14 +120,14 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
     }
 
     /**
-     * Reports the given {@link CouchbaseRequest} as a zombie response.
+     * Reports the given {@link CouchbaseRequest} as a orphan response.
      *
      * @param request the request that shpuld be reported.
      */
     @Override
     public void report(final CouchbaseResponse request) {
         if (!queue.offer(request)) {
-            LOGGER.debug("Could not enqueue CouchbaseRequest {} for zombie reporting, discarding.", request);
+            LOGGER.debug("Could not enqueue CouchbaseRequest {} for orphan reporting, discarding.", request);
         }
     }
 
@@ -142,7 +142,7 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
     }
 
     /**
-     * The builder to configure the {@link DefaultZombieResponseReporter}
+     * The builder to configure the {@link DefaultOrphanResponseReporter}
      */
     public static class Builder {
 
@@ -158,8 +158,8 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
         private int sampleSize = DEFAULT_SAMPLE_SIZE;
         private boolean pretty = DEFAULT_PRETTY;
 
-        public DefaultZombieResponseReporter build() {
-            return new DefaultZombieResponseReporter(this);
+        public DefaultOrphanResponseReporter build() {
+            return new DefaultOrphanResponseReporter(this);
         }
 
         /**
@@ -210,30 +210,30 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
          * but making it configurable, who knows...
          */
         private final long workerSleepMs = Long.parseLong(
-            System.getProperty("com.couchbase.zombieResponseReporterSleep", "100")
+            System.getProperty("com.couchbase.orphanResponseReporterSleep", "100")
         );
 
-        private final SortedSet<CouchbaseResponse> kvZombieSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> n1qlZombieSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> viewZombieSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> ftsZombieSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> analyticsZombieSet = new TreeSet<CouchbaseResponse>();
+        private final SortedSet<CouchbaseResponse> kvSet = new TreeSet<CouchbaseResponse>();
+        private final SortedSet<CouchbaseResponse> n1qlSet = new TreeSet<CouchbaseResponse>();
+        private final SortedSet<CouchbaseResponse> viewSet = new TreeSet<CouchbaseResponse>();
+        private final SortedSet<CouchbaseResponse> ftsSet = new TreeSet<CouchbaseResponse>();
+        private final SortedSet<CouchbaseResponse> analyticsSet = new TreeSet<CouchbaseResponse>();
 
-        private int kvZombieCount = 0;
-        private int n1qlZombieCount = 0;
-        private int viewZombieCount = 0;
-        private int ftsZombieCount = 0;
-        private int analyticsZombieCount = 0;
+        private int kvCount = 0;
+        private int n1qlCount = 0;
+        private int viewCount = 0;
+        private int ftsCount = 0;
+        private int analyticsCount = 0;
 
-        private long lastZombieLog;
-        private boolean hasZombieWritten;
+        private long lastLog;
+        private boolean hasWritten;
 
         @Override
         public void run() {
-            Thread.currentThread().setName("cb-zombie-" + REPORTER_ID.incrementAndGet());
+            Thread.currentThread().setName("cb-orphan-" + REPORTER_ID.incrementAndGet());
             while (running) {
                 try {
-                    handlerZombieQueue();
+                    handleOrphanQueue();
                     Thread.sleep(workerSleepMs);
                 } catch (final InterruptedException ex) {
                     if (!running) {
@@ -242,7 +242,7 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
                         Thread.currentThread().interrupt();
                     }
                 } catch (final Exception ex) {
-                    LOGGER.warn("Got exception on zombie response reporter, ignoring.", ex);
+                    LOGGER.warn("Got exception on orphan response reporter, ignoring.", ex);
                 }
             }
         }
@@ -250,11 +250,11 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
         /**
          * Helper method which drains the queue, handles the sets and logs if needed.
          */
-        private void handlerZombieQueue() {
+        private void handleOrphanQueue() {
             long now = System.nanoTime();
-            if ((now - lastZombieLog + logIntervalNanos) > 0) {
-                prepareAndLogZombies();
-                lastZombieLog = now;
+            if ((now - lastLog + logIntervalNanos) > 0) {
+                prepareAndLogOrphans();
+                lastLog = now;
             }
 
             while (true) {
@@ -265,22 +265,22 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
 
                 CouchbaseRequest request = response.request();
                 if (request instanceof BinaryRequest) {
-                    updateSet(kvZombieSet, response);
-                    kvZombieCount += 1;
+                    updateSet(kvSet, response);
+                    kvCount += 1;
                 } else if (request instanceof QueryRequest) {
-                    updateSet(n1qlZombieSet, response);
-                    n1qlZombieCount += 1;
+                    updateSet(n1qlSet, response);
+                    n1qlCount += 1;
                 } else if (request instanceof ViewRequest) {
-                    updateSet(viewZombieSet, response);
-                    viewZombieCount += 1;
+                    updateSet(viewSet, response);
+                    viewCount += 1;
                 } else if (request instanceof AnalyticsRequest) {
-                    updateSet(analyticsZombieSet, response);
-                    analyticsZombieCount += 1;
+                    updateSet(analyticsSet, response);
+                    analyticsCount += 1;
                 } else if (request instanceof SearchRequest) {
-                    updateSet(ftsZombieSet, response);
-                    ftsZombieCount += 1;
+                    updateSet(ftsSet, response);
+                    ftsCount += 1;
                 } else {
-                    LOGGER.warn("Unknown service in zombie {}", request);
+                    LOGGER.warn("Unknown service in orphan {}", request);
                 }
             }
         }
@@ -297,47 +297,47 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
             while(set.size() > sampleSize) {
                 set.remove(set.first());
             }
-            hasZombieWritten = true;
+            hasWritten = true;
         }
 
         /**
-         * Logs the zombie data and resets the sets.
+         * Logs the orphan data and resets the sets.
          */
-        private void prepareAndLogZombies() {
-            if (!hasZombieWritten) {
+        private void prepareAndLogOrphans() {
+            if (!hasWritten) {
                 return;
             }
-            hasZombieWritten = false;
+            hasWritten = false;
 
             List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
 
-            if (!kvZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(kvZombieSet, kvZombieCount, SERVICE_KV));
-                kvZombieSet.clear();
-                kvZombieCount = 0;
+            if (!kvSet.isEmpty()) {
+                output.add(convertThresholdSet(kvSet, kvCount, SERVICE_KV));
+                kvSet.clear();
+                kvCount = 0;
             }
-            if (!n1qlZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(n1qlZombieSet, n1qlZombieCount, SERVICE_N1QL));
-                n1qlZombieSet.clear();
-                n1qlZombieCount = 0;
+            if (!n1qlSet.isEmpty()) {
+                output.add(convertThresholdSet(n1qlSet, n1qlCount, SERVICE_N1QL));
+                n1qlSet.clear();
+                n1qlCount = 0;
             }
-            if (!viewZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(viewZombieSet, viewZombieCount, SERVICE_VIEW));
-                viewZombieSet.clear();
-                viewZombieCount = 0;
+            if (!viewSet.isEmpty()) {
+                output.add(convertThresholdSet(viewSet, viewCount, SERVICE_VIEW));
+                viewSet.clear();
+                viewCount = 0;
             }
-            if (!ftsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(ftsZombieSet, ftsZombieCount, SERVICE_FTS));
-                ftsZombieSet.clear();
-                ftsZombieCount = 0;
+            if (!ftsSet.isEmpty()) {
+                output.add(convertThresholdSet(ftsSet, ftsCount, SERVICE_FTS));
+                ftsSet.clear();
+                ftsCount = 0;
             }
-            if (!analyticsZombieSet.isEmpty()) {
-                output.add(convertThresholdSet(analyticsZombieSet, analyticsZombieCount, SERVICE_ANALYTICS));
-                analyticsZombieSet.clear();
-                analyticsZombieCount = 0;
+            if (!analyticsSet.isEmpty()) {
+                output.add(convertThresholdSet(analyticsSet, analyticsCount, SERVICE_ANALYTICS));
+                analyticsSet.clear();
+                analyticsCount = 0;
             }
 
-            logZombies(output);
+            logOrphans(output);
         }
 
         private Map<String, Object> convertThresholdSet(SortedSet<CouchbaseResponse> set, int count, String serviceType) {
@@ -402,14 +402,14 @@ public class DefaultZombieResponseReporter implements ZombieResponseReporter {
      * This method is intended to be overridden in test implementations
      * to assert against the output.
      */
-    void logZombies(final List<Map<String, Object>> toLog) {
+    void logOrphans(final List<Map<String, Object>> toLog) {
         try {
             String result = pretty
                     ? prettyWriter().writeValueAsString(toLog)
                     : writer().writeValueAsString(toLog);
-            LOGGER.warn("Zombie responses observed: {}", result);
+            LOGGER.warn("Orphan responses observed: {}", result);
         } catch (Exception ex) {
-            LOGGER.warn("Could not write zombie log.", ex);
+            LOGGER.warn("Could not write orphan log.", ex);
         }
     }
 }

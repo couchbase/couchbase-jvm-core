@@ -488,18 +488,18 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     private void completeResponse(final CouchbaseResponse response,
         final Subject<CouchbaseResponse, CouchbaseResponse> observable) {
-        // Noone is listening anymore, handle tracing and/or zombie reporting
+        // Noone is listening anymore, handle tracing and/or orphan reporting
         // depending on if enabled or not.
         CouchbaseRequest request = response.request();
         if (request != null && !request.isActive()) {
             if (env().operationTracingEnabled() && request.span() != null) {
                 Scope scope = env().tracer().scopeManager()
                         .activate(request.span(), true);
-                scope.span().setBaggageItem("couchbase.zombie", "true");
+                scope.span().setBaggageItem("couchbase.orphan", "true");
                 scope.close();
             }
-            if (env().zombieResponseReportingEnabled()) {
-                env().zombieResponseReporter().report(response);
+            if (env().orphanResponseReportingEnabled()) {
+                env().orphanResponseReporter().report(response);
             }
         }
 
