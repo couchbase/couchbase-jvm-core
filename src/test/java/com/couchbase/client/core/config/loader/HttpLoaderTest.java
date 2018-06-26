@@ -25,14 +25,17 @@ import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import rx.Observable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -146,4 +149,18 @@ public class HttpLoaderTest {
         }
     }
 
+    @Test
+    public void verifyRightTersePath() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        Observable<CouchbaseResponse> terseResponse = Observable.just(
+                (CouchbaseResponse) new BucketConfigResponse("terseConfig", ResponseStatus.SUCCESS)
+        );
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);
+        HttpLoader loader = new HttpLoader(cluster, environment);
+        loader.discoverConfig("default", "bucket", "password", host).toBlocking().single();
+
+        ArgumentCaptor<BucketConfigRequest> argument = ArgumentCaptor.forClass(BucketConfigRequest.class);
+        verify(cluster).send(argument.capture());
+        Assert.assertEquals("/pools/default/b/default", argument.getValue().path());
+    }
 }

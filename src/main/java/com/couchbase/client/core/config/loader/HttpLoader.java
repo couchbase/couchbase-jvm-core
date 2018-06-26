@@ -69,7 +69,7 @@ public class HttpLoader extends AbstractLoader {
         LOGGER.debug("Starting to discover config through HTTP Bootstrap");
 
         return cluster()
-            .<BucketConfigResponse>send(new BucketConfigRequest(TERSE_PATH, hostname, username, bucket, password))
+            .<BucketConfigResponse>send(new BucketConfigRequest(TERSE_PATH, hostname, bucket, username, password))
             .flatMap(new Func1<BucketConfigResponse, Observable<BucketConfigResponse>>() {
                 @Override
                 public Observable<BucketConfigResponse> call(BucketConfigResponse response) {
