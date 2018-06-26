@@ -375,7 +375,7 @@ public class ThresholdLogReporter {
          */
         private void handleOverThresholdQueue() {
             long now = System.nanoTime();
-            if ((now - lastThresholdLog + logIntervalNanos) > 0) {
+            if (now > (lastThresholdLog + logIntervalNanos)) {
                 prepareAndlogOverThreshold();
                 lastThresholdLog = now;
             }

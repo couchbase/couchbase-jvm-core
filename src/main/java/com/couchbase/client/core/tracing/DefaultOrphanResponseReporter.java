@@ -252,7 +252,7 @@ public class DefaultOrphanResponseReporter implements OrphanResponseReporter {
          */
         private void handleOrphanQueue() {
             long now = System.nanoTime();
-            if ((now - lastLog + logIntervalNanos) > 0) {
+            if (now > (lastLog + logIntervalNanos)) {
                 prepareAndLogOrphans();
                 lastLog = now;
             }
