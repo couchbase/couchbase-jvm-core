@@ -25,13 +25,11 @@ import com.couchbase.client.core.message.internal.AddServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.service.ConfigService;
-import com.couchbase.client.core.service.KeyValueService;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceFactory;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.utils.NetworkAddress;
-import com.lmax.disruptor.RingBuffer;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,11 +41,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isA;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -65,7 +62,7 @@ public class CouchbaseNodeTest {
     private static NetworkAddress host;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         host = NetworkAddress.localhost();
     }
 
@@ -76,7 +73,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
-    public void shouldBeEqualOnSameInetAddr() throws Exception {
+    public void shouldBeEqualOnSameInetAddr() {
         CouchbaseNode node1 = new CouchbaseNode(NetworkAddress.create("1.2.3.4"), ctx);
         CouchbaseNode node2 = new CouchbaseNode(NetworkAddress.create("1.2.3.4"), ctx);
         assertEquals(node1, node2);
@@ -84,7 +81,7 @@ public class CouchbaseNodeTest {
     }
 
     @Test
-    public void shouldNotBeEqualOnDifferentInetAddr() throws Exception {
+    public void shouldNotBeEqualOnDifferentInetAddr() {
         CouchbaseNode node1 = new CouchbaseNode(NetworkAddress.create("1.2.3.4"), ctx);
         CouchbaseNode node2 = new CouchbaseNode(NetworkAddress.create("2.3.4.5"), ctx);
         assertNotEquals(node1, node2);
@@ -187,7 +184,7 @@ public class CouchbaseNodeTest {
         Service registered = node.addService(new AddServiceRequest(ServiceType.CONFIG, null, null, 0, host))
             .toBlocking().single();
 
-        verify(registryMock).addService(any(ConfigService.class), anyString());
+        verify(registryMock).addService(any(ConfigService.class), nullable(String.class));
         assertEquals(ServiceType.CONFIG, registered.type());
     }
 
@@ -200,15 +197,15 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.type()).thenReturn(ServiceType.BINARY);
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-                eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
+        when(serviceFactory.create(nullable(String.class), nullable(String.class), nullable(String.class), nullable(String.class),
+                eq(0), eq(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);
         Service registered = node.addService(new AddServiceRequest(ServiceType.BINARY, "bucket", null, 0, host))
             .toBlocking().single();
 
-        verify(registryMock).addService(any(KeyValueService.class), anyString());
+        verify(registryMock).addService(eq(binaryServiceMock), anyString());
         assertEquals(ServiceType.BINARY, registered.type());
     }
 
@@ -223,7 +220,7 @@ public class CouchbaseNodeTest {
 
         node.removeService(new RemoveServiceRequest(ServiceType.CONFIG, null, host))
             .toBlocking().single();
-        verify(registryMock).removeService(any(Service.class), anyString());
+        verify(registryMock).removeService(any(Service.class), nullable(String.class));
     }
 
     @Test
@@ -272,7 +269,7 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.type()).thenReturn(ServiceType.BINARY);
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
+        when(serviceFactory.create(nullable(String.class), nullable(String.class), nullable(String.class), nullable(String.class),
         eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
         Service configServiceMock = mock(Service.class);
@@ -280,7 +277,7 @@ public class CouchbaseNodeTest {
         when(configServiceMock.type()).thenReturn(ServiceType.CONFIG);
         when(configServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(configServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
+        when(serviceFactory.create(nullable(String.class), nullable(String.class), nullable(String.class), nullable(String.class),
                 eq(0), same(ctx), eq(ServiceType.CONFIG))).thenReturn(configServiceMock);
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);
@@ -331,8 +328,8 @@ public class CouchbaseNodeTest {
         when(binaryServiceMock.type()).thenReturn(ServiceType.BINARY);
         when(binaryServiceMock.states()).thenReturn(Observable.just(LifecycleState.CONNECTED));
         when(binaryServiceMock.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
-        when(serviceFactory.create(anyString(), anyString(), anyString(), anyString(),
-                eq(0), same(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
+        when(serviceFactory.create(nullable(String.class), nullable(String.class), nullable(String.class), nullable(String.class),
+                eq(0), eq(ctx), eq(ServiceType.BINARY))).thenReturn(binaryServiceMock);
 
 
         CouchbaseNode node = new CouchbaseNode(host, registryMock, ctx, serviceFactory);

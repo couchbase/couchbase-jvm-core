@@ -49,6 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -71,7 +72,7 @@ public class DefaultConfigurationProviderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldOpenBucket() throws Exception {
+    public void shouldOpenBucket() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Loader loader = mock(Loader.class);
         BucketConfig bucketConfig = mock(BucketConfig.class);
@@ -81,7 +82,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
@@ -115,7 +116,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
@@ -140,7 +141,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -206,7 +207,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -263,7 +264,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         Loader carrierLoader = mock(Loader.class);
         Loader httpLoader = mock(Loader.class);
@@ -345,7 +346,7 @@ public class DefaultConfigurationProviderTest {
 
         final Refresher refresher = mock(Refresher.class);
         when(refresher.configs()).thenReturn(Observable.<ProposedBucketConfigContext>empty());
-        when(refresher.registerBucket(anyString(), anyString(), anyString())).thenReturn(Observable.just(true));
+        when(refresher.registerBucket(anyString(), nullable(String.class), nullable(String.class))).thenReturn(Observable.just(true));
 
         ConfigurationProvider provider = new DefaultConfigurationProvider(
             cluster,
