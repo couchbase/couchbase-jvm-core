@@ -31,9 +31,11 @@ import io.netty.util.internal.shaded.org.jctools.queues.MpscUnboundedArrayQueue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
@@ -213,11 +215,11 @@ public class DefaultOrphanResponseReporter implements OrphanResponseReporter {
             System.getProperty("com.couchbase.orphanResponseReporterSleep", "100")
         );
 
-        private final SortedSet<CouchbaseResponse> kvSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> n1qlSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> viewSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> ftsSet = new TreeSet<CouchbaseResponse>();
-        private final SortedSet<CouchbaseResponse> analyticsSet = new TreeSet<CouchbaseResponse>();
+        private final Set<CouchbaseResponse> kvSet = new LinkedHashSet<CouchbaseResponse>();
+        private final Set<CouchbaseResponse> n1qlSet = new LinkedHashSet<CouchbaseResponse>();
+        private final Set<CouchbaseResponse> viewSet = new LinkedHashSet<CouchbaseResponse>();
+        private final Set<CouchbaseResponse> ftsSet = new LinkedHashSet<CouchbaseResponse>();
+        private final Set<CouchbaseResponse> analyticsSet = new LinkedHashSet<CouchbaseResponse>();
 
         private int kvCount = 0;
         private int n1qlCount = 0;
@@ -292,12 +294,11 @@ public class DefaultOrphanResponseReporter implements OrphanResponseReporter {
          * @param set the set to work with.
          * @param response the response to store.
          */
-        private void updateSet(final SortedSet<CouchbaseResponse> set, final CouchbaseResponse response) {
-            set.add(response);
-            while(set.size() > sampleSize) {
-                set.remove(set.first());
+        private void updateSet(final Set<CouchbaseResponse> set, final CouchbaseResponse response) {
+            if (set.size() < sampleSize) {
+                set.add(response);
+                hasWritten = true;
             }
-            hasWritten = true;
         }
 
         /**
@@ -340,7 +341,7 @@ public class DefaultOrphanResponseReporter implements OrphanResponseReporter {
             logOrphans(output);
         }
 
-        private Map<String, Object> convertThresholdSet(SortedSet<CouchbaseResponse> set, int count, String serviceType) {
+        private Map<String, Object> convertThresholdSet(Set<CouchbaseResponse> set, int count, String serviceType) {
             Map<String, Object> output = new HashMap<String, Object>();
             List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
             for (CouchbaseResponse response : set) {
