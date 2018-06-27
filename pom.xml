@@ -76,13 +76,6 @@
         <url>http://www.couchbase.com/issues/browse/JVMCBC</url>
     </issueManagement>
 
-    <repositories>
-        <repository>
-            <id>mock</id>
-            <url>http://snapshots.couchbase.com/maven2</url>
-        </repository>
-    </repositories>
-
     <developers>
         <developer>
             <id>daschl</id>
