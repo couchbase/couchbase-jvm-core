@@ -255,6 +255,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final EventLoopGroup queryIoPool;
     private final EventLoopGroup viewIoPool;
     private final EventLoopGroup searchIoPool;
+    private final EventLoopGroup analyticsIoPool;
     private final Scheduler coreScheduler;
     private final EventBus eventBus;
 
@@ -263,6 +264,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final ShutdownHook queryIoPoolShutdownHook;
     private final ShutdownHook viewIoPoolShutdownHook;
     private final ShutdownHook searchIoPoolShutdownHook;
+    private final ShutdownHook analyticsIoPoolShutdownHook;
     private final ShutdownHook tracerShutdownHook;
     private final ShutdownHook orphanReporterShutdownHook;
 
@@ -472,6 +474,15 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             this.searchIoPool = null;
             this.searchIoPoolShutdownHook = new NoOpShutdownHook();
         }
+        if (builder.analyticsIoPool != null) {
+            this.analyticsIoPool = builder.analyticsIoPool;
+            this.analyticsIoPoolShutdownHook = builder.analyticsIoPoolShutdownHook == null
+                ? new NoOpShutdownHook()
+                : builder.analyticsIoPoolShutdownHook;
+        } else {
+            this.analyticsIoPool = null;
+            this.analyticsIoPoolShutdownHook = new NoOpShutdownHook();
+        }
 
         if (!(this.ioPoolShutdownHook instanceof NoOpShutdownHook)) {
             this.nettyShutdownHook = new NettyShutdownHook();
@@ -657,6 +668,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                 wrapShutdown(coreSchedulerShutdownHook.shutdown(), "Core Scheduler"),
                 wrapShutdown(Observable.just(runtimeMetricsCollector.shutdown()), "Runtime Metrics Collector"),
                 wrapShutdown(Observable.just(networkLatencyMetricsCollector.shutdown()), "Latency Metrics Collector")),
+                wrapShutdown(analyticsIoPoolShutdownHook.shutdown(), "analyticsIoPool"),
                 wrapShutdown(tracerShutdownHook.shutdown(), "Tracer"),
                 wrapShutdown(orphanReporterShutdownHook.shutdown(), "OrphanReporter"))
                 .reduce(true,
@@ -969,6 +981,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return searchIoPool;
     }
 
+    @Override
+    public EventLoopGroup analyticsIoPool() {
+        return analyticsIoPool;
+    }
+
     public static int instanceCounter() {
         return INSTANCE_COUNT.get();
     }
@@ -1130,11 +1147,13 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private EventLoopGroup viewIoPool;
         private EventLoopGroup queryIoPool;
         private EventLoopGroup searchIoPool;
+        private EventLoopGroup analyticsIoPool;
         private ShutdownHook ioPoolShutdownHook;
         private ShutdownHook kvIoPoolShutdownHook;
         private ShutdownHook viewIoPoolShutdownHook;
         private ShutdownHook queryIoPoolShutdownHook;
         private ShutdownHook searchIoPoolShutdownHook;
+        private ShutdownHook analyticsIoPoolShutdownHook;
         private Scheduler scheduler;
         private ShutdownHook schedulerShutdownHook;
         private EventBus eventBus;
@@ -1532,6 +1551,17 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         public SELF searchIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
             this.searchIoPool = group;
             this.searchIoPoolShutdownHook = shutdownHook;
+            return self();
+        }
+
+        /**
+         * Sets the Analytics I/O Pool implementation for the underlying IO framework, along with the action
+         * to execute when this environment is shut down.
+         * This is an advanced configuration that should only be used if you know what you are doing.
+         */
+        public SELF analyticsIoPool(final EventLoopGroup group, final ShutdownHook shutdownHook) {
+            this.analyticsIoPool = group;
+            this.analyticsIoPoolShutdownHook = shutdownHook;
             return self();
         }
 
@@ -2054,6 +2084,14 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             }
         } else {
             sb.append(", queryIoPool=").append("null");
+        }
+        if (analyticsIoPool != null) {
+            sb.append(", analyticsIoPool=").append(analyticsIoPool.getClass().getSimpleName());
+            if (analyticsIoPoolShutdownHook == null || analyticsIoPoolShutdownHook instanceof  NoOpShutdownHook) {
+                sb.append("!unmanaged");
+            }
+        } else {
+            sb.append(", analyticsIoPool=").append("null");
         }
 
         sb.append(", coreScheduler=").append(coreScheduler.getClass().getSimpleName());

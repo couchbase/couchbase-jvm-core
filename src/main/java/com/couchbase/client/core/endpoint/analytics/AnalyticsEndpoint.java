@@ -40,7 +40,7 @@ public class AnalyticsEndpoint extends AbstractEndpoint {
 
     public AnalyticsEndpoint(String hostname, String bucket, String username, String password, int port, CoreContext ctx) {
         super(hostname, bucket, username, password, port, ctx, false,
-                ctx.environment().queryIoPool() == null ? ctx.environment().ioPool() : ctx.environment().queryIoPool(), false);
+                ctx.environment().analyticsIoPool() == null ? ctx.environment().ioPool() : ctx.environment().analyticsIoPool(), false);
     }
 
     @Override

@@ -130,6 +130,13 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     EventLoopGroup searchIoPool();
 
     /**
+     * If set returns the IO Pool for the analytics service, if not returns null.
+     *
+     * @return the analytics IO pool if set, null otherwise.
+     */
+    EventLoopGroup analyticsIoPool();
+
+    /**
      * Returns the current {@link com.couchbase.client.core.service.KeyValueService} configuration.
      *
      * @return the current config for the kv service.
