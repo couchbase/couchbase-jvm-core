@@ -164,7 +164,8 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
 
                                 @Override
                                 public void onError(Throwable e) {
-                                    LOGGER.warn("Got an error while disconnecting endpoint!", e);
+                                    LOGGER.warn(logIdent(hostname, PooledService.this)
+                                        + "Got an error while disconnecting endpoint!", e);
                                 }
 
                                 @Override
@@ -197,8 +198,8 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
 
                         @Override
                         public void onError(Throwable e) {
-                            LOGGER.warn("Got an error while connecting endpoint!", e);
-
+                            LOGGER.warn(logIdent(hostname, PooledService.this)
+                                + "Got an error while connecting endpoint!", e);
                         }
 
                         @Override
@@ -245,7 +246,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
         synchronized (epMutex) {
             int numToConnect = minEndpoints - endpoints.size();
             if (numToConnect == 0) {
-                LOGGER.debug("No endpoints needed to connect, skipping.");
+                LOGGER.debug(logIdent(hostname, this) + "No endpoints needed to connect, skipping.");
                 return Observable.just(state());
             }
             for (int i = 0; i < numToConnect; i++) {
