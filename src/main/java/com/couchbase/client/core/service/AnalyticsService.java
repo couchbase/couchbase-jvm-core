@@ -70,7 +70,7 @@ public class AnalyticsService extends PooledService {
      */
     public AnalyticsService(final String hostname, final String bucket, final String username, final String password, final int port,
         final CoreContext ctx) {
-        super(hostname, bucket, username, password, port, ctx, ctx.environment().queryServiceConfig(), FACTORY, STRATEGY);
+        super(hostname, bucket, username, password, port, ctx, ctx.environment().analyticsServiceConfig(), FACTORY, STRATEGY);
     }
 
     @Override

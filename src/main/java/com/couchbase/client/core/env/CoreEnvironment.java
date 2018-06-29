@@ -158,6 +158,13 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     SearchServiceConfig searchServiceConfig();
 
     /**
+     * Returns the current {@link com.couchbase.client.core.service.AnalyticsService} configuration.
+     *
+     * @return the current config for the analytics service.
+     */
+    AnalyticsServiceConfig analyticsServiceConfig();
+
+    /**
      * Returns the scheduler which should be used for all core actions that need to happen
      * asynchronously.
      *

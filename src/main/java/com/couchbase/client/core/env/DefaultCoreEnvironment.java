@@ -98,6 +98,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final int VIEW_ENDPOINTS = 12;
     public static final int QUERY_ENDPOINTS = 12;
     public static final int SEARCH_ENDPOINTS = 12;
+    public static final int ANALYTICS_ENDPOINTS = 12;
     public static final Delay OBSERVE_INTERVAL_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 10);
     public static final Delay RECONNECT_DELAY = Delay.exponential(TimeUnit.MILLISECONDS, 4096, 32);
     public static final Delay RETRY_DELAY = Delay.exponential(TimeUnit.MICROSECONDS, 100000, 100);
@@ -269,6 +270,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final QueryServiceConfig queryServiceConfig;
     private final ViewServiceConfig viewServiceConfig;
     private final SearchServiceConfig searchServiceConfig;
+    private final AnalyticsServiceConfig analyticsServiceConfig;
 
     private final ShutdownHook nettyShutdownHook;
     private final ShutdownHook coreSchedulerShutdownHook;
@@ -553,6 +555,12 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         } else {
             int minEndpoints = searchEndpoints() == SEARCH_ENDPOINTS ? 0 : searchEndpoints();
             this.searchServiceConfig = SearchServiceConfig.create(minEndpoints, searchEndpoints());
+        }
+
+        if (builder.analyticsServiceConfig != null) {
+            this.analyticsServiceConfig = builder.analyticsServiceConfig;
+        } else {
+            this.analyticsServiceConfig = AnalyticsServiceConfig.create(0, ANALYTICS_ENDPOINTS);
         }
 
         if (emitEnvWarnMessage) {
@@ -985,6 +993,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         return searchServiceConfig;
     }
 
+    @Override
+    public AnalyticsServiceConfig analyticsServiceConfig() {
+        return analyticsServiceConfig;
+    }
+
     @InterfaceStability.Committed
     @InterfaceAudience.Public
     @Override
@@ -1161,6 +1174,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private QueryServiceConfig queryServiceConfig;
         private ViewServiceConfig viewServiceConfig;
         private SearchServiceConfig searchServiceConfig;
+        private AnalyticsServiceConfig analyticsServiceConfig;
 
 
         protected Builder() {
@@ -1762,6 +1776,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         /**
+         * Allows to set a custom configuration for the Analytics service.
+         *
+         * @param analyticsServiceConfig the config to apply.
+         */
+        public SELF analyticsServiceConfig(AnalyticsServiceConfig analyticsServiceConfig) {
+            this.analyticsServiceConfig = analyticsServiceConfig;
+            return self();
+        }
+
+        /**
          * Allows to set the configuration poll interval which polls the server cluster
          * configuration proactively.
          *
@@ -2067,6 +2091,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", tracer=").append(tracer != null ? tracer.getClass().getSimpleName() : "null");
         sb.append(", orphanResponseReportingEnabled=").append(orphanResponseReportingEnabled);
         sb.append(", orphanResponseReporter=").append(orphanResponseReporter != null ? orphanResponseReporter.getClass().getSimpleName() : "null");
+        sb.append(", keyValueServiceConfig=").append(keyValueServiceConfig);
+        sb.append(", queryServiceConfig=").append(queryServiceConfig);
+        sb.append(", searchServiceConfig=").append(searchServiceConfig);
+        sb.append(", viewServiceConfig=").append(viewServiceConfig);
+        sb.append(", analyticsServiceConfig=").append(analyticsServiceConfig);
         return sb;
     }
 
