@@ -342,7 +342,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         keepAliveErrorThreshold = longPropertyOr("keepAliveErrorThreshold", builder.keepAliveErrorThreshold);
         keepAliveTimeout = longPropertyOr("keepAliveTimeout", builder.keepAliveTimeout);
         operationTracingEnabled = booleanPropertyOr("operationTracingEnabled", builder.operationTracingEnabled);
-        orphanResponseReportingEnabled = booleanPropertyOr("orphanResponseReportingEnabled", builder.operationTracingEnabled);
+        orphanResponseReportingEnabled = booleanPropertyOr("orphanResponseReportingEnabled", builder.orphanResponseReportingEnabled);
         operationTracingServerDurationEnabled = booleanPropertyOr("operationTracingServerDurationEnabled", builder.operationTracingServerDurationEnabled);
         minCompressionRatio = doublePropertyOr("compressionMinRatio", builder.minCompressionRatio);
         minCompressionSize = intPropertyOr("compressionMinSize", builder.minCompressionSize);
