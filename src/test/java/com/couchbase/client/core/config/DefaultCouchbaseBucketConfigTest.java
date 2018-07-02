@@ -197,7 +197,13 @@ public class DefaultCouchbaseBucketConfigTest {
             assertNotNull(addr.hostname());
             assertNotNull(addr.rawHostname());
             assertFalse(addr.services().isEmpty());
-            assertTrue(addr.sslServices().isEmpty());
+            assertFalse(addr.sslServices().isEmpty());
+            for (int port : addr.services().values()) {
+                assertTrue(port > 0);
+            }
+            for (int port : addr.sslServices().values()) {
+                assertTrue(port > 0);
+            }
         }
     }
 }

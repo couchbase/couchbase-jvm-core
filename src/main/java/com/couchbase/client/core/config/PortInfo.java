@@ -32,4 +32,6 @@ public interface PortInfo {
 
     Map<ServiceType, Integer> sslPorts();
 
+    Map<String, AlternateAddress> alternateAddresses();
+
 }

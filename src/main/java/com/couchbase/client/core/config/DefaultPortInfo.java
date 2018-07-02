@@ -21,6 +21,7 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ public class DefaultPortInfo implements PortInfo {
 
     private final Map<ServiceType, Integer> ports;
     private final Map<ServiceType, Integer> sslPorts;
+    private final Map<String, AlternateAddress> alternateAddresses;
     private final NetworkAddress hostname;
 
     /**
@@ -41,10 +43,12 @@ public class DefaultPortInfo implements PortInfo {
     @JsonCreator
     public DefaultPortInfo(
         @JsonProperty("services") Map<String, Integer> services,
-        @JsonProperty("hostname") String hostname
+        @JsonProperty("hostname") String hostname,
+        @JsonProperty("alternateAddresses") Map<String, AlternateAddress> aa
     ) {
         ports = new HashMap<ServiceType, Integer>();
         sslPorts = new HashMap<ServiceType, Integer>();
+        alternateAddresses = aa == null ? Collections.<String, AlternateAddress>emptyMap() : aa;
         try {
             this.hostname = hostname == null ? null : NetworkAddress.create(hostname);
         } catch (Exception e) {
@@ -110,11 +114,17 @@ public class DefaultPortInfo implements PortInfo {
     }
 
     @Override
+    public Map<String, AlternateAddress> alternateAddresses() {
+        return alternateAddresses;
+    }
+
+    @Override
     public String toString() {
         return "DefaultPortInfo{"
             + "ports=" + ports
             + ", sslPorts=" + sslPorts
             + ", hostname='" + hostname
+            + ", alternateAddresses=" + alternateAddresses
             + '\'' + '}';
     }
 }

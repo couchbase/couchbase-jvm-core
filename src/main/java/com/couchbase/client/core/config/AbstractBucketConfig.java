@@ -87,18 +87,12 @@ public abstract class AbstractBucketConfig implements BucketConfig {
             }
             Map<ServiceType, Integer> ports = nodesExt.get(i).ports();
             Map<ServiceType, Integer> sslPorts = nodesExt.get(i).sslPorts();
+            Map<String, AlternateAddress> aa = nodesExt.get(i).alternateAddresses();
 
             // this is an ephemeral bucket (not supporting views), don't enable views!
             if (!bucketCapabilities.contains(BucketCapabilities.COUCHAPI)) {
                 ports.remove(ServiceType.VIEW);
                 sslPorts.remove(ServiceType.VIEW);
-            }
-
-            Map<String, AlternateAddress> aa = null;
-            for (NodeInfo ni : nodeInfos) {
-                if (ni.hostname().equals(hostname)) {
-                    aa = ni.alternateAddresses();
-                }
             }
             converted.add(new DefaultNodeInfo(hostname, ports, sslPorts, aa));
         }
