@@ -482,8 +482,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                         SignalConfigReload.INSTANCE, null);
                             }
                             transitionState(LifecycleState.CONNECTING);
-                            EventLoop ev = future.channel() != null ? future.channel().eventLoop() : ioPool.next();
-                            ev.schedule(new Runnable() {
+                            ioPool.next().schedule(new Runnable() {
                                 @Override
                                 public void run() {
                                     // Make sure to avoid a race condition where the reconnect could override
