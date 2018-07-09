@@ -19,6 +19,7 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.endpoint.Endpoint;
 import com.couchbase.client.core.service.ServiceType;
+import com.couchbase.client.core.tracing.RingBufferDiagnostics;
 import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -44,12 +45,14 @@ public class DiagnosticsReport {
     private final List<EndpointHealth> endpoints;
     private final String sdk;
     private final String id;
+    private final RingBufferDiagnostics ringBufferDiagnostics;
 
-    public DiagnosticsReport(List<EndpointHealth> endpoints, String sdk, String id) {
+    public DiagnosticsReport(List<EndpointHealth> endpoints, String sdk, String id, RingBufferDiagnostics ringBufferDiagnostics) {
         this.id = id == null ? UUID.randomUUID().toString() : id;
         this.endpoints = endpoints;
         this.version = VERSION;
         this.sdk = sdk;
+        this.ringBufferDiagnostics = ringBufferDiagnostics;
     }
 
     public String id() {
@@ -72,6 +75,13 @@ public class DiagnosticsReport {
             }
         }
         return filtered;
+    }
+
+    /**
+     * Returns a breakdown of the requests in the internal ringbuffer.
+     */
+    public RingBufferDiagnostics ringBufferDiagnostics() {
+        return ringBufferDiagnostics;
     }
 
     /**

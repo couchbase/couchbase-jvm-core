@@ -82,6 +82,10 @@ public class RingBufferMonitor {
     }
 
     public BackpressureException createException() {
+        return new BackpressureException(diagnostics());
+    }
+
+    public RingBufferDiagnostics diagnostics() {
         // There's a race window here, but don't want to add the overhead of locking for simple diagnostics
         Map<ServiceType, Integer> counts = new HashMap<ServiceType, Integer>(6);
 
@@ -95,7 +99,7 @@ public class RingBufferMonitor {
 
         RingBufferDiagnostics diag = new RingBufferDiagnostics(counts, countNonService.get());
 
-        return new BackpressureException(diag);
+        return diag;
     }
 
     private AtomicInteger counterFor(CouchbaseRequest request) {

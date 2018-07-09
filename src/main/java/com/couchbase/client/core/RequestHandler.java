@@ -49,6 +49,7 @@ import com.couchbase.client.core.node.locate.ViewLocator;
 import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
+import com.couchbase.client.core.tracing.RingBufferDiagnostics;
 import com.couchbase.client.core.tracing.RingBufferMonitor;
 import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
@@ -420,10 +421,11 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         for (Node node : nodes) {
             diags.add(node.diagnostics());
         }
+        final RingBufferDiagnostics ringBufferDiagnostics = RingBufferMonitor.instance().diagnostics();
         return Observable.merge(diags).toList().map(new Func1<List<EndpointHealth>, DiagnosticsResponse>() {
             @Override
             public DiagnosticsResponse call(List<EndpointHealth> checks) {
-                return new DiagnosticsResponse(new DiagnosticsReport(checks, environment.userAgent(), id));
+                return new DiagnosticsResponse(new DiagnosticsReport(checks, environment.userAgent(), id, ringBufferDiagnostics));
             }
         });
     }

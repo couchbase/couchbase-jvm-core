@@ -18,16 +18,17 @@ package com.couchbase.client.core;
 
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
+import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.cluster.CloseBucketRequest;
 import com.couchbase.client.core.message.cluster.OpenBucketRequest;
-import com.couchbase.client.core.message.cluster.OpenBucketResponse;
 import com.couchbase.client.core.message.cluster.SeedNodesRequest;
+import com.couchbase.client.core.message.internal.DiagnosticsRequest;
+import com.couchbase.client.core.message.internal.DiagnosticsResponse;
 import com.couchbase.client.core.tracing.RingBufferMonitor;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
 import org.junit.AfterClass;
 import org.junit.Test;
-import rx.Observable;
 
 import java.util.Arrays;
 
@@ -62,9 +63,18 @@ public class RingBufferMonitorTest {
         }
         core.send(request).toBlocking().single();
         BackpressureException exception = RingBufferMonitor.instance().createException();
-        assertEquals(0, exception.diagostics().totalCount());
+        assertEquals(0, exception.diagnostics().totalCount());
         core.send(new CloseBucketRequest(TestProperties.bucket())).toBlocking().single();
     }
 
+    @Test
+    public void diagnosticsReportContainsRingBufferDiagnostics() {
+        CouchbaseCore core = new CouchbaseCore(ENV);
+        RingBufferMonitor.instance().reset();
 
+        CouchbaseResponse response = core.send(new DiagnosticsRequest("test")).toBlocking().single();
+        DiagnosticsResponse res = (DiagnosticsResponse) response;
+
+        assertEquals(0, res.diagnosticsReport().ringBufferDiagnostics().totalCount());
+    }
 }

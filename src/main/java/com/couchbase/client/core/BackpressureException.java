@@ -42,7 +42,7 @@ public class BackpressureException extends CouchbaseException {
      */
     @InterfaceAudience.Public
     @InterfaceStability.Experimental
-    public RingBufferDiagnostics diagostics() {
+    public RingBufferDiagnostics diagnostics() {
         return diagnostics;
     }
 
