@@ -485,7 +485,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
 
         if (externalNetwork != null) {
-            newConfig.useAlternateNetwork(environment.networkResolution().name());
+            newConfig.useAlternateNetwork(externalNetwork);
         }
 
         cluster.setBucketConfig(newConfig.name(), newConfig);
