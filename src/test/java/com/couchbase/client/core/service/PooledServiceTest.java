@@ -836,6 +836,11 @@ public class PooledServiceTest {
         static SimpleSerivceConfig ssc(int minEndpoints, int maxEndpoints, int idleTime) {
             return new SimpleSerivceConfig(minEndpoints, maxEndpoints, false, idleTime);
         }
+
+        @Override
+        protected void checkIdleTime(int idleTime) {
+            // no check on purpose
+        }
     }
 
     private Tuple2<CouchbaseRequest, TestSubscriber<CouchbaseResponse>> mockRequest() {

@@ -16,22 +16,54 @@
 
 package com.couchbase.client.core.env;
 
+import com.couchbase.client.core.service.Service;
+
 /**
- * Defines a general config for a {@link com.couchbase.client.core.service.Service}.
+ * Defines a general config for a {@link Service}.
  *
  * @author Michael Nitschinger
  * @since 1.4.2
  */
 public abstract class AbstractServiceConfig {
 
+    /**
+     * Constant to use if no idle time should be used.
+     */
     public static final int NO_IDLE_TIME = 0;
+
+    /**
+     * The default idle time for pooled services.
+     */
     public static final int DEFAULT_IDLE_TIME = 300;
 
+    /**
+     * The minimum number of endpoints to be used for this service.
+     */
     private final int minEndpoints;
+
+    /**
+     * The maximum number of endpoints to be used for this service.
+     */
     private final int maxEndpoints;
+
+    /**
+     * If this is a pipelined service.
+     */
     private final boolean pipelined;
+
+    /**
+     * The configured idle time for this service.
+     */
     private final int idleTime;
 
+    /**
+     * Creates a new service config.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @param pipelined if this is a pipelined service.
+     * @param idleTime the configured idle time
+     */
     protected AbstractServiceConfig(int minEndpoints, int maxEndpoints, boolean pipelined, int idleTime) {
         if (minEndpoints < 0 || maxEndpoints < 0) {
             throw new IllegalArgumentException("The minEndpoints and maxEndpoints must not be negative");
@@ -53,6 +85,19 @@ public abstract class AbstractServiceConfig {
         this.maxEndpoints = maxEndpoints;
         this.pipelined = pipelined;
         this.idleTime = idleTime;
+    }
+
+    /**
+     * Helper method to check if the idle time is within proper range.
+     *
+     * This method is refactored out so it can be overridden in test cases.
+     *
+     * @param idleTime the idle time to check.
+     */
+    protected void checkIdleTime(final int idleTime) {
+        if (idleTime > 0 && idleTime < 10) {
+            throw new IllegalArgumentException("Idle time must either be 0 (disabled) or greater than 9 seconds");
+        }
     }
 
     /**
@@ -87,10 +132,11 @@ public abstract class AbstractServiceConfig {
     @Override
     public String toString() {
         return "AbstractServiceConfig{" +
-                "minEndpoints=" + minEndpoints +
-                ", maxEndpoints=" + maxEndpoints +
-                ", pipelined=" + pipelined +
-                ", idleTime=" + idleTime +
-                '}';
+            "minEndpoints=" + minEndpoints +
+            ", maxEndpoints=" + maxEndpoints +
+            ", pipelined=" + pipelined +
+            ", idleTime=" + idleTime +
+            '}';
     }
+
 }

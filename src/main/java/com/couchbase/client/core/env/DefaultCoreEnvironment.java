@@ -1768,6 +1768,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         /**
          * Allows to set a custom configuration for the KV service.
          *
+         * See {@link KeyValueServiceConfig} for more information on the possible options.
+         *
          * @param keyValueServiceConfig the config to apply.
          */
         public SELF keyValueServiceConfig(KeyValueServiceConfig keyValueServiceConfig) {
@@ -1777,6 +1779,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         /**
          * Allows to set a custom configuration for the View service.
+         *
+         * See {@link ViewServiceConfig} for more information on the possible options.
          *
          * @param viewServiceConfig the config to apply.
          */
@@ -1788,6 +1792,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         /**
          * Allows to set a custom configuration for the Query service.
          *
+         * See {@link QueryServiceConfig} for more information on the possible options.
+         *
          * @param queryServiceConfig the config to apply.
          */
         public SELF queryServiceConfig(QueryServiceConfig queryServiceConfig) {
@@ -1798,6 +1804,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         /**
          * Allows to set a custom configuration for the Search service.
          *
+         * See {@link SearchServiceConfig} for more information on the possible options.
+         *
          * @param searchServiceConfig the config to apply.
          */
         public SELF searchServiceConfig(SearchServiceConfig searchServiceConfig) {
@@ -1807,6 +1815,8 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
         /**
          * Allows to set a custom configuration for the Analytics service.
+         *
+         * See {@link AnalyticsServiceConfig} for more information on the possible options.
          *
          * @param analyticsServiceConfig the config to apply.
          */

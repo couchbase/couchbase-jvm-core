@@ -16,32 +16,70 @@
 
 package com.couchbase.client.core.env;
 
+/**
+ * Allows to configure a Analytics Service on a per-node basis.
+ *
+ * @author Michael Nitschinger
+ * @since 1.6.0
+ */
 public final class AnalyticsServiceConfig extends AbstractServiceConfig {
 
-    private AnalyticsServiceConfig(int minEndpoints, int maxEndpoints, int idleTime) {
+    /**
+     * Internal constructor to create a {@link AnalyticsServiceConfig}.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @param idleTime the configured idle time
+     */
+    private AnalyticsServiceConfig(final int minEndpoints, final int maxEndpoints, final int idleTime) {
         super(minEndpoints, maxEndpoints, false, idleTime);
     }
 
-    public static AnalyticsServiceConfig create(int minEndpoints, int maxEndpoints) {
+    /**
+     * Creates a {@link AnalyticsServiceConfig} with the default idle time.
+     *
+     * This constructor creates a config with the {@link #DEFAULT_IDLE_TIME}. It allows to configure
+     * both the minimum number of endpoints per node to be present at every point in time as well
+     * as the allowed maximum.
+     *
+     * If an endpoint is idle longer than the configured idle time and the service pool does not
+     * fall below the configured minimum, it is removed from the pool.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @return the created {@link AnalyticsServiceConfig}.
+     */
+    public static AnalyticsServiceConfig create(final int minEndpoints, final int maxEndpoints) {
         return create(minEndpoints, maxEndpoints, DEFAULT_IDLE_TIME);
     }
 
-    public static AnalyticsServiceConfig create(int minEndpoints, int maxEndpoints, int idleTime) {
-        if (idleTime > 0 && idleTime < 10) {
-            throw new IllegalArgumentException("Idle time must either be 0 (disabled) or greater than 9 seconds");
-        }
-
+    /**
+     * Creates a {@link AnalyticsServiceConfig} with a custom idle time.
+     *
+     * This constructor creates a config with a custom idle timeout. It allows to configure
+     * both the minimum number of endpoints per node to be present at every point in time as well
+     * as the allowed maximum.
+     *
+     * If an endpoint is idle longer than the configured idle time and the service pool does not
+     * fall below the configured minimum, it is removed from the pool.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @param idleTime the configured idle time
+     * @return the created {@link AnalyticsServiceConfig}.
+     */
+    public static AnalyticsServiceConfig create(final int minEndpoints, final int maxEndpoints, final int idleTime) {
         return new AnalyticsServiceConfig(minEndpoints, maxEndpoints, idleTime);
     }
 
     @Override
     public String toString() {
         return "AnalyticsServiceConfig{" +
-                "minEndpoints=" + minEndpoints() +
-                ", maxEndpoints=" + maxEndpoints() +
-                ", pipelined=" + isPipelined() +
-                ", idleTime=" + idleTime() +
-                '}';
+            "minEndpoints=" + minEndpoints() +
+            ", maxEndpoints=" + maxEndpoints() +
+            ", pipelined=" + isPipelined() +
+            ", idleTime=" + idleTime() +
+            '}';
     }
 
 }

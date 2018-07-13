@@ -137,35 +137,52 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     EventLoopGroup analyticsIoPool();
 
     /**
-     * Returns the current {@link com.couchbase.client.core.service.KeyValueService} configuration.
+     * Returns the current service configuration for the KV service.
+     *
+     * This configuration contains the number of endpoints per node that are to
+     * be established by the client. Note that the KV service config is a little less
+     * configurable than the HTTP based services since it has different runtime properties
+     * in terms of resource utilization and when establishing connections.
      *
      * @return the current config for the kv service.
      */
     KeyValueServiceConfig kvServiceConfig();
 
     /**
-     * Returns the current {@link com.couchbase.client.core.service.QueryService} configuration.
+     * Returns the current service configuration for the Query service.
+     *
+     * This configuration contains settings around minimum and maximum number of endpoints
+     * (sockets) per node as well as the idle time until an inactive endpoint is closed.
      *
      * @return the current config for the query service.
      */
     QueryServiceConfig queryServiceConfig();
 
     /**
-     * Returns the current {@link com.couchbase.client.core.service.ViewService} configuration.
+     * Returns the current service configuration for the View service.
+     *
+     * This configuration contains settings around minimum and maximum number of endpoints
+     * (sockets) per node as well as the idle time until an inactive endpoint is closed.
      *
      * @return the current config for the view service.
      */
     ViewServiceConfig viewServiceConfig();
 
     /**
-     * Returns the current {@link com.couchbase.client.core.service.SearchService} configuration.
+     * Returns the current service configuration for the Search service.
+     *
+     * This configuration contains settings around minimum and maximum number of endpoints
+     * (sockets) per node as well as the idle time until an inactive endpoint is closed.
      *
      * @return the current config for the search service.
      */
     SearchServiceConfig searchServiceConfig();
 
     /**
-     * Returns the current {@link com.couchbase.client.core.service.AnalyticsService} configuration.
+     * Returns the current service configuration for the Analytics service.
+     *
+     * This configuration contains settings around minimum and maximum number of endpoints
+     * (sockets) per node as well as the idle time until an inactive endpoint is closed.
      *
      * @return the current config for the analytics service.
      */

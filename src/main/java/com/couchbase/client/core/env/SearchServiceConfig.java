@@ -16,31 +16,69 @@
 
 package com.couchbase.client.core.env;
 
+/**
+ * Allows to configure a Search Service on a per-node basis.
+ *
+ * @author Michael Nitschinger
+ * @since 1.4.2
+ */
 public final class SearchServiceConfig extends AbstractServiceConfig {
 
-    private SearchServiceConfig(int minEndpoints, int maxEndpoints, int idleTime) {
+    /**
+     * Internal constructor to create a {@link SearchServiceConfig}.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @param idleTime the configured idle time
+     */
+    private SearchServiceConfig(final int minEndpoints, final int maxEndpoints, final int idleTime) {
         super(minEndpoints, maxEndpoints, false, idleTime);
     }
 
-    public static SearchServiceConfig create(int minEndpoints, int maxEndpoints) {
+    /**
+     * Creates a {@link SearchServiceConfig} with the default idle time.
+     *
+     * This constructor creates a config with the {@link #DEFAULT_IDLE_TIME}. It allows to configure
+     * both the minimum number of endpoints per node to be present at every point in time as well
+     * as the allowed maximum.
+     *
+     * If an endpoint is idle longer than the configured idle time and the service pool does not
+     * fall below the configured minimum, it is removed from the pool.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @return the created {@link SearchServiceConfig}.
+     */
+    public static SearchServiceConfig create(final int minEndpoints, final int maxEndpoints) {
         return create(minEndpoints, maxEndpoints, DEFAULT_IDLE_TIME);
     }
 
-    public static SearchServiceConfig create(int minEndpoints, int maxEndpoints, int idleTime) {
-        if (idleTime > 0 && idleTime < 10) {
-            throw new IllegalArgumentException("Idle time must either be 0 (disabled) or greater than 9 seconds");
-        }
-
+    /**
+     * Creates a {@link SearchServiceConfig} with a custom idle time.
+     *
+     * This constructor creates a config with a custom idle timeout. It allows to configure
+     * both the minimum number of endpoints per node to be present at every point in time as well
+     * as the allowed maximum.
+     *
+     * If an endpoint is idle longer than the configured idle time and the service pool does not
+     * fall below the configured minimum, it is removed from the pool.
+     *
+     * @param minEndpoints minimum number of endpoints to be used
+     * @param maxEndpoints maximum number of endpoints to be used
+     * @param idleTime the configured idle time
+     * @return the created {@link SearchServiceConfig}.
+     */
+    public static SearchServiceConfig create(final int minEndpoints, final int maxEndpoints, final int idleTime) {
         return new SearchServiceConfig(minEndpoints, maxEndpoints, idleTime);
     }
 
     @Override
     public String toString() {
         return "SearchServiceConfig{" +
-                "minEndpoints=" + minEndpoints() +
-                ", maxEndpoints=" + maxEndpoints() +
-                ", pipelined=" + isPipelined() +
-                ", idleTime=" + idleTime() +
-                '}';
+            "minEndpoints=" + minEndpoints() +
+            ", maxEndpoints=" + maxEndpoints() +
+            ", pipelined=" + isPipelined() +
+            ", idleTime=" + idleTime() +
+            '}';
     }
 }
