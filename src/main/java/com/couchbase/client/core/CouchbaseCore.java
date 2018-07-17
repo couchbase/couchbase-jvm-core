@@ -349,8 +349,9 @@ public class CouchbaseCore implements ClusterFacade {
             request.observable().onNext(new GetConfigProviderResponse(configProvider));
             request.observable().onCompleted();
         } else if (request instanceof AddNodeRequest) {
+            // we do not have access to the alternate here at this point, so just pass in null
             requestHandler
-                .addNode(((AddNodeRequest) request).hostname())
+                .addNode(((AddNodeRequest) request).hostname(), null)
                 .map(new Func1<LifecycleState, AddNodeResponse>() {
                     @Override
                     public AddNodeResponse call(LifecycleState state) {

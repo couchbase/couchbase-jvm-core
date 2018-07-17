@@ -15,6 +15,7 @@
  */
 package com.couchbase.client.core;
 
+import com.couchbase.client.core.config.AlternateAddress;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.NodeInfo;
@@ -290,13 +291,13 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
-    public Observable<LifecycleState> addNode(final NetworkAddress hostname) {
+    public Observable<LifecycleState> addNode(final NetworkAddress hostname, final NetworkAddress alternate) {
         Node node = nodeBy(hostname);
         if (node != null) {
             LOGGER.debug("Node {} already registered, skipping.", hostname);
             return Observable.just(node.state());
         }
-        return addNode(new CouchbaseNode(hostname, ctx));
+        return addNode(new CouchbaseNode(hostname, ctx, alternate));
     }
 
     /**
@@ -530,15 +531,21 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      */
     private Observable<Boolean> reconfigureBucket(final BucketConfig config) {
         LOGGER.debug("Starting reconfiguration for bucket {}", config.name());
-
         List<Observable<Boolean>> observables = new ArrayList<Observable<Boolean>>();
         for (final NodeInfo nodeInfo : config.nodes()) {
-            Observable<Boolean> obs = addNode(nodeInfo.hostname())
+            final String alternate = nodeInfo.useAlternateNetwork();
+            final NetworkAddress altHost = alternate != null ? nodeInfo.alternateAddresses().get(alternate).hostname(): null;
+            Observable<Boolean> obs = addNode(nodeInfo.hostname(), altHost)
                 .flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                     @Override
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
-                        Map<ServiceType, Integer> services =
-                                environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                        Map<ServiceType, Integer> services;
+                        if (alternate != null) {
+                            AlternateAddress aa = nodeInfo.alternateAddresses().get(alternate);
+                            services = environment.sslEnabled() ? aa.sslServices() : aa.services();
+                        } else {
+                            services = environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
+                        }
                         return Observable.just(services);
                     }
                 }).flatMap(new Func1<Map<ServiceType, Integer>, Observable<AddServiceRequest>>() {

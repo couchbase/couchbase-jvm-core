@@ -75,10 +75,21 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      */
     private final NetworkAddress hostname;
 
+
+    /**
+     * The alternate hostname or IP address of the node.
+     */
+    private final NetworkAddress alternate;
+
     /**
      * For performance reasons, cache the string representation as well.
      */
     private final String convertedHostname;
+
+    /**
+     * For performance reasons, cache the string of the alternate.
+     */
+    private final String convertedAlternate;
 
     /**
      * The environment to use.
@@ -117,14 +128,25 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     private volatile int enabledServices;
 
     public CouchbaseNode(final NetworkAddress hostname, final CoreContext ctx) {
-        this(hostname, new DefaultServiceRegistry(), ctx, ServiceFactory.INSTANCE);
+        this(hostname, new DefaultServiceRegistry(), ctx, ServiceFactory.INSTANCE, null);
+    }
+
+    public CouchbaseNode(final NetworkAddress hostname, final CoreContext ctx, NetworkAddress alternate) {
+        this(hostname, new DefaultServiceRegistry(), ctx, ServiceFactory.INSTANCE, alternate);
     }
 
     CouchbaseNode(final NetworkAddress hostname, ServiceRegistry registry, final CoreContext ctx,
-        ServiceFactory serviceFactory) {
+                  ServiceFactory serviceFactory) {
+        this(hostname, registry, ctx, serviceFactory, null);
+    }
+
+    CouchbaseNode(final NetworkAddress hostname, ServiceRegistry registry, final CoreContext ctx,
+        ServiceFactory serviceFactory, final NetworkAddress alternate) {
         super(LifecycleState.DISCONNECTED);
         this.hostname = hostname;
+        this.alternate = alternate;
         this.convertedHostname = hostname.nameOrAddress();
+        this.convertedAlternate = alternate != null ? alternate.nameOrAddress() : null;
         this.serviceRegistry = registry;
         this.environment = ctx.environment();
         this.responseBuffer = ctx.responseRingBuffer();
@@ -160,20 +182,20 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
                         signalConnected();
                     }
                     connected = true;
-                    LOGGER.debug("Connected (" + state() + ") to Node " + hostname);
+                    LOGGER.debug(logIdent() + "Connected (" + state() + ") to Node");
                 } else if (newState == LifecycleState.DISCONNECTED) {
                     if (connected) {
                         signalDisconnected();
                     }
                     connected = false;
-                    LOGGER.debug("Disconnected (" + state() + ") from Node " + hostname);
+                    LOGGER.debug(logIdent() + "Disconnected (" + state() + ") from Node");
                 } else if (newState == LifecycleState.CONNECTING) {
                     if (connected) {
                         // We've already been connected, so this is a reconnect phase for the node following a
                         // complete disconnect (like a node restart).
                         signalDisconnected();
                         connected = false;
-                        LOGGER.debug("Reconnecting (" + state() + ") from Node " + hostname);
+                        LOGGER.debug(logIdent() + "Reconnecting (" + state() + ") from Node");
                     }
                 }
                 transitionState(newState);
@@ -185,7 +207,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      * Log that this node is now connected and also inform all susbcribers on the event bus.
      */
     private void signalConnected() {
-        LOGGER.info("Connected to Node {}", system(hostname.nameAndAddress()));
+        if (alternate != null) {
+            LOGGER.info("Connected to Node {} ({})",
+                system(hostname.nameAndAddress()), system(alternate.nameAndAddress()));
+        } else {
+            LOGGER.info("Connected to Node {}", system(hostname.nameAndAddress()));
+        }
         if (eventBus != null && eventBus.hasSubscribers()) {
             eventBus.publish(new NodeConnectedEvent(hostname));
         }
@@ -195,7 +222,12 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
      * Log that this node is now disconnected and also inform all susbcribers on the event bus.
      */
     private void signalDisconnected() {
-        LOGGER.info("Disconnected from Node {}", system(hostname.nameAndAddress()));
+        if (alternate != null) {
+            LOGGER.info("Disconnected from Node {} ({})",
+                system(hostname.nameAndAddress()), system(alternate.nameAndAddress()));
+        } else {
+            LOGGER.info("Disconnected from Node {}", system(hostname.nameAndAddress()));
+        }
         if (eventBus != null && eventBus.hasSubscribers()) {
             eventBus.publish(new NodeDisconnectedEvent(hostname));
         }
@@ -226,14 +258,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> connect() {
-        LOGGER.debug(logIdent(hostname) + "Got instructed to connect.");
+        LOGGER.debug(logIdent() + "Got instructed to connect.");
 
         return Observable
             .from(serviceRegistry.services())
             .flatMap(new Func1<Service, Observable<LifecycleState>>() {
                 @Override
                 public Observable<LifecycleState> call(final Service service) {
-                    LOGGER.debug(logIdent(hostname) + "Instructing Service " + service.type() + " to connect.");
+                    LOGGER.debug(logIdent() + "Instructing Service " + service.type() + " to connect.");
                     return service.connect();
                 }
             })
@@ -248,14 +280,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<LifecycleState> disconnect() {
-        LOGGER.debug(logIdent(hostname) + "Got instructed to disconnect.");
+        LOGGER.debug(logIdent() + "Got instructed to disconnect.");
 
         return Observable
             .from(serviceRegistry.services())
             .flatMap(new Func1<Service, Observable<LifecycleState>>() {
                 @Override
                 public Observable<LifecycleState> call(final Service service) {
-                    LOGGER.debug(logIdent(hostname) + "Instructing Service " + service.type() + " to disconnect.");
+                    LOGGER.debug(logIdent() + "Instructing Service " + service.type() + " to disconnect.");
                     return service.disconnect();
                 }
             })
@@ -270,15 +302,23 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> addService(final AddServiceRequest request) {
-        LOGGER.debug(logIdent(hostname) + "Adding Service " + request.type());
+        LOGGER.debug(logIdent() + "Adding Service " + request.type());
         Service addedService = serviceRegistry.serviceBy(request.type(), request.bucket());
         if (addedService != null) {
-            LOGGER.debug(logIdent(hostname) + "Service " + request.type() + " already added, skipping.");
+            LOGGER.debug(logIdent() + "Service " + request.type() + " already added, skipping.");
             return Observable.just(addedService);
         }
 
+
+        String hostname = alternate != null
+            ? convertedAlternate
+            : convertedHostname;
+        if (alternate != null) {
+            LOGGER.debug(logIdent()
+                + "Service {} is mapped to alternate hostname {}", request.type(), hostname);
+        }
         final Service service = serviceFactory.create(
-            request.hostname().nameOrAddress(),
+            hostname,
             request.bucket(),
             request.username(),
             request.password(),
@@ -288,7 +328,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
         );
 
         serviceStates.register(service, service);
-        LOGGER.debug(logIdent(hostname) + "Adding Service " + request.type() + " to registry and connecting it.");
+        LOGGER.debug(logIdent() + "Adding Service " + request.type() + " to registry and connecting it.");
         serviceRegistry.addService(service, request.bucket());
         enabledServices |= 1 << service.type().ordinal();
         return service.connect().map(new Func1<LifecycleState, Service>() {
@@ -301,7 +341,7 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
 
     @Override
     public Observable<Service> removeService(final RemoveServiceRequest request) {
-        LOGGER.debug(logIdent(hostname) + "Removing Service " + request.type());
+        LOGGER.debug(logIdent() + "Removing Service " + request.type());
 
         final Service service = serviceRegistry.serviceBy(request.type(), request.bucket());
         serviceRegistry.removeService(service, request.bucket());
@@ -335,11 +375,14 @@ public class CouchbaseNode extends AbstractStateMachine<LifecycleState> implemen
     /**
      * Simple log helper to give logs a common prefix.
      *
-     * @param hostname the address.
      * @return a prefix string for logs.
      */
-    protected static String logIdent(final NetworkAddress hostname) {
-        return "[" + hostname.nameAndAddress() + "]: ";
+    private String logIdent() {
+        if (alternate != null) {
+            return "[" + hostname.nameAndAddress() + " (" + alternate.nameAndAddress() + ")]: ";
+        } else {
+            return "[" + hostname.nameAndAddress() + "]: ";
+        }
     }
 
     @Override

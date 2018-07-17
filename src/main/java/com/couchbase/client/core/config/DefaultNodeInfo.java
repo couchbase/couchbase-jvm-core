@@ -97,44 +97,17 @@ public class DefaultNodeInfo implements NodeInfo {
 
     @Override
     public NetworkAddress hostname() {
-        if (useAlternateNetwork != null) {
-            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
-            if (aa == null) {
-                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
-            } else {
-                return aa.hostname();
-            }
-        } else {
-            return hostname;
-        }
+        return hostname;
     }
 
     @Override
     public Map<ServiceType, Integer> services() {
-        if (useAlternateNetwork != null) {
-            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
-            if (aa == null) {
-                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
-            } else {
-                return aa.services().isEmpty() ? directServices : aa.services();
-            }
-        } else {
-            return directServices;
-        }
+        return directServices;
     }
 
     @Override
     public Map<ServiceType, Integer> sslServices() {
-        if (useAlternateNetwork != null) {
-            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
-            if (aa == null) {
-                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
-            } else {
-                return aa.sslServices().isEmpty() ? sslServices : aa.sslServices();
-            }
-        } else {
-            return sslServices;
-        }
+        return sslServices;
     }
 
     @Override
@@ -182,16 +155,7 @@ public class DefaultNodeInfo implements NodeInfo {
 
     @Override
     public String rawHostname() {
-        if (useAlternateNetwork != null) {
-            AlternateAddress aa = alternateAddresses.get(useAlternateNetwork);
-            if (aa == null) {
-                throw new IllegalStateException("external addresses selected, but none found! this is a bug.");
-            } else {
-                return aa.rawHostname();
-            }
-        } else {
-            return rawHostname;
-        }
+        return rawHostname;
     }
 
     @Override
