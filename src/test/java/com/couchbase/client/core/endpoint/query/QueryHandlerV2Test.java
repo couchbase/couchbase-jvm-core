@@ -37,6 +37,7 @@ import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.functions.Func2;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
@@ -199,7 +200,12 @@ public class QueryHandlerV2Test extends QueryHandlerTest {
                       }
         );
 
-        Observable.from(httpChunks).zipWith(Observable.interval(1, TimeUnit.SECONDS),
+        Observable.from(httpChunks).zipWith(Observable.interval(1, TimeUnit.SECONDS).takeWhile(new Func1<Long, Boolean>() {
+                @Override
+                public Boolean call(Long aLong) {
+                    return latch1.getCount() > 0;
+                }
+            }),
                 new Func2<Object, Long, Object>() {
                     @Override
                     public Object call(Object o, Long aLong) {

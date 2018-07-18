@@ -957,7 +957,7 @@ public class QueryHandlerTest {
                     @Override
                     public void call(ByteBuf buf) {
                         String item = buf.toString(CharsetUtil.UTF_8).trim();
-                        System.out.println("item #" + invokeCounter1.incrementAndGet() + " = " + item);
+                        invokeCounter1.incrementAndGet();
                         items.add(item);
                         buf.release();
                     }

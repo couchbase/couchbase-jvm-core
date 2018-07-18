@@ -1149,7 +1149,7 @@ public class KeyValueHandlerTest {
 
         ByteBuf content = Unpooled.directBuffer().writeBytes(Unpooled.copiedBuffer("", CharsetUtil.UTF_8));
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(KEY, Unpooled.EMPTY_BUFFER,
-            content.copy());
+            content);
         response.setDataType(KeyValueHandler.DATATYPE_SNAPPY);
 
         GetRequest requestMock = mock(GetRequest.class);
@@ -1171,7 +1171,7 @@ public class KeyValueHandlerTest {
 
         ByteBuf content = Unpooled.wrappedBuffer(Snappy.compress(text.getBytes(CharsetUtil.UTF_8)));
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(KEY, Unpooled.EMPTY_BUFFER,
-            content.copy());
+            content);
         response.setDataType(KeyValueHandler.DATATYPE_SNAPPY);
 
         GetRequest requestMock = mock(GetRequest.class);
@@ -1211,7 +1211,7 @@ public class KeyValueHandlerTest {
 
         ByteBuf content = Unpooled.wrappedBuffer(Snappy.compress(text.getBytes(CharsetUtil.UTF_8)));
         FullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(KEY, Unpooled.EMPTY_BUFFER,
-            content.copy());
+            content);
         response.setDataType(KeyValueHandler.DATATYPE_SNAPPY);
 
         GetRequest requestMock = mock(GetRequest.class);
