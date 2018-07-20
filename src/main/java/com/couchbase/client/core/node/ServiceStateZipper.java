@@ -46,6 +46,7 @@ public class ServiceStateZipper extends AbstractStateZipper<Service, LifecycleSt
         int connecting = 0;
         int disconnecting = 0;
         int idle = 0;
+        int degraded = 0;
         for (LifecycleState serviceState : states) {
             switch (serviceState) {
                 case CONNECTED:
@@ -57,16 +58,23 @@ public class ServiceStateZipper extends AbstractStateZipper<Service, LifecycleSt
                 case DISCONNECTING:
                     disconnecting++;
                     break;
+                case DEGRADED:
+                    degraded++;
+                    break;
                 case IDLE:
                     idle++;
+                case DISCONNECTED:
+                    // Intentionally ignored.
                     break;
+                default:
+                    throw new IllegalStateException("Unknown unhandled state " + serviceState + ", this is a bug!");
             }
         }
         if (states.size() == idle) {
             return LifecycleState.IDLE;
         } else if (states.size() == (connected + idle)) {
             return LifecycleState.CONNECTED;
-        } else if (connected > 0) {
+        } else if (connected > 0 || degraded > 0) {
             return LifecycleState.DEGRADED;
         } else if (connecting > 0) {
             return LifecycleState.CONNECTING;
