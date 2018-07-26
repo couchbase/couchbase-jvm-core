@@ -125,6 +125,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static final boolean OPERATION_TRACING_SERVER_DUR_ENABLED = true;
     public static final int MIN_COMPRESSION_SIZE = 32;
     public static final double MIN_COMPRESSION_RATIO = 0.83;
+    public static final boolean COMPRESSION_ENABLED = true;
     public static final boolean ORPHAN_REPORTING_ENABLED = true;
     public static final NetworkResolution NETWORK_RESOLUTION = NetworkResolution.AUTO;
 
@@ -245,6 +246,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final Tracer tracer;
     private final int minCompressionSize;
     private final double minCompressionRatio;
+    private final boolean compressionEnabled;
     private final NetworkResolution networkResolution;
 
     private static volatile int MAX_ALLOWED_INSTANCES = 1;
@@ -348,6 +350,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         operationTracingServerDurationEnabled = booleanPropertyOr("operationTracingServerDurationEnabled", builder.operationTracingServerDurationEnabled);
         minCompressionRatio = doublePropertyOr("compressionMinRatio", builder.minCompressionRatio);
         minCompressionSize = intPropertyOr("compressionMinSize", builder.minCompressionSize);
+        compressionEnabled = booleanPropertyOr("compressionEnabled", builder.compressionEnabled);
 
         if (!operationTracingEnabled) {
             tracer = NoopTracerFactory.create();
@@ -1085,6 +1088,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public boolean compressionEnabled() {
+        return compressionEnabled;
+    }
+
+    @Override
     public boolean orphanResponseReportingEnabled() { return orphanResponseReportingEnabled; }
 
     @Override
@@ -1181,6 +1189,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private Tracer tracer;
         private double minCompressionRatio = MIN_COMPRESSION_RATIO;
         private int minCompressionSize = MIN_COMPRESSION_SIZE;
+        private boolean compressionEnabled = COMPRESSION_ENABLED;
         private boolean orphanResponseReportingEnabled = ORPHAN_REPORTING_ENABLED;
         private OrphanResponseReporter orphanResponseReporter;
         private NetworkResolution networkResolution = NETWORK_RESOLUTION;
@@ -1991,6 +2000,19 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
             return self();
         }
 
+        /**
+         * Allows to enable/disable compression completely, enabled by default.
+         *
+         * @param compressionEnabled if compression should be enabled or disabled.
+         * @return the builder for chaining purposes.
+         */
+        @InterfaceAudience.Public
+        @InterfaceStability.Uncommitted
+        public SELF compressionEnabled(final boolean compressionEnabled) {
+            this.compressionEnabled = compressionEnabled;
+            return self();
+        }
+
         @InterfaceAudience.Public
         @InterfaceStability.Committed
         public SELF orphanResponseReportingEnabled(final boolean orphanResponseReportingEnabled) {
@@ -2134,6 +2156,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", forceSaslPlain=").append(forceSaslPlain);
         sb.append(", compressionMinRatio=").append(minCompressionRatio);
         sb.append(", compressionMinSize=").append(minCompressionSize);
+        sb.append(", compressionEnabled=").append(compressionEnabled);
         sb.append(", operationTracingEnabled=").append(operationTracingEnabled);
         sb.append(", operationTracingServerDurationEnabled=").append(operationTracingServerDurationEnabled);
         sb.append(", tracer=").append(tracer != null ? tracer.getClass().getSimpleName() : "null");

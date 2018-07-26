@@ -554,6 +554,15 @@ public interface CoreEnvironment extends SecureEnvironment, ConfigParserEnvironm
     Tracer tracer();
 
     /**
+     * If true, compression is enabled and will be used if the min size and other
+     * thresholds match as well. If false, it won't even be negotiated with the
+     * server.
+     *
+     * @return true if enabled, false otherwise.
+     */
+    boolean compressionEnabled();
+
+    /**
      * Returns the minimum size of a document to be considered for
      * compression in the first place.
      *

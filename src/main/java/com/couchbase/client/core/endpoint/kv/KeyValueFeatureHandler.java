@@ -87,7 +87,8 @@ public class KeyValueFeatureHandler extends SimpleChannelInboundHandler<FullBina
             features.add(ServerFeatures.TRACING);
         }
 
-        if (snappyEnabled) {
+        // We are keeping snappyEnabled around for backwards compatibility
+        if (snappyEnabled && ctx.environment().compressionEnabled()) {
             features.add(ServerFeatures.SNAPPY);
         }
         if (xerrorEnabled) {
