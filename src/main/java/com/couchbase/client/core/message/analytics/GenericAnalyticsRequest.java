@@ -36,16 +36,20 @@ import java.net.InetAddress;
 @InterfaceAudience.Public
 public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements AnalyticsRequest, PrelocatedRequest {
 
+    public static final int NO_PRIORITY = 0;
+
     private final String query;
     private final boolean jsonFormat;
     private final InetAddress targetNode;
+    private final int priority;
 
     protected GenericAnalyticsRequest(String query, boolean jsonFormat, String bucket, String username, String password,
-        InetAddress targetNode) {
+        InetAddress targetNode, int priority) {
         super(bucket, username, password);
         this.query = query;
         this.jsonFormat = jsonFormat;
         this.targetNode = targetNode;
+        this.priority = priority;
     }
 
     @Override
@@ -55,6 +59,10 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
 
     public String query() {
         return query;
+    }
+
+    public int priority() {
+        return priority;
     }
 
     public boolean isJsonFormat() {
@@ -76,7 +84,7 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
      * @return a {@link GenericAnalyticsRequest} for this simple statement.
      */
     public static GenericAnalyticsRequest simpleStatement(String statement, String bucket, String password) {
-        return new GenericAnalyticsRequest(statement, false, bucket, bucket, password, null);
+        return new GenericAnalyticsRequest(statement, false, bucket, bucket, password, null, NO_PRIORITY);
     }
 
     /**
@@ -90,7 +98,23 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
      * @return a {@link GenericAnalyticsRequest} for this simple statement.
      */
     public static GenericAnalyticsRequest simpleStatement(String statement, String bucket, String username, String password) {
-        return new GenericAnalyticsRequest(statement, false, bucket, username, password, null);
+        return new GenericAnalyticsRequest(statement, false, bucket, username, password, null, NO_PRIORITY);
+    }
+
+    /**
+     * Create a {@link GenericAnalyticsRequest} and mark it as containing a full Analytics query in Json form
+     * (including additional query parameters).
+     *
+     * The simplest form of such a query is a single statement encapsulated in a json query object:
+     * <pre>{"statement":"SELECT * FROM default"}</pre>.
+     *
+     * @param jsonQuery the Analytics query in json form.
+     * @param bucket the bucket on which to perform the query.
+     * @param password the password for the target bucket.
+     * @return a {@link GenericAnalyticsRequest} for this full query.
+     */
+    public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, int priority) {
+        return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, null, priority);
     }
 
     /**
@@ -106,7 +130,7 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
      * @return a {@link GenericAnalyticsRequest} for this full query.
      */
     public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password) {
-        return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, null);
+        return jsonQuery(jsonQuery, bucket, username, password, NO_PRIORITY);
     }
 
     /**
@@ -124,6 +148,6 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
      * @return a {@link GenericAnalyticsRequest} for this full query.
      */
     public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
-        return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, targetNode);
+        return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, targetNode, NO_PRIORITY);
     }
 }

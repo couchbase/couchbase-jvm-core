@@ -33,8 +33,9 @@ import java.net.InetAddress;
 @InterfaceAudience.Public
 public class RawAnalyticsRequest extends GenericAnalyticsRequest {
 
-    private RawAnalyticsRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
-        super(jsonQuery, true, bucket, username, password, targetNode);
+    private RawAnalyticsRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode,
+                                int priority) {
+        super(jsonQuery, true, bucket, username, password, targetNode, priority);
     }
 
     /**
@@ -50,7 +51,7 @@ public class RawAnalyticsRequest extends GenericAnalyticsRequest {
      * @return a {@link RawAnalyticsRequest} for this full query.
      */
     public static RawAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String password) {
-        return new RawAnalyticsRequest(jsonQuery, bucket, bucket, password, null);
+        return new RawAnalyticsRequest(jsonQuery, bucket, bucket, password, null, GenericAnalyticsRequest.NO_PRIORITY);
     }
 
     /**
@@ -67,7 +68,7 @@ public class RawAnalyticsRequest extends GenericAnalyticsRequest {
      * @return a {@link RawAnalyticsRequest} for this full query.
      */
     public static RawAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password) {
-        return new RawAnalyticsRequest(jsonQuery, bucket, username, password, null);
+        return new RawAnalyticsRequest(jsonQuery, bucket, username, password, null, GenericAnalyticsRequest.NO_PRIORITY);
     }
 
     /**
@@ -84,7 +85,7 @@ public class RawAnalyticsRequest extends GenericAnalyticsRequest {
      * @return a {@link RawAnalyticsRequest} for this full query.
      */
     public static RawAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode) {
-        return new RawAnalyticsRequest(jsonQuery, bucket, bucket, password, targetNode);
+        return new RawAnalyticsRequest(jsonQuery, bucket, bucket, password, targetNode, GenericAnalyticsRequest.NO_PRIORITY);
     }
 
     /**
@@ -102,6 +103,6 @@ public class RawAnalyticsRequest extends GenericAnalyticsRequest {
      * @return a {@link RawAnalyticsRequest} for this full query.
      */
     public static RawAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
-        return new RawAnalyticsRequest(jsonQuery, bucket, username, password, targetNode);
+        return new RawAnalyticsRequest(jsonQuery, bucket, username, password, targetNode, GenericAnalyticsRequest.NO_PRIORITY);
     }
 }

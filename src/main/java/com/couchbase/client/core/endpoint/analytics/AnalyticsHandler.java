@@ -181,6 +181,9 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
             if (queryRequest.isJsonFormat()) {
                 request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
             }
+            if (queryRequest.priority() != GenericAnalyticsRequest.NO_PRIORITY) {
+                request.headers().set("Analytics-Priority", queryRequest.priority());
+            }
             ByteBuf query = ctx.alloc().buffer(((GenericAnalyticsRequest) msg).query().length());
             query.writeBytes(((GenericAnalyticsRequest) msg).query().getBytes(CHARSET));
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
