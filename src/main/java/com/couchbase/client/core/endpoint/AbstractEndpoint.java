@@ -116,7 +116,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * The netty bootstrap adapter.
      */
-    private final BootstrapAdapter bootstrap;
+    private BootstrapAdapter bootstrap;
 
     /**
      * The name of the couchbase bucket (needed for bucket-level endpoints).
@@ -272,6 +272,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             hostname, port);
         this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env) : null;
 
+        bootstrap = createBootstrap(hostname, port);
+    }
+
+    private BootstrapAdapter createBootstrap(String hostname, int port) {
+        LOGGER.info("Bootstrap initialized with hostname: {} and port: {}", hostname, port);
         Class<? extends Channel> channelClass = NioSocketChannel.class;
         if (ioPool instanceof EpollEventLoopGroup) {
             channelClass = EpollSocketChannel.class;
@@ -283,7 +288,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
 
         boolean tcpNodelay = environment().tcpNodelayEnabled();
-        bootstrap = new BootstrapAdapter(new Bootstrap()
+        return new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(ioPool)
             .channel(channelClass)
@@ -489,6 +494,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                     // the disconnect phase. If this happens, explicitly break the retry loop
                                     // and re-run the disconnect phase to make sure all is properly freed.
                                     if (!disconnected) {
+                                        bootstrap = createBootstrap(hostname, port);
                                         doConnect(observable, bootstrapping);
                                     } else {
                                         LOGGER.debug("{}Explicitly breaking retry loop because already disconnected.",
