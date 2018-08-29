@@ -25,6 +25,9 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -34,18 +37,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.mockito.Mockito.mock;
 
 /**
- * Verifies that parsing various bucket configs works as expected through the
- * {@link BucketConfigParser}.
+ * Verifies the functionality of {@link DefaultMemcachedBucketConfig} through the {@link BucketConfigParser}.
  */
 public class DefaultMemcachedBucketConfigTest {
 
     private static final CoreEnvironment ENV = DefaultCoreEnvironment.create();
 
     @AfterClass
-    public static final void cleanup() {
+    public static void cleanup() {
         ENV.shutdown();
     }
 
@@ -54,9 +55,8 @@ public class DefaultMemcachedBucketConfigTest {
      * nodes are only populated for those two nodes which include the binary service type.
      */
     @Test
-    public void shouldOnlyUseDataNodesForKetama() throws Exception {
-        String raw = Resources.read("memcached_mixed_sherlock.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, null);
+    public void shouldOnlyUseDataNodesForKetama() {
+        MemcachedBucketConfig config = readConfig("memcached_mixed_sherlock.json");
 
         assertEquals(4, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {
@@ -67,11 +67,9 @@ public class DefaultMemcachedBucketConfigTest {
     }
 
     @Test
-    public void shouldLoadConfigWithIPv6() throws Exception {
+    public void shouldLoadConfigWithIPv6() {
         assumeFalse(NetworkAddress.FORCE_IPV4);
-
-        String raw = Resources.read("memcached_with_ipv6.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, null);
+        MemcachedBucketConfig config = readConfig("memcached_with_ipv6.json");
 
         assertEquals(2, config.nodes().size());
         for (Map.Entry<Long, NodeInfo> node : config.ketamaNodes().entrySet()) {
@@ -83,18 +81,14 @@ public class DefaultMemcachedBucketConfigTest {
     }
 
     @Test
-    public void shouldReadBucketUuid() throws Exception {
-        String raw = Resources.read("memcached_mixed_sherlock.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
-
+    public void shouldReadBucketUuid() {
+        MemcachedBucketConfig config = readConfig("memcached_mixed_sherlock.json");
         assertEquals("7b6c811c94f985b685d99596816a7a9f", config.uuid());
     }
 
     @Test
-    public void shouldHandleMissingBucketUuid() throws Exception {
-        String raw = Resources.read("memcached_without_uuid.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
-
+    public void shouldHandleMissingBucketUuid() {
+        MemcachedBucketConfig config = readConfig("memcached_without_uuid.json");
         assertNull(config.uuid());
     }
 
@@ -103,8 +97,7 @@ public class DefaultMemcachedBucketConfigTest {
      */
     @Test
     public void shouldIncludeExternalIfPresent() {
-        String raw = Resources.read("config_with_external_memcache.json", getClass());
-        MemcachedBucketConfig config = (MemcachedBucketConfig) BucketConfigParser.parse(raw, ENV, NetworkAddress.localhost());
+        MemcachedBucketConfig config = readConfig("config_with_external_memcache.json");
 
         List<NodeInfo> nodes = config.nodes();
         assertEquals(3, nodes.size());
@@ -124,4 +117,35 @@ public class DefaultMemcachedBucketConfigTest {
             }
         }
     }
+
+    @Test
+    public void shouldOnlyTakeNodesArrayIntoAccount() {
+        MemcachedBucketConfig config = readConfig("memcached_during_rebalance.json");
+
+        List<String> mustContain = Arrays.asList(
+            "10.0.0.1",
+            "10.0.0.2",
+            "10.0.0.3"
+        );
+        List<String> mustNotContain = Collections.singletonList("10.0.0.4");
+
+        Collection<NodeInfo> actualRingNodes = config.ketamaNodes().values();
+        for (NodeInfo nodeInfo : actualRingNodes) {
+            String actual = nodeInfo.hostname().nameOrAddress();
+            assertTrue(mustContain.contains(actual));
+            assertFalse(mustNotContain.contains(actual));
+        }
+    }
+
+    /**
+     * Helper method to load the config.
+     */
+    private static MemcachedBucketConfig readConfig(final String path) {
+        return (MemcachedBucketConfig) BucketConfigParser.parse(
+            Resources.read(path, DefaultMemcachedBucketConfigTest.class),
+            ENV,
+            null
+        );
+    }
+
 }

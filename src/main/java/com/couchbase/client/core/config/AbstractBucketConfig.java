@@ -76,9 +76,13 @@ public abstract class AbstractBucketConfig implements BucketConfig {
         List<NodeInfo> converted = new ArrayList<NodeInfo>(nodesExt.size());
         for (int i = 0; i < nodesExt.size(); i++) {
             NetworkAddress hostname = nodesExt.get(i).hostname();
+
+            // Since nodeInfo and nodesExt might not be the same size, this can be null!
+            NodeInfo nodeInfo = i >= nodeInfos.size() ? null : nodeInfos.get(i);
+
             if (hostname == null) {
-                if (nodeInfos.size() == nodesExt.size()) {
-                    hostname = nodeInfos.get(i).hostname();
+                if (nodeInfo != null) {
+                    hostname = nodeInfo.hostname();
                 } else {
                     // If hostname missing, then node configured using localhost
                     LOGGER.debug("Hostname is for nodesExt[{}] is not available, falling back to origin.", i);
@@ -94,6 +98,15 @@ public abstract class AbstractBucketConfig implements BucketConfig {
                 ports.remove(ServiceType.VIEW);
                 sslPorts.remove(ServiceType.VIEW);
             }
+
+            // make sure only kv nodes are added if they are actually also in the nodes
+            // list and not just in nodesExt, since the kv service might be available
+            // on the cluster but not yet enabled for this specific bucket.
+            if (nodeInfo == null) {
+                ports.remove(ServiceType.BINARY);
+                sslPorts.remove(ServiceType.BINARY);
+            }
+
             converted.add(new DefaultNodeInfo(hostname, ports, sslPorts, aa));
         }
         return converted;
