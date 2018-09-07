@@ -17,7 +17,7 @@
     <groupId>com.couchbase.client</groupId>
     <artifactId>core-io</artifactId>
     <version>1.7.3-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>bundle</packaging>
 
     <name>Couchbase JVM Core IO</name>
     <description>The official Couchbase JVM Core IO Library</description>
@@ -234,6 +234,7 @@
                 <version>3.1.0</version>
                 <configuration>
                     <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                         <manifestEntries>
                             <Automatic-Module-Name>com.couchbase.client.core</Automatic-Module-Name>
                         </manifestEntries>
@@ -321,6 +322,7 @@
                             <file>${native.folder}/META-INF/native/${native.original}</file>
                             <resource>META-INF/native/${native.renamed}</resource>
                         </transformer>
+
                     </transformers>
                     <artifactSet>
                         <excludes>
@@ -378,6 +380,35 @@
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>4.1.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <manifestLocation>META-INF</manifestLocation>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Name>${project.name}</Bundle-Name>
+                        <Bundle-License>http://www.apache.org/licenses/LICENSE-2.0.txt</Bundle-License>
+                        <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+                        <Bundle-Description>${project.description}</Bundle-Description>
+                        <Bundle-Version>${project.version}</Bundle-Version>
+                        <Bundle-DocURL>${project.url}</Bundle-DocURL>
+                        <Export-Package>com.couchbase.client.*</Export-Package>
+                        <Import-Package>rx.*;version="[${rxjava.version},${rxjava.version}]",io.opentracing.*;version="[${opentracing.version},${opentracing.version}]", org.apache.log4j.*;version="[${log4j.version},${log4j.version}]";resolution:=optional, org.slf4j.*;version="[${slf4j.version},${slf4j.version}]";resolution:=optional</Import-Package>
+                    </instructions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>manifest</goal>
                         </goals>
                     </execution>
                 </executions>
