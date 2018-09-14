@@ -146,6 +146,35 @@ public class AbstractOnDemandServiceTest {
         }
     }
 
+    @Test
+    public void shouldDisconnectEndpointsWhenServiceDisconnects() throws Exception {
+        InstrumentedService service = new InstrumentedService(host, bucket, password, port, ctx, factory);
+
+        Endpoint endpoint = mock(Endpoint.class);
+        final EndpointStates endpointStates = new EndpointStates(LifecycleState.CONNECTING);
+        when(endpoint.states()).thenReturn(endpointStates.states());
+        when(endpoint.connect()).thenReturn(Observable.just(LifecycleState.CONNECTED));
+        when(factory.create(host, bucket, bucket, password, port, ctx)).thenReturn(endpoint);
+
+        assertEquals(0, service.endpoints().size());
+        assertEquals(LifecycleState.IDLE, service.connect().toBlocking().single());
+        assertEquals(0, service.endpoints().size());
+
+        CouchbaseRequest req = mock(CouchbaseRequest.class);
+        AsyncSubject<CouchbaseResponse> reqObservable = AsyncSubject.create();
+        when(req.observable()).thenReturn(reqObservable);
+        service.send(req);
+
+        endpointStates.transitionState(LifecycleState.CONNECTED);
+
+        verify(endpoint, times(1)).send(req);
+        verify(endpoint, times(1)).send(SignalFlush.INSTANCE);
+
+        service.disconnect().toBlocking().single();
+
+        verify(endpoint, times(1)).disconnect();
+    }
+
     class InstrumentedService extends AbstractOnDemandService {
         public InstrumentedService(String hostname, String bucket, String password, int port, CoreContext ctx, EndpointFactory endpointFactory) {
             super(hostname, bucket, bucket, password, port, ctx, endpointFactory);
@@ -160,6 +189,8 @@ public class AbstractOnDemandServiceTest {
         public List<Endpoint> endpoints() {
             return super.endpoints();
         }
+
+
 
         @Override
         protected EndpointStateZipper endpointStates() {
