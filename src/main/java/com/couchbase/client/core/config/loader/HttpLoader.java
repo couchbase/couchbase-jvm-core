@@ -41,8 +41,8 @@ public class HttpLoader extends AbstractLoader {
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(HttpLoader.class);
 
-    private static final String TERSE_PATH = "/pools/default/b/";
-    private static final String VERBOSE_PATH = "/pools/default/buckets/";
+    public static final String TERSE_PATH = "/pools/default/b/";
+    public static final String VERBOSE_PATH = "/pools/default/buckets/";
 
     /**
      * Creates a new {@link HttpLoader}.
