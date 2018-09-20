@@ -68,9 +68,6 @@ public abstract class AbstractServiceConfig {
         if (minEndpoints < 0 || maxEndpoints < 0) {
             throw new IllegalArgumentException("The minEndpoints and maxEndpoints must not be negative");
         }
-        if (maxEndpoints == 0) {
-            throw new IllegalArgumentException("The maxEndpoints must be greater than 0");
-        }
         if (maxEndpoints < minEndpoints) {
             throw new IllegalArgumentException("The maxEndpoints must not be smaller than mindEndpoints");
         }
