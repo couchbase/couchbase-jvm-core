@@ -176,7 +176,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
 
         if (msg instanceof GenericAnalyticsRequest) {
             GenericAnalyticsRequest queryRequest = (GenericAnalyticsRequest) msg;
-            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/query/service");
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/analytics/service");
             if (queryRequest.isJsonFormat()) {
                 request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
             }
