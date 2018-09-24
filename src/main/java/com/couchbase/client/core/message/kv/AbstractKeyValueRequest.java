@@ -15,6 +15,8 @@
  */
 package com.couchbase.client.core.message.kv;
 
+import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.tracing.ThresholdLogReporter;
@@ -23,6 +25,8 @@ import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import rx.subjects.AsyncSubject;
 import rx.subjects.Subject;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Default implementation of a {@link BinaryRequest}.
@@ -37,9 +41,14 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
      *
      * No overflow control is applied, since once it overflows it starts with negative values again.
      */
-    private static volatile int GLOBAL_OPAQUE = 0;
+    private static final AtomicInteger GLOBAL_OPAQUE = new AtomicInteger(0);
 
     protected static final short DEFAULT_PARTITION = -1;
+
+    /**
+     * Cache the redaction level for performance.
+     */
+    private static final RedactionLevel REDACTION_LEVEL = CouchbaseLoggerFactory.getRedactionLevel();
 
     /**
      * The key of the document, should be null if not tied to any.
@@ -101,12 +110,15 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
         super(bucket, username, password, observable);
         this.key = key;
         this.keyBytes = key == null || key.isEmpty() ? new byte[] {} : key.getBytes(CharsetUtil.UTF_8);
-        opaque = GLOBAL_OPAQUE++;
+        opaque = GLOBAL_OPAQUE.getAndIncrement();
     }
 
     @Override
     protected void afterSpanSet(Span span) {
         span.setTag(Tags.PEER_SERVICE.getKey(), ThresholdLogReporter.SERVICE_KV);
+        if (REDACTION_LEVEL == RedactionLevel.NONE) {
+            span.setTag("couchbase.document_key", key);
+        }
     }
 
     @Override
