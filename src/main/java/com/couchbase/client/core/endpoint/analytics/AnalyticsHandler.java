@@ -177,7 +177,6 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
         if (msg instanceof GenericAnalyticsRequest) {
             GenericAnalyticsRequest queryRequest = (GenericAnalyticsRequest) msg;
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/query/service");
-            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
             if (queryRequest.isJsonFormat()) {
                 request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
             }
@@ -187,25 +186,20 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
             ByteBuf query = ctx.alloc().buffer(((GenericAnalyticsRequest) msg).query().length());
             query.writeBytes(((GenericAnalyticsRequest) msg).query().getBytes(CHARSET));
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
-            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
             request.content().writeBytes(query);
             query.release();
-        } else if (msg instanceof PingRequest) {
+        } else if (msg instanceof PingRequest || msg instanceof KeepAliveRequest) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
-            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
-            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
-            return request;
-        } else if (msg instanceof KeepAliveRequest) {
-            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/analytics/version");
-            request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
-            request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
-            return request;
         } else {
             throw new IllegalArgumentException("Unknown incoming AnalyticsRequest type "
                 + msg.getClass());
         }
 
+        // Add common headers across requests
+        request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
+        request.headers().set(HttpHeaders.Names.HOST, remoteHttpHost(ctx));
         addHttpBasicAuth(ctx, request, msg.username(), msg.password());
+
         return request;
     }
 
