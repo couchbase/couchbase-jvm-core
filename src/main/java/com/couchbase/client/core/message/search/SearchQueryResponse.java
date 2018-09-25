@@ -28,21 +28,31 @@ import com.couchbase.client.core.message.ResponseStatus;
 public class SearchQueryResponse extends AbstractCouchbaseResponse {
 
     private final String payload;
+    private final int statusCode;
 
-    public SearchQueryResponse(String payload, ResponseStatus status) {
+    public SearchQueryResponse(String payload, ResponseStatus status, int statusCode) {
         super(status, null);
         this.payload = payload;
+        this.statusCode = statusCode;
     }
 
     public String payload() {
         return payload;
     }
 
+    /**
+     * Returns the raw http status code.
+     */
+    public int statusCode() {
+        return statusCode;
+    }
+
     @Override
     public String toString() {
         return "SearchQueryResponse{"
-                + "status=" + status()
-                + ", payload='" + payload + '\''
-                + '}';
+            + "status=" + status()
+            + ", statusCode=" + statusCode()
+            + ", payload='" + payload + '\''
+            + '}';
     }
 }

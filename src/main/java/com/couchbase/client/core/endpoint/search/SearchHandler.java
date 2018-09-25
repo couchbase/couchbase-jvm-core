@@ -51,6 +51,7 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.CharsetUtil;
@@ -171,9 +172,10 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
                 finishedDecoding();
             }
         } else if (msg instanceof LastHttpContent) {
-            ResponseStatus status = ResponseStatusConverter.fromHttp(responseHeader.getStatus().code());
+            HttpResponseStatus httpStatus = responseHeader.getStatus();
+            ResponseStatus status = ResponseStatusConverter.fromHttp(httpStatus.code());
             String body = responseContent.readableBytes() > 0
-                    ? responseContent.toString(CHARSET) : responseHeader.getStatus().reasonPhrase();
+                    ? responseContent.toString(CHARSET) : httpStatus.reasonPhrase();
 
             if (request instanceof UpsertSearchIndexRequest) {
                 response = new UpsertSearchIndexResponse(body, status);
@@ -182,9 +184,8 @@ public class SearchHandler extends AbstractGenericHandler<HttpObject, HttpReques
             } else if (request instanceof RemoveSearchIndexRequest) {
                 response = new RemoveSearchIndexResponse(body, status);
             } else if (request instanceof SearchQueryRequest) {
-                //TODO if more parsing is implemented, add a RawSearchQueryRequest similar to what was done in JVMCBC-357
                 completeRequestSpan(currentRequest());
-                response = new SearchQueryResponse(body, status);
+                response = new SearchQueryResponse(body, status, httpStatus.code());
             }
 
             finishedDecoding();

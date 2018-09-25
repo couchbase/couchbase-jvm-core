@@ -50,6 +50,7 @@ public class ResponseStatusConverter {
     public static final int HTTP_UNAUTHORIZED = 401;
     public static final int HTTP_NOT_FOUND = 404;
     public static final int HTTP_INTERNAL_ERROR = 500;
+    public static final int HTTP_TOO_MANY_REQUESTS = 429;
 
     private static final byte JSON_DATATYPE = 0x01;
 
@@ -174,6 +175,9 @@ public class ResponseStatusConverter {
                 break;
             case HTTP_UNAUTHORIZED:
                 status = ResponseStatus.ACCESS_ERROR;
+                break;
+            case HTTP_TOO_MANY_REQUESTS:
+                status = ResponseStatus.FAILURE;
                 break;
             default:
                 LOGGER.warn("Unknown ResponseStatus with Protocol HTTP: {}", code);
