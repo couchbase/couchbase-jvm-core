@@ -40,9 +40,25 @@ public class SSLEngineFactory {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(SSLEngineFactory.class);
 
     /**
+     * Allows to modify the chosen ssl context protocol.
+     *
+     * Needs to follow the terminology in
+     * https://docs.oracle.com/javase/7/docs/technotes/guides/security/StandardNames.html#SSLContext
+     */
+    private static final String SSL_CONTEXT_PROTOCOL = System.getProperty(
+        "com.couchbase.sslProtocol",
+        "TLS"
+    );
+
+    /**
      * The global environment which is shared.
      */
     private final SecureEnvironment env;
+
+    /**
+     * The ssl context protocol that should be used.
+     */
+    private final String sslContextProtocol;
 
     /**
      * Create a new engine factory.
@@ -50,7 +66,18 @@ public class SSLEngineFactory {
      * @param env the config environment.
      */
     public SSLEngineFactory(SecureEnvironment env) {
+        this(env, SSL_CONTEXT_PROTOCOL.trim());
+    }
+
+    /**
+     * Create a new engine factory.
+     *
+     * @param env the config environment.
+     * @param sslContextProtocol the ssl context protocol used.
+     */
+    SSLEngineFactory(SecureEnvironment env, String sslContextProtocol) {
         this.env = env;
+        this.sslContextProtocol = sslContextProtocol;
     }
 
     /**
@@ -101,7 +128,14 @@ public class SSLEngineFactory {
             kmf.init(ks, password);
             tmf.init(ts);
 
-            SSLContext ctx = SSLContext.getInstance("TLS");
+            if (!sslContextProtocol.startsWith("TLS")) {
+                throw new IllegalArgumentException(
+                    "SSLContext Protocol does not start with TLS, this is to prevent "
+                        + "insecure protocols (Like SSL*) to be used. Potential candidates "
+                        + "are TLS (default), TLSv1, TLSv1.1, TLSv1.2, TLSv1.3 depending on "
+                        + "the Java version used.");
+            }
+            SSLContext ctx = SSLContext.getInstance(sslContextProtocol);
             ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
             SSLEngine engine = ctx.createSSLEngine();
