@@ -26,9 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -336,11 +335,11 @@ public class ThresholdLogReporter {
             System.getProperty("com.couchbase.thresholdLogReporterSleep", "100")
         );
 
-        private final SortedSet<ThresholdLogSpan> kvThresholdSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> n1qlThresholdSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> viewThresholdSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> ftsThresholdSet = new TreeSet<ThresholdLogSpan>();
-        private final SortedSet<ThresholdLogSpan> analyticsThresholdSet = new TreeSet<ThresholdLogSpan>();
+        private final Queue<ThresholdLogSpan> kvThresholds = new PriorityQueue<ThresholdLogSpan>();
+        private final Queue<ThresholdLogSpan> n1qlThresholds = new PriorityQueue<ThresholdLogSpan>();
+        private final Queue<ThresholdLogSpan> viewThresholds = new PriorityQueue<ThresholdLogSpan>();
+        private final Queue<ThresholdLogSpan> ftsThresholds = new PriorityQueue<ThresholdLogSpan>();
+        private final Queue<ThresholdLogSpan> analyticsThresholds = new PriorityQueue<ThresholdLogSpan>();
 
         private int kvThresholdCount = 0;
         private int n1qlThresholdCount = 0;
@@ -371,7 +370,7 @@ public class ThresholdLogReporter {
         }
 
         /**
-         * Helper method which drains the queue, handles the sets and logs if needed.
+         * Helper method which drains the queue, handles the lists and logs if needed.
          */
         private void handleOverThresholdQueue() {
             long now = System.nanoTime();
@@ -387,19 +386,19 @@ public class ThresholdLogReporter {
                 }
                 String service = (String) span.tag(Tags.PEER_SERVICE.getKey());
                 if (SERVICE_KV.equals(service)) {
-                    updateSet(kvThresholdSet, span);
+                    updateSpans(kvThresholds, span);
                     kvThresholdCount += 1;
                 } else if (SERVICE_N1QL.equals(service)) {
-                    updateSet(n1qlThresholdSet, span);
+                    updateSpans(n1qlThresholds, span);
                     n1qlThresholdCount += 1;
                 } else if (SERVICE_VIEW.equals(service)) {
-                    updateSet(viewThresholdSet, span);
+                    updateSpans(viewThresholds, span);
                     viewThresoldCount += 1;
                 } else if (SERVICE_FTS.equals(service)) {
-                    updateSet(ftsThresholdSet, span);
+                    updateSpans(ftsThresholds, span);
                     ftsThresholdCount += 1;
                 } else if (SERVICE_ANALYTICS.equals(service)) {
-                    updateSet(analyticsThresholdSet, span);
+                    updateSpans(analyticsThresholds, span);
                     analyticsThresholdCount += 1;
                 } else {
                     LOGGER.warn("Unknown service in span {}", service);
@@ -418,38 +417,38 @@ public class ThresholdLogReporter {
 
             List<Map<String, Object>> output = new ArrayList<Map<String, Object>>();
 
-            if (!kvThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(kvThresholdSet, kvThresholdCount, SERVICE_KV));
-                kvThresholdSet.clear();
+            if (!kvThresholds.isEmpty()) {
+                output.add(convertThresholdSpans(kvThresholds, kvThresholdCount, SERVICE_KV));
+                kvThresholds.clear();
                 kvThresholdCount = 0;
             }
-            if (!n1qlThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(n1qlThresholdSet, n1qlThresholdCount, SERVICE_N1QL));
-                n1qlThresholdSet.clear();
+            if (!n1qlThresholds.isEmpty()) {
+                output.add(convertThresholdSpans(n1qlThresholds, n1qlThresholdCount, SERVICE_N1QL));
+                n1qlThresholds.clear();
                 n1qlThresholdCount = 0;
             }
-            if (!viewThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(viewThresholdSet, viewThresoldCount, SERVICE_VIEW));
-                viewThresholdSet.clear();
+            if (!viewThresholds.isEmpty()) {
+                output.add(convertThresholdSpans(viewThresholds, viewThresoldCount, SERVICE_VIEW));
+                viewThresholds.clear();
                 viewThresoldCount = 0;
             }
-            if (!ftsThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(ftsThresholdSet, ftsThresholdCount, SERVICE_FTS));
-                ftsThresholdSet.clear();
+            if (!ftsThresholds.isEmpty()) {
+                output.add(convertThresholdSpans(ftsThresholds, ftsThresholdCount, SERVICE_FTS));
+                ftsThresholds.clear();
                 ftsThresholdCount = 0;
             }
-            if (!analyticsThresholdSet.isEmpty()) {
-                output.add(convertThresholdSet(analyticsThresholdSet, analyticsThresholdCount, SERVICE_ANALYTICS));
-                analyticsThresholdSet.clear();
+            if (!analyticsThresholds.isEmpty()) {
+                output.add(convertThresholdSpans(analyticsThresholds, analyticsThresholdCount, SERVICE_ANALYTICS));
+                analyticsThresholds.clear();
                 analyticsThresholdCount = 0;
             }
             logOverThreshold(output);
         }
 
-        private Map<String, Object> convertThresholdSet(SortedSet<ThresholdLogSpan> set, int count, String ident) {
+        private Map<String, Object> convertThresholdSpans(Queue<ThresholdLogSpan> spans, int count, String ident) {
             Map<String, Object> output = new HashMap<String, Object>();
             List<Map<String, Object>> top = new ArrayList<Map<String, Object>>();
-            for (ThresholdLogSpan span : set) {
+            for (ThresholdLogSpan span : spans) {
                 Map<String, Object> entry = new HashMap<String, Object>();
                 entry.put(KEY_TOTAL_MICROS, span.durationMicros());
 
@@ -505,16 +504,18 @@ public class ThresholdLogReporter {
         }
 
         /**
-         * Helper method which updates the set with the span and ensures that the sample
+         * Helper method which updates the list with the span and ensures that the sample
          * size is respected.
          *
-         * @param set the set to work with.
+         * @param spans the span list to work off of.
          * @param span the span to store.
          */
-        private void updateSet(final SortedSet<ThresholdLogSpan> set, final ThresholdLogSpan span) {
-            set.add(span);
-            while(set.size() > sampleSize) {
-                set.remove(set.first());
+        private void updateSpans(final Queue<ThresholdLogSpan> spans, final ThresholdLogSpan span) {
+            spans.add(span);
+            while(spans.size() > sampleSize) {
+                // Remove the element with the lowest duration, so we only keep
+                // the highest ones consistently
+                spans.remove();
             }
             hasThresholdWritten = true;
         }
