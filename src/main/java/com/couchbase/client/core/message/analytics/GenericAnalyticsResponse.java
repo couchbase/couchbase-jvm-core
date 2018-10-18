@@ -44,12 +44,13 @@ public class GenericAnalyticsResponse extends AbstractCouchbaseResponse {
     private final Observable<String> queryStatus;
     private final Observable<ByteBuf> info;
     private final Observable<ByteBuf> signature;
+    private final String handle;
 
     private final String requestId;
     private final String clientRequestId;
 
     public GenericAnalyticsResponse(Observable<ByteBuf> errors, Observable<ByteBuf> rows, Observable<ByteBuf> signature,
-        Observable<String> queryStatus, Observable<ByteBuf> info,
+        Observable<String> queryStatus, Observable<ByteBuf> info, String handle,
         CouchbaseRequest request, ResponseStatus status, String requestId, String clientRequestId) {
         super(status, request);
         this.errors = errors;
@@ -59,6 +60,7 @@ public class GenericAnalyticsResponse extends AbstractCouchbaseResponse {
         this.queryStatus = queryStatus;
         this.requestId = requestId;
         this.clientRequestId = clientRequestId == null ? "" : clientRequestId;
+        this.handle = handle;
     }
 
     /**
@@ -111,4 +113,9 @@ public class GenericAnalyticsResponse extends AbstractCouchbaseResponse {
     public String clientRequestId() {
         return clientRequestId;
     }
+
+    /**
+     * Contains the deferred handle url
+     */
+    public String handle() { return this.handle; }
 }

@@ -176,7 +176,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
 
         if (msg instanceof GenericAnalyticsRequest) {
             GenericAnalyticsRequest queryRequest = (GenericAnalyticsRequest) msg;
-            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "/analytics/service");
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,  msg.path());
             if (queryRequest.isJsonFormat()) {
                 request.headers().set(HttpHeaders.Names.CONTENT_TYPE, "application/json");
             }
@@ -189,7 +189,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
             request.content().writeBytes(query);
             query.release();
         } else if (msg instanceof PingRequest || msg instanceof KeepAliveRequest) {
-            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/ping");
+            request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, msg.path());
         } else {
             throw new IllegalArgumentException("Unknown incoming AnalyticsRequest type "
                 + msg.getClass());
@@ -395,6 +395,7 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
                 querySignatureObservable,
                 queryStatusObservable,
                 queryInfoObservable,
+                "",
                 currentRequest(),
                 status, requestId, clientId
         );
@@ -778,6 +779,11 @@ public class AnalyticsHandler extends AbstractGenericHandler<HttpObject, HttpReq
     protected static class KeepAliveRequest extends AbstractCouchbaseRequest implements AnalyticsRequest, KeepAlive {
         protected KeepAliveRequest() {
             super(null, null);
+        }
+
+        @Override
+        public String path() {
+            return "/admin/ping";
         }
     }
 

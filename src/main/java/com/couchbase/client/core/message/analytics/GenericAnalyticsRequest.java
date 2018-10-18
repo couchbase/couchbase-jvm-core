@@ -150,4 +150,9 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
     public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
         return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, targetNode, NO_PRIORITY);
     }
+
+    @Override
+    public String path() {
+        return "/analytics/service";
+    }
 }

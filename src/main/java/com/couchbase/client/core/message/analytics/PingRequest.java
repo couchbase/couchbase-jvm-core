@@ -72,4 +72,8 @@ public class PingRequest
         return sendTo;
     }
 
+    @Override
+    public String path() {
+        return "/admin/ping";
+    }
 }

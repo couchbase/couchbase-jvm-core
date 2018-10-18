@@ -24,4 +24,7 @@ import com.couchbase.client.core.message.CouchbaseRequest;
  * @since 1.4.3
  */
 public interface AnalyticsRequest extends CouchbaseRequest {
+
+    /** Get path to construct the uri */
+    String path();
 }
