@@ -93,6 +93,14 @@ import static com.couchbase.client.core.utils.Observables.failSafe;
 public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleState> implements Endpoint {
 
     /**
+     * A flag which controls whether the endpoint should force a DNS lookup request for the provided
+     * hostname in case the socket get disconnect.
+     */
+    protected static final boolean FORCE_DNS_LOOKUP_ON_RECONNECT = Boolean.parseBoolean(
+            System.getProperty("com.couchbase.forceDnsLookupOnReconnect", "false")
+    );
+
+    /**
      * The logger used.
      */
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Endpoint.class);
@@ -116,7 +124,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * The netty bootstrap adapter.
      */
-    private final BootstrapAdapter bootstrap;
+    private volatile BootstrapAdapter bootstrap;
 
     /**
      * The name of the couchbase bucket (needed for bucket-level endpoints).
@@ -271,7 +279,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         LOGGER.debug("Using a connectCallbackGracePeriod of {} on Endpoint {}:{}", connectCallbackGracePeriod,
             hostname, port);
         this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env) : null;
+        bootstrap = createBootstrap(hostname, port);
+    }
 
+    private BootstrapAdapter createBootstrap(String hostname, int port) {
         Class<? extends Channel> channelClass = NioSocketChannel.class;
         if (ioPool instanceof EpollEventLoopGroup) {
             channelClass = EpollSocketChannel.class;
@@ -283,7 +294,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 ? PooledByteBufAllocator.DEFAULT : UnpooledByteBufAllocator.DEFAULT;
 
         boolean tcpNodelay = environment().tcpNodelayEnabled();
-        bootstrap = new BootstrapAdapter(new Bootstrap()
+        return new BootstrapAdapter(new Bootstrap()
             .remoteAddress(hostname, port)
             .group(ioPool)
             .channel(channelClass)
@@ -489,6 +500,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                     // the disconnect phase. If this happens, explicitly break the retry loop
                                     // and re-run the disconnect phase to make sure all is properly freed.
                                     if (!disconnected) {
+                                        if (FORCE_DNS_LOOKUP_ON_RECONNECT) {
+                                            bootstrap = createBootstrap(hostname, port);
+                                        }
                                         doConnect(observable, bootstrapping);
                                     } else {
                                         LOGGER.debug("{}Explicitly breaking retry loop because already disconnected.",
