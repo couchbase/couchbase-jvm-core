@@ -192,6 +192,12 @@ public class KeyValueHandler
     public static final byte SUBDOC_FLAG_XATTR_PATH = (byte) 0x04;
 
     /**
+     * The bitmask for sub-document expansion of fields such as ${Mutation.CAS}
+     */
+    public static final byte SUBDOC_FLAG_EXPAND_MACROS = (byte) 0x10;
+
+
+    /**
      * The bitmask for sub-document create document
      */
     public static final byte SUBDOC_DOCFLAG_MKDOC = (byte) 0x1;
@@ -773,13 +779,15 @@ public class KeyValueHandler
         long cas = 0L;
         if (msg instanceof BinarySubdocMutationRequest) {
             BinarySubdocMutationRequest mut = (BinarySubdocMutationRequest) msg;
-            //for now only possible command flag is MKDIR_P (and it makes sense in mutations only)
             byte flags = 0;
             if (mut.createIntermediaryPath()) {
                 flags |= SUBDOC_BITMASK_MKDIR_P;
             }
             if (mut.xattr()) {
                 flags |= SUBDOC_FLAG_XATTR_PATH;
+            }
+            if (mut.expandMacros()) {
+                flags |= SUBDOC_FLAG_EXPAND_MACROS;
             }
             extras.writeByte(flags);
 

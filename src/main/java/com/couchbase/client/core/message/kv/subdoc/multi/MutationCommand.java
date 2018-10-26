@@ -36,6 +36,7 @@ public class MutationCommand {
     private final ByteBuf fragment;
     private boolean createIntermediaryPath;
     private boolean xattr;
+    private final boolean expandMacros;
 
     /**
      * Create a multi-mutation command.
@@ -51,6 +52,7 @@ public class MutationCommand {
         this.path = path;
         this.fragment = (fragment == null) ? Unpooled.EMPTY_BUFFER : fragment;
         this.createIntermediaryPath = createIntermediaryPath;
+        this.expandMacros = false;
     }
 
     /**
@@ -65,6 +67,7 @@ public class MutationCommand {
         this.mutation = mutation;
         this.path = path;
         this.fragment = (fragment == null) ? Unpooled.EMPTY_BUFFER : fragment;
+        this.expandMacros = false;
     }
 
     /**
@@ -90,6 +93,7 @@ public class MutationCommand {
         this.fragment = builder.fragment();
         this.createIntermediaryPath = builder.createIntermediaryPath();
         this.xattr = builder.xattr();
+        this.expandMacros = builder.expandMacros();
     }
 
     public Mutation mutation() {
@@ -116,4 +120,7 @@ public class MutationCommand {
         return this.xattr;
     }
 
+    public boolean expandMacros() {
+        return this.expandMacros;
+    }
 }

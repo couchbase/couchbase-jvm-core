@@ -48,6 +48,8 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
 
     private long cas;
 
+    private boolean expandMacros;
+
     /**
      * Creates a new {@link AbstractSubdocMutationRequest}.
      *
@@ -116,6 +118,16 @@ public abstract class AbstractSubdocMutationRequest extends AbstractSubdocReques
 
     public void xattr(boolean xattr) {
         this.xattr = xattr;
+    }
+
+    @Override
+    public boolean expandMacros() {
+        return this.expandMacros;
+    }
+
+
+    public void expandMacros(boolean expandMacros) {
+        this.expandMacros = expandMacros;
     }
 
     @Override

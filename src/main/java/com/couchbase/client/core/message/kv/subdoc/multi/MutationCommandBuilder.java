@@ -35,6 +35,7 @@ public class MutationCommandBuilder {
     private ByteBuf fragment;
     private boolean createIntermediaryPath;
     private boolean xattr;
+    private boolean expandMacros;
 
     /**
      * Create a multi-mutation command.
@@ -87,6 +88,8 @@ public class MutationCommandBuilder {
 
     public boolean xattr() { return xattr; }
 
+    public boolean expandMacros() { return expandMacros; }
+
     public MutationCommandBuilder createIntermediaryPath(boolean createIntermediaryPath) {
         this.createIntermediaryPath = createIntermediaryPath;
         return this;
@@ -99,6 +102,11 @@ public class MutationCommandBuilder {
 
     public MutationCommandBuilder xattr(boolean xattr) {
         this.xattr = xattr;
+        return this;
+    }
+
+    public MutationCommandBuilder expandMacros(boolean expandMacros) {
+        this.expandMacros = expandMacros;
         return this;
     }
 }

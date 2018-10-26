@@ -73,6 +73,13 @@ public interface BinarySubdocMutationRequest extends BinarySubdocRequest {
     boolean xattr();
 
     /**
+     * Sets whether macros such as ${Mutation.CAS} should be expanded
+     *
+     * @return true iff macros should be expanded
+     */
+    boolean expandMacros();
+
+    /**
      * Create document if it does not exist. It is deprecated, use {@link #upsertDocument()}
      *
      * @return true if creating document

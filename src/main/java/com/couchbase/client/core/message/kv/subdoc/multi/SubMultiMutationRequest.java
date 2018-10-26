@@ -151,6 +151,9 @@ public class SubMultiMutationRequest extends AbstractKeyValueRequest implements 
             if (command.xattr()) {
                 subdocFlags |= KeyValueHandler.SUBDOC_FLAG_XATTR_PATH;
             }
+            if (command.expandMacros()) {
+                subdocFlags |= KeyValueHandler.SUBDOC_FLAG_EXPAND_MACROS;
+            }
             commandBuf.writeByte(subdocFlags);
             commandBuf.writeShort(pathLength);
             commandBuf.writeInt(command.fragment().readableBytes());
