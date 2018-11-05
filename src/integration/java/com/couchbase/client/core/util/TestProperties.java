@@ -67,7 +67,7 @@ public class TestProperties {
      * Initialize static the properties.
      */
     static {
-        Properties properties = new Properties();
+        Properties properties = new Properties(System.getProperties());
         try {
             properties.load(TestProperties.class.getClassLoader().getResourceAsStream("com.couchbase.client.core.integration.properties"));
         } catch (Exception ex) {
