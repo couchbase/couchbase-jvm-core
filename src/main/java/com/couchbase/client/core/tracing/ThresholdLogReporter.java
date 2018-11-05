@@ -23,6 +23,8 @@ import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -497,6 +499,17 @@ public class ThresholdLogReporter {
                 }
                 top.add(entry);
             }
+
+            // The queue will keep the most expensive at the top, but sorted in ascending order.
+            // this final sort will bring it into descending order as per spec so that the longest
+            // calls will be shown first.
+            Collections.sort(top, new Comparator<Map<String, Object>>() {
+                @Override
+                public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+                    return ((Long) o2.get(KEY_TOTAL_MICROS)).compareTo((Long) o1.get(KEY_TOTAL_MICROS));
+                }
+            });
+
             output.put("service", ident);
             output.put("count", count);
             output.put("top", top);
