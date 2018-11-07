@@ -40,7 +40,7 @@ public class RemoveSearchIndexResponse extends AbstractCouchbaseResponse {
 
     @Override
     public String toString() {
-        return "InsertSearchIndexResponse{"
+        return "RemoveSearchIndexResponse{"
                 + "status=" + status()
                 + ", payload='" + payload + '\''
                 + '}';
