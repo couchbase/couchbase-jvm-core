@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * A test case that validates shutdown behavior of the SDK under "real use" conditions.
@@ -69,10 +70,9 @@ public class ThreadCleanupTest {
             password = TestProperties.adminPassword();
         }
 
-        env = DefaultCoreEnvironment
-                .builder()
-                .mutationTokensEnabled(true)
-                .build();
+        DefaultCoreEnvironment.Builder builder = DefaultCoreEnvironment.builder().mutationTokensEnabled(true);
+        ClusterDependentTest.configurPortsIfMocked(builder);
+        env = builder.build();
         cluster = new CouchbaseCore(env);
         cluster.<SeedNodesResponse>send(new SeedNodesRequest(seedNode)).flatMap(
                 new Func1<SeedNodesResponse, Observable<OpenBucketResponse>>() {
@@ -90,6 +90,9 @@ public class ThreadCleanupTest {
 
     @Test
     public void testSdkNettyRxJavaThreadsShutdownProperly() throws Exception {
+        // the mock is using threads too, so don't run this test on the mock.
+        assumeTrue(!ClusterDependentTest.useMock());
+
         //FIXME differently improve the tolerance of this test to threads spawned by others
         Thread.sleep(500);
         ThreadMXBean mx = ManagementFactory.getThreadMXBean();

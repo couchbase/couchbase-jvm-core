@@ -54,8 +54,10 @@ public class HealthPingerTest extends ClusterDependentTest {
         assertEquals(pr.sdk(), env().userAgent());
         assertEquals("ping-id", pr.id());
         assertTrue(pr.version() > 0);
-        assertTrue(pr.configRev() > 0);
-
+        if (!useMock()) {
+            // The mock currently does not contain a rev in the config
+            assertTrue(pr.configRev() > 0);
+        }
         assertNotNull(pr.exportToJson());
 
         for (PingServiceHealth ph : pr.services()) {

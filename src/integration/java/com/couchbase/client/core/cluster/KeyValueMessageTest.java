@@ -204,7 +204,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         RemoveRequest remove = new RemoveRequest(key, bucket());
         RemoveResponse response = cluster().<RemoveResponse>send(remove).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
-        assertTrue(response.cas() != 0);
+        assertTrue(response.cas() != upsertResponse.cas());
         ReferenceCountUtil.releaseLater(response.content());
         assertValidMetadata(response.mutationToken());
         assertMetadataSequence(upsertResponse.mutationToken(), response.mutationToken());
@@ -234,7 +234,7 @@ public class KeyValueMessageTest extends ClusterDependentTest {
         remove = new RemoveRequest(key, upsertResponse.cas(), bucket());
         response = cluster().<RemoveResponse>send(remove).toBlocking().single();
         assertEquals(ResponseStatus.SUCCESS, response.status());
-        assertTrue(response.cas() != 0);
+        assertTrue(response.cas() != upsertResponse.cas());
         ReferenceCountUtil.releaseLater(response.content());
         assertValidMetadata(response.mutationToken());
         assertMetadataSequence(upsertResponse.mutationToken(), response.mutationToken());

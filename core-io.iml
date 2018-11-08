@@ -35,7 +35,7 @@
     <orderEntry type="library" scope="TEST" name="Maven: net.bytebuddy:byte-buddy-agent:1.8.10" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.objenesis:objenesis:2.6" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.assertj:assertj-core:1.7.1" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: com.couchbase.mock:CouchbaseMock:1.5.1" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: com.couchbase.mock:CouchbaseMock:1.5.19" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.xerial.snappy:snappy-java:1.1.7.1" level="project" />
   </component>
 </module>

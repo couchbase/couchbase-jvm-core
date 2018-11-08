@@ -28,6 +28,7 @@ import com.couchbase.client.core.tracing.RingBufferMonitor;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -41,7 +42,15 @@ import static org.junit.Assert.assertEquals;
  * @since 2.6.0
  */
 public class RingBufferMonitorTest {
-    private static final CoreEnvironment ENV = DefaultCoreEnvironment.create();
+
+    private static volatile CoreEnvironment ENV;
+
+    @BeforeClass
+    public static void setup () {
+        DefaultCoreEnvironment.Builder builder = DefaultCoreEnvironment.builder();
+        ClusterDependentTest.configurPortsIfMocked(builder);
+        ENV = builder.build();
+    }
 
     @AfterClass
     public static final void cleanup() {

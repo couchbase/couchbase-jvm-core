@@ -113,12 +113,16 @@ public class ClusterDependentTest {
      * client first - this helps with pre-bootstrap decisions like credentials for RBAC.
      */
     public static int[] minClusterVersion() throws Exception {
+        int port = 8091;
+        if (useMock) {
+            port = mock().getHttpPort();
+        }
         URIBuilder builder = new URIBuilder();
-        builder.setScheme("http").setHost(seedNode).setPort(8091).setPath("/pools/default/buckets/" + bucket)
+        builder.setScheme("http").setHost(seedNode).setPort(port).setPath("/pools/default/buckets/" + bucket)
             .setParameter("bucket", bucket);
         HttpGet request = new HttpGet(builder.build());
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(new AuthScope(seedNode, 8091), new UsernamePasswordCredentials(adminUser, adminPassword));
+        credentialsProvider.setCredentials(new AuthScope(seedNode, port), new UsernamePasswordCredentials(adminUser, adminPassword));
         HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(credentialsProvider).build();
         HttpResponse response = client.execute(request);
         int status = response.getStatusLine().getStatusCode();
@@ -139,7 +143,7 @@ public class ClusterDependentTest {
          *
          * Also, the mock currently doesn't support RBAC so ignore it if set.
          */
-        if (minClusterVersion()[0] >= 5 && !useMock) {
+        if (!useMock && minClusterVersion()[0] >= 5) {
             username = adminUser;
             password = adminPassword;
         }
@@ -206,8 +210,21 @@ public class ClusterDependentTest {
 
     public static CouchbaseMock mock() { return couchbaseMock; }
 
+    public static boolean useMock() {
+        return useMock;
+    }
+
+    public static void configurPortsIfMocked(DefaultCoreEnvironment.Builder builder) {
+        if (ClusterDependentTest.useMock()) {
+            builder.bootstrapHttpDirectPort(ClusterDependentTest.mock().getHttpPort());
+            builder.bootstrapCarrierDirectPort(
+                ClusterDependentTest.mock().getCarrierPort(ClusterDependentTest.bucket())
+            );
+        }
+    }
+
     public static boolean isMutationMetadataEnabled() throws Exception {
-        return minNodeVersion()[0] >= 4;
+        return useMock() || minNodeVersion()[0] >= 4;
     }
 
     /**
@@ -215,6 +232,10 @@ public class ClusterDependentTest {
      * Couchbase version is under the provided major+minor.
      */
     public static void assumeMinimumVersionCompatible(int major, int minor) throws Exception {
+        if (useMock()) {
+            return;
+        }
+
         int[] version = minNodeVersion();
         Assume.assumeTrue("Detected Couchbase " + version[0] + "." + version[1] + ", needed " + major + "." + minor,
                version[0] > major || (version[0] == major && version[1] >= minor));
