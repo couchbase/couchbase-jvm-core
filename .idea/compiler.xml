@@ -20,7 +20,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="core-io" target="1.6" />
+      <module name="core-io" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>
