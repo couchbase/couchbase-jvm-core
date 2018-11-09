@@ -18,9 +18,9 @@ package com.couchbase.client.core.metrics;
 /**
  * The unique identifier for a network latency metric.
  *
- * This identifier represents the hierachy of a composed request alongside its response status. The hierachy is as
- * follows: host -> service -> request -> status. As an example, a real identifier might look like:
- * vnode4/192.168.56.104:11210->BINARY->UpsertRequest->SUCCESS.
+ * <p>This identifier represents the hierachy of a composed request alongside its response status. The hierarchy is as
+ * follows: host -&gt; service -&gt; request -&gt; status. As an example, a real identifier might look like:
+ * vnode4/192.168.56.104:11210-&gt;BINARY-&gt;UpsertRequest-&gt;SUCCESS.</p>
  *
  * @author Michael Nitschinger
  * @since 1.2.0

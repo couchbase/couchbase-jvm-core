@@ -29,9 +29,9 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMe
  * no following {@link MemcacheContent}s.  It is useful when you don't want to take
  * care of memcache messages where the content comes along in chunks. Insert this
  * handler after a AbstractMemcacheObjectDecoder in the {@link ChannelPipeline}.
- * <p/>
- * For example, here for the binary protocol:
- * <p/>
+ *
+ * <p>For example, here for the binary protocol:</p>
+ *
  * <pre>
  * {@link ChannelPipeline} p = ...;
  * ...

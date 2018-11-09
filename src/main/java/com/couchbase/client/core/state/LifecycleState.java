@@ -19,24 +19,22 @@ package com.couchbase.client.core.state;
 /**
  * **Represents common lifecycle states of components.**
  *
- * The {@link LifecycleState}s are usually combined with the {@link AbstractStateMachine} to build up a state-machine
- * like, observable component that can be subscribed from external components.
+ * <p>The {@link LifecycleState}s are usually combined with the {@link AbstractStateMachine} to build up a state-machine
+ * like, observable component that can be subscribed from external components.</p>
  *
- * ![State Transitions](transitions.png)
+ * <pre>
  *
- * @startuml transitions.png
+ *     [*] --&gt; Disconnected
+ *     Disconnected --&gt; Connecting
+ *     Connecting --&gt; Disconnected
+ *     Connecting --&gt; Connected
+ *     Connecting --&gt; Degraded
+ *     Connected --&gt; Disconnecting
+ *     Connected --&gt; Degraded
+ *     Degraded --&gt; Connected
+ *     Disconnecting -&gt; Disconnected
  *
- *     [*] --> Disconnected
- *     Disconnected --> Connecting
- *     Connecting --> Disconnected
- *     Connecting --> Connected
- *     Connecting --> Degraded
- *     Connected --> Disconnecting
- *     Connected --> Degraded
- *     Degraded --> Connected
- *     Disconnecting -> Disconnected
- *
- * @enduml
+ * </pre>
  *
  * @author Michael Nitschinger
  * @since 1.0

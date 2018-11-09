@@ -55,35 +55,33 @@ import static com.couchbase.client.core.logging.RedactableArgument.meta;
 /**
  * **The default implementation of a {@link ConfigurationProvider}.**
  *
- * The {@link ConfigurationProvider} is the central orchestrator for configuration management. Observers can observe
+ * <p>The {@link ConfigurationProvider} is the central orchestrator for configuration management. Observers can observe
  * bucket and cluster configurations from this component. Behind the scenes, it facilitates configuration loaders and
  * configuration refreshers that grab initial configurations and keep them refreshed respectively. The structure
- * looks like this:
+ * looks like this:</p>
  *
- * ![Configuration Provider Architecture](architecture.png)
+ * <pre>
  *
- * @startuml architecture.png
- *
- *     [ConfigurationProvider] --> [Config from REST]
- *     [ConfigurationProvider] --> [Config from Carrier]
+ *     [ConfigurationProvider] --&gt; [Config from REST]
+ *     [ConfigurationProvider] --&gt; [Config from Carrier]
  *
  *     package "Config from REST" {
  *         [HttpLoader]
  *         [HttpRefresher]
  *     }
  *
- *     [HttpLoader] --> 8091
- *     [HttpRefresher] --> 8091
+ *     [HttpLoader] --&gt; 8091
+ *     [HttpRefresher] --&gt; 8091
  *
  *     package "Config from Carrier" {
  *         [CarrierLoader]
  *         [CarrierRefresher]
  *     }
  *
- *     [CarrierLoader] --> 11210
- *     [CarrierRefresher] --> 11210
+ *     [CarrierLoader] --&gt; 11210
+ *     [CarrierRefresher] --&gt; 11210
  *
- * @enduml
+ * </pre>
  *
  * @author Michael Nitschinger
  * @since 1.0

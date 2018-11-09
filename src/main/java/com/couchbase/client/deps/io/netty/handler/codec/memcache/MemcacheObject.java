@@ -29,7 +29,7 @@ public interface MemcacheObject {
 
     /**
      * Updates the result of decoding this message.
-     * <p/>
+     * <p></p>
      * <p>Do not call this method unless you know what you are doing.</p>
      */
     void setDecoderResult(DecoderResult result);

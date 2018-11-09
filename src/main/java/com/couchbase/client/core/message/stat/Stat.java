@@ -34,7 +34,7 @@ import java.util.List;
 
 /**
  * Utility class to handle STAT calls logic.
- * <p/>
+ *
  * <pre>
  * {@code
  *  Stat.call(core, bucket.name(), "")

@@ -17,9 +17,9 @@ package com.couchbase.client.deps.io.netty.handler.codec.memcache.binary;
 
 /**
  * Represents all Opcodes that can occur in a {@link BinaryMemcacheMessage}.
- * <p/>
- * This class can be extended if a custom application needs to implement a superset of the normally supported
- * operations by a vanilla memcached protocol.
+ *
+ * <p>This class can be extended if a custom application needs to implement a superset of the normally supported
+ * operations by a vanilla memcached protocol.</p>
  */
 public final class BinaryMemcacheOpcodes {
 

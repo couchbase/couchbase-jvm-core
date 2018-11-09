@@ -72,9 +72,9 @@ public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMess
 
     /**
      * Encode the header.
-     * <p/>
-     * This methods needs to be implemented by a sub class because the header is different
-     * for both requests and responses.
+     *
+     * <p>This methods needs to be implemented by a sub class because the header is different
+     * for both requests and responses.</p>
      *
      * @param buf the {@link ByteBuf} to write into.
      * @param msg the message to encode.

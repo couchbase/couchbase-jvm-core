@@ -21,7 +21,7 @@ import com.couchbase.client.deps.io.netty.handler.codec.memcache.MemcacheMessage
 /**
  * An interface that defines a binary Memcache message, providing common properties for
  * {@link BinaryMemcacheRequest} and {@link BinaryMemcacheResponse}.
- * <p/>
+ * <p></p>
  * A {@link BinaryMemcacheMessage} always consists of a header and optional extras or/and
  * a key.
  *
@@ -61,7 +61,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Returns the key length of the message.
-     * <p/>
+     * <p></p>
      * This may return 0, since the key is optional.
      *
      * @return the key length.
@@ -70,7 +70,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Set the key length of the message.
-     * <p/>
+     * <p></p>
      * This may be 0, since the key is optional.
      *
      * @param keyLength the key length to use.
@@ -79,7 +79,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Return the extras length of the message.
-     * <p/>
+     * <p></p>
      * This may be 0, since the extras content is optional.
      *
      * @return the extras length.
@@ -88,7 +88,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Set the extras length of the message.
-     * <p/>
+     * <p></p>
      * This may be 0, since the extras content is optional.
      *
      * @param extrasLength the extras length.
@@ -111,7 +111,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Returns the total body length.
-     * <p/>
+     * <p></p>
      * Note that this may be 0, since the body is optional.
      *
      * @return the total body length.
@@ -120,7 +120,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Sets the total body length.
-     * <p/>
+     * <p></p>
      * Note that this may be 0, since the body length is optional.
      *
      * @param totalBodyLength the total body length.
@@ -199,7 +199,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Return the framing extras length of the message.
-     * <p/>
+     * <p></p>
      * This may be 0, since the extras content is optional.
      *
      * @return the framing extras length.
@@ -208,7 +208,7 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
 
     /**
      * Set the framing extras length of the message.
-     * <p/>
+     * <p></p>
      * This may be 0, since the extras content is optional.
      *
      * @param framingExtrasLength the framing extras length.

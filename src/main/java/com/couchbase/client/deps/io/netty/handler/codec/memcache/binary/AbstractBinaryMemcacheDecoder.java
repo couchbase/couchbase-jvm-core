@@ -31,8 +31,8 @@ import static io.netty.buffer.ByteBufUtil.readBytes;
 
 /**
  * Decoder for both {@link BinaryMemcacheRequest} and {@link BinaryMemcacheResponse}.
- * <p/>
- * The difference in the protocols (header) is implemented by the subclasses.
+ *
+ * <p>The difference in the protocols (header) is implemented by the subclasses.</p>
  */
 public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMessage>
     extends AbstractMemcacheObjectDecoder {
@@ -265,10 +265,10 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
 
     /**
      * Contains all states this decoder can possibly be in.
-     * <p/>
-     * Note that most of the states can be optional, the only one required is reading
+     *
+     * <p>Note that most of the states can be optional, the only one required is reading
      * the header ({@link #READ_HEADER}. All other steps depend on the length fields
-     * in the header and will be executed conditionally.
+     * in the header and will be executed conditionally.</p>
      */
     enum State {
         /**

@@ -20,7 +20,7 @@ import io.netty.channel.ChannelPipeline;
 
 /**
  * An Memcache content chunk.
- * <p/>
+ * <p></p>
  * A implementation of a {@link AbstractMemcacheObjectDecoder} generates {@link MemcacheContent} after
  * {@link MemcacheMessage} when the content is large. If you prefer not to receive {@link MemcacheContent}
  * in your handler, place a aggregator after an implementation of the {@link AbstractMemcacheObjectDecoder}

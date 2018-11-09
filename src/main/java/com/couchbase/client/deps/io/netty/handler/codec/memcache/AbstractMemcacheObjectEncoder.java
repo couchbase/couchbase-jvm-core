@@ -26,7 +26,7 @@ import java.util.List;
 
 /**
  * A general purpose {@link AbstractMemcacheObjectEncoder} that encodes {@link MemcacheMessage}s.
- * <p/>
+ * <p></p>
  * <p>Note that this class is designed to be extended, especially because both the binary and ascii protocol
  * require different treatment of their messages. Since the content chunk writing is the same for both, the encoder
  * abstracts this right away.</p>

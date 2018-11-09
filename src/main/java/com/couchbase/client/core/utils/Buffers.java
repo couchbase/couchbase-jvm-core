@@ -31,7 +31,7 @@ import rx.functions.Action1;
 public class Buffers {
 
     /**
-     * An rx {@link Action1} that releases (once) a non-null {@link ByteBuf} provided its refCnt is > 0.
+     * An rx {@link Action1} that releases (once) a non-null {@link ByteBuf} provided its refCnt is &gt; 0.
      */
     public static final Action1 BYTE_BUF_RELEASER = new Action1<ByteBuf>() {
         @Override

@@ -1622,7 +1622,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         /**
          * Sets the time of inactivity, in milliseconds, after which some services
          * will issue a form of keep-alive request to their corresponding server/nodes
-         * (default is 30s, values <= 0 deactivate the idle check).
+         * (default is 30s, values &lt;= 0 deactivate the idle check).
          */
         public SELF keepAliveInterval(long keepAliveIntervalMilliseconds) {
             this.keepAliveInterval = keepAliveIntervalMilliseconds;

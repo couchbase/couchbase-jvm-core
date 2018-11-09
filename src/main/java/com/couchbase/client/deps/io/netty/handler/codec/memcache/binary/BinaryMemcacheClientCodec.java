@@ -26,10 +26,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The client codec that combines the proper encoder and decoder.
- * <p/>
- * Use this codec if you want to implement a memcache client that speaks the binary protocol. It
- * combines both the {@link BinaryMemcacheResponseDecoder} and the {@link BinaryMemcacheRequestEncoder}.
- * <p/>
+ *
+ * <p>Use this codec if you want to implement a memcache client that speaks the binary protocol. It
+ * combines both the {@link BinaryMemcacheResponseDecoder} and the {@link BinaryMemcacheRequestEncoder}.</p>
+ *
  * Optionally, it counts the number of outstanding responses and raises an exception if - on connection
  * close - the list is not 0 (this is turned off by default). You can also define a chunk size for the
  * content, which defaults to 8192. This chunk size is the maximum, so if smaller chunks arrive they

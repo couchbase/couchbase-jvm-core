@@ -35,7 +35,7 @@ public class RoundRobinSelectionStrategy implements SelectionStrategy {
 
     /**
      * Selects an {@link Endpoint} for the given {@link CouchbaseRequest}.
-     * <p/>
+     * <p></p>
      * If null is returned, it means that no endpoint could be selected and it is up to the calling party
      * to decide what to do next.
      *

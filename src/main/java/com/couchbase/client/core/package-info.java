@@ -72,9 +72,6 @@
  *   implementation available on the JVM and used in many latency-sensitive applications. Internally, it is used to
  *   shed load and provide backpressure on both the request and response side, helping with implicit batching and
  *   proper release valves in case the system is overloaded.
- * * [Typesafe Config](https://github.com/typesafehub/config): A very versatile config library, with no dependencies
- *   on its own. It has a well-thought dependency management system and easily accessible syntax both across system
- *   properties and config files.
  * * [Jackson](https://github.com/FasterXML/jackson): One of the most versatile and fast JSON frameworks out there,
  *   widely used.
  *
@@ -87,7 +84,7 @@
  * * [Mockito](https://code.google.com/p/mockito/): A flexible mocking framework.
  *
  *
- * @startuml simple.png
+ * <pre>
  *
  *     cloud "Netty" {
  *         [View Channel 1]
@@ -95,19 +92,19 @@
  *         [Query Channel 1]
  *     }
  *
- *     [Node] --> [View Service]
- *     [Node] --> [Query Service]
+ *     [Node] --&gt; [View Service]
+ *     [Node] --&gt; [Query Service]
  *
- *     [View Service] --> [View Endpoint 1]
- *     [View Service] --> [View Endpoint 2]
+ *     [View Service] --&gt; [View Endpoint 1]
+ *     [View Service] --&gt; [View Endpoint 2]
  *
- *     [Query Service] --> [Query Endpoint 1]
+ *     [Query Service] --&gt; [Query Endpoint 1]
  *
- *     [View Endpoint 1] --> [View Channel 1]
- *     [View Endpoint 2] --> [View Channel 2]
- *     [Query Endpoint 1] --> [Query Channel 1]
+ *     [View Endpoint 1] --&gt; [View Channel 1]
+ *     [View Endpoint 2] --&gt; [View Channel 2]
+ *     [Query Endpoint 1] --&gt; [Query Channel 1]
  *
- * @enduml
+ * </pre>
  *
  * @author Michael Nitschinger
  * @since 1.0

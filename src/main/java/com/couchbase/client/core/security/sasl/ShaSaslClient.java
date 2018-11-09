@@ -324,7 +324,7 @@ public class ShaSaslClient implements SaslClient {
 
     /**
      * Generate the Server Signature. It is computed as:
-     * <p/>
+     * <p></p>
      * SaltedPassword  := Hi(Normalize(password), salt, i)
      * ServerKey       := HMAC(SaltedPassword, "Server Key")
      * ServerSignature := HMAC(ServerKey, AuthMessage)
@@ -336,7 +336,7 @@ public class ShaSaslClient implements SaslClient {
 
     /**
      * Generate the Client Proof. It is computed as:
-     * <p/>
+     * <p></p>
      * SaltedPassword  := Hi(Normalize(password), salt, i)
      * ClientKey       := HMAC(SaltedPassword, "Client Key")
      * StoredKey       := H(ClientKey)

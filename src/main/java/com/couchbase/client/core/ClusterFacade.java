@@ -36,6 +36,7 @@ public interface ClusterFacade {
      * The {@link CouchbaseResponse} is not returned directly, but is wrapped into a {@link Observable}.
      *
      * @param request the request to send.
+     * @param <R> the generic response type.
      * @return the {@link CouchbaseResponse} wrapped into a {@link Observable}.
      */
     @InterfaceStability.Committed
@@ -45,6 +46,7 @@ public interface ClusterFacade {
     /**
      * The core id is unique per core instance.
      *
+     * @return returns the ID for this core.
      * @deprecated Use {@link #ctx()} which also contains the ID.
      */
     @Deprecated

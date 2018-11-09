@@ -39,6 +39,8 @@ public class BackpressureException extends CouchbaseException {
     /**
      * Returns a {@link RingBufferDiagnostics} which, if non-null, gives a granular breakdown of the contents of the
      * ringbuffer at the time of this exception
+     *
+     * @return returns the diagnostics for the ringbuffer where the backpressure originated.
      */
     @InterfaceAudience.Public
     @InterfaceStability.Experimental
