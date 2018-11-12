@@ -43,6 +43,7 @@ public class TestProperties {
     private static Bucket.BucketType bucketType;
     private static CouchbaseMock mock;
     private static Boolean useMock;
+    private static Boolean ci;
 
     private static void createMock() {
         BucketConfiguration bucketConfiguration = new BucketConfiguration();
@@ -83,6 +84,7 @@ public class TestProperties {
         mockReplicaCount = Integer.parseInt(properties.getProperty("mockReplicaCount", "1"));
         bucketType = properties.getProperty("mockBucketType", "couchbase").equalsIgnoreCase("couchbase") ? COUCHBASE : MEMCACHED;
         useMock = Boolean.parseBoolean(properties.getProperty("useMock", "false"));
+        ci = Boolean.parseBoolean(properties.getProperty("ci", "false"));
         createMock();
     }
 
@@ -181,4 +183,11 @@ public class TestProperties {
      * @return true if working against CouchbaseMock, otherwise false
      */
     public static Boolean useMock() { return useMock; }
+
+    /**
+     * If this flag is set, then this test is ran under CI conditions.
+     */
+    public static Boolean isCi() {
+        return ci;
+    }
 }

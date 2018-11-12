@@ -30,6 +30,7 @@ import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.message.kv.GetResponse;
 import com.couchbase.client.core.message.kv.InsertRequest;
 import com.couchbase.client.core.message.kv.InsertResponse;
+import com.couchbase.client.core.util.TestProperties;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -143,6 +145,8 @@ public class ResponseHandlerTest {
 
     @Test
     public void shouldDispatchFirstNMVBWithDelayIfNoFFMap() throws Exception {
+        assumeFalse(TestProperties.isCi());
+
         final CountDownLatch latch = new CountDownLatch(1);
         ClusterFacade clusterMock = mock(ClusterFacade.class);
         when(clusterMock.send(any(CouchbaseRequest.class))).then(new Answer<Object>() {

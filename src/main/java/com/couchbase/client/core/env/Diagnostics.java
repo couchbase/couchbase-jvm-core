@@ -72,7 +72,7 @@ public class Diagnostics {
                 infos.put("mem.swap.free", sunBean.getFreeSwapSpaceSize());
             }
         } catch (final Throwable err) {
-            LOGGER.debug("com.sun.management.OperatingSystemMXBean not available, skipping extended system info.");
+            LOGGER.debug("com.sun.management.OperatingSystemMXBean not available, skipping extended system info!");
         }
     }
 

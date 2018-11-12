@@ -16,10 +16,12 @@
 package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.config.NodeInfo;
+import com.couchbase.client.core.util.TestProperties;
 import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +34,9 @@ import static org.mockito.Mockito.when;
 public class DefaultMemcachedHashingStrategyTest {
 
     @Test
-    public void shouldHashNode() throws Exception {
+    public void shouldHashNode() {
+        assumeFalse(TestProperties.isCi());
+
         MemcachedHashingStrategy strategy = DefaultMemcachedHashingStrategy.INSTANCE;
 
         NodeInfo infoMock = mock(NodeInfo.class);

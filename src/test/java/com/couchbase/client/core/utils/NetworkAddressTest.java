@@ -15,9 +15,11 @@
  */
 package com.couchbase.client.core.utils;
 
+import com.couchbase.client.core.util.TestProperties;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 
 /**
@@ -27,6 +29,8 @@ public class NetworkAddressTest {
 
     @Test
     public void shouldCreateForLocalhost() {
+        assumeFalse(TestProperties.isCi());
+
         NetworkAddress na = NetworkAddress.localhost();
         assertEquals("localhost", na.hostname());
         assertEquals("127.0.0.1", na.address());
@@ -49,6 +53,8 @@ public class NetworkAddressTest {
 
     @Test
     public void shouldCreateFromAddress() {
+        assumeFalse(TestProperties.isCi());
+
         NetworkAddress na = NetworkAddress.create("127.0.0.1");
         assertEquals("localhost", na.hostname());
         assertEquals("127.0.0.1", na.address());

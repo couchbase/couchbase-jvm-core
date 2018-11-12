@@ -34,6 +34,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Checks the RingBufferMonitor functionality
@@ -59,6 +60,8 @@ public class RingBufferMonitorTest {
 
     @Test
     public void afterResponseRingBufferMonitorShouldBeEmpty() throws Exception {
+        assumeFalse(TestProperties.isCi());
+
         CouchbaseCore core = new CouchbaseCore(ENV);
         // Some other unit tests bypass the ringbuffer, while will lead to negative counts - hence reset.
         RingBufferMonitor.instance().reset();
@@ -78,6 +81,8 @@ public class RingBufferMonitorTest {
 
     @Test
     public void diagnosticsReportContainsRingBufferDiagnostics() {
+        assumeFalse(TestProperties.isCi());
+
         CouchbaseCore core = new CouchbaseCore(ENV);
         RingBufferMonitor.instance().reset();
 
