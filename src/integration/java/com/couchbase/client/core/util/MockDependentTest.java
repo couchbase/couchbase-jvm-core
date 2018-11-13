@@ -67,7 +67,7 @@ public class MockDependentTest {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
     }
 
-    private static final String seedNode = TestProperties.seedNode();
+    private static final String seedNode = "localhost";
     private static final String bucket = TestProperties.bucket();
     private static volatile String username = TestProperties.username();
     private static volatile String password = TestProperties.password();
@@ -82,7 +82,7 @@ public class MockDependentTest {
 
     protected static String sendGetHttpRequestToMock(String path, Map<String, String> parameters) throws Exception {
         URIBuilder builder = new URIBuilder();
-        builder.setScheme("http").setHost("localhost").setPort(mock().getHttpPort()).setPath(path);
+        builder.setScheme("http").setHost(seedNode).setPort(mock().getHttpPort()).setPath(path);
         for (Map.Entry<String, String> entry: parameters.entrySet()) {
             builder.setParameter(entry.getKey(), entry.getValue());
         }
