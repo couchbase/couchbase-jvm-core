@@ -26,6 +26,7 @@ import com.couchbase.client.core.message.cluster.SeedNodesRequest;
 import com.couchbase.client.core.util.ClusterDependentTest;
 import com.couchbase.client.core.util.TestProperties;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Verifies basic bucket lifecycles like opening and closing of valid and invalid buckets.
@@ -46,6 +48,11 @@ import static org.junit.Assert.assertEquals;
 public class BucketLifecycleTest {
 
     private static volatile CoreEnvironment ENV;
+
+    @Before
+    public void check() {
+        assumeFalse(TestProperties.isCi());
+    }
 
     @BeforeClass
     public static void setup () {

@@ -19,10 +19,12 @@ import com.couchbase.client.core.BucketClosedException;
 import com.couchbase.client.core.message.cluster.CloseBucketRequest;
 import com.couchbase.client.core.message.kv.GetRequest;
 import com.couchbase.client.core.util.ClusterDependentTest;
+import com.couchbase.client.core.util.TestProperties;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Short test ensuring that requests on a closed bucket fail fast with a
@@ -40,6 +42,7 @@ public class BucketClosedTest extends ClusterDependentTest {
 
     @Test(expected = BucketClosedException.class)
     public void shouldFailFastOnRequestOnClosedBucket() {
+        assumeFalse(TestProperties.isCi());
         cluster().send(new CloseBucketRequest(bucket())).toBlocking().single();
 
         cluster().send(new GetRequest("someid", bucket())).toBlocking().first();
