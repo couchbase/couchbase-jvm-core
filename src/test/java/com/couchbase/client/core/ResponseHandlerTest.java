@@ -34,6 +34,8 @@ import com.couchbase.client.core.util.TestProperties;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -63,6 +65,11 @@ import static org.mockito.Mockito.when;
 public class ResponseHandlerTest {
 
     private static final CoreEnvironment ENVIRONMENT = DefaultCoreEnvironment.create();
+
+    @Before
+    public void check() {
+        assumeFalse(TestProperties.isCi());
+    }
 
     @Test
     public void shouldSendProposedConfigToProvider() throws Exception {
@@ -145,7 +152,6 @@ public class ResponseHandlerTest {
 
     @Test
     public void shouldDispatchFirstNMVBWithDelayIfNoFFMap() throws Exception {
-        assumeFalse(TestProperties.isCi());
 
         final CountDownLatch latch = new CountDownLatch(1);
         ClusterFacade clusterMock = mock(ClusterFacade.class);

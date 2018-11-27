@@ -771,6 +771,7 @@ public class QueryHandlerTest {
     }
 
     @Test
+    @Ignore("QueryHandler v1 is not used")
     public void shouldFireKeepAlive() throws Exception {
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
