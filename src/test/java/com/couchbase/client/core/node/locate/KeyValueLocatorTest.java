@@ -50,8 +50,8 @@ public class KeyValueLocatorTest {
     public void shouldLocateGetRequestForCouchbaseBucket() throws Exception {
         Locator locator = new KeyValueLocator();
 
-        NodeInfo nodeInfo1 = new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
-        NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo2 = new DefaultNodeInfo("http://foo:1234", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
 
         GetRequest getRequestMock = mock(GetRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
@@ -102,8 +102,8 @@ public class KeyValueLocatorTest {
         Locator locator = new KeyValueLocator();
 
         // Setup 2 nodes
-        NodeInfo nodeInfo1 = new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
-        NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo2 = new DefaultNodeInfo("http://foo:1234", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
@@ -155,8 +155,8 @@ public class KeyValueLocatorTest {
         Locator locator = new KeyValueLocator();
 
         // Setup 2 nodes
-        NodeInfo nodeInfo1 = new DefaultNodeInfo("foo", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
-        NodeInfo nodeInfo2 = new DefaultNodeInfo("foo", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
+        NodeInfo nodeInfo2 = new DefaultNodeInfo("http://foo:1234", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));

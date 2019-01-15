@@ -21,7 +21,9 @@ import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -126,7 +128,11 @@ public class DefaultNodeInfo implements NodeInfo {
         }
         services.put(ServiceType.CONFIG, configPort);
         if (viewUri != null) {
-            services.put(ServiceType.VIEW, URI.create(viewUri).getPort());
+            try {
+                services.put(ServiceType.VIEW, new URL(viewUri).getPort());
+            } catch (MalformedURLException ex) {
+                throw new ConfigurationException("Could not parse VIEW URL.", ex);
+            }
         }
         return services;
     }
