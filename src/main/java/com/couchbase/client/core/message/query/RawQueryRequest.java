@@ -34,8 +34,9 @@ import java.net.InetAddress;
 @InterfaceAudience.Public
 public class RawQueryRequest extends GenericQueryRequest {
 
-    private RawQueryRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode, String contextId) {
-        super(jsonQuery, true, bucket, username, password, targetNode, contextId);
+    private RawQueryRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode,
+                            String contextId) {
+        super(jsonQuery, true, bucket, username, password, targetNode, contextId, null);
     }
 
     /**
