@@ -399,7 +399,7 @@
                         <Bundle-Description>${project.description}</Bundle-Description>
                         <Bundle-Version>${project.version}</Bundle-Version>
                         <Bundle-DocURL>${project.url}</Bundle-DocURL>
-                        <Export-Package>com.couchbase.client.*</Export-Package>
+                        <Export-Package>com.couchbase.client.core.*,com.couchbase.client.deps.*</Export-Package>
                         <Import-Package>rx.*;version="[${rxjava.version},${rxjava.version}]",io.opentracing.*;version="[${opentracing.version},${opentracing.version}]", org.apache.log4j.*;version="[${log4j.version},${log4j.version}]";resolution:=optional, org.slf4j.*;version="[${slf4j.version},${slf4j.version}]";resolution:=optional</Import-Package>
                     </instructions>
                 </configuration>
