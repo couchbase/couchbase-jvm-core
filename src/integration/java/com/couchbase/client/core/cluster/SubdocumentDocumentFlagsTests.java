@@ -39,6 +39,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests document flags for subdocument operations added in Couchbase server 5.0
@@ -152,6 +153,8 @@ public class SubdocumentDocumentFlagsTests extends ClusterDependentTest {
 
     @Test
     public void shouldAccessDeletedDocumentIfSet() {
+        assumeTrue(!useMock());
+
         String subPath = "_hello";
         ByteBuf fragment = Unpooled.copiedBuffer("\"world\"", CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(fragment);
@@ -175,6 +178,8 @@ public class SubdocumentDocumentFlagsTests extends ClusterDependentTest {
 
     @Test
     public void shouldAccessDeletedDocumentIfSetInMultiPath() {
+        assumeTrue(!useMock());
+
         String subPath = "_class";
         ByteBuf fragment = Unpooled.copiedBuffer("\"test\"", CharsetUtil.UTF_8);
         ReferenceCountUtil.releaseLater(fragment);
