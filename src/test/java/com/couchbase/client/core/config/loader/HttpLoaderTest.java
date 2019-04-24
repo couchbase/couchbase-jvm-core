@@ -32,9 +32,10 @@ import org.mockito.ArgumentCaptor;
 import rx.Observable;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.isA;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +51,7 @@ public class HttpLoaderTest {
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         host = NetworkAddress.localhost();
     }
 
@@ -109,7 +110,8 @@ public class HttpLoaderTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfTerseAndVerboseCouldNotBeDiscovered() {
+    @SuppressWarnings("unchecked")
+    public void shouldNotGoToVerboseIfTerseIsGenericFailure() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         Observable<CouchbaseResponse> terseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
@@ -117,19 +119,46 @@ public class HttpLoaderTest {
         Observable<CouchbaseResponse> verboseResponse = Observable.just(
                 (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
         );
-        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse);
-        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(verboseResponse);
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse, verboseResponse);
 
         HttpLoader loader = new HttpLoader(cluster, environment);
         Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
         try {
             configObservable.toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(IllegalStateException ex) {
             assertEquals("Could not load bucket configuration: FAILURE(null)", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
+
+        verify(cluster, times(1)).send(isA(BucketConfigRequest.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldFallBackToVerboseIfTerseNotFound() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        Observable<CouchbaseResponse> terseResponse = Observable.just(
+            (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.NOT_EXISTS)
+        );
+        Observable<CouchbaseResponse> verboseResponse = Observable.just(
+            (CouchbaseResponse) new BucketConfigResponse(null, ResponseStatus.FAILURE)
+        );
+        when(cluster.send(isA(BucketConfigRequest.class))).thenReturn(terseResponse, verboseResponse);
+
+        HttpLoader loader = new HttpLoader(cluster, environment);
+        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
+        try {
+            configObservable.toBlocking().single();
+            fail();
+        } catch(IllegalStateException ex) {
+            assertEquals("Could not load bucket configuration: FAILURE(null)", ex.getMessage());
+        } catch(Exception ex) {
+            fail();
+        }
+
+        verify(cluster, times(2)).send(isA(BucketConfigRequest.class));
     }
 
     @Test
@@ -141,11 +170,11 @@ public class HttpLoaderTest {
         HttpLoader loader = new HttpLoader(cluster, environment);
         try {
             loader.discoverConfig("bucket", "bucket", "password", host).toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(ConfigurationException ex) {
             assertEquals("HTTP Bootstrap disabled through configuration.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
     }
 

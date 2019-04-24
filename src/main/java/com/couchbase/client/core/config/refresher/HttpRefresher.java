@@ -25,6 +25,7 @@ import com.couchbase.client.core.config.loader.HttpLoader;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
@@ -92,35 +93,44 @@ public class HttpRefresher extends AbstractRefresher {
 
         @Override
     public Observable<Boolean> registerBucket(final String name, final String username, final String password) {
-        Observable<BucketStreamingResponse> response = super.registerBucket(name, username, password).flatMap(new Func1<Boolean, Observable<BucketStreamingResponse>>() {
-            @Override
-            public Observable<BucketStreamingResponse> call(Boolean aBoolean) {
-                return cluster()
-                    .<BucketStreamingResponse>send(new BucketStreamingRequest(TERSE_PATH, name, username, password))
-                    .doOnNext(new Action1<BucketStreamingResponse>() {
-                        @Override
-                        public void call(BucketStreamingResponse response) {
-                            if (!response.status().isSuccess()) {
-                                throw new ConfigurationException("Could not load terse config.");
+        Observable<BucketStreamingResponse> response = super
+            .registerBucket(name, username, password)
+            .flatMap(new Func1<Boolean, Observable<BucketStreamingResponse>>() {
+                @Override
+                public Observable<BucketStreamingResponse> call(Boolean aBoolean) {
+                    return cluster()
+                        .<BucketStreamingResponse>send(new BucketStreamingRequest(TERSE_PATH, name, username, password))
+                        .doOnNext(new Action1<BucketStreamingResponse>() {
+                            @Override
+                            public void call(BucketStreamingResponse response) {
+                                if (response.status() == ResponseStatus.NOT_EXISTS) {
+                                    throw new TerseConfigDoesNotExistException();
+                                } else if (!response.status().isSuccess()) {
+                                    throw new ConfigurationException("Could not load terse config.");
+                                }
                             }
-                        }
-                    });
-            }
-        }).onErrorResumeNext(new Func1<Throwable, Observable<BucketStreamingResponse>>() {
-            @Override
-            public Observable<BucketStreamingResponse> call(Throwable throwable) {
-                return cluster()
-                    .<BucketStreamingResponse>send(new BucketStreamingRequest(VERBOSE_PATH, name, username, password))
-                    .doOnNext(new Action1<BucketStreamingResponse>() {
-                        @Override
-                        public void call(BucketStreamingResponse response) {
-                            if (!response.status().isSuccess()) {
-                                throw new ConfigurationException("Could not load terse config.");
-                            }
-                        }
-                    });
-            }
-        });
+                        });
+                }
+            })
+            .onErrorResumeNext(new Func1<Throwable, Observable<BucketStreamingResponse>>() {
+                @Override
+                public Observable<BucketStreamingResponse> call(Throwable throwable) {
+                    if (throwable instanceof TerseConfigDoesNotExistException) {
+                        return cluster()
+                            .<BucketStreamingResponse>send(new BucketStreamingRequest(VERBOSE_PATH, name, username, password))
+                            .doOnNext(new Action1<BucketStreamingResponse>() {
+                                @Override
+                                public void call(BucketStreamingResponse response) {
+                                    if (!response.status().isSuccess()) {
+                                        throw new ConfigurationException("Could not load terse config.");
+                                    }
+                                }
+                            });
+                    } else {
+                        return Observable.error(throwable);
+                    }
+                }
+            });
 
         repeatConfigUntilUnsubscribed(name, response);
 
@@ -177,9 +187,19 @@ public class HttpRefresher extends AbstractRefresher {
                     }
                 });
             }
-        }).subscribe(new Action1<ProposedBucketConfigContext>() {
+        }).subscribe(new Subscriber<ProposedBucketConfigContext>() {
             @Override
-            public void call(ProposedBucketConfigContext ctx) {
+            public void onCompleted() {
+                // ignored on purpose
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                LOGGER.error("Error while subscribing to Http refresh stream!", e);
+            }
+
+            @Override
+            public void onNext(ProposedBucketConfigContext ctx) {
                 pushConfig(ctx);
             }
         });
@@ -373,5 +393,9 @@ public class HttpRefresher extends AbstractRefresher {
     private boolean allowedToPoll(final String bucket) {
         Long bucketLastPollTimestamp = lastPollTimestamps.get(bucket);
         return bucketLastPollTimestamp == null || ((System.nanoTime() - bucketLastPollTimestamp) >= pollFloorNs);
+    }
+
+    class TerseConfigDoesNotExistException extends ConfigurationException {
+
     }
 }

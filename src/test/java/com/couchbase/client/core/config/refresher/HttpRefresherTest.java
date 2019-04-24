@@ -34,10 +34,11 @@ import rx.schedulers.Schedulers;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,7 +53,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 public class HttpRefresherTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
-
 
     @Test
     public void shouldPublishNewBucketConfiguration() throws Exception {
@@ -96,7 +96,7 @@ public class HttpRefresherTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldFallbackToVerboseIfTerseFails() throws Exception {
+    public void shouldNotFallbackToVerboseIfTerseFails() {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         Observable<String> configStream = Observable.just(
@@ -113,7 +113,7 @@ public class HttpRefresherTest {
 
         HttpRefresher refresher = new HttpRefresher(environment, cluster);
 
-        final CountDownLatch latch = new CountDownLatch(3);
+        final AtomicInteger count = new AtomicInteger(0);
         refresher.configs()
             .map(new Func1<ProposedBucketConfigContext, BucketConfig>() {
                 @Override
@@ -124,21 +124,20 @@ public class HttpRefresherTest {
             .subscribe(new Action1<BucketConfig>() {
                 @Override
                 public void call(BucketConfig bucketConfig) {
-                    assertEquals("default", bucketConfig.name());
-                    latch.countDown();
+                    count.incrementAndGet();
                 }
             });
 
         Observable<Boolean> observable = refresher.registerBucket("default", "");
         assertTrue(observable.toBlocking().single());
-        assertTrue(latch.await(3, TimeUnit.SECONDS));
+        assertEquals(0, count.get());
 
         refresher.deregisterBucket("default");
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void shouldFallbackToVerboseIfTerseIsNotSuccess() throws Exception {
+    public void shouldFallbackToVerboseIfTerseIsNotExists() throws Exception {
         ClusterFacade cluster = mock(ClusterFacade.class);
 
         Observable<String> configStream = Observable.just(

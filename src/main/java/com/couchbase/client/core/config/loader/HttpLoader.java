@@ -21,6 +21,7 @@ import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -78,8 +79,13 @@ public class HttpLoader extends AbstractLoader {
                         return Observable.just(response);
                     }
 
-                    LOGGER.debug("Terse bucket config failed, falling back to verbose.");
-                    return cluster().send(new BucketConfigRequest(VERBOSE_PATH, hostname, bucket, username, password));
+                    if (response.status() == ResponseStatus.NOT_EXISTS) {
+                        LOGGER.debug("Terse bucket config failed (not found), falling back to verbose.");
+                        return cluster().send(new BucketConfigRequest(VERBOSE_PATH, hostname, bucket, username, password));
+                    } else {
+                        LOGGER.debug("Terse bucket config failed, propagating failed response");
+                        return Observable.just(response);
+                    }
                 }
             })
             .map(new Func1<BucketConfigResponse, String>() {
