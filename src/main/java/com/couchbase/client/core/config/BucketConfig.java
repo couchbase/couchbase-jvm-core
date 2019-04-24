@@ -162,5 +162,9 @@ public interface BucketConfig {
     @InterfaceAudience.Private
     void useAlternateNetwork(String useAlternateNetwork);
 
+    /**
+     * Returns the bucket capabilities of this bucket config.
+     */
+    List<BucketCapabilities> capabilities();
 
 }

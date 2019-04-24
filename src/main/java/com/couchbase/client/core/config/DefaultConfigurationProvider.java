@@ -94,11 +94,6 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ConfigurationProvider.class);
 
     /**
-     * Reference to the cluster to issue config fetching commands.
-     */
-    private final ClusterFacade cluster;
-
-    /**
      * The observable which will push out new config changes to interested parties.
      */
     private final Subject<ClusterConfig, ClusterConfig> configObservable;
@@ -173,7 +168,6 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         if (loaderChain == null || loaderChain.isEmpty()) {
             throw new IllegalArgumentException("At least one config loader needs to be provided");
         }
-        this.cluster = cluster;
         this.loaderChain = loaderChain;
         this.refreshers = refreshers;
         this.environment = environment;
@@ -224,11 +218,11 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         }
         LOGGER.debug("Setting seed hosts to {}", hosts);
         if (shuffle) {
-            final List<NetworkAddress> hostsList = new ArrayList<NetworkAddress>(hosts);
+            final List<NetworkAddress> hostsList = new ArrayList<>(hosts);
             Collections.shuffle(hostsList);
-            seedHosts = new LinkedHashSet<NetworkAddress>(hostsList);
+            seedHosts = new LinkedHashSet<>(hostsList);
         } else {
-            seedHosts = new LinkedHashSet<NetworkAddress>(hosts);
+            seedHosts = new LinkedHashSet<>(hosts);
         }
         return true;
     }
@@ -271,7 +265,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
                         .doOnNext(new Action1<Tuple2<LoaderType, BucketConfig>>() {
                             @Override
                             public void call(final Tuple2<LoaderType, BucketConfig> tuple) {
-                                registerBucketForRefresh(tuple.value1(), tuple.value2());
+                                registerBucketForRefresh(refreshers, tuple.value1(), tuple.value2());
                             }
                         })
                         .map(new Func1<Tuple2<LoaderType, BucketConfig>, ClusterConfig>() {
@@ -329,7 +323,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             return Observable.just(true);
         }
 
-        Set<String> configs = new HashSet<String>(currentConfig.bucketConfigs().keySet());
+        Set<String> configs = new HashSet<>(currentConfig.bucketConfigs().keySet());
         return Observable
             .from(configs)
             .observeOn(environment.scheduler())
@@ -434,17 +428,39 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * Helper method which registers (after a {@link #openBucket(String, String)} call) the bucket for config
      * refreshes.
      *
-     * @param loaderType the type of the lader used to determine the proper refresher.
-     * @param bucketConfig the config itself.
+     * <p>This code follows a simple heuristic to determine the best refresh mechanism: if it got loaded from KV,
+     * we know we can go to KV refresh for sure. If it got loaded over HTTP, there are two cases: either it is an
+     * ancient server (no nodes_ext present as well) or the user bootstrapped from a non-kv node. In the latter
+     * case we can still use carrier refreshing, since there are kv nodes available eventually.</p>
+     *
+     * <p>Note that if loaded from http, it could also be a memcached bucket in which case we also need to keep
+     * using the http refresher and check for the bucket type.</p>
+     *
+     * @param refreshers the refershers that are registered.
+     * @param loaderType the loader type which was used to load the original config.
+     * @param config the config which got loaded immediately beforehand.
      */
-    private void registerBucketForRefresh(final LoaderType loaderType, final BucketConfig bucketConfig) {
-        LOGGER.debug("Registering Bucket {} to refresh at Loader {}", bucketConfig.name(), loaderType);
-        Refresher refresher = refreshers.get(loaderType);
-        if (refresher == null) {
-            throw new IllegalStateException("Could not find refresher for loader type: " + loaderType);
+    static void registerBucketForRefresh(final Map<LoaderType, Refresher> refreshers, final LoaderType loaderType,
+                                         final BucketConfig config) {
+        Refresher refresher;
+
+        boolean loadedFromCarrier = loaderType == LoaderType.Carrier;
+        boolean canFetchFromCarrier = config instanceof CouchbaseBucketConfig
+            && config.capabilities().contains(BucketCapabilities.NODES_EXT);
+
+        LOGGER.debug("Loaded from loader {}, can fetch from carrier {}", loaderType, canFetchFromCarrier);
+        if (loadedFromCarrier || canFetchFromCarrier) {
+            refresher = refreshers.get(LoaderType.Carrier);
+        } else {
+            refresher = refreshers.get(LoaderType.HTTP);
         }
 
-        refresher.registerBucket(bucketConfig.name(), bucketConfig.username(), bucketConfig.password()).subscribe();
+        LOGGER.debug(
+            "Registering bucket {} for refresh at {}",
+            config.name(),
+            refresher.getClass().getSimpleName()
+        );
+        refresher.registerBucket(config.name(), config.username(), config.password()).subscribe();
     }
 
     /**

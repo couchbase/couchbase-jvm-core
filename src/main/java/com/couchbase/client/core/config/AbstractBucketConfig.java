@@ -181,4 +181,9 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     public boolean serviceEnabled(ServiceType type) {
         return (enabledServices & (1 << type.ordinal())) != 0;
     }
+
+    @Override
+    public List<BucketCapabilities> capabilities() {
+        return bucketCapabilities;
+    }
 }
