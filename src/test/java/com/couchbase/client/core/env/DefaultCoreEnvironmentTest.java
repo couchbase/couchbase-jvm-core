@@ -31,12 +31,14 @@ import rx.schedulers.Schedulers;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -74,18 +76,20 @@ public class DefaultCoreEnvironmentTest {
     public void sysPropertyShouldTakePrecedence() throws Exception {
 
         System.setProperty("com.couchbase.kvEndpoints", "10");
+        try {
+            CoreEnvironment env = DefaultCoreEnvironment
+                .builder()
+                .kvEndpoints(3)
+                .build();
+            assertNotNull(env.ioPool());
+            assertNotNull(env.scheduler());
 
-        CoreEnvironment env = DefaultCoreEnvironment
-            .builder()
-            .kvEndpoints(3)
-            .build();
-        assertNotNull(env.ioPool());
-        assertNotNull(env.scheduler());
+            assertEquals(10, env.kvEndpoints());
+            assertTrue(env.shutdown());
 
-        assertEquals(10, env.kvEndpoints());
-        assertTrue(env.shutdown());
-
-        System.clearProperty("com.couchbase.kvEndpoints");
+        } finally {
+            System.clearProperty("com.couchbase.kvEndpoints");
+        }
     }
 
     @Test
@@ -102,76 +106,53 @@ public class DefaultCoreEnvironmentTest {
 
     @Test
     public void shouldNotLeakThreadsWithDefaultConfiguration() throws InterruptedException {
-        int loops = 3;
-        ThreadMXBean mx = ManagementFactory.getThreadMXBean();
-        LOGGER.info("Initial Threads (will be ignored later):");
-        Set<String> ignore = dump(threads(mx));
-        int[] peaks = new int[loops];
+        createAndShutdownDefaultEnvironment();
+        final Set<String> baseline = getCouchbaseThreads();
 
-        for (int i = 0; i < loops; i++) {
-            CoreEnvironment env = DefaultCoreEnvironment.create();
-            env.scheduler().createWorker().schedule(Actions.empty());
-            env.scheduler().createWorker().schedule(Actions.empty());
-            env.scheduler().createWorker().schedule(Actions.empty());
-            env.scheduler().createWorker().schedule(Actions.empty());
-            env.scheduler().createWorker().schedule(Actions.empty());
-            env.scheduler().createWorker().schedule(Actions.empty());
-
-            LOGGER.info("===Created threads:");
-            Set<String> afterCreate = dump(threads(mx, ignore, false));
-
-            LOGGER.info("Shutdown result: " + env.shutdown());
-            //we only consider threads starting with cb- or containing Rx, minus the ones existing at startup
-            Set<String> afterShutdown = threads(mx, ignore, true);
-
-            peaks[i] = afterShutdown.size();
-            LOGGER.info("===Shutdown went from " + afterCreate.size() + " to " + afterShutdown.size() + " threads, remaining: ");
-            dump(afterShutdown);
+        for (int i = 0; i < 3; i++) {
+            createAndShutdownDefaultEnvironment();
         }
-        boolean peakGrowing = false;
-        StringBuilder peaksDump = new StringBuilder("========Thread peaks : ").append(peaks[0]);
-        for (int i = 1; i < loops; i++) {
-            peaksDump.append(' ').append(peaks[i]);
-            peakGrowing = peakGrowing || (peaks[i] != peaks[i - 1]);
+
+        // Give the threads time to finish
+        for (int i = 0; i < 300 && !getCouchbaseThreadsExceptFor(baseline).isEmpty(); i++) {
+            Thread.sleep(10);
         }
-        LOGGER.info(peaksDump.toString());
-        assertFalse("Number of threads is growing despite shutdown, see console output", peakGrowing);
+        assertEquals("Leaked threads", emptySet(), getCouchbaseThreadsExceptFor(baseline));
     }
 
-    private Set<String> dump(Set<String> threads) {
-        for (String thread : threads) {
-            LOGGER.info(thread);
-        }
-        return threads;
+    private static void createAndShutdownDefaultEnvironment() {
+        CoreEnvironment env = DefaultCoreEnvironment.create();
+        env.scheduler().createWorker().schedule(Actions.empty());
+        env.scheduler().createWorker().schedule(Actions.empty());
+        env.scheduler().createWorker().schedule(Actions.empty());
+        env.scheduler().createWorker().schedule(Actions.empty());
+        env.scheduler().createWorker().schedule(Actions.empty());
+        env.scheduler().createWorker().schedule(Actions.empty());
+        boolean shutdownResult = env.shutdown();
+        assertTrue(shutdownResult);
     }
 
-    private Set<String> threads(ThreadMXBean mx, Set<String> ignore, boolean ignoreNonCbRx) {
-        Set<String> all = threads(mx);
-        all.removeAll(ignore);
-        if (!ignoreNonCbRx) {
-            return all;
-        } else {
-            Set<String> result = new HashSet<String>(all.size());
-            for (String s : all) {
-                if (s.startsWith("cb-") || s.contains("Rx")) {
-                    result.add(s);
-                }
+    private static Set<String> getCouchbaseThreadsExceptFor(Collection<String> remove) {
+        Set<String> result = getCouchbaseThreads();
+        result.removeAll(remove);
+        return result;
+    }
+
+    private static Set<String> getCouchbaseThreads() {
+        final ThreadMXBean threadManager = ManagementFactory.getThreadMXBean();
+        final ThreadInfo[] threads = threadManager.getThreadInfo(threadManager.getAllThreadIds());
+
+        final Set<String> result = new HashSet<>();
+        for (ThreadInfo t : threads) {
+            if (t == null || t.getThreadName() == null || t.getThreadState() == Thread.State.TERMINATED) {
+                continue; // thread already dead, or anonymous (not one of ours)
             }
-            return result;
-        }
-    }
-
-    private Set<String> threads(ThreadMXBean mx) {
-        ThreadInfo[] dump = mx.getThreadInfo(mx.getAllThreadIds());
-        Set<String> names = new HashSet<String>(dump.length);
-        for (ThreadInfo threadInfo : dump) {
-            if (threadInfo == null || threadInfo.getThreadName() == null) {
-                continue;
+            String name = t.getThreadName();
+            if (name.startsWith("cb-") || name.contains("Rx")) {
+                result.add(t.getThreadId() + ":" +t.getThreadName());
             }
-
-            names.add(threadInfo.getThreadName());
         }
-        return names;
+        return result;
     }
 
     @Test
@@ -266,7 +247,7 @@ public class DefaultCoreEnvironmentTest {
             .used()
             .socketConnectTimeout(1234)
             .build();
-        assertTrue(env != null);
+        assertNotNull(env);
     }
 
     static class ChildBuilder extends DefaultCoreEnvironment.Builder<ChildBuilder> {
