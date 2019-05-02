@@ -16,14 +16,20 @@
 
 package com.couchbase.client.core.endpoint.kv;
 
+import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The {@link ErrorMap} contains mappings from errors to their attributes, negotiated
@@ -48,10 +54,18 @@ import java.util.Map;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ErrorMap implements Comparable<ErrorMap> {
+    private static final ObjectReader objectReader = DefaultObjectMapper.reader()
+        .forType(ErrorMap.class)
+        .with(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)
+        .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     private final int version;
     private final int revision;
     private final Map<Short, ErrorCode> errors;
+
+    public static ErrorMap fromJson(String json) throws IOException {
+        return objectReader.readValue(json);
+    }
 
     @JsonCreator
     public ErrorMap(
@@ -104,14 +118,14 @@ public class ErrorMap implements Comparable<ErrorMap> {
     public static class ErrorCode {
         private final String name;
         private final String description;
-        private final List<ErrorAttribute> attributes;
+        private final Set<ErrorAttribute> attributes;
         private final RetrySpecification retrySpec;
 
         @JsonCreator
         public ErrorCode(
             @JsonProperty("name") String name,
             @JsonProperty("desc") String description,
-            @JsonProperty("attrs") List<ErrorAttribute> attributes,
+            @JsonProperty("attrs") @JsonDeserialize(as = EnumSet.class) Set<ErrorAttribute> attributes,
             @JsonProperty("retry") RetrySpecification retrySpec) {
             this.name = name;
             this.description = description;
@@ -127,7 +141,7 @@ public class ErrorMap implements Comparable<ErrorMap> {
             return description;
         }
 
-        public List<ErrorAttribute> attributes() {
+        public Set<ErrorAttribute> attributes() {
             return attributes;
         }
 

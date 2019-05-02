@@ -21,7 +21,6 @@ import com.couchbase.client.core.endpoint.ServerFeatures;
 import com.couchbase.client.core.endpoint.ServerFeaturesEvent;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
-import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.FullBinaryMemcacheResponse;
@@ -62,7 +61,7 @@ public class KeyValueErrorMapHandler extends SimpleChannelInboundHandler<FullBin
     protected void channelRead0(ChannelHandlerContext ctx, FullBinaryMemcacheResponse msg) throws Exception {
         if (KeyValueStatus.SUCCESS.code() == msg.getStatus()) {
             String content = msg.content().toString(CharsetUtil.UTF_8);
-            ErrorMap errorMap = DefaultObjectMapper.readValue(content, ErrorMap.class);
+            ErrorMap errorMap = ErrorMap.fromJson(content);
             LOGGER.debug("Trying to update Error Map With Version {}, Revision {}.",
                 errorMap.version(), errorMap.revision());
             ResponseStatusConverter.updateBinaryErrorMap(errorMap);
