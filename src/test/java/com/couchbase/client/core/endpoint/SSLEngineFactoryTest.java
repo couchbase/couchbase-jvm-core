@@ -20,6 +20,8 @@ import org.junit.Test;
 
 import javax.net.ssl.SSLEngine;
 
+import java.net.URISyntaxException;
+
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,9 +51,9 @@ public class SSLEngineFactoryTest {
     }
 
     @Test
-    public void shouldLoadSSLEngine() {
+    public void shouldLoadSSLEngine() throws Exception {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        when(environment.sslKeystoreFile()).thenReturn(this.getClass().getResource("keystore.jks").getPath());
+        when(environment.sslKeystoreFile()).thenReturn(getKeystorePath());
         when(environment.sslKeystorePassword()).thenReturn("keystore");
 
         SSLEngineFactory factory = new SSLEngineFactory(environment);
@@ -60,12 +62,16 @@ public class SSLEngineFactoryTest {
     }
 
     @Test(expected = SSLException.class)
-    public void shouldFailWithSSLOverride() {
+    public void shouldFailWithSSLOverride() throws Exception {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        when(environment.sslKeystoreFile()).thenReturn(this.getClass().getResource("keystore.jks").getPath());
+        when(environment.sslKeystoreFile()).thenReturn(getKeystorePath());
         when(environment.sslKeystorePassword()).thenReturn("keystore");
 
         SSLEngineFactory factory = new SSLEngineFactory(environment, "SSLv3");
         factory.get();
+    }
+
+    private String getKeystorePath() throws URISyntaxException {
+        return getClass().getResource("keystore.jks").toURI().getPath();
     }
 }
