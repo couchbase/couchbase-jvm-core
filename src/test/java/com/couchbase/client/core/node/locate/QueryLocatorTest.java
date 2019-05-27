@@ -51,10 +51,10 @@ public class QueryLocatorTest {
 
         Node node1Mock = mock(Node.class);
         when(node1Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
-        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn("192.168.56.101");
         Node node2Mock = mock(Node.class);
         when(node2Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
-        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn("192.168.56.102");
         nodes.addAll(Arrays.asList(node1Mock, node2Mock));
 
         locator.locateAndDispatch(request, nodes, configMock, null, null);
@@ -80,13 +80,13 @@ public class QueryLocatorTest {
 
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn("192.168.56.101");
         when(node1Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn("192.168.56.102");
         when(node2Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn("192.168.56.103");
         when(node3Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
@@ -128,16 +128,16 @@ public class QueryLocatorTest {
 
         List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
-        when(node1Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.101"));
+        when(node1Mock.hostname()).thenReturn("192.168.56.101");
         when(node1Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
         Node node2Mock = mock(Node.class);
-        when(node2Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.102"));
+        when(node2Mock.hostname()).thenReturn("192.168.56.102");
         when(node2Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(false);
         Node node3Mock = mock(Node.class);
-        when(node3Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.103"));
+        when(node3Mock.hostname()).thenReturn("192.168.56.103");
         when(node3Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
         Node node4Mock = mock(Node.class);
-        when(node4Mock.hostname()).thenReturn(NetworkAddress.create("192.168.56.104"));
+        when(node4Mock.hostname()).thenReturn("192.168.56.104");
         when(node4Mock.serviceEnabled(ServiceType.QUERY)).thenReturn(true);
         nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock, node4Mock));
 

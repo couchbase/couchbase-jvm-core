@@ -17,12 +17,10 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,8 +34,7 @@ import java.util.Map;
  */
 public class DefaultNodeInfo implements NodeInfo {
 
-    private final String rawHostname;
-    private final NetworkAddress hostname;
+    private final String hostname;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
     private final Map<String, AlternateAddress> alternateAddresses;
@@ -65,14 +62,9 @@ public class DefaultNodeInfo implements NodeInfo {
             ? Collections.<String, AlternateAddress>emptyMap()
             : alternateAddresses;
 
-        try {
-            this.rawHostname = trimPort(hostname);
-            this.hostname = NetworkAddress.create(rawHostname);
-        } catch (Exception e) {
-            throw new CouchbaseException("Could not analyze hostname from config.", e);
-        }
+        this.hostname = trimPort(hostname);
         this.directServices = parseDirectServices(viewUri, ports);
-        this.sslServices = new HashMap<ServiceType, Integer>();
+        this.sslServices = new HashMap<>();
     }
 
     /**
@@ -82,14 +74,13 @@ public class DefaultNodeInfo implements NodeInfo {
      * @param direct   the port list of the direct node services.
      * @param ssl      the port list of the ssl node services.
      */
-    public DefaultNodeInfo(NetworkAddress hostname, Map<ServiceType, Integer> direct,
+    public DefaultNodeInfo(String hostname, Map<ServiceType, Integer> direct,
         Map<ServiceType, Integer> ssl, Map<String, AlternateAddress> alternateAddresses) {
         if (hostname == null) {
             throw new CouchbaseException(new IllegalArgumentException("NodeInfo hostname cannot be null"));
         }
 
         this.hostname = hostname;
-        this.rawHostname = hostname.nameOrAddress();
         this.directServices = direct;
         this.sslServices = ssl;
         this.alternateAddresses = alternateAddresses == null
@@ -98,7 +89,7 @@ public class DefaultNodeInfo implements NodeInfo {
     }
 
     @Override
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 
@@ -118,7 +109,7 @@ public class DefaultNodeInfo implements NodeInfo {
     }
 
     private Map<ServiceType, Integer> parseDirectServices(final String viewUri, final Map<String, Integer> input) {
-        Map<ServiceType, Integer> services = new HashMap<ServiceType, Integer>();
+        Map<ServiceType, Integer> services = new HashMap<>();
         for (Map.Entry<String, Integer> entry : input.entrySet()) {
             String type = entry.getKey();
             Integer port = entry.getValue();
@@ -152,16 +143,14 @@ public class DefaultNodeInfo implements NodeInfo {
                     assembledHost += ":";
                 }
             }
+            if (assembledHost.startsWith("[") && assembledHost.endsWith("]")) {
+                return assembledHost.substring(1, assembledHost.length() - 1);
+            }
             return assembledHost;
         } else {
             // Simple IPv4 Handling
             return parts[0];
         }
-    }
-
-    @Override
-    public String rawHostname() {
-        return rawHostname;
     }
 
     @Override
@@ -177,7 +166,6 @@ public class DefaultNodeInfo implements NodeInfo {
     @Override
     public String toString() {
         return "DefaultNodeInfo{" +
-            "rawHostname='" + rawHostname + '\'' +
             ", hostname=" + hostname +
             ", directServices=" + directServices +
             ", sslServices=" + sslServices +

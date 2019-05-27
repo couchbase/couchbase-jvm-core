@@ -17,7 +17,6 @@ package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -40,7 +39,7 @@ public class LegacyMemcachedNodeHashingStrategyTest {
         MemcachedHashingStrategy strategy = LegacyMemcachedHashingStrategy.INSTANCE;
 
         NodeInfo infoMock = mock(NodeInfo.class);
-        when(infoMock.hostname()).thenReturn(NetworkAddress.localhost());
+        when(infoMock.hostname()).thenReturn("127.0.0.1");
         Map<ServiceType, Integer> serviceMap = new HashMap<ServiceType, Integer>();
         serviceMap.put(ServiceType.BINARY, 11210);
         when(infoMock.services()).thenReturn(serviceMap);

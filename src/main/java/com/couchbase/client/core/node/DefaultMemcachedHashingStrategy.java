@@ -31,7 +31,7 @@ public class DefaultMemcachedHashingStrategy implements MemcachedHashingStrategy
 
     @Override
     public String hash(final NodeInfo info, final int repetition) {
-        return info.hostname().hostname() + "-" + repetition;
+        return info.hostname() + "-" + repetition;
     }
 
 }

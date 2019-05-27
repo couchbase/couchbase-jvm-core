@@ -52,7 +52,7 @@ public interface Node extends Stateful<LifecycleState> {
      *
      * @return the hostname.
      */
-    NetworkAddress hostname();
+    String hostname();
 
     /**
      * Connects all currently enabled {@link Service}s.

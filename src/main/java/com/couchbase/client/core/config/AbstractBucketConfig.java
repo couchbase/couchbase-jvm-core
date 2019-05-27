@@ -37,12 +37,12 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private final List<NodeInfo> nodeInfo;
     private final int enabledServices;
     private final List<BucketCapabilities> bucketCapabilities;
-    private final NetworkAddress origin;
+    private final String origin;
 
     private volatile String useAlternateNetwork;
 
     protected AbstractBucketConfig(String uuid, String name, BucketNodeLocator locator, String uri, String streamingUri,
-        List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities,  NetworkAddress origin) {
+        List<NodeInfo> nodeInfos, List<PortInfo> portInfos, List<BucketCapabilities> bucketCapabilities,  String origin) {
         this.uuid = uuid;
         this.name = name;
         this.locator = locator;
@@ -75,7 +75,7 @@ public abstract class AbstractBucketConfig implements BucketConfig {
     private List<NodeInfo> nodeInfoFromExtended(final List<PortInfo> nodesExt, final List<NodeInfo> nodeInfos) {
         List<NodeInfo> converted = new ArrayList<NodeInfo>(nodesExt.size());
         for (int i = 0; i < nodesExt.size(); i++) {
-            NetworkAddress hostname = nodesExt.get(i).hostname();
+            String hostname = nodesExt.get(i).hostname();
 
             // Since nodeInfo and nodesExt might not be the same size, this can be null!
             NodeInfo nodeInfo = i >= nodeInfos.size() ? null : nodeInfos.get(i);

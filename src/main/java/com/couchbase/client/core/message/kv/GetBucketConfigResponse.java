@@ -16,7 +16,6 @@
 package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.ResponseStatus;
-import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -27,15 +26,15 @@ import io.netty.buffer.ByteBuf;
  */
 public class GetBucketConfigResponse extends AbstractKeyValueResponse {
 
-    private NetworkAddress hostname;
+    private String hostname;
 
     public GetBucketConfigResponse(final ResponseStatus status, final short serverStatusCode, final String bucket,
-                                   final ByteBuf content, final NetworkAddress hostname) {
+                                   final ByteBuf content, final String hostname) {
         super(status, serverStatusCode, bucket, content, null);
         this.hostname = hostname;
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 }

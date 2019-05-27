@@ -52,7 +52,6 @@ import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.tracing.RingBufferDiagnostics;
 import com.couchbase.client.core.tracing.RingBufferMonitor;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import rx.Observable;
@@ -291,7 +290,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#CONNECTED}).
      */
-    public Observable<LifecycleState> addNode(final NetworkAddress hostname, final NetworkAddress alternate) {
+    public Observable<LifecycleState> addNode(final String hostname, final String alternate) {
         Node node = nodeBy(hostname);
         if (node != null) {
             LOGGER.debug("Node {} already registered, skipping.", hostname);
@@ -331,7 +330,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the states of the node (most probably {@link LifecycleState#DISCONNECTED}).
      */
-    public Observable<LifecycleState> removeNode(final NetworkAddress hostname) {
+    public Observable<LifecycleState> removeNode(final String hostname) {
         return removeNode(nodeBy(hostname));
     }
 
@@ -375,7 +374,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
      * @param hostname the hostname of the node.
      * @return the node or null if no hostname for that ip address.
      */
-    public Node nodeBy(final NetworkAddress hostname) {
+    public Node nodeBy(final String hostname) {
         if (hostname == null) {
             return null;
         }
@@ -494,7 +493,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             .doOnNext(new Action1<Boolean>() {
                 @Override
                 public void call(Boolean aBoolean) {
-                    Set<NetworkAddress> configNodes = config.allNodeAddresses();
+                    Set<String> configNodes = config.allNodeAddresses();
 
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {
@@ -534,16 +533,18 @@ public class RequestHandler implements EventHandler<RequestEvent> {
         List<Observable<Boolean>> observables = new ArrayList<Observable<Boolean>>();
         for (final NodeInfo nodeInfo : config.nodes()) {
             final String alternate = nodeInfo.useAlternateNetwork();
-            final NetworkAddress altHost = alternate != null ? nodeInfo.alternateAddresses().get(alternate).hostname(): null;
+            final String altHost = alternate != null ? nodeInfo.alternateAddresses().get(alternate).hostname(): null;
             Observable<Boolean> obs = addNode(nodeInfo.hostname(), altHost)
                 .flatMap(new Func1<LifecycleState, Observable<Map<ServiceType, Integer>>>() {
                     @Override
                     public Observable<Map<ServiceType, Integer>> call(final LifecycleState lifecycleState) {
-                        Map<ServiceType, Integer> services;
+                        Map<ServiceType, Integer> services = null;
                         if (alternate != null) {
                             AlternateAddress aa = nodeInfo.alternateAddresses().get(alternate);
                             services = environment.sslEnabled() ? aa.sslServices() : aa.services();
-                        } else {
+                        }
+
+                        if (services == null || services.isEmpty()) {
                             services = environment.sslEnabled() ? nodeInfo.sslServices() : nodeInfo.services();
                         }
                         return Observable.just(services);

@@ -167,7 +167,7 @@ public class HealthPinger {
      * for some reason (reason is in the exception).
      */
     private static Observable<PingServiceHealth> pingBinary(
-        final NetworkAddress hostname, final String bucket,
+        final String hostname, final String bucket,
         final ClusterFacade core, final long timeout, final TimeUnit timeUnit) {
         final AtomicReference<CouchbaseRequest> request = new AtomicReference<CouchbaseRequest>();
         Observable<NoopResponse> response = Observable.defer(new Func0<Observable<NoopResponse>>() {
@@ -244,7 +244,7 @@ public class HealthPinger {
      * for some reason (reason is in the exception).
      */
     private static Observable<PingServiceHealth> pingQuery(
-        final NetworkAddress hostname, final String bucket, final String password,
+        final String hostname, final String bucket, final String password,
         final ClusterFacade core, final long timeout, final TimeUnit timeUnit) {
         final AtomicReference<CouchbaseRequest> request = new AtomicReference<CouchbaseRequest>();
         Observable<com.couchbase.client.core.message.query.PingResponse> response =
@@ -254,7 +254,7 @@ public class HealthPinger {
                 CouchbaseRequest r;
                 try {
                     r = new com.couchbase.client.core.message.query.PingRequest(
-                        InetAddress.getByName(hostname.address()), bucket, password
+                        InetAddress.getByName(hostname), bucket, password
                     );
                 } catch (Exception e) {
                     return Observable.error(e);
@@ -271,7 +271,7 @@ public class HealthPinger {
      * for some reason (reason is in the exception).
      */
     private static Observable<PingServiceHealth> pingSearch(
-        final NetworkAddress hostname, final String bucket, final String password,
+        final String hostname, final String bucket, final String password,
         final ClusterFacade core, final long timeout, final TimeUnit timeUnit) {
         final AtomicReference<CouchbaseRequest> request = new AtomicReference<CouchbaseRequest>();
         Observable<com.couchbase.client.core.message.search.PingResponse> response =
@@ -281,7 +281,7 @@ public class HealthPinger {
                     CouchbaseRequest r;
                     try {
                         r = new com.couchbase.client.core.message.search.PingRequest(
-                            InetAddress.getByName(hostname.address()), bucket, password
+                            InetAddress.getByName(hostname), bucket, password
                         );
                     } catch (Exception e) {
                         return Observable.error(e);
@@ -298,7 +298,7 @@ public class HealthPinger {
      * for some reason (reason is in the exception).
      */
     private static Observable<PingServiceHealth> pingViews(
-        final NetworkAddress hostname, final String bucket, final String password,
+        final String hostname, final String bucket, final String password,
         final ClusterFacade core, final long timeout, final TimeUnit timeUnit) {
         final AtomicReference<CouchbaseRequest> request = new AtomicReference<CouchbaseRequest>();
         Observable<com.couchbase.client.core.message.view.PingResponse> response =
@@ -308,7 +308,7 @@ public class HealthPinger {
                     CouchbaseRequest r;
                     try {
                         r = new com.couchbase.client.core.message.view.PingRequest(
-                            InetAddress.getByName(hostname.address()), bucket, password
+                            InetAddress.getByName(hostname), bucket, password
                         );
                     } catch (Exception e) {
                         return Observable.error(e);
@@ -325,7 +325,7 @@ public class HealthPinger {
      * for some reason (reason is in the exception).
      */
     private static Observable<PingServiceHealth> pingAnalytics(
-        final NetworkAddress hostname, final String bucket, final String password,
+        final String hostname, final String bucket, final String password,
         final ClusterFacade core, final long timeout, final TimeUnit timeUnit) {
         final AtomicReference<CouchbaseRequest> request = new AtomicReference<CouchbaseRequest>();
         Observable<com.couchbase.client.core.message.analytics.PingResponse> response =
@@ -335,7 +335,7 @@ public class HealthPinger {
                     CouchbaseRequest r;
                     try {
                         r = new com.couchbase.client.core.message.analytics.PingRequest(
-                            InetAddress.getByName(hostname.address()), bucket, password
+                            InetAddress.getByName(hostname), bucket, password
                         );
                     } catch (Exception e) {
                         return Observable.error(e);

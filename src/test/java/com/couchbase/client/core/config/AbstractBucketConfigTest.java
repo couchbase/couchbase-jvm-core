@@ -16,7 +16,6 @@
 package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class AbstractBucketConfigTest {
         direct.put(ServiceType.CONFIG, 1235);
         ssl.put(ServiceType.BINARY, 4567);
 
-        nodeInfos.add(new DefaultNodeInfo(NetworkAddress.localhost(), direct, ssl, null));
+        nodeInfos.add(new DefaultNodeInfo("127.0.0.1", direct, ssl, null));
 
         BucketConfig bc = new SampleBucketConfig(nodeInfos, null);
 
@@ -66,7 +65,7 @@ public class AbstractBucketConfigTest {
 
         public SampleBucketConfig(List<NodeInfo> nodeInfos, List<PortInfo> portInfos) {
             super(UUID, NAME, LOCATOR, URI, STREAMING_URI, nodeInfos, portInfos, null,
-                NetworkAddress.localhost());
+                "127.0.0.1");
         }
 
         @Override

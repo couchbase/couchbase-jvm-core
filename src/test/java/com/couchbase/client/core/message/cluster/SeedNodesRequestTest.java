@@ -16,7 +16,6 @@
 package com.couchbase.client.core.message.cluster;
 
 import com.couchbase.client.core.config.ConfigurationException;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -37,30 +36,14 @@ public class SeedNodesRequestTest {
     public void shouldConstructWithDefaultHostname() throws Exception {
         SeedNodesRequest request = new SeedNodesRequest();
         assertEquals(1, request.nodes().size());
-        assertTrue(request.nodes().contains(NetworkAddress.localhost()));
+        assertTrue(request.nodes().contains("127.0.0.1"));
     }
 
     @Test
     public void shouldConstructWithCustomHostname() throws Exception {
         SeedNodesRequest request = new SeedNodesRequest("127.0.0.1");
         assertEquals(1, request.nodes().size());
-        assertTrue(request.nodes().contains(NetworkAddress.localhost()));
-    }
-
-    @Test
-    public void shouldDeduplicateHosts() {
-        SeedNodesRequest request = new SeedNodesRequest("127.0.0.1", "localhost");
-        assertEquals(1, request.nodes().size());
-    }
-
-    @Test
-    public void shouldProceedIfOnlyPartialFailure() {
-        String invalidIp = "999.999.999.999";
-        SeedNodesRequest request = new SeedNodesRequest("127.0.0.1", invalidIp);
-        assertEquals(1, request.nodes().size());
-
-        request = new SeedNodesRequest("127.0.0.1", "");
-        assertEquals(1, request.nodes().size());
+        assertTrue(request.nodes().contains("127.0.0.1"));
     }
 
     @Test(expected = ConfigurationException.class)
@@ -72,11 +55,6 @@ public class SeedNodesRequestTest {
     @Test(expected = ConfigurationException.class)
     public void shouldFailOnEmptyHostname() {
         new SeedNodesRequest(new ArrayList<String>());
-    }
-
-    @Test(expected = ConfigurationException.class)
-    public void shouldFailOnEmptyHostInVarargs() {
-        new SeedNodesRequest("999.999.999.999", "");
     }
 
 }

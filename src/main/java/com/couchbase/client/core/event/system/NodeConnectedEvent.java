@@ -32,9 +32,9 @@ import java.util.Map;
  */
 public class NodeConnectedEvent implements CouchbaseEvent {
 
-    private final NetworkAddress host;
+    private final String host;
 
-    public NodeConnectedEvent(NetworkAddress host) {
+    public NodeConnectedEvent(String host) {
         this.host = host;
     }
 
@@ -50,7 +50,7 @@ public class NodeConnectedEvent implements CouchbaseEvent {
      */
     public InetAddress host() {
         try {
-            return InetAddress.getByName(host.address());
+            return InetAddress.getByName(host);
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }

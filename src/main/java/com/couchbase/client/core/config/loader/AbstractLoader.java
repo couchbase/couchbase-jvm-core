@@ -108,7 +108,7 @@ public abstract class AbstractLoader implements Loader {
      * @param hostname the hostname of the seed node list.
      * @return a raw config if discovered.
      */
-    protected abstract Observable<String> discoverConfig(String bucket, String username, String password, NetworkAddress hostname);
+    protected abstract Observable<String> discoverConfig(String bucket, String username, String password, String hostname);
 
     /**
      * Initiate the config loading process.
@@ -118,7 +118,7 @@ public abstract class AbstractLoader implements Loader {
      * @param password the password of the bucket.
      * @return a valid {@link BucketConfig}.
      */
-    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final NetworkAddress seedNode, final String bucket,
+    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final String seedNode, final String bucket,
                                                                    final String password) {
         LOGGER.debug("Loading Config for bucket {}", bucket);
         return loadConfig(seedNode, bucket, bucket, password);
@@ -133,7 +133,7 @@ public abstract class AbstractLoader implements Loader {
      * @param password the password of the user.
      * @return a valid {@link BucketConfig}.
      */
-    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final NetworkAddress seedNode, final String bucket,
+    public Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final String seedNode, final String bucket,
                                                                    final String username, final String password) {
         LOGGER.debug("Loading Config for bucket {}", bucket);
         return loadConfigAtAddr(seedNode, bucket, username, password);
@@ -152,15 +152,15 @@ public abstract class AbstractLoader implements Loader {
      * @param password the password of the user.
      * @return a valid {@link BucketConfig} or an errored {@link Observable}.
      */
-    private Observable<Tuple2<LoaderType, BucketConfig>> loadConfigAtAddr(final NetworkAddress node,
+    private Observable<Tuple2<LoaderType, BucketConfig>> loadConfigAtAddr(final String node,
                                                                           final String bucket,
                                                                           final String username,
                                                                           final String password) {
         return Observable
             .just(node)
-            .flatMap(new Func1<NetworkAddress, Observable<AddNodeResponse>>() {
+            .flatMap(new Func1<String, Observable<AddNodeResponse>>() {
                 @Override
-                public Observable<AddNodeResponse> call(final NetworkAddress address) {
+                public Observable<AddNodeResponse> call(final String address) {
                     return cluster.send(new AddNodeRequest(address));
                 }
             }).flatMap(new Func1<AddNodeResponse, Observable<AddServiceResponse>>() {
@@ -234,7 +234,7 @@ public abstract class AbstractLoader implements Loader {
      * @param hostname the hostname to replace it with.
      * @return a replaced configuration.
      */
-    protected String replaceHostWildcard(String input, NetworkAddress hostname) {
-        return input.replace("$HOST", hostname.address());
+    protected String replaceHostWildcard(String input, String hostname) {
+        return input.replace("$HOST", hostname);
     }
 }

@@ -25,15 +25,15 @@ public class NoopRequest extends AbstractKeyValueRequest implements DiagnosticRe
 
     private volatile SocketAddress local;
     private volatile SocketAddress remote;
-    private final NetworkAddress hostname;
+    private final String hostname;
 
-    public NoopRequest(String bucket, NetworkAddress hostname) {
+    public NoopRequest(String bucket, String hostname) {
         super("", bucket);
         this.hostname = hostname;
         partition((short) 0);
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 

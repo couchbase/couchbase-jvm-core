@@ -41,11 +41,11 @@ public final class BucketConfigParser {
      * @param origin the origin of the configuration. If null / none provided then localhost is assumed.
      * @return the parsed bucket configuration.
      */
-    public static BucketConfig parse(final String input, final ConfigParserEnvironment env, final NetworkAddress origin) {
+    public static BucketConfig parse(final String input, final ConfigParserEnvironment env, final String origin) {
         try {
             InjectableValues inject = new InjectableValues.Std()
                     .addValue("env", env)
-                    .addValue("origin", origin == null ? NetworkAddress.localhost() : origin);
+                    .addValue("origin", origin == null ? "127.0.0.1" : origin);
             return DefaultObjectMapper.reader()
                     .forType(BucketConfig.class)
                     .with(inject)

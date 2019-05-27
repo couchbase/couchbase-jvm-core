@@ -18,7 +18,6 @@ package com.couchbase.client.core.config;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -29,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,7 +39,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
 
     private final CouchbasePartitionInfo partitionInfo;
     private final List<NodeInfo> partitionHosts;
-    private final Set<NetworkAddress> nodesWithPrimaryPartitions;
+    private final Set<String> nodesWithPrimaryPartitions;
 
     private final boolean tainted;
     private final long rev;
@@ -69,7 +67,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
         @JsonProperty("nodes") List<NodeInfo> nodeInfos,
         @JsonProperty("nodesExt") List<PortInfo> portInfos,
         @JsonProperty("bucketCapabilities") List<BucketCapabilities> bucketCapabilities,
-        @JacksonInject("origin") NetworkAddress origin) {
+        @JacksonInject("origin") String origin) {
         super(uuid, name, BucketNodeLocator.VBUCKET, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities, origin);
         this.partitionInfo = partitionInfo;
         this.tainted = partitionInfo.tainted();
@@ -90,9 +88,9 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
      * @param partitions the partitions.
      * @return a set containing the addresses of nodes with primary partitions.
      */
-    private static Set<NetworkAddress> buildNodesWithPrimaryPartitions(final List<NodeInfo> nodeInfos,
+    private static Set<String> buildNodesWithPrimaryPartitions(final List<NodeInfo> nodeInfos,
         final List<Partition> partitions) {
-        Set<NetworkAddress> nodes = new HashSet<NetworkAddress>(nodeInfos.size());
+        Set<String> nodes = new HashSet<>(nodeInfos.size());
         for (Partition partition : partitions) {
             int index = partition.master();
             if (index >= 0) {
@@ -112,7 +110,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     private static List<NodeInfo> buildPartitionHosts(List<NodeInfo> nodeInfos, CouchbasePartitionInfo partitionInfo) {
         List<NodeInfo> partitionHosts = new ArrayList<NodeInfo>();
         for (String rawHost : partitionInfo.partitionHosts()) {
-            NetworkAddress convertedHost;
+            String convertedHost;
             int directPort;
             try {
                 String parts[] = rawHost.split(":");
@@ -128,12 +126,16 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
                             host += ":";
                         }
                     }
+
+                    if (host.startsWith("[") && host.endsWith("]")) {
+                        host = host.substring(1, host.length() - 1);
+                    }
                 } else {
                     // Simple IPv4 Handling
                     host = parts[0];
                 }
 
-                convertedHost = NetworkAddress.create(host);
+                convertedHost = host;
                 try {
                     directPort = Integer.parseInt(port);
                 } catch (NumberFormatException e) {
@@ -172,7 +174,7 @@ public class DefaultCouchbaseBucketConfig extends AbstractBucketConfig implement
     }
 
     @Override
-    public boolean hasPrimaryPartitionsOnNode(final NetworkAddress hostname) {
+    public boolean hasPrimaryPartitionsOnNode(final String hostname) {
         return nodesWithPrimaryPartitions.contains(hostname);
     }
 

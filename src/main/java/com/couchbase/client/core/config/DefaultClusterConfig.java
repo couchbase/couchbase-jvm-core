@@ -15,8 +15,6 @@
  */
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.utils.NetworkAddress;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +37,7 @@ public class DefaultClusterConfig implements ClusterConfig {
      * Creates a new {@link DefaultClusterConfig}.
      */
     public DefaultClusterConfig() {
-        bucketConfigs = new ConcurrentHashMap<String, BucketConfig>();
+        bucketConfigs = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -68,8 +66,8 @@ public class DefaultClusterConfig implements ClusterConfig {
     }
 
     @Override
-    public Set<NetworkAddress> allNodeAddresses() {
-        Set<NetworkAddress> nodes = new HashSet<NetworkAddress>();
+    public Set<String> allNodeAddresses() {
+        Set<String> nodes = new HashSet<>();
         for (BucketConfig bc : bucketConfigs().values()) {
             for (NodeInfo ni : bc.nodes()) {
                 nodes.add(ni.hostname());

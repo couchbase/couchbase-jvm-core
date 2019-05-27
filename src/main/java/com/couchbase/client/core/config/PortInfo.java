@@ -26,7 +26,7 @@ import java.util.Map;
 @JsonDeserialize(as = DefaultPortInfo.class)
 public interface PortInfo {
 
-    NetworkAddress hostname();
+    String hostname();
 
     Map<ServiceType, Integer> ports();
 

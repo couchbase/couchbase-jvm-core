@@ -32,7 +32,7 @@ public class GetBucketConfigRequest extends AbstractKeyValueRequest implements B
     /**
      * The hostname from where the config should be loaded.
      */
-    private final NetworkAddress hostname;
+    private final String hostname;
 
     /**
      * Creates a new {@link GetBucketConfigRequest}.
@@ -40,7 +40,7 @@ public class GetBucketConfigRequest extends AbstractKeyValueRequest implements B
      * @param bucket the name of the bucket.
      * @param hostname the hostname of the node.
      */
-    public GetBucketConfigRequest(final String bucket, final NetworkAddress hostname) {
+    public GetBucketConfigRequest(final String bucket, final String hostname) {
         super(null, bucket);
         this.hostname = hostname;
     }
@@ -50,7 +50,7 @@ public class GetBucketConfigRequest extends AbstractKeyValueRequest implements B
      *
      * @return the hostname.
      */
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 

@@ -15,9 +15,7 @@
  */
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -30,7 +28,7 @@ public class DefaultPortInfo implements PortInfo {
     private final Map<ServiceType, Integer> ports;
     private final Map<ServiceType, Integer> sslPorts;
     private final Map<String, AlternateAddress> alternateAddresses;
-    private final NetworkAddress hostname;
+    private final String hostname;
 
     /**
      * Creates a new {@link DefaultPortInfo}.
@@ -46,14 +44,10 @@ public class DefaultPortInfo implements PortInfo {
         @JsonProperty("hostname") String hostname,
         @JsonProperty("alternateAddresses") Map<String, AlternateAddress> aa
     ) {
-        ports = new HashMap<ServiceType, Integer>();
-        sslPorts = new HashMap<ServiceType, Integer>();
+        ports = new HashMap<>();
+        sslPorts = new HashMap<>();
         alternateAddresses = aa == null ? Collections.<String, AlternateAddress>emptyMap() : aa;
-        try {
-            this.hostname = hostname == null ? null : NetworkAddress.create(hostname);
-        } catch (Exception e) {
-            throw new CouchbaseException("Could not analyze hostname from config.", e);
-        }
+        this.hostname = hostname;
 
         extractPorts(services, ports, sslPorts);
     }
@@ -109,7 +103,7 @@ public class DefaultPortInfo implements PortInfo {
     }
 
     @Override
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 

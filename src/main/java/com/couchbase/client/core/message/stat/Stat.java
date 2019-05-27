@@ -24,7 +24,6 @@ import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.StatRequest;
 import com.couchbase.client.core.message.kv.StatResponse;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
@@ -57,12 +56,12 @@ public class Stat {
             public Observable<StatResponse> call() {
                 return core
                         .<GetClusterConfigResponse>send(new GetClusterConfigRequest())
-                        .map(new Func1<GetClusterConfigResponse, List<NetworkAddress>>() {
+                        .map(new Func1<GetClusterConfigResponse, List<String>>() {
                             @Override
-                            public List<NetworkAddress> call(GetClusterConfigResponse response) {
+                            public List<String> call(GetClusterConfigResponse response) {
                                 CouchbaseBucketConfig conf =
                                         (CouchbaseBucketConfig) response.config().bucketConfig(bucket);
-                                List<NetworkAddress> hostnames = new ArrayList<NetworkAddress>();
+                                List<String> hostnames = new ArrayList<>();
                                 for (NodeInfo nodeInfo : conf.nodes()) {
                                     if (nodeInfo.services().containsKey(ServiceType.BINARY)) {
                                         hostnames.add(nodeInfo.hostname());
@@ -71,11 +70,11 @@ public class Stat {
                                 return hostnames;
                             }
                         })
-                        .flatMap(new Func1<List<NetworkAddress>, Observable<StatResponse>>() {
+                        .flatMap(new Func1<List<String>, Observable<StatResponse>>() {
                             @Override
-                            public Observable<StatResponse> call(List<NetworkAddress> hostnames) {
+                            public Observable<StatResponse> call(List<String> hostnames) {
                                 List<Observable<StatResponse>> stats = new ArrayList<Observable<StatResponse>>();
-                                for (NetworkAddress hostname : hostnames) {
+                                for (String hostname : hostnames) {
                                     stats.add(core.<StatResponse>send(new StatRequest(key, hostname, bucket)));
                                 }
                                 if (stats.size() == 1) {

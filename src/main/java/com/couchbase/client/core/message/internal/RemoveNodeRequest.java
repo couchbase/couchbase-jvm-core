@@ -20,14 +20,14 @@ import com.couchbase.client.core.utils.NetworkAddress;
 
 public class RemoveNodeRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
-    private final NetworkAddress hostname;
+    private final String hostname;
 
-    public RemoveNodeRequest(final NetworkAddress hostname) {
+    public RemoveNodeRequest(final String hostname) {
         super(null, null);
         this.hostname = hostname;
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 }

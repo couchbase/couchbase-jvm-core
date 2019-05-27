@@ -24,9 +24,9 @@ import rx.Observable;
 public interface Loader {
 
      @Deprecated
-     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final NetworkAddress seedNode,
+     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final String seedNode,
                                                              final String bucket, final String password);
 
-     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final NetworkAddress seedNode,
+     Observable<Tuple2<LoaderType, BucketConfig>> loadConfig(final String seedNode,
         final String bucket, final String username, final String password);
 }

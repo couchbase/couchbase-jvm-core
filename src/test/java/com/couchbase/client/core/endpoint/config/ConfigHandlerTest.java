@@ -129,7 +129,7 @@ public class ConfigHandlerTest {
 
     @Test
     public void shouldEncodeBucketConfigRequest() throws Exception {
-        BucketConfigRequest request = new BucketConfigRequest("/path/", NetworkAddress.localhost(), "bucket", "password");
+        BucketConfigRequest request = new BucketConfigRequest("/path/", "127.0.0.1", "bucket", "password");
 
         channel.writeOutbound(request);
         HttpRequest outbound = (HttpRequest) channel.readOutbound();
@@ -471,7 +471,7 @@ public class ConfigHandlerTest {
     public void shouldNotBreakLinesOnLongAuth() throws Exception {
         String longPassword = "thisIsAveryLongPasswordWhichShouldNotContainLineBreaksAfterEncodingOtherwise"
             + "itWillBreakTheRequestResponseFlowWithTheServer";
-        BucketConfigRequest request = new BucketConfigRequest("/path/", NetworkAddress.localhost(), "bucket",
+        BucketConfigRequest request = new BucketConfigRequest("/path/", "127.0.0.1", "bucket",
             longPassword);
 
         channel.writeOutbound(request);

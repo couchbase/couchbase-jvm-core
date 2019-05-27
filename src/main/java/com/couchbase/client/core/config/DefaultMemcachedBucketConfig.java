@@ -60,11 +60,11 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
             @JsonProperty("nodes") List<NodeInfo> nodeInfos,
             @JsonProperty("nodesExt") List<PortInfo> portInfos,
             @JsonProperty("bucketCapabilities") List<BucketCapabilities> bucketCapabilities,
-            @JacksonInject("origin") NetworkAddress origin) {
+            @JacksonInject("origin") String origin) {
         super(uuid, name, BucketNodeLocator.KETAMA, uri, streamingUri, nodeInfos, portInfos, bucketCapabilities, origin);
         this.env = env;
         this.rev = rev;
-        this.ketamaNodes = new TreeMap<Long, NodeInfo>();
+        this.ketamaNodes = new TreeMap<>();
         populateKetamaNodes();
     }
 
@@ -115,7 +115,7 @@ public class DefaultMemcachedBucketConfig extends AbstractBucketConfig implement
     }
 
     @Override
-    public NetworkAddress nodeForId(final byte[] id) {
+    public String nodeForId(final byte[] id) {
         long hash = calculateKetamaHash(id);
 
         if (!ketamaNodes.containsKey(hash)) {

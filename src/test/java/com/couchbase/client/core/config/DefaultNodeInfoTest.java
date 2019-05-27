@@ -16,7 +16,6 @@
 
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.env.NetworkResolution;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
@@ -58,12 +57,12 @@ public class DefaultNodeInfoTest {
     public void shouldExposeRawHostnameFromConstruction() {
         assertEquals(
             "localhost",
-            new DefaultNodeInfo(null, "localhost:8091", new HashMap<String, Integer>(), null).rawHostname()
+            new DefaultNodeInfo(null, "localhost:8091", new HashMap<String, Integer>(), null).hostname()
         );
 
         assertEquals(
             "127.0.0.1",
-            new DefaultNodeInfo(null, "127.0.0.1:8091", new HashMap<String, Integer>(), null).rawHostname()
+            new DefaultNodeInfo(null, "127.0.0.1:8091", new HashMap<String, Integer>(), null).hostname()
         );
     }
 
@@ -75,7 +74,7 @@ public class DefaultNodeInfoTest {
         DefaultNodeInfo info = new DefaultNodeInfo(null, "[fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7]:8091", ports, null);
 
         assertEquals(1, info.services().size());
-        assertEquals("fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7", info.hostname().address());
+        assertEquals("fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7", info.hostname());
         assertEquals(8091, (long) info.services().get(ServiceType.CONFIG));
     }
 

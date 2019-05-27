@@ -149,9 +149,9 @@ public class ResponseHandler implements EventHandler<ResponseEvent> {
                     try {
                         String config = response.content().toString(CharsetUtil.UTF_8).trim();
                         if (config.startsWith("{")) {
-                            NetworkAddress origin = null;
-                            if (request != null && request.dispatchHostname() != null) {
-                                origin = NetworkAddress.create(request.dispatchHostname());
+                            String origin = null;
+                            if (request != null) {
+                                origin = request.dispatchHostname();
                             }
                             configurationProvider.proposeBucketConfig(new ProposedBucketConfigContext(
                                 response.bucket(),

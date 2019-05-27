@@ -33,13 +33,13 @@ import com.couchbase.client.core.utils.NetworkAddress;
 @InterfaceStability.Experimental
 public class GetAllMutationTokensRequest extends AbstractKeyValueRequest {
     private final PartitionState partitionState;
-    private final NetworkAddress hostname;
+    private final String hostname;
 
-    public GetAllMutationTokensRequest(final NetworkAddress hostname, final String bucket) {
+    public GetAllMutationTokensRequest(final String hostname, final String bucket) {
         this(PartitionState.ANY, hostname, bucket);
     }
 
-    public GetAllMutationTokensRequest(final PartitionState partitionState, final NetworkAddress hostname, final String bucket) {
+    public GetAllMutationTokensRequest(final PartitionState partitionState, final String hostname, final String bucket) {
         super("", bucket);
         this.partitionState = partitionState;
         this.hostname = hostname;
@@ -49,7 +49,7 @@ public class GetAllMutationTokensRequest extends AbstractKeyValueRequest {
         return partitionState;
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 

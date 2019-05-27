@@ -23,7 +23,6 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -47,12 +46,12 @@ import static org.mockito.Mockito.when;
  */
 public class HttpLoaderTest {
 
-    private static NetworkAddress host;
+    private static String host;
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
 
     @BeforeClass
     public static void setup() {
-        host = NetworkAddress.localhost();
+        host = "127.0.0.1";
     }
 
     @AfterClass

@@ -40,7 +40,7 @@ public class DefaultMemcachedHashingStrategyTest {
         MemcachedHashingStrategy strategy = DefaultMemcachedHashingStrategy.INSTANCE;
 
         NodeInfo infoMock = mock(NodeInfo.class);
-        when(infoMock.hostname()).thenReturn(NetworkAddress.localhost());
+        when(infoMock.hostname()).thenReturn("localhost");
         assertEquals("localhost-0", strategy.hash(infoMock,0));
     }
 

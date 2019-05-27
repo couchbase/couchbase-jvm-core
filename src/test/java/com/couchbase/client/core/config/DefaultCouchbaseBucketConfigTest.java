@@ -47,8 +47,8 @@ public class DefaultCouchbaseBucketConfigTest {
         CouchbaseBucketConfig config = (CouchbaseBucketConfig)
             BucketConfigParser.parse(raw, mock(CoreEnvironment.class), null);
 
-        assertTrue(config.hasPrimaryPartitionsOnNode(NetworkAddress.create("1.2.3.4")));
-        assertFalse(config.hasPrimaryPartitionsOnNode(NetworkAddress.create("2.3.4.5")));
+        assertTrue(config.hasPrimaryPartitionsOnNode("1.2.3.4"));
+        assertFalse(config.hasPrimaryPartitionsOnNode("2.3.4.5"));
         assertEquals(BucketNodeLocator.VBUCKET, config.locator());
         assertFalse(config.ephemeral());
         assertTrue(config.nodes().get(0).alternateAddresses().isEmpty());
@@ -60,9 +60,8 @@ public class DefaultCouchbaseBucketConfigTest {
         CouchbaseBucketConfig config = (CouchbaseBucketConfig)
             BucketConfigParser.parse(raw, mock(CoreEnvironment.class), null);
 
-        NetworkAddress expected = NetworkAddress.create("1.2.3.4");
         assertEquals(1, config.nodes().size());
-        assertEquals(expected, config.nodes().get(0).hostname());
+        assertEquals("1.2.3.4", config.nodes().get(0).hostname());
         assertEquals(BucketNodeLocator.VBUCKET, config.locator());
         assertFalse(config.ephemeral());
     }
@@ -113,9 +112,9 @@ public class DefaultCouchbaseBucketConfigTest {
         assertEquals(1, config.numberOfReplicas());
         assertEquals(1024, config.numberOfPartitions());
         assertEquals(2, config.nodes().size());
-        assertEquals("192.168.1.194", config.nodes().get(0).hostname().address());
+        assertEquals("192.168.1.194", config.nodes().get(0).hostname());
         assertEquals(9000, (int)config.nodes().get(0).services().get(ServiceType.CONFIG));
-        assertEquals("192.168.1.194", config.nodes().get(1).hostname().address());
+        assertEquals("192.168.1.194", config.nodes().get(1).hostname());
         assertEquals(9001, (int)config.nodes().get(1).services().get(ServiceType.CONFIG));
     }
 
@@ -126,9 +125,9 @@ public class DefaultCouchbaseBucketConfigTest {
             BucketConfigParser.parse(raw, mock(CoreEnvironment.class), null);
 
         assertEquals(3, config.nodes().size());
-        assertEquals("192.168.0.102", config.nodes().get(0).hostname().address());
-        assertEquals("127.0.0.1", config.nodes().get(1).hostname().address());
-        assertEquals("127.0.0.1", config.nodes().get(2).hostname().address());
+        assertEquals("192.168.0.102", config.nodes().get(0).hostname());
+        assertEquals("127.0.0.1", config.nodes().get(1).hostname());
+        assertEquals("127.0.0.1", config.nodes().get(2).hostname());
         assertTrue(config.nodes().get(0).services().containsKey(ServiceType.BINARY));
         assertTrue(config.nodes().get(1).services().containsKey(ServiceType.BINARY));
         assertFalse(config.nodes().get(2).services().containsKey(ServiceType.BINARY));
@@ -143,8 +142,8 @@ public class DefaultCouchbaseBucketConfigTest {
             BucketConfigParser.parse(raw, mock(CoreEnvironment.class), null);
 
         assertEquals(2, config.nodes().size());
-        assertEquals("fd63:6f75:6368:2068:1471:75ff:fe25:a8be", config.nodes().get(0).hostname().address());
-        assertEquals("fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7", config.nodes().get(1).hostname().address());
+        assertEquals("fd63:6f75:6368:2068:1471:75ff:fe25:a8be", config.nodes().get(0).hostname());
+        assertEquals("fd63:6f75:6368:2068:c490:b5ff:fe86:9cf7", config.nodes().get(1).hostname());
 
         assertEquals(1, config.numberOfReplicas());
         assertEquals(1024, config.numberOfPartitions());
@@ -165,7 +164,7 @@ public class DefaultCouchbaseBucketConfigTest {
     public void shouldReadBucketUuid() {
         String raw = Resources.read("config_with_mixed_partitions.json", getClass());
         CouchbaseBucketConfig config = (CouchbaseBucketConfig)
-            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), NetworkAddress.localhost());
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
 
         assertEquals("aa4b515529fa706f1e5f09f21abb5c06", config.uuid());
     }
@@ -174,7 +173,7 @@ public class DefaultCouchbaseBucketConfigTest {
     public void shouldHandleMissingBucketUuid() throws Exception {
         String raw = Resources.read("config_without_uuid.json", getClass());
         CouchbaseBucketConfig config = (CouchbaseBucketConfig)
-                BucketConfigParser.parse(raw, mock(CoreEnvironment.class), NetworkAddress.localhost());
+                BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
 
         assertNull(config.uuid());
     }
@@ -186,7 +185,7 @@ public class DefaultCouchbaseBucketConfigTest {
     public void shouldIncludeExternalIfPresent() {
         String raw = Resources.read("config_with_external.json", getClass());
         CouchbaseBucketConfig config = (CouchbaseBucketConfig)
-            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), NetworkAddress.localhost());
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
 
         List<NodeInfo> nodes = config.nodes();
         assertEquals(3, nodes.size());
@@ -195,7 +194,6 @@ public class DefaultCouchbaseBucketConfigTest {
             assertEquals(1, addrs.size());
             AlternateAddress addr = addrs.get(NetworkResolution.EXTERNAL.name());
             assertNotNull(addr.hostname());
-            assertNotNull(addr.rawHostname());
             assertFalse(addr.services().isEmpty());
             assertFalse(addr.sslServices().isEmpty());
             for (int port : addr.services().values()) {

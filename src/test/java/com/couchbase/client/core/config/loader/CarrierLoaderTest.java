@@ -24,7 +24,6 @@ import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
-import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -48,11 +47,11 @@ import static org.mockito.Mockito.when;
 public class CarrierLoaderTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
-    private static NetworkAddress host;
+    private static String host;
 
     @BeforeClass
     public static void setup() throws Exception {
-        host = NetworkAddress.localhost();
+        host = "127.0.0.1";
     }
 
     @AfterClass

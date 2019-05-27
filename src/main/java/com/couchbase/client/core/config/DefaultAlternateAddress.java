@@ -16,9 +16,7 @@
 
 package com.couchbase.client.core.config;
 
-import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -27,8 +25,7 @@ import java.util.Map;
 
 public class DefaultAlternateAddress implements AlternateAddress {
 
-    private final NetworkAddress hostname;
-    private final String rawHostname;
+    private final String hostname;
     private final Map<ServiceType, Integer> directServices;
     private final Map<ServiceType, Integer> sslServices;
 
@@ -36,28 +33,17 @@ public class DefaultAlternateAddress implements AlternateAddress {
     public DefaultAlternateAddress(
         @JsonProperty("hostname") String hostname,
         @JsonProperty("ports") Map<String, Integer> ports) {
-        try {
-            this.rawHostname = hostname;
-            this.hostname = NetworkAddress.create(rawHostname);
-        } catch (Exception e) {
-            throw new CouchbaseException("Could not analyze hostname from config.", e);
-        }
-
-        this.directServices = new HashMap<ServiceType, Integer>();
-        this.sslServices = new HashMap<ServiceType, Integer>();
+        this.hostname = hostname;
+        this.directServices = new HashMap<>();
+        this.sslServices = new HashMap<>();
         if (ports != null && !ports.isEmpty()) {
             DefaultPortInfo.extractPorts(ports, directServices, sslServices);
         }
     }
 
     @Override
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
-    }
-
-    @Override
-    public String rawHostname() {
-        return rawHostname;
     }
 
     @Override
@@ -74,7 +60,6 @@ public class DefaultAlternateAddress implements AlternateAddress {
     public String toString() {
         return "DefaultAlternateAddress{" +
             "hostname=" + hostname +
-            ", rawHostname='" + rawHostname + '\'' +
             ", directServices=" + directServices +
             ", sslServices=" + sslServices +
             '}';
@@ -94,9 +79,6 @@ public class DefaultAlternateAddress implements AlternateAddress {
         if (hostname != null ? !hostname.equals(that.hostname) : that.hostname != null) {
             return false;
         }
-        if (rawHostname != null ? !rawHostname.equals(that.rawHostname) : that.rawHostname != null) {
-            return false;
-        }
         if (directServices != null ? !directServices.equals(that.directServices) : that.directServices != null) {
             return false;
         }
@@ -106,7 +88,6 @@ public class DefaultAlternateAddress implements AlternateAddress {
     @Override
     public int hashCode() {
         int result = hostname != null ? hostname.hashCode() : 0;
-        result = 31 * result + (rawHostname != null ? rawHostname.hashCode() : 0);
         result = 31 * result + (directServices != null ? directServices.hashCode() : 0);
         result = 31 * result + (sslServices != null ? sslServices.hashCode() : 0);
         return result;

@@ -22,9 +22,9 @@ import com.couchbase.client.core.utils.NetworkAddress;
 public class RemoveServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 
     private final ServiceType type;
-    private final NetworkAddress hostname;
+    private final String hostname;
 
-    public RemoveServiceRequest(ServiceType type, String bucket, NetworkAddress hostname) {
+    public RemoveServiceRequest(ServiceType type, String bucket, String hostname) {
         super(bucket, null);
         this.type = type;
         this.hostname = hostname;
@@ -34,7 +34,7 @@ public class RemoveServiceRequest extends AbstractCouchbaseRequest implements In
         return type;
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 }

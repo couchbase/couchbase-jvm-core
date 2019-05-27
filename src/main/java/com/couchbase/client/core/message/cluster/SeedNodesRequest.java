@@ -20,14 +20,12 @@ import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 
 /**
@@ -50,12 +48,12 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
     /**
      * The default hostname which will be used if the default constructor is used.
      */
-    private static final String DEFAULT_HOSTNAME = "localhost";
+    private static final String DEFAULT_HOSTNAME = "127.0.0.1";
 
     /**
      * The list of hostnames/IPs.
      */
-    private Set<NetworkAddress> nodes;
+    private Set<String> nodes;
 
     /**
      * Creates a {@link SeedNodesRequest} with the default hostname ("localhost").
@@ -84,7 +82,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
         if (nodes == null || nodes.isEmpty()) {
             throw new ConfigurationException("Empty or null bootstrap list provided.");
         }
-        Set<NetworkAddress> parsedNodes = new HashSet<NetworkAddress>();
+        Set<String> parsedNodes = new HashSet<>();
         for (String node : nodes) {
             if (node == null || node.isEmpty()) {
                 LOGGER.info("Empty or null host in bootstrap list.");
@@ -92,7 +90,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
             }
 
             try {
-                parsedNodes.add(NetworkAddress.create(node));
+                parsedNodes.add(node);
             } catch (Exception e) {
                 LOGGER.info("Unknown host {} in bootstrap list.", system(node), e);
             }
@@ -110,7 +108,7 @@ public class SeedNodesRequest extends AbstractCouchbaseRequest implements Cluste
      *
      * @return the list of hostnames.
      */
-    public Set<NetworkAddress> nodes() {
+    public Set<String> nodes() {
         return nodes;
     }
 }

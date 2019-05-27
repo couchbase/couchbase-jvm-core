@@ -122,7 +122,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     /**
      * List of initial bootstrap seed hostnames.
      */
-    private volatile Set<NetworkAddress> seedHosts;
+    private volatile Set<String> seedHosts;
 
     /**
      * If null means not decided yet, true and false mean decided.
@@ -212,14 +212,14 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
     }
 
     @Override
-    public boolean seedHosts(final Set<NetworkAddress> hosts, boolean shuffle) {
+    public boolean seedHosts(final Set<String> hosts, boolean shuffle) {
         if (bootstrapped) {
             LOGGER.debug("Seed hosts called with {}, but already bootstrapped.", hosts);
             return false;
         }
         LOGGER.debug("Setting seed hosts to {}", hosts);
         if (shuffle) {
-            final List<NetworkAddress> hostsList = new ArrayList<>(hosts);
+            final List<String> hostsList = new ArrayList<>(hosts);
             Collections.shuffle(hostsList);
             seedHosts = new LinkedHashSet<>(hostsList);
         } else {
@@ -247,9 +247,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
         Observable<Tuple2<LoaderType, BucketConfig>> observable = Observable.mergeDelayError(Observable
                 .from(seedHosts)
-                .map(new Func1<NetworkAddress, Observable<Tuple2<LoaderType, BucketConfig>>>() {
+                .map(new Func1<String, Observable<Tuple2<LoaderType, BucketConfig>>>() {
                     @Override
-                    public Observable<Tuple2<LoaderType, BucketConfig>> call(NetworkAddress seedHost) {
+                    public Observable<Tuple2<LoaderType, BucketConfig>> call(String seedHost) {
                         Observable<Tuple2<LoaderType, BucketConfig>> node = loaderChain.get(0)
                                 .loadConfig(seedHost, bucket, username, password);
                         for (int i = 1; i < loaderChain.size(); i++) {
@@ -552,7 +552,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
      * @return the found setting if external is used, null if internal/default is used.
      */
     public static String determineNetworkResolution(final BucketConfig config, final NetworkResolution nr,
-        final Set<NetworkAddress> seedHosts) {
+        final Set<String> seedHosts) {
         if (nr.equals(NetworkResolution.DEFAULT)) {
             return null;
         } else if (nr.equals(NetworkResolution.AUTO)) {

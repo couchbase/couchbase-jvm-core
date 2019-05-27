@@ -24,9 +24,9 @@ import rx.subjects.ReplaySubject;
  * @since 1.2.1
  */
 public class StatRequest extends AbstractKeyValueRequest {
-    private final NetworkAddress hostname;
+    private final String hostname;
 
-    public StatRequest(final String key, final NetworkAddress hostname, final String bucket) {
+    public StatRequest(final String key, final String hostname, final String bucket) {
         super(key, bucket, null, null, ReplaySubject.<CouchbaseResponse>create());
         this.hostname = hostname;
     }
@@ -43,7 +43,7 @@ public class StatRequest extends AbstractKeyValueRequest {
         }
     }
 
-    public NetworkAddress hostname() {
+    public String hostname() {
         return hostname;
     }
 

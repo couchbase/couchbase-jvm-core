@@ -160,7 +160,7 @@ public class HttpRefresher extends AbstractRefresher {
                         @Override
                         public ProposedBucketConfigContext call(String s) {
                             String raw = s.replace("$HOST", response.host());
-                            return new ProposedBucketConfigContext(name, raw, NetworkAddress.create(response.host()));
+                            return new ProposedBucketConfigContext(name, raw, response.host());
                         }
                     })
                     .doOnCompleted(new Action0() {
@@ -314,7 +314,7 @@ public class HttpRefresher extends AbstractRefresher {
      * @return a raw configuration or an error.
      */
     private Observable<ProposedBucketConfigContext> refreshAgainstNode(final String bucketName,
-        final NetworkAddress hostname) {
+        final String hostname) {
         final Credential credential = registrations().get(bucketName);
         if (credential == null) {
             LOGGER.debug("Ignoring refresh attempt since it seems the bucket registration is gone (closed).");
@@ -345,7 +345,7 @@ public class HttpRefresher extends AbstractRefresher {
         }).map(new Func1<BucketConfigResponse, ProposedBucketConfigContext>() {
             @Override
             public ProposedBucketConfigContext call(final BucketConfigResponse response) {
-                String config = response.config().replace("$HOST", hostname.address());
+                String config = response.config().replace("$HOST", hostname);
                 return new ProposedBucketConfigContext(bucketName, config, hostname);
             }
         }).doOnError(new Action1<Throwable>() {

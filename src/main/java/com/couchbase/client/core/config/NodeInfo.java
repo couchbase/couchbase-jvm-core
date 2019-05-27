@@ -17,7 +17,6 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -32,15 +31,7 @@ public interface NodeInfo {
      *
      * @return the host address.
      */
-    NetworkAddress hostname();
-
-    /**
-     * Contains the string representation from the hostname the
-     * same way it is represented in the config.
-     *
-     * @return the raw hostname string as in the config.
-     */
-    String rawHostname();
+    String hostname();
 
     /**
      * The exposed non-ssl services.
@@ -75,6 +66,5 @@ public interface NodeInfo {
      */
     @InterfaceAudience.Private
     void useAlternateNetwork(String useAlternateNetwork);
-
 
 }

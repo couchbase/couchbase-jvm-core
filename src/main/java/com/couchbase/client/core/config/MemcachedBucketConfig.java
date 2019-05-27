@@ -34,6 +34,6 @@ public interface MemcachedBucketConfig extends BucketConfig {
      * @param id the id for the document.
      * @return the node address for the given document id.
      */
-    NetworkAddress nodeForId(final byte[] id);
+    String nodeForId(final byte[] id);
 
 }
