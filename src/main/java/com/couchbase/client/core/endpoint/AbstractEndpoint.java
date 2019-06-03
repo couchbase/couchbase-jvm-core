@@ -35,6 +35,7 @@ import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.AbstractStateMachine;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.NotConnectedException;
+import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.RingBuffer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufAllocator;
@@ -288,6 +289,15 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             channelClass = EpollSocketChannel.class;
         } else if (ioPool instanceof OioEventLoopGroup) {
             channelClass = OioSocketChannel.class;
+        }
+
+        // We've removed using NetworkAddress throughout the codebase, but we still need to handle the case
+        // where the user asks us to "force ipv4, even if ipv6 is enabled". So only if the flag is set, do
+        // a round trip through the NetworkAddress and let it to its resolution magic. Using it at this stage
+        // is not leading to known issues since we need to be able to use it since we are connecting to it
+        // right afterwards.
+        if (NetworkAddress.FORCE_IPV4) {
+            hostname = NetworkAddress.create(hostname).nameOrAddress();
         }
 
         ByteBufAllocator allocator = env.bufferPoolingEnabled()

@@ -19,7 +19,6 @@ import com.couchbase.client.core.CouchbaseException;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.env.ConfigParserEnvironment;
 import com.couchbase.client.core.utils.DefaultObjectMapper;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 

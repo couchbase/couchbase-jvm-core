@@ -18,7 +18,6 @@ package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.message.observe.ObserveViaMutationToken;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 /**
  * Get the current high sequence numbers one could initialize streams

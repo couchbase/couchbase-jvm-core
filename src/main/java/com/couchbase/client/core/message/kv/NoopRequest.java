@@ -17,7 +17,6 @@
 package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.DiagnosticRequest;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.net.SocketAddress;
 

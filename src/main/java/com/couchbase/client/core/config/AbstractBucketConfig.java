@@ -18,7 +18,6 @@ package com.couchbase.client.core.config;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.util.ArrayList;
 import java.util.List;

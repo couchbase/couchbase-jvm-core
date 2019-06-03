@@ -45,7 +45,6 @@ import com.couchbase.client.core.message.kv.TouchRequest;
 import com.couchbase.client.core.message.kv.UnlockRequest;
 import com.couchbase.client.core.message.kv.UpsertRequest;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheRequest;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.BinaryMemcacheResponseStatus;
 import com.couchbase.client.deps.io.netty.handler.codec.memcache.binary.DefaultFullBinaryMemcacheResponse;

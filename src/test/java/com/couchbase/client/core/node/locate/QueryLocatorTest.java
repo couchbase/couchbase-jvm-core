@@ -20,7 +20,6 @@ import com.couchbase.client.core.message.query.GenericQueryRequest;
 import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import java.util.ArrayList;

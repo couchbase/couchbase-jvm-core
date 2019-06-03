@@ -26,7 +26,6 @@ import com.couchbase.client.core.env.NetworkResolution;
 import com.couchbase.client.core.lang.Tuple;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.util.Resources;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.mockito.internal.util.collections.Sets;

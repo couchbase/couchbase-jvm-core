@@ -26,7 +26,6 @@ import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.MathUtils;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.RingBuffer;
 
 import java.util.ArrayList;

@@ -32,7 +32,6 @@ import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.utils.DefaultObjectMapper;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.databind.JsonNode;
 import rx.Observable;
 import rx.Subscriber;

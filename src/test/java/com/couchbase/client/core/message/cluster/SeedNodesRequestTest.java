@@ -33,14 +33,14 @@ import static org.junit.Assert.assertTrue;
 public class SeedNodesRequestTest {
 
     @Test
-    public void shouldConstructWithDefaultHostname() throws Exception {
+    public void shouldConstructWithDefaultHostname() {
         SeedNodesRequest request = new SeedNodesRequest();
         assertEquals(1, request.nodes().size());
         assertTrue(request.nodes().contains("127.0.0.1"));
     }
 
     @Test
-    public void shouldConstructWithCustomHostname() throws Exception {
+    public void shouldConstructWithCustomHostname() {
         SeedNodesRequest request = new SeedNodesRequest("127.0.0.1");
         assertEquals(1, request.nodes().size());
         assertTrue(request.nodes().contains("127.0.0.1"));
@@ -50,6 +50,12 @@ public class SeedNodesRequestTest {
     public void shouldFailOnNullHostname() {
         List<String> nodes = null;
         new SeedNodesRequest(nodes);
+    }
+
+    @Test
+    public void shouldDeduplicateHosts() {
+        SeedNodesRequest request = new SeedNodesRequest("127.0.0.1", "127.0.0.1");
+        assertEquals(1, request.nodes().size());
     }
 
     @Test(expected = ConfigurationException.class)

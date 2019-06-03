@@ -18,7 +18,6 @@ package com.couchbase.client.core.event.system;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
 import com.couchbase.client.core.utils.Events;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

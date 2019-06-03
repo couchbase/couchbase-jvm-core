@@ -16,7 +16,6 @@
 package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 public class RemoveNodeRequest extends AbstractCouchbaseRequest implements InternalRequest {
 

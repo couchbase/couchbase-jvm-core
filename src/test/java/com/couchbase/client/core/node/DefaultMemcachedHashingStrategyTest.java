@@ -17,7 +17,6 @@ package com.couchbase.client.core.node;
 
 import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.util.TestProperties;
-import com.couchbase.client.core.utils.NetworkAddress;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

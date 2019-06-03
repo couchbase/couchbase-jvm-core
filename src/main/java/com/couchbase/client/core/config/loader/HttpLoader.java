@@ -25,7 +25,6 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Func1;
 

@@ -31,7 +31,6 @@ import com.couchbase.client.core.message.config.BucketConfigResponse;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;

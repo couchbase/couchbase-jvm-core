@@ -29,7 +29,6 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.kv.BinaryResponse;
 import com.couchbase.client.core.time.Delay;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.EventTranslatorTwoArg;
 import io.netty.util.CharsetUtil;

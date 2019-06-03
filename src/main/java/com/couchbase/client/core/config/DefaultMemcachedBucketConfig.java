@@ -18,7 +18,6 @@ package com.couchbase.client.core.config;
 
 import com.couchbase.client.core.env.ConfigParserEnvironment;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

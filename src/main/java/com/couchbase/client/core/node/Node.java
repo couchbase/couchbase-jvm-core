@@ -24,7 +24,6 @@ import com.couchbase.client.core.service.Service;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.couchbase.client.core.state.Stateful;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 
 import java.util.List;

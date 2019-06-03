@@ -19,7 +19,6 @@ package com.couchbase.client.core.message.internal;
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -99,11 +98,11 @@ public class PingServiceHealth {
     }
 
     public Map<String, Object> toMap() {
-        NetworkAddress ra = remote() == null ? null : NetworkAddress.create(remote().getAddress().getHostAddress());
-        NetworkAddress la = local() == null ? null : NetworkAddress.create(local().getAddress().getHostAddress());
-        Map<String, Object> map = new HashMap<String, Object>();
-        map.put("remote", ra == null ? "" : ra.nameOrAddress() + ":" + remote().getPort());
-        map.put("local", la == null ? "" : la.nameOrAddress() + ":" + local().getPort());
+        String ra = remote() == null ? null : remote().getAddress().getHostAddress();
+        String la = local() == null ? null : local().getAddress().getHostAddress();
+        Map<String, Object> map = new HashMap<>();
+        map.put("remote", ra == null ? "" : ra + ":" + remote().getPort());
+        map.put("local", la == null ? "" : la + ":" + local().getPort());
         map.put("state", pingState.asJson());
         map.put("latency_us", latency);
         if (scope != null && !scope.isEmpty()) {

@@ -17,8 +17,6 @@ package com.couchbase.client.core.message.internal;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.utils.NetworkAddress;
-
 
 public class AddServiceRequest extends AbstractCouchbaseRequest implements InternalRequest {
 

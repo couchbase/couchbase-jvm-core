@@ -33,7 +33,6 @@ import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 import rx.functions.Action1;
 import rx.functions.Func1;

@@ -16,7 +16,6 @@
 package com.couchbase.client.core.message.config;
 
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 public class BucketConfigRequest extends AbstractCouchbaseRequest implements ConfigRequest {
 

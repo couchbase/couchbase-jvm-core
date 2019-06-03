@@ -21,7 +21,6 @@ import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.event.CouchbaseEvent;
 import com.couchbase.client.core.event.EventType;
 import com.couchbase.client.core.utils.Events;
-import com.couchbase.client.core.utils.NetworkAddress;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -80,7 +79,7 @@ public class ConfigUpdatedEvent implements CouchbaseEvent {
     }
 
     /**
-     * Returns the {@link NetworkAddress} of all nodes that are part of the cluster config.
+     * Returns the hostname of all nodes that are part of the cluster config.
      */
     public Set<String> clusterNodesAsStrings() {
         return clusterNodes;

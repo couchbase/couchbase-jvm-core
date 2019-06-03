@@ -16,7 +16,6 @@
 package com.couchbase.client.core.message.kv;
 
 import com.couchbase.client.core.message.CouchbaseResponse;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.subjects.ReplaySubject;
 
 /**

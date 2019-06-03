@@ -32,7 +32,6 @@ import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.message.config.GetDesignDocumentsResponse;
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
 import com.couchbase.client.core.util.CollectingResponseEventSink;
-import com.couchbase.client.core.utils.NetworkAddress;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultHttpContent;

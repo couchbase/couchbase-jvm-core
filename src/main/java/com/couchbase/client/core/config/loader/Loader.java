@@ -18,7 +18,6 @@ package com.couchbase.client.core.config.loader;
 import com.couchbase.client.core.config.BucketConfig;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.lang.Tuple2;
-import com.couchbase.client.core.utils.NetworkAddress;
 import rx.Observable;
 
 public interface Loader {
