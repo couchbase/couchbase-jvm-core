@@ -16,6 +16,7 @@
 package com.couchbase.client.core.node.locate;
 
 import com.couchbase.client.core.config.ClusterConfig;
+import com.couchbase.client.core.message.config.GetDesignDocumentsRequest;
 import com.couchbase.client.core.message.search.SearchQueryRequest;
 import com.couchbase.client.core.node.Node;
 import com.couchbase.client.core.service.ServiceType;
@@ -23,6 +24,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -157,6 +159,18 @@ public class SearchLocatorTest {
         verify(node2Mock, never()).send(request);
         verify(node3Mock, times(2)).send(request);
         verify(node4Mock, times(2)).send(request);
+    }
+
+    @Test
+    public void shouldHandleEmptyNodeListWithoutCrashing() {
+        Locator locator = new SearchLocator(0);
+        locator.locateAndDispatch(
+            mock(SearchQueryRequest.class),
+            Collections.<Node>emptyList(),
+            mock(ClusterConfig.class),
+            null,
+            null
+        );
     }
 
 }

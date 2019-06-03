@@ -85,6 +85,10 @@ public class ConfigLocator implements Locator {
             }
         } else {
             int nodeSize = nodes.size();
+            if (nodeSize <= 0) {
+                RetryHelper.retryOrCancel(env, request, responseBuffer);
+                return;
+            }
             int offset = (int) counter.getAndIncrement() % nodeSize;
 
             for (int i = offset; i < nodeSize; i++) {

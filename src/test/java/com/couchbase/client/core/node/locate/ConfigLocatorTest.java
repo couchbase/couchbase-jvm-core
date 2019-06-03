@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -47,7 +48,7 @@ public class ConfigLocatorTest {
      * nodes is not available.
      */
     @Test
-    public void shouldRerouteBucketConfigRequestWithoutHostname() throws Exception {
+    public void shouldRerouteBucketConfigRequestWithoutHostname() {
         Locator locator = new ConfigLocator(0);
 
         BucketConfigRequest request = mock(BucketConfigRequest.class);
@@ -55,14 +56,13 @@ public class ConfigLocatorTest {
         ClusterConfig configMock = mock(ClusterConfig.class);
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
-        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         when(node1Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         Node node2Mock = mock(Node.class);
         when(node2Mock.hostname()).thenReturn("192.168.56.102");
         when(node2Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
-        nodes.addAll(Arrays.asList(node1Mock, node2Mock));
+        List<Node> nodes = new ArrayList<>(Arrays.asList(node1Mock, node2Mock));
 
         locator.locateAndDispatch(request, nodes, configMock, null, null);
         verify(node1Mock, times(1)).send(request);
@@ -78,7 +78,7 @@ public class ConfigLocatorTest {
     }
 
     @Test
-    public void shouldRouteGetDesignDocumentsRequestOnlyToViewNode() throws Exception {
+    public void shouldRouteGetDesignDocumentsRequestOnlyToViewNode() {
         Locator locator = new ConfigLocator(0);
 
         GetDesignDocumentsRequest request = mock(GetDesignDocumentsRequest.class);
@@ -87,7 +87,6 @@ public class ConfigLocatorTest {
         CouchbaseBucketConfig bucketConfigMock = mock(CouchbaseBucketConfig.class);
 
         when(configMock.bucketConfig("default")).thenReturn(bucketConfigMock);
-        List<Node> nodes = new ArrayList<Node>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         when(node1Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
@@ -100,7 +99,7 @@ public class ConfigLocatorTest {
         when(node3Mock.hostname()).thenReturn("192.168.56.103");
         when(node3Mock.serviceEnabled(ServiceType.CONFIG)).thenReturn(true);
         when(node3Mock.serviceEnabled(ServiceType.VIEW)).thenReturn(true);
-        nodes.addAll(Arrays.asList(node1Mock, node2Mock, node3Mock));
+        List<Node> nodes = new ArrayList<>(Arrays.asList(node1Mock, node2Mock, node3Mock));
 
         locator.locateAndDispatch(request, nodes, configMock, null, null);
         verify(node1Mock, never()).send(request);
@@ -116,5 +115,17 @@ public class ConfigLocatorTest {
         verify(node1Mock, never()).send(request);
         verify(node2Mock, times(2)).send(request);
         verify(node3Mock, times(1)).send(request);
+    }
+
+    @Test
+    public void shouldHandleEmptyNodeListWithoutCrashing() {
+        Locator locator = new ConfigLocator(0);
+        locator.locateAndDispatch(
+            mock(GetDesignDocumentsRequest.class),
+            Collections.<Node>emptyList(),
+            mock(ClusterConfig.class),
+            null,
+            null
+        );
     }
 }

@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -165,6 +166,18 @@ public class QueryLocatorTest {
         verify(node2Mock, never()).send(request);
         verify(node3Mock, times(2)).send(request);
         verify(node4Mock, times(2)).send(request);
+    }
+
+    @Test
+    public void shouldHandleEmptyNodeListWithoutCrashing() {
+        Locator locator = new QueryLocator(0);
+        locator.locateAndDispatch(
+            mock(GenericQueryRequest.class),
+            Collections.<Node>emptyList(),
+            mock(ClusterConfig.class),
+            null,
+            null
+        );
     }
 
 }
