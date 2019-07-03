@@ -16,7 +16,7 @@
 
     <groupId>com.couchbase.client</groupId>
     <artifactId>core-io</artifactId>
-    <version>1.7.7</version>
+    <version>1.7.8-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Couchbase JVM Core IO</name>
@@ -35,7 +35,7 @@
         <opentracing.version>0.31.0</opentracing.version>
         <netty.version>4.0.56.Final</netty.version>
         <disruptor.version>3.3.10</disruptor.version>
-        <jackson.version>2.9.7</jackson.version>
+        <jackson.version>2.9.9.1</jackson.version>
         <snappy.version>0.4</snappy.version>
         <latency-utils.version>2.0.3</latency-utils.version>
         <junit.version>4.12</junit.version>
