@@ -60,7 +60,9 @@ public class DiagnosticsReportTest extends ClusterDependentTest {
             assertEquals(LifecycleState.CONNECTED, eh.state());
             assertNotNull(eh.local());
             assertNotNull(eh.remote());
-            assertTrue(eh.lastActivity() > 0);
+            if (!useMock()) {
+                assertTrue(eh.lastActivity() > 0);
+            }
             assertTrue(eh.id().startsWith("0x"));
         }
 

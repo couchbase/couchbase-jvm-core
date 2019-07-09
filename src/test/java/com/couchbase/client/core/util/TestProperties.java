@@ -70,7 +70,7 @@ public class TestProperties {
     static {
         Properties properties = new Properties(System.getProperties());
         try {
-            properties.load(TestProperties.class.getClassLoader().getResourceAsStream("com.couchbase.client.core.integration.properties"));
+            properties.load(TestProperties.class.getClassLoader().getResourceAsStream("integration.properties"));
         } catch (Exception ex) {
             //ignore
         }
@@ -83,7 +83,7 @@ public class TestProperties {
         mockNodeCount = Integer.parseInt(properties.getProperty("mockNodeCount", "1"));
         mockReplicaCount = Integer.parseInt(properties.getProperty("mockReplicaCount", "1"));
         bucketType = properties.getProperty("mockBucketType", "couchbase").equalsIgnoreCase("couchbase") ? COUCHBASE : MEMCACHED;
-        useMock = Boolean.parseBoolean(properties.getProperty("useMock", "false"));
+        useMock = Boolean.parseBoolean(properties.getProperty("mock.enabled", "false"));
         ci = Boolean.parseBoolean(properties.getProperty("ci", "false"));
         createMock();
     }

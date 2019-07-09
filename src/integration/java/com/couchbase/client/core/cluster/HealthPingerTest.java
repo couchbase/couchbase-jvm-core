@@ -40,15 +40,21 @@ public class HealthPingerTest extends ClusterDependentTest {
 
     @Test
     public void shouldPerformPingAfterConnect() {
-        PingReport pr = HealthPinger.ping(
-            env(),
-            bucket(),
-            password(),
-            cluster(),
-            "ping-id",
-            1,
-            TimeUnit.SECONDS
-        ).toBlocking().value();
+        PingReport pr;
+        ServiceType[] servicesToPing = useMock()
+            ? new ServiceType[]{ServiceType.BINARY, ServiceType.VIEW} // mock only supports these right now
+            : new ServiceType[0]; // empty means all services
+
+        pr = HealthPinger.ping(
+                env(),
+                bucket(),
+                password(),
+                cluster(),
+                "ping-id",
+                1,
+                TimeUnit.SECONDS,
+                servicesToPing
+            ).toBlocking().value();
 
         assertNotNull(pr.sdk());
         assertEquals(pr.sdk(), env().userAgent());
