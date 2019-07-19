@@ -35,6 +35,7 @@ import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -69,6 +70,11 @@ import static org.mockito.Mockito.when;
 public class CarrierRefresherTest {
 
     private static final CoreEnvironment ENVIRONMENT = DefaultCoreEnvironment.create();
+
+    @AfterClass
+    public static void after() {
+        ENVIRONMENT.shutdown();
+    }
 
     @Test
     public void shouldProposeConfigFromTaintedPoller() throws Exception {

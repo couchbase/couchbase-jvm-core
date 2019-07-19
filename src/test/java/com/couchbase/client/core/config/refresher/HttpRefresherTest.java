@@ -26,6 +26,7 @@ import com.couchbase.client.core.message.ResponseStatus;
 import com.couchbase.client.core.message.config.BucketStreamingRequest;
 import com.couchbase.client.core.message.config.BucketStreamingResponse;
 import com.couchbase.client.core.util.Resources;
+import org.junit.AfterClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
@@ -53,6 +54,11 @@ import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 public class HttpRefresherTest {
 
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
+
+    @AfterClass
+    public static void after() {
+        environment.shutdown();
+    }
 
     @Test
     public void shouldPublishNewBucketConfiguration() throws Exception {

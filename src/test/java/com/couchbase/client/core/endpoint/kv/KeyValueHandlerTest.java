@@ -62,6 +62,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.IllegalReferenceCountException;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
@@ -908,55 +909,60 @@ public class KeyValueHandlerTest {
     public void shouldFireKeepAlive() throws Exception {
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+        final CoreEnvironment env = DefaultCoreEnvironment.builder()
+            .continuousKeepAliveEnabled(false).build();
 
-        AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
-        when(endpoint.environment()).thenReturn(ENVIRONMENT);
-        KeyValueHandler testHandler = new KeyValueHandler(endpoint, eventSink,
+        try {
+            AbstractEndpoint endpoint = mock(AbstractEndpoint.class);
+            when(endpoint.environment()).thenReturn(ENVIRONMENT);
+            KeyValueHandler testHandler = new KeyValueHandler(endpoint, eventSink,
                 requestQueue, false, true) {
 
-            @Override
-            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-                super.channelRegistered(ctx);
-                ctxRef.compareAndSet(null, ctx);
-            }
+                @Override
+                public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                    super.channelRegistered(ctx);
+                    ctxRef.compareAndSet(null, ctx);
+                }
 
-            @Override
-            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
-                assertEquals(1, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                    assertEquals(1, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
-                assertEquals(2, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                    assertEquals(2, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected CoreEnvironment env() {
-                return DefaultCoreEnvironment.builder()
-                    .continuousKeepAliveEnabled(false).build();
-            }
-        };
-        EmbeddedChannel channel = new EmbeddedChannel(testHandler);
+                @Override
+                protected CoreEnvironment env() {
+                    return env;
+                }
+            };
+            EmbeddedChannel channel = new EmbeddedChannel(testHandler);
 
-        //test idle event triggers a k/v keepAlive request and hook is called
-        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
+            //test idle event triggers a k/v keepAlive request and hook is called
+            testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
 
-        assertEquals(1, keepAliveEventCounter.get());
-        assertTrue(requestQueue.peek() instanceof KeyValueHandler.KeepAliveRequest);
-        KeyValueHandler.KeepAliveRequest keepAliveRequest = (KeyValueHandler.KeepAliveRequest) requestQueue.peek();
+            assertEquals(1, keepAliveEventCounter.get());
+            assertTrue(requestQueue.peek() instanceof KeyValueHandler.KeepAliveRequest);
+            KeyValueHandler.KeepAliveRequest keepAliveRequest = (KeyValueHandler.KeepAliveRequest) requestQueue.peek();
 
-        //test responding to the request with memcached response is interpreted into a KeepAliveResponse, hook is called
-        DefaultFullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(new byte[] {}, Unpooled.EMPTY_BUFFER);
-        response.setOpaque(keepAliveRequest.opaque());
-        response.setStatus(KeyValueStatus.ERR_NO_MEM.code());
+            //test responding to the request with memcached response is interpreted into a KeepAliveResponse, hook is called
+            DefaultFullBinaryMemcacheResponse response = new DefaultFullBinaryMemcacheResponse(new byte[] {}, Unpooled.EMPTY_BUFFER);
+            response.setOpaque(keepAliveRequest.opaque());
+            response.setStatus(KeyValueStatus.ERR_NO_MEM.code());
 
-        channel.writeInbound(response);
-        KeyValueHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+            channel.writeInbound(response);
+            KeyValueHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(KeyValueHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
 
-        assertEquals(2, keepAliveEventCounter.get());
-        assertEquals(ResponseStatus.OUT_OF_MEMORY, keepAliveResponse.status());
+            assertEquals(2, keepAliveEventCounter.get());
+            assertEquals(ResponseStatus.OUT_OF_MEMORY, keepAliveResponse.status());
+        } finally {
+            env.shutdown();
+        }
     }
 
     @Test

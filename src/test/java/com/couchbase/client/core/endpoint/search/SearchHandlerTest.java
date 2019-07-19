@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 /**
@@ -84,6 +85,7 @@ public class SearchHandlerTest {
     @Before
     @SuppressWarnings("unchecked")
     public void setup() {
+
         responseBuffer = new Disruptor<ResponseEvent>(new EventFactory<ResponseEvent>() {
             @Override
             public ResponseEvent newInstance() {
@@ -156,51 +158,56 @@ public class SearchHandlerTest {
         //similar test to query
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+        final CoreEnvironment env = DefaultCoreEnvironment.builder()
+            .continuousKeepAliveEnabled(false).build();
 
-        SearchHandler searchKeepAliveHandler = new SearchHandler(endpoint, responseRingBuffer, queue, false, false) {
-            @Override
-            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-                super.channelRegistered(ctx);
-                ctxRef.compareAndSet(null, ctx);
-            }
+        try {
+            SearchHandler searchKeepAliveHandler = new SearchHandler(endpoint, responseRingBuffer, queue, false, false) {
+                @Override
+                public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                    super.channelRegistered(ctx);
+                    ctxRef.compareAndSet(null, ctx);
+                }
 
-            @Override
-            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
-                assertEquals(1, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                    assertEquals(1, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
-                assertEquals(2, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                    assertEquals(2, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected CoreEnvironment env() {
-                return DefaultCoreEnvironment.builder()
-                        .continuousKeepAliveEnabled(false).build();
-            }
-        };
-        EmbeddedChannel channel = new EmbeddedChannel(searchKeepAliveHandler);
+                @Override
+                protected CoreEnvironment env() {
+                    return env;
+                }
+            };
+            EmbeddedChannel channel = new EmbeddedChannel(searchKeepAliveHandler);
 
-        //test idle event triggers a query keepAlive request and hook is called
-        searchKeepAliveHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
+            //test idle event triggers a query keepAlive request and hook is called
+            searchKeepAliveHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
 
-        assertEquals(1, keepAliveEventCounter.get());
-        assertTrue(queue.peek() instanceof SearchHandler.KeepAliveRequest);
-        SearchHandler.KeepAliveRequest keepAliveRequest = (SearchHandler.KeepAliveRequest) queue.peek();
+            assertEquals(1, keepAliveEventCounter.get());
+            assertTrue(queue.peek() instanceof SearchHandler.KeepAliveRequest);
+            SearchHandler.KeepAliveRequest keepAliveRequest = (SearchHandler.KeepAliveRequest) queue.peek();
 
-        //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-        LastHttpContent responseEnd = new DefaultLastHttpContent();
-        channel.writeInbound(response, responseEnd);
-        SearchHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+            //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
+            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+            LastHttpContent responseEnd = new DefaultLastHttpContent();
+            channel.writeInbound(response, responseEnd);
+            SearchHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(SearchHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
 
-        channel.pipeline().remove(searchKeepAliveHandler);
-        assertEquals(2, keepAliveEventCounter.get());
-        assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
-        assertEquals(0, responseEnd.refCnt());
+            channel.pipeline().remove(searchKeepAliveHandler);
+            assertEquals(2, keepAliveEventCounter.get());
+            assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
+            assertEquals(0, responseEnd.refCnt());
+        } finally {
+            env.shutdown();
+        }
     }
 
 }

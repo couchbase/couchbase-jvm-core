@@ -34,6 +34,7 @@ import com.couchbase.client.core.util.TestProperties;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,6 +70,11 @@ public class ResponseHandlerTest {
     @Before
     public void check() {
         assumeFalse(TestProperties.isCi());
+    }
+
+    @AfterClass
+    public static void after() {
+        ENVIRONMENT.shutdown();
     }
 
     @Test

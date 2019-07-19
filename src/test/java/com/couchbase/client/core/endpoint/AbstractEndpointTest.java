@@ -27,6 +27,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.AfterClass;
 import org.junit.Test;
 import rx.Observable;
 import rx.functions.Action1;
@@ -56,9 +57,14 @@ import static org.mockito.Mockito.when;
 public class AbstractEndpointTest {
 
     private final String hostname = "127.0.0.1";
-    private final CoreEnvironment environment = DefaultCoreEnvironment.create();
+    private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
-    private  final CoreContext ctx = new CoreContext(environment, null);
+    private static final CoreContext ctx = new CoreContext(environment, null);
+
+    @AfterClass
+    public static void after() {
+        environment.shutdown();
+    }
 
     @Test
     public void shouldBeDisconnectedAfterCreation() {

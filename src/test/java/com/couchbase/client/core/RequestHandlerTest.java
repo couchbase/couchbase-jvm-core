@@ -30,6 +30,7 @@ import com.couchbase.client.core.retry.RetryHelper;
 import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.state.LifecycleState;
 import com.lmax.disruptor.RingBuffer;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import rx.Observable;
@@ -61,6 +62,11 @@ public class RequestHandlerTest {
     private static final CoreEnvironment environment = DefaultCoreEnvironment.create();
     private static final CoreContext ctx = new CoreContext(environment, null);
     private static final Observable<ClusterConfig> configObservable = Observable.empty();
+
+    @AfterClass
+    public static void after() {
+        environment.shutdown();
+    }
 
     @Test
     public void shouldAddNodes() {

@@ -23,6 +23,7 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.junit.After;
 import org.junit.Test;
 import rx.functions.Action1;
 import rx.functions.Actions;
@@ -49,9 +50,19 @@ public class DefaultCoreEnvironmentTest {
 
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(DefaultCoreEnvironmentTest.class);
 
+    private DefaultCoreEnvironment env;
+
+    @After
+    public void after(){
+        if (env != null) {
+            env.shutdown();
+            env = null;
+        }
+    }
+
     @Test
     public void shouldInitAndShutdownCoreEnvironment() throws Exception {
-        CoreEnvironment env = DefaultCoreEnvironment.create();
+        env = DefaultCoreEnvironment.create();
         assertNotNull(env.ioPool());
         assertNotNull(env.scheduler());
 
@@ -61,7 +72,7 @@ public class DefaultCoreEnvironmentTest {
 
     @Test
     public void shouldOverrideDefaults() throws Exception {
-        CoreEnvironment env = DefaultCoreEnvironment
+        env = DefaultCoreEnvironment
             .builder()
             .kvEndpoints(3)
             .build();
@@ -77,7 +88,7 @@ public class DefaultCoreEnvironmentTest {
 
         System.setProperty("com.couchbase.kvEndpoints", "10");
         try {
-            CoreEnvironment env = DefaultCoreEnvironment
+            env = DefaultCoreEnvironment
                 .builder()
                 .kvEndpoints(3)
                 .build();
@@ -94,7 +105,7 @@ public class DefaultCoreEnvironmentTest {
 
     @Test
     public void shouldApplyMinPoolSize() throws Exception {
-        CoreEnvironment env = DefaultCoreEnvironment
+        env = DefaultCoreEnvironment
                 .builder()
                 .ioPoolSize(1)
                 .computationPoolSize(1)
@@ -158,7 +169,7 @@ public class DefaultCoreEnvironmentTest {
     @Test
     public void shouldShowUnmanagedCustomResourcesInEnvDump() {
         //create an environment with a custom IOPool and Scheduler that are not cleaned up on shutdown
-        DefaultCoreEnvironment env = DefaultCoreEnvironment.builder()
+        env = DefaultCoreEnvironment.builder()
                 .ioPool(new LocalEventLoopGroup())
                 .scheduler(Schedulers.newThread()).build();
         String dump = env.dumpParameters(new StringBuilder()).toString();
@@ -170,7 +181,7 @@ public class DefaultCoreEnvironmentTest {
     @Test
     public void shouldShowOnlyClassNameForManagedResourcesInEnvDump() {
         //create an environment with a custom IOPool and Scheduler that are not cleaned up on shutdown
-        DefaultCoreEnvironment env = DefaultCoreEnvironment.create();
+        env = DefaultCoreEnvironment.create();
         String dump = env.dumpParameters(new StringBuilder()).toString();
 
         assertFalse(dump, dump.contains("!unmanaged"));
@@ -183,12 +194,12 @@ public class DefaultCoreEnvironmentTest {
      */
     @Test
     public void shouldEmitEvent() throws Exception {
-        CoreEnvironment env = DefaultCoreEnvironment.create();
+        CoreEnvironment env1 = DefaultCoreEnvironment.create();
 
         final AtomicInteger evtCount = new AtomicInteger(0);
         final CountDownLatch latch = new CountDownLatch(1);
 
-        env.eventBus().get().forEach(new Action1<CouchbaseEvent>() {
+        env1.eventBus().get().forEach(new Action1<CouchbaseEvent>() {
             @Override
             public void call(CouchbaseEvent couchbaseEvent) {
                 if (couchbaseEvent instanceof TooManyEnvironmentsEvent) {
@@ -197,10 +208,10 @@ public class DefaultCoreEnvironmentTest {
                 }
             }
         });
-        CoreEnvironment env2 = DefaultCoreEnvironment.builder().eventBus(env.eventBus()).build();
+        CoreEnvironment env2 = DefaultCoreEnvironment.builder().eventBus(env1.eventBus()).build();
         latch.await(5, TimeUnit.SECONDS);
 
-        env.shutdown();
+        env1.shutdown();
         env2.shutdown();
 
         assertTrue(evtCount.get() > 1);
@@ -213,20 +224,19 @@ public class DefaultCoreEnvironmentTest {
         assertNull(env.viewIoPool());
         assertNull(env.searchIoPool());
         assertNull(env.queryIoPool());
-        env.shutdown();
     }
 
     @Test
     public void shouldOverrideAndShutdownServicePools() {
         EventLoopGroup elg = new NioEventLoopGroup();
-        CoreEnvironment env = DefaultCoreEnvironment.builder()
+        CoreEnvironment env1 = DefaultCoreEnvironment.builder()
             .kvIoPool(elg, new NoOpShutdownHook())
             .viewIoPool(elg, new NoOpShutdownHook())
             .searchIoPool(elg, new NoOpShutdownHook())
             .queryIoPool(elg, new NoOpShutdownHook())
             .build();
 
-        env.shutdown();
+        env1.shutdown();
         assertFalse(elg.isShutdown());
         elg.shutdownGracefully().awaitUninterruptibly(3000);
         assertTrue(elg.isShutdown());

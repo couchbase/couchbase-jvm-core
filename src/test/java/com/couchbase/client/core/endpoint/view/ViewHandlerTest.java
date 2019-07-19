@@ -84,6 +84,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.description;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -364,50 +365,55 @@ public class ViewHandlerTest {
     public void shouldFireKeepAlive() throws Exception {
         final AtomicInteger keepAliveEventCounter = new AtomicInteger();
         final AtomicReference<ChannelHandlerContext> ctxRef = new AtomicReference();
+        final DefaultCoreEnvironment env = DefaultCoreEnvironment.builder()
+            .continuousKeepAliveEnabled(false).build();
 
-        ViewHandler testHandler = new ViewHandler(endpoint, responseRingBuffer, queue, false, false) {
-            @Override
-            public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-                super.channelRegistered(ctx);
-                ctxRef.compareAndSet(null, ctx);
-            }
+        try {
+            ViewHandler testHandler = new ViewHandler(endpoint, responseRingBuffer, queue, false, false) {
+                @Override
+                public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+                    super.channelRegistered(ctx);
+                    ctxRef.compareAndSet(null, ctx);
+                }
 
-            @Override
-            protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
-                assertEquals(1, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveFired(ChannelHandlerContext ctx, CouchbaseRequest keepAliveRequest) {
+                    assertEquals(1, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
-                assertEquals(2, keepAliveEventCounter.incrementAndGet());
-            }
+                @Override
+                protected void onKeepAliveResponse(ChannelHandlerContext ctx, CouchbaseResponse keepAliveResponse) {
+                    assertEquals(2, keepAliveEventCounter.incrementAndGet());
+                }
 
-            @Override
-            protected CoreEnvironment env() {
-                return DefaultCoreEnvironment.builder()
-                        .continuousKeepAliveEnabled(false).build();
-            }
-        };
-        EmbeddedChannel channel = new EmbeddedChannel(testHandler);
+                @Override
+                protected CoreEnvironment env() {
+                    return env;
+                }
+            };
+            EmbeddedChannel channel = new EmbeddedChannel(testHandler);
 
-        //test idle event triggers a view keepAlive request and hook is called
-        testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
+            //test idle event triggers a view keepAlive request and hook is called
+            testHandler.userEventTriggered(ctxRef.get(), IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
 
-        assertEquals(1, keepAliveEventCounter.get());
-        assertTrue(queue.peek() instanceof ViewHandler.KeepAliveRequest);
-        ViewHandler.KeepAliveRequest keepAliveRequest = (ViewHandler.KeepAliveRequest) queue.peek();
+            assertEquals(1, keepAliveEventCounter.get());
+            assertTrue(queue.peek() instanceof ViewHandler.KeepAliveRequest);
+            ViewHandler.KeepAliveRequest keepAliveRequest = (ViewHandler.KeepAliveRequest) queue.peek();
 
-        //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-        channel.writeInbound(response);
-        ViewHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
+            //test responding to the request with http response is interpreted into a KeepAliveResponse and hook is called
+            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
+            channel.writeInbound(response);
+            ViewHandler.KeepAliveResponse keepAliveResponse = keepAliveRequest.observable()
                 .cast(ViewHandler.KeepAliveResponse.class)
                 .timeout(1, TimeUnit.SECONDS).toBlocking().single();
 
-        assertEquals(2, keepAliveEventCounter.get());
-        assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
-        //different channel, needs to be closed to release the internal responseContent
-        channel.close().awaitUninterruptibly();
+            assertEquals(2, keepAliveEventCounter.get());
+            assertEquals(ResponseStatus.NOT_EXISTS, keepAliveResponse.status());
+            //different channel, needs to be closed to release the internal responseContent
+            channel.close().awaitUninterruptibly();
+        } finally {
+            env.shutdown();
+        }
     }
 
     @Test
