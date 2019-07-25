@@ -153,12 +153,13 @@ public class ConnectionStringTest {
         assertEquals(new InetSocketAddress("::1", 0), parsed.allHosts().get(1));
         assertTrue(parsed.params().isEmpty());
 
-        parsed = ConnectionString.create("couchbase://[::1/128], [::1/128],[::1/128]");
+        parsed = ConnectionString.create("couchbase://[::1/128], [::1/128],[::1/128], [2001:DB4:BAD:A55::5]");
         assertEquals(ConnectionString.Scheme.COUCHBASE, parsed.scheme());
-        assertEquals(3, parsed.allHosts().size());
+        assertEquals(4, parsed.allHosts().size());
         assertEquals(new InetSocketAddress("::1/128", 0), parsed.allHosts().get(0));
         assertEquals(new InetSocketAddress("::1/128", 0), parsed.allHosts().get(1));
         assertEquals(new InetSocketAddress("::1/128", 0), parsed.allHosts().get(2));
+        assertEquals(new InetSocketAddress("2001:DB4:BAD:A55::5", 0), parsed.allHosts().get(3));
         assertTrue(parsed.params().isEmpty());
     }
 
@@ -171,12 +172,13 @@ public class ConnectionStringTest {
         assertEquals(new InetSocketAddress("::1", 11210), parsed.allHosts().get(1));
         assertTrue(parsed.params().isEmpty());
 
-        parsed = ConnectionString.create("couchbase://[::1/128]:1234, [::1/128]:11210,[::1/128]:1");
+        parsed = ConnectionString.create("couchbase://[::1/128]:1234, [::1/128]:11210,[::1/128]:1, [2001:DB4:BAD:A55::5]:111");
         assertEquals(ConnectionString.Scheme.COUCHBASE, parsed.scheme());
-        assertEquals(3, parsed.allHosts().size());
+        assertEquals(4, parsed.allHosts().size());
         assertEquals(new InetSocketAddress("::1/128", 1234), parsed.allHosts().get(0));
         assertEquals(new InetSocketAddress("::1/128", 11210), parsed.allHosts().get(1));
         assertEquals(new InetSocketAddress("::1/128", 1), parsed.allHosts().get(2));
+        assertEquals(new InetSocketAddress("2001:DB4:BAD:A55::5", 111), parsed.allHosts().get(3));
         assertTrue(parsed.params().isEmpty());
     }
 
