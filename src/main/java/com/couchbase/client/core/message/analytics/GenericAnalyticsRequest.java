@@ -19,12 +19,9 @@ import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
 import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.PrelocatedRequest;
-import com.couchbase.client.core.message.query.QueryRequest;
 import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-
-import java.net.InetAddress;
 
 /**
  * For the lack of a better name, a analytics request against a analytics server.
@@ -40,11 +37,11 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
 
     private final String query;
     private final boolean jsonFormat;
-    private final InetAddress targetNode;
+    private final String targetNode;
     private final int priority;
 
     protected GenericAnalyticsRequest(String query, boolean jsonFormat, String bucket, String username, String password,
-        InetAddress targetNode, int priority) {
+                                      String targetNode, int priority) {
         super(bucket, username, password);
         this.query = query;
         this.jsonFormat = jsonFormat;
@@ -70,7 +67,7 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
     }
 
     @Override
-    public InetAddress sendTo() {
+    public String sendTo() {
         return targetNode;
     }
 
@@ -147,7 +144,7 @@ public class GenericAnalyticsRequest extends AbstractCouchbaseRequest implements
      * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
      * @return a {@link GenericAnalyticsRequest} for this full query.
      */
-    public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode) {
+    public static GenericAnalyticsRequest jsonQuery(String jsonQuery, String bucket, String username, String password, String targetNode) {
         return new GenericAnalyticsRequest(jsonQuery, true, bucket, username, password, targetNode, NO_PRIORITY);
     }
 

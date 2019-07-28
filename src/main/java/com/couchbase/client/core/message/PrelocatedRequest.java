@@ -16,13 +16,9 @@
 
 package com.couchbase.client.core.message;
 
-import com.couchbase.client.core.config.NodeInfo;
-
-import java.net.InetAddress;
-
 /**
  * A {@link CouchbaseRequest} that can be targeted at a specific node through the corresponding
- * {@link java.net.InetAddress}, shortcutting the dispatch usually performed by a
+ * hostname, shortcutting the dispatch usually performed by a
  * {@link com.couchbase.client.core.node.locate.Locator}..
  *
  * Note that only some types of services perform this user-specified dispatch.
@@ -33,12 +29,11 @@ import java.net.InetAddress;
 public interface PrelocatedRequest extends CouchbaseRequest {
 
     /**
-     * The {@link java.net.InetAddress node} to send this request to, or null to use
+     * The hostname to send this request to, or null to use
      * default {@link com.couchbase.client.core.node.locate.Locator node location process}.
      *
      * @return the address of the target node or null to revert to default dispatching.
      */
-    InetAddress sendTo();
-
+    String sendTo();
 
 }

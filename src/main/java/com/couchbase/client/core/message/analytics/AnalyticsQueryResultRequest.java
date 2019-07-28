@@ -28,14 +28,14 @@ import java.net.InetAddress;
 @InterfaceStability.Experimental
 public class AnalyticsQueryResultRequest extends AbstractCouchbaseRequest implements AnalyticsRequest, PrelocatedRequest {
 
-    private final InetAddress target;
+    private final String target;
     private final String resultPath;
 
     public AnalyticsQueryResultRequest(String uri, String bucket, String username, String password) {
         this(uri, bucket, username, password, null);
     }
 
-    public AnalyticsQueryResultRequest(String uri, String bucket, String username, String password, InetAddress target) {
+    public AnalyticsQueryResultRequest(String uri, String bucket, String username, String password, String target) {
         super(bucket, username, password);
         String requestIdentifier = uri.substring(uri.lastIndexOf('/') + 1);
         this.resultPath = "/analytics/service/result/" + requestIdentifier;
@@ -48,7 +48,7 @@ public class AnalyticsQueryResultRequest extends AbstractCouchbaseRequest implem
     }
 
     @Override
-    public InetAddress sendTo() {
+    public String sendTo() {
         return target;
     }
 }

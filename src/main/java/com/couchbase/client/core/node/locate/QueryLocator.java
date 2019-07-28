@@ -81,7 +81,7 @@ public class QueryLocator implements Locator {
         }
 
         if (request instanceof PrelocatedRequest && ((PrelocatedRequest) request).sendTo() != null) {
-            String target = ((PrelocatedRequest) request).sendTo().getHostAddress();
+            String target = ((PrelocatedRequest) request).sendTo();
             for (Node node : nodes) {
                 if (node.hostname().equals(target)) {
                     node.send(request);

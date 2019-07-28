@@ -37,7 +37,6 @@ import rx.Single;
 import rx.functions.Func0;
 import rx.functions.Func1;
 
-import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -253,9 +252,7 @@ public class HealthPinger {
             public Observable<com.couchbase.client.core.message.query.PingResponse> call() {
                 CouchbaseRequest r;
                 try {
-                    r = new com.couchbase.client.core.message.query.PingRequest(
-                        InetAddress.getByName(hostname), bucket, password
-                    );
+                    r = new com.couchbase.client.core.message.query.PingRequest(hostname, bucket, password);
                 } catch (Exception e) {
                     return Observable.error(e);
                 }
@@ -280,9 +277,7 @@ public class HealthPinger {
                 public Observable<com.couchbase.client.core.message.search.PingResponse> call() {
                     CouchbaseRequest r;
                     try {
-                        r = new com.couchbase.client.core.message.search.PingRequest(
-                            InetAddress.getByName(hostname), bucket, password
-                        );
+                        r = new com.couchbase.client.core.message.search.PingRequest(hostname, bucket, password);
                     } catch (Exception e) {
                         return Observable.error(e);
                     }
@@ -307,9 +302,7 @@ public class HealthPinger {
                 public Observable<com.couchbase.client.core.message.view.PingResponse> call() {
                     CouchbaseRequest r;
                     try {
-                        r = new com.couchbase.client.core.message.view.PingRequest(
-                            InetAddress.getByName(hostname), bucket, password
-                        );
+                        r = new com.couchbase.client.core.message.view.PingRequest(hostname, bucket, password);
                     } catch (Exception e) {
                         return Observable.error(e);
                     }
@@ -334,9 +327,7 @@ public class HealthPinger {
                 public Observable<com.couchbase.client.core.message.analytics.PingResponse> call() {
                     CouchbaseRequest r;
                     try {
-                        r = new com.couchbase.client.core.message.analytics.PingRequest(
-                            InetAddress.getByName(hostname), bucket, password
-                        );
+                        r = new com.couchbase.client.core.message.analytics.PingRequest(hostname, bucket, password);
                     } catch (Exception e) {
                         return Observable.error(e);
                     }

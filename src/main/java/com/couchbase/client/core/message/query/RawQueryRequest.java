@@ -18,10 +18,7 @@ package com.couchbase.client.core.message.query;
 
 import com.couchbase.client.core.annotations.InterfaceAudience;
 import com.couchbase.client.core.annotations.InterfaceStability;
-import com.couchbase.client.core.message.AbstractCouchbaseRequest;
 import com.couchbase.client.core.message.PrelocatedRequest;
-
-import java.net.InetAddress;
 
 /**
  * A {@link QueryRequest} that can also be {@link PrelocatedRequest prelocated}, but expects a
@@ -34,7 +31,7 @@ import java.net.InetAddress;
 @InterfaceAudience.Public
 public class RawQueryRequest extends GenericQueryRequest {
 
-    private RawQueryRequest(String jsonQuery, String bucket, String username, String password, InetAddress targetNode,
+    private RawQueryRequest(String jsonQuery, String bucket, String username, String password, String targetNode,
                             String contextId) {
         super(jsonQuery, true, bucket, username, password, targetNode, contextId, null);
     }
@@ -83,31 +80,13 @@ public class RawQueryRequest extends GenericQueryRequest {
      *
      * @param jsonQuery the N1QL query in json form.
      * @param bucket the bucket on which to perform the query.
-     * @param password the password for the target bucket.
-     * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
-     * @param contextId the context id to store and use for tracing purposes.
-     * @return a {@link RawQueryRequest} for this full query.
-     */
-    public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode, String contextId) {
-        return new RawQueryRequest(jsonQuery, bucket, bucket, password, targetNode, contextId);
-    }
-
-    /**
-     * Create a {@link RawQueryRequest} containing a full N1QL query in Json form (including additional
-     * query parameters like named arguments, etc...).
-     *
-     * The simplest form of such a query is a single statement encapsulated in a json query object:
-     * <pre>{"statement":"SELECT * FROM default"}</pre>.
-     *
-     * @param jsonQuery the N1QL query in json form.
-     * @param bucket the bucket on which to perform the query.
      * @param username the user authorized for bucket access.
      * @param password the password for the user.
      * @param targetNode the node on which to execute this request (or null to let the core locate and choose one).
      * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link RawQueryRequest} for this full query.
      */
-    public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode, String contextId) {
+    public static RawQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, String targetNode, String contextId) {
         return new RawQueryRequest(jsonQuery, bucket, username, password, targetNode, contextId);
     }
 }

@@ -23,8 +23,6 @@ import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 
-import java.net.InetAddress;
-
 /**
  * For the lack of a better name, a query request against a query server.
  *
@@ -40,11 +38,11 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
 
     private final String query;
     private final boolean jsonFormat;
-    private final InetAddress targetNode;
+    private final String targetNode;
     private final String contextId;
     private final String statement;
 
-    protected GenericQueryRequest(String query, boolean jsonFormat, String bucket, String username, String password, InetAddress targetNode, String contextId, String statement) {
+    protected GenericQueryRequest(String query, boolean jsonFormat, String bucket, String username, String password, String targetNode, String contextId, String statement) {
         super(bucket, username, password);
         this.query = query;
         this.jsonFormat = jsonFormat;
@@ -75,7 +73,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
     }
 
     @Override
-    public InetAddress sendTo() {
+    public String sendTo() {
         return targetNode;
     }
 
@@ -160,7 +158,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param contextId the context id to store and use for tracing purposes.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password, InetAddress targetNode, String contextId) {
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String password, String targetNode, String contextId) {
         return new GenericQueryRequest(jsonQuery, true, bucket, bucket, password, targetNode, contextId,
             null);
     }
@@ -181,7 +179,7 @@ public class GenericQueryRequest extends AbstractCouchbaseRequest implements Que
      * @param statement the statement string.
      * @return a {@link GenericQueryRequest} for this full query.
      */
-    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, InetAddress targetNode, String contextId, String statement) {
+    public static GenericQueryRequest jsonQuery(String jsonQuery, String bucket, String username, String password, String targetNode, String contextId, String statement) {
         return new GenericQueryRequest(jsonQuery, true, bucket, username, password, targetNode, contextId,
             statement);
     }

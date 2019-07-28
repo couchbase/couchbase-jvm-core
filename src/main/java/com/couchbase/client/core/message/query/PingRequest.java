@@ -23,18 +23,17 @@ import com.couchbase.client.core.tracing.ThresholdLogReporter;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 
-import java.net.InetAddress;
 import java.net.SocketAddress;
 
 public class PingRequest
     extends AbstractCouchbaseRequest
     implements QueryRequest, PrelocatedRequest, DiagnosticRequest {
 
-    private final InetAddress sendTo;
+    private final String sendTo;
     private volatile SocketAddress local;
     private volatile SocketAddress remote;
 
-    public PingRequest(InetAddress sendTo, String bucket, String password) {
+    public PingRequest(String sendTo, String bucket, String password) {
         super(bucket, password);
         this.sendTo = sendTo;
     }
@@ -67,7 +66,7 @@ public class PingRequest
     }
 
     @Override
-    public InetAddress sendTo() {
+    public String sendTo() {
         return sendTo;
     }
 }
