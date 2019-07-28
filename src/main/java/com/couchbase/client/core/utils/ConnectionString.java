@@ -17,16 +17,18 @@
 package com.couchbase.client.core.utils;
 
 import com.couchbase.client.core.CouchbaseException;
-import com.couchbase.client.core.logging.CouchbaseLogger;
-import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.couchbase.client.core.logging.RedactableArgument.meta;
+import static com.couchbase.client.core.logging.RedactableArgument.system;
+import static com.couchbase.client.core.logging.RedactableArgument.user;
 
 /**
  * Implements a {@link ConnectionString}.
@@ -36,21 +38,17 @@ import java.util.regex.Pattern;
  */
 public class ConnectionString {
 
-    private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(ConnectionString.class);
-
     public static final String DEFAULT_SCHEME = "couchbase://";
 
     private final Scheme scheme;
-    private final List<InetSocketAddress> hosts;
-    private final List<InetSocketAddress> allHosts;
+    private final List<UnresolvedSocket> hosts;
     private final Map<String, String> params;
     private final String username;
 
     protected ConnectionString(final String input) {
         this.scheme = parseScheme(input);
         this.username = parseUser(input);
-        this.allHosts = parseHosts(input);
-        this.hosts = tryResolveHosts(this.allHosts);
+        this.hosts = parseHosts(input);
         this.params = parseParams(input);
     }
 
@@ -91,13 +89,13 @@ public class ConnectionString {
         }
     }
 
-    static List<InetSocketAddress> parseHosts(final String input) {
+    static List<UnresolvedSocket> parseHosts(final String input) {
         String schemeRemoved = input.replaceAll("\\w+://", "");
         String usernameRemoved = schemeRemoved.replaceAll(".*@", "");
         String paramsRemoved = usernameRemoved.replaceAll("\\?.*", "");
         String[] splitted = paramsRemoved.split(",");
 
-        List<InetSocketAddress> hosts = new ArrayList<InetSocketAddress>();
+        List<UnresolvedSocket> hosts = new ArrayList<>();
 
         Pattern ipv6pattern = Pattern.compile("^\\[(.+)]:(\\d+)$");
         for (int i = 0; i < splitted.length; i++) {
@@ -111,10 +109,10 @@ public class ConnectionString {
             if (singleHost.startsWith("[") && singleHost.endsWith("]")) {
                 // this is an ipv6 addr!
                 singleHost = singleHost.substring(1, singleHost.length() - 1);
-                hosts.add(new InetSocketAddress(singleHost, 0));
+                hosts.add(new UnresolvedSocket(singleHost, 0));
             } else if (matcher.matches()) {
                 // this is ipv6 with addr and port!
-                hosts.add(new InetSocketAddress(
+                hosts.add(new UnresolvedSocket(
                     matcher.group(1),
                     Integer.parseInt(matcher.group(2)))
                 );
@@ -122,27 +120,13 @@ public class ConnectionString {
                 // either ipv4 or a hostname
                 String[] parts = singleHost.split(":");
                 if (parts.length == 1) {
-                    hosts.add(new InetSocketAddress(parts[0], 0));
+                    hosts.add(new UnresolvedSocket(parts[0], 0));
                 } else {
-                    hosts.add(new InetSocketAddress(parts[0], Integer.parseInt(parts[1])));
+                    hosts.add(new UnresolvedSocket(parts[0], Integer.parseInt(parts[1])));
                 }
             }
         }
         return hosts;
-    }
-
-    //Make sure the address is resolvable
-    static List<InetSocketAddress> tryResolveHosts(final List<InetSocketAddress> hosts) {
-        List<InetSocketAddress> resolvableHosts = new ArrayList<InetSocketAddress>();
-        for (InetSocketAddress node : hosts) {
-            try {
-                node.getAddress().getHostAddress();
-                resolvableHosts.add(node);
-            } catch (NullPointerException ex) {
-                LOGGER.error("Unable to resolve address " + node.toString());
-            }
-        }
-        return resolvableHosts;
     }
 
     static Map<String, String> parseParams(final String input) {
@@ -176,7 +160,7 @@ public class ConnectionString {
      *
      * @return hosts
      */
-    public List<InetSocketAddress> hosts() {
+    public List<UnresolvedSocket> hosts() {
         return hosts;
     }
 
@@ -188,9 +172,10 @@ public class ConnectionString {
      * Get the list of all hosts set on the connection string.
      *
      * @return hosts
+     * @deprecated use {@link #hosts()}
      */
-    public List<InetSocketAddress> allHosts() {
-        return allHosts;
+    public List<UnresolvedSocket> allHosts() {
+        return hosts();
     }
 
     public enum Scheme {
@@ -203,10 +188,50 @@ public class ConnectionString {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ConnectionString{");
         sb.append("scheme=").append(scheme);
-        sb.append(", user=").append(username);
-        sb.append(", hosts=").append(hosts);
-        sb.append(", params=").append(params);
+        sb.append(", user=").append(user(username));
+        sb.append(", hosts=").append(system(hosts));
+        sb.append(", params=").append(meta(params));
         sb.append('}');
         return sb.toString();
+    }
+
+    public static class UnresolvedSocket {
+        private final String hostname;
+        private final int port;
+
+        UnresolvedSocket(String hostname, int port) {
+            this.hostname = hostname;
+            this.port = port;
+        }
+
+        public String hostname() {
+            return hostname;
+        }
+
+        public int port() {
+            return port;
+        }
+
+        @Override
+        public String toString() {
+            return "UnresolvedSocket{" +
+              "hostname='" + system(hostname) + '\'' +
+              ", port=" + system(port) +
+              '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            UnresolvedSocket that = (UnresolvedSocket) o;
+            return port == that.port &&
+              Objects.equals(hostname, that.hostname);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(hostname, port);
+        }
     }
 }
