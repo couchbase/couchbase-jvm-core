@@ -212,11 +212,8 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     @Override
     public boolean seedHosts(final Set<String> hosts, boolean shuffle) {
-        if (bootstrapped) {
-            LOGGER.debug("Seed hosts called with {}, but already bootstrapped.", hosts);
-            return false;
-        }
         LOGGER.debug("Setting seed hosts to {}", hosts);
+
         if (shuffle) {
             final List<String> hostsList = new ArrayList<>(hosts);
             Collections.shuffle(hostsList);
@@ -224,6 +221,7 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         } else {
             seedHosts = new LinkedHashSet<>(hosts);
         }
+
         return true;
     }
 
@@ -534,7 +532,27 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             }
         }
 
+        updateSeedHosts();
+
         configObservable.onNext(currentConfig);
+    }
+
+    /**
+     * Updates the seed hosts from the current config, so it is kept up-to-date as the config topology changes.
+     */
+    private void updateSeedHosts() {
+        ClusterConfig config = currentConfig;
+
+        Set<String> newSeedHosts = new HashSet<>();
+        for (BucketConfig bucketConfig : config.bucketConfigs().values()) {
+            for (NodeInfo nodeInfo : bucketConfig.nodes()) {
+                newSeedHosts.add(nodeInfo.hostname());
+            }
+        }
+
+        if (!newSeedHosts.isEmpty() && !seedHosts.equals(newSeedHosts)) {
+            seedHosts(newSeedHosts, true);
+        }
     }
 
     /**
