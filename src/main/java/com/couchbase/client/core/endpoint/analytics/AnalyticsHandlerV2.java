@@ -112,7 +112,7 @@ public class AnalyticsHandlerV2 extends AbstractGenericHandler<HttpObject, HttpR
             request.headers().add(HttpHeaders.Names.CONTENT_LENGTH, query.readableBytes());
             request.content().writeBytes(query);
             query.release();
-        } else if (msg instanceof com.couchbase.client.core.message.analytics.PingRequest || msg instanceof AnalyticsHandler.KeepAliveRequest
+        } else if (msg instanceof PingRequest || msg instanceof KeepAliveRequest
             || msg instanceof AnalyticsQueryResultRequest || msg instanceof AnalyticsQueryStatusRequest ) {
             request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, msg.path());
         } else {
