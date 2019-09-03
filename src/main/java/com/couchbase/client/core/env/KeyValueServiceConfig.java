@@ -53,6 +53,10 @@ public final class KeyValueServiceConfig extends AbstractServiceConfig {
         return new KeyValueServiceConfig(endpoints, endpoints);
     }
 
+    public static KeyValueServiceConfig create(final int endpointLow, final int endpointHigh) {
+        return new KeyValueServiceConfig(endpointLow, endpointHigh);
+    }
+    
     @Override
     public String toString() {
         return "KeyValueServiceConfig{" +
