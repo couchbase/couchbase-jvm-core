@@ -31,6 +31,7 @@ import com.couchbase.client.core.event.system.BucketOpenedEvent;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.service.ServiceType;
 import com.couchbase.client.core.utils.DefaultObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import rx.Observable;
@@ -539,6 +540,9 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     /**
      * Updates the seed hosts from the current config, so it is kept up-to-date as the config topology changes.
+     *
+     * <p>Note that only nodes with the KV service are added to the seed nodes since otherwise it might end up
+     * trying to bootstrap from non-kv nodes which is not recommended in the first place (although not harmful).</p>
      */
     private void updateSeedHosts() {
         ClusterConfig config = currentConfig;
@@ -546,7 +550,10 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
         Set<String> newSeedHosts = new HashSet<>();
         for (BucketConfig bucketConfig : config.bucketConfigs().values()) {
             for (NodeInfo nodeInfo : bucketConfig.nodes()) {
-                newSeedHosts.add(nodeInfo.hostname());
+                if (nodeInfo.services().containsKey(ServiceType.BINARY) ||
+                    nodeInfo.sslServices().containsKey(ServiceType.BINARY)) {
+                    newSeedHosts.add(nodeInfo.hostname());
+                }
             }
         }
 
