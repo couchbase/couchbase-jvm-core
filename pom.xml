@@ -29,11 +29,16 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <native.folder>${project.build.directory}/native</native.folder>
-        <native.original>libnetty_transport_native_epoll_x86_64.so</native.original>
-        <native.renamed>libcom_couchbase_client_deps_netty_transport_native_epoll_x86_64.so</native.renamed>
+        <nativetcantive.original>libnetty_tcnative.so</nativetcantive.original>
+        <nativetcantive.renamed>libcom_couchbase_client_deps_netty_tcnative.so</nativetcantive.renamed>
+        <nativetcantiveosx.original>libnetty_tcnative.jnilib</nativetcantiveosx.original>
+        <nativetcantiveosx.renamed>libcom_couchbase_client_deps_netty_tcnative.jnilib</nativetcantiveosx.renamed>
+        <nativeepoll.original>libnetty_transport_native_epoll_x86_64.so</nativeepoll.original>
+        <nativeepoll.renamed>libcom_couchbase_client_deps_netty_transport_native_epoll_x86_64.so</nativeepoll.renamed>
         <rxjava.version>1.3.8</rxjava.version>
         <opentracing.version>0.31.0</opentracing.version>
         <netty.version>4.0.56.Final</netty.version>
+        <tcnative.version>2.0.10.Final</tcnative.version>
         <disruptor.version>3.4.2</disruptor.version>
         <jackson.version>2.9.9.3</jackson.version>
         <snappy.version>0.4</snappy.version>
@@ -113,6 +118,13 @@
             <groupId>io.opentracing</groupId>
             <artifactId>opentracing-api</artifactId>
             <version>${opentracing.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>${tcnative.version}</version>
+            <classifier>${os.detected.classifier}</classifier>
         </dependency>
 
         <!-- Shaded, Required Dependencies -->
@@ -281,7 +293,51 @@
                 <version>2.10</version>
                 <executions>
                     <execution>
-                        <id>unpack</id>
+                        <id>unpackboringssl</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.netty</groupId>
+                                    <artifactId>netty-tcnative-boringssl-static</artifactId>
+                                    <classifier>${os.detected.classifier}</classifier>
+                                    <outputDirectory>${native.folder}</outputDirectory>
+                                    <includes>META-INF/native/libnetty_tcnative.so</includes>
+                                </artifactItem>
+                            </artifactItems>
+                            <includes>META-INF/native/libnetty_tcnative.so</includes>
+                            <outputDirectory>${native.folder}</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>unpackboringssl_osx</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.netty</groupId>
+                                    <artifactId>netty-tcnative-boringssl-static</artifactId>
+                                    <classifier>${os.detected.classifier}</classifier>
+                                    <outputDirectory>${native.folder}</outputDirectory>
+                                    <includes>META-INF/native/libnetty_tcnative.jnilib</includes>
+                                </artifactItem>
+                            </artifactItems>
+                            <includes>META-INF/native/libnetty_tcnative.jnilib</includes>
+                            <outputDirectory>${native.folder}</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>unpackepoll</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>unpack</goal>
@@ -314,7 +370,9 @@
                         <filter>
                             <artifact>*:*</artifact>
                             <excludes>
-                                <exclude>META-INF/native/${native.original}</exclude>
+                                <exclude>META-INF/native/${nativeepoll.original}</exclude>
+                                <exclude>META-INF/native/${nativetcantive.original}</exclude>
+                                <exclude>META-INF/native/${nativetcantiveosx.original}</exclude>
                             </excludes>
                         </filter>
                     </filters>
@@ -322,10 +380,17 @@
                         <!-- Netty Native: with the unpacked .so (see unpack config), rename
                              it so it has the shaded namespace -->
                         <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                            <file>${native.folder}/META-INF/native/${native.original}</file>
-                            <resource>META-INF/native/${native.renamed}</resource>
+                            <file>${native.folder}/META-INF/native/${nativeepoll.original}</file>
+                            <resource>META-INF/native/${nativeepoll.renamed}</resource>
                         </transformer>
-
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                            <file>${native.folder}/META-INF/native/${nativetcantive.original}</file>
+                            <resource>META-INF/native/${nativetcantive.renamed}</resource>
+                        </transformer>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                            <file>${native.folder}/META-INF/native/${nativetcantiveosx.original}</file>
+                            <resource>META-INF/native/${nativetcantiveosx.renamed}</resource>
+                        </transformer>
                     </transformers>
                     <artifactSet>
                         <excludes>
@@ -483,6 +548,13 @@
                 </executions>
             </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.6.0</version>
+            </extension>
+        </extensions>
 
         <resources>
             <resource>

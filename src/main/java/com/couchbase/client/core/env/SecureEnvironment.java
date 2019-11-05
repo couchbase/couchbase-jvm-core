@@ -105,4 +105,10 @@ public interface SecureEnvironment {
      */
     KeyStore sslTruststore();
 
+    /**
+     * Whether to use openSSL stack.
+     * @return
+     */
+    boolean openSslEnabled();
+
 }

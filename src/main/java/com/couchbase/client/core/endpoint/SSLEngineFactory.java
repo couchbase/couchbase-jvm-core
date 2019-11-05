@@ -19,6 +19,12 @@ import com.couchbase.client.core.env.SecureEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.ssl.OpenSsl;
+import io.netty.handler.ssl.OpenSslEngine;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -81,6 +87,29 @@ public class SSLEngineFactory {
     }
 
     /**
+     * Unlike the java SDK where we can set the protocol to be TLS to support all versions of TLS (TLSv1, TLSv1.1, TLv1.2)
+     * we cannot use this for the OpenSSL Engine.
+     * To keep the property com.couchbase.sslProtocol consistent with the JAVA SDK world, if the user specifies TLS we
+     * explicitly return all three versions to be set on the OpenSSL Stack.
+     * If a explicit version is specified, then we use the one provided by the user.
+     * @return a array of TLS enabled protocols to be used for OpenSSL based on the sslContextProtocol variable.
+     */
+    private String[] getTLSProtocolsBasedOnSSLContextForOpenSSL() {
+        if (!sslContextProtocol.startsWith("TLS")) {
+            throw new IllegalArgumentException(
+                "SSLContext Protocol does not start with TLS, this is to prevent "
+                    + "insecure protocols (Like SSL*) to be used. Potential candidates "
+                    + "are TLS (default), TLSv1, TLSv1.1, TLSv1.2, TLSv1.3 depending on "
+                    + "the Java version used.");
+        }
+
+        if(sslContextProtocol.equals("TLS")) {
+            return new String[] {"TLSv1", "TLSv1.1", "TLSv1.2"};
+        }
+        return new String[] { sslContextProtocol };
+    }
+
+    /**
      * Returns a new {@link SSLEngine} constructed from the config settings.
      *
      * @return a {@link SSLEngine} ready to be used.
@@ -128,6 +157,13 @@ public class SSLEngineFactory {
             kmf.init(ks, password);
             tmf.init(ts);
 
+            /**
+             * Restrict protocol to only TLS and not use older SSL insecure protocols.
+             * Unfortunately, given the netty version we are using it's impossible to disable SSL if we are using
+             * the OpenSSL Stack.
+             * https://github.com/netty/netty/issues/7935 documents the bug. Until the netty version is updated,
+             * this limitation will remain when using openSSL.
+             */
             if (!sslContextProtocol.startsWith("TLS")) {
                 throw new IllegalArgumentException(
                     "SSLContext Protocol does not start with TLS, this is to prevent "
@@ -135,10 +171,38 @@ public class SSLEngineFactory {
                         + "are TLS (default), TLSv1, TLSv1.1, TLSv1.2, TLSv1.3 depending on "
                         + "the Java version used.");
             }
-            SSLContext ctx = SSLContext.getInstance(sslContextProtocol);
-            ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
-            SSLEngine engine = ctx.createSSLEngine();
+            SSLEngine engine = null;
+            //Enable OpenSSL if available and configured.
+            if(env.openSslEnabled() && OpenSsl.isAvailable()) {
+                try {
+                    SslContext ctx =
+                        SslContextBuilder.forClient().keyManager(kmf).trustManager(tmf)
+                            .protocols(getTLSProtocolsBasedOnSSLContextForOpenSSL()).build();
+                    engine = ctx.newEngine(ByteBufAllocator.DEFAULT);
+                }
+                catch (Exception e) {
+                    //Opening a OpenSSL based provider encountered an exception. We revert to the JDK implementation
+                    LOGGER.warn("Failed to enable Open SSL in the client stack. Encountered Exception {}."
+                        + "Reverting to JDK implementation", e);
+                    engine = null;
+                }
+            }
+
+            if(null == engine) {
+                SSLContext ctx;
+                ctx = SSLContext.getInstance(sslContextProtocol);
+                ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+                engine = ctx.createSSLEngine();
+            }
+
+            if(engine instanceof OpenSslEngine){
+                LOGGER.info("CouchBase Client is now Using OpenSSL");
+            }
+            else{
+                LOGGER.info("CouchBase Client is using the Default JDK implementation");
+            }
+
             engine.setUseClientMode(true);
             return engine;
         } catch (Exception ex) {

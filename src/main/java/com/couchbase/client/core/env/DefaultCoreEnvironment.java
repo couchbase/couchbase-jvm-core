@@ -78,6 +78,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CoreEnvironment.class);
 
     public static final boolean SSL_ENABLED = false;
+    public static final boolean OPENSSL_ENABLED = false;
     public static final String SSL_KEYSTORE_FILE = null;
     public static final String SSL_TRUSTSTORE_FILE = null;
     public static final String SSL_KEYSTORE_PASSWORD = null;
@@ -289,6 +290,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
 
     private final boolean orphanResponseReportingEnabled;
     private final OrphanResponseReporter orphanResponseReporter;
+    private final boolean openSslEnabled;
 
     protected DefaultCoreEnvironment(final Builder builder) {
         boolean emitEnvWarnMessage = false;
@@ -299,6 +301,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         }
 
         sslEnabled = booleanPropertyOr("sslEnabled", builder.sslEnabled);
+        openSslEnabled = booleanPropertyOr("openSslEnabled", builder.openSslEnabled);
         sslKeystoreFile = stringPropertyOr("sslKeystoreFile", builder.sslKeystoreFile);
         sslTruststoreFile = stringPropertyOr("sslTruststoreFile", builder.sslTruststoreFile);
         sslKeystorePassword = stringPropertyOr("sslKeystorePassword", builder.sslKeystorePassword);
@@ -755,6 +758,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public boolean openSslEnabled() {
+        return openSslEnabled;
+    }
+
+    @Override
     public String sslKeystoreFile() {
         return sslKeystoreFile;
     }
@@ -1124,6 +1132,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     public static class Builder<SELF extends Builder<SELF>> {
 
         private boolean sslEnabled = SSL_ENABLED;
+        private boolean openSslEnabled = OPENSSL_ENABLED;
         private String sslKeystoreFile = SSL_KEYSTORE_FILE;
         private String sslTruststoreFile = SSL_TRUSTSTORE_FILE;
         private String sslKeystorePassword = SSL_KEYSTORE_PASSWORD;
@@ -1219,6 +1228,15 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public SELF sslEnabled(final boolean sslEnabled) {
             this.sslEnabled = sslEnabled;
+            return self();
+        }
+
+        /**
+         * Set if we want to use the OpenSSL Client Library instead of Java SDK
+         * Set only if sslEnabled = true.
+         */
+        public SELF openSslEnabled(final boolean openSslEnabled) {
+            this.openSslEnabled = openSslEnabled;
             return self();
         }
 
@@ -2058,6 +2076,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
      */
     protected StringBuilder dumpParameters(StringBuilder sb) {
         sb.append("sslEnabled=").append(sslEnabled);
+        sb.append(", openSslEnabled=").append(openSslEnabled);
         sb.append(", sslKeystoreFile='").append(sslKeystoreFile).append('\'');
         sb.append(", sslTruststoreFile='").append(sslTruststoreFile).append('\'');
         sb.append(", sslKeystorePassword=").append(sslKeystorePassword != null && !sslKeystorePassword.isEmpty());
