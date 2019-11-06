@@ -287,7 +287,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         if (sentRequestQueue.size() < sentQueueLimit) {
             super.write(ctx, msg, promise);
         } else {
-            LOGGER.debug("Rescheduling {} because sentRequestQueueLimit reached.", msg);
+            LOGGER.warn("Rescheduling {} because sentRequestQueueLimit reached.", msg);
             RetryHelper.retryOrCancel(env(), (CouchbaseRequest) msg, responseBuffer);
         }
     }
