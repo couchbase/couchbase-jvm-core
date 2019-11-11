@@ -78,6 +78,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(CoreEnvironment.class);
 
     public static final boolean SSL_ENABLED = false;
+    public static final boolean SSL_HOSTNAME_VERIFICATION_ENABLED = false;
     public static final String SSL_KEYSTORE_FILE = null;
     public static final String SSL_TRUSTSTORE_FILE = null;
     public static final String SSL_KEYSTORE_PASSWORD = null;
@@ -204,6 +205,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     private final String sslTruststorePassword;
     private final KeyStore sslKeystore;
     private final KeyStore sslTruststore;
+    private final boolean sslHostnameVerificationEnabled;
     private final boolean bootstrapHttpEnabled;
     private final boolean bootstrapCarrierEnabled;
     private final int bootstrapHttpDirectPort;
@@ -303,6 +305,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sslTruststoreFile = stringPropertyOr("sslTruststoreFile", builder.sslTruststoreFile);
         sslKeystorePassword = stringPropertyOr("sslKeystorePassword", builder.sslKeystorePassword);
         sslTruststorePassword = stringPropertyOr("sslTruststorePassword", builder.sslTruststorePassword);
+        sslHostnameVerificationEnabled = booleanPropertyOr("sslHostnameVerificationEnabled", builder.sslHostnameVerificationEnabled);
         bootstrapHttpEnabled = booleanPropertyOr("bootstrapHttpEnabled", builder.bootstrapHttpEnabled);
         bootstrapHttpDirectPort = intPropertyOr("bootstrapHttpDirectPort", builder.bootstrapHttpDirectPort);
         bootstrapHttpSslPort = intPropertyOr("bootstrapHttpSslPort", builder.bootstrapHttpSslPort);
@@ -785,6 +788,11 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
     }
 
     @Override
+    public boolean sslHostnameVerificationEnabled() {
+        return sslHostnameVerificationEnabled;
+    }
+
+    @Override
     public boolean bootstrapHttpEnabled() {
         return bootstrapHttpEnabled;
     }
@@ -1130,6 +1138,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         private String sslTruststorePassword = SSL_TRUSTSTORE_PASSWORD;
         private KeyStore sslKeystore = SSL_KEYSTORE;
         private KeyStore sslTruststore = SSL_TRUSTSTORE;
+        private boolean sslHostnameVerificationEnabled = SSL_HOSTNAME_VERIFICATION_ENABLED;
         private String userAgent = USER_AGENT;
         private String packageNameAndVersion = PACKAGE_NAME_AND_VERSION;
         private boolean bootstrapHttpEnabled = BOOTSTRAP_HTTP_ENABLED;
@@ -1301,6 +1310,16 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
          */
         public SELF sslTruststore(final KeyStore sslTruststore) {
             this.sslTruststore = sslTruststore;
+            return self();
+        }
+
+        /**
+         * Allows to enable SSL hostname verification.
+         *
+         * @param sslHostnameVerificationEnabled true if it should be enabled.
+         */
+        public SELF sslHostnameVerificationEnabled(final boolean sslHostnameVerificationEnabled) {
+            this.sslHostnameVerificationEnabled = sslHostnameVerificationEnabled;
             return self();
         }
 
@@ -2064,6 +2083,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
         sb.append(", sslTruststorePassword=").append(sslTruststorePassword != null && !sslTruststorePassword.isEmpty());
         sb.append(", sslKeystore=").append(sslKeystore);
         sb.append(", sslTruststore=").append(sslTruststore);
+        sb.append(", sslHostnameVerificationEnabled=").append(sslHostnameVerificationEnabled);
         sb.append(", bootstrapHttpEnabled=").append(bootstrapHttpEnabled);
         sb.append(", bootstrapCarrierEnabled=").append(bootstrapCarrierEnabled);
         sb.append(", bootstrapHttpDirectPort=").append(bootstrapHttpDirectPort);

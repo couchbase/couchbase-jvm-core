@@ -105,4 +105,11 @@ public interface SecureEnvironment {
      */
     KeyStore sslTruststore();
 
+    /**
+     * If set to true, hostname verification is enabled.
+     *
+     * @return true if enabled.
+     */
+    boolean sslHostnameVerificationEnabled();
+
 }

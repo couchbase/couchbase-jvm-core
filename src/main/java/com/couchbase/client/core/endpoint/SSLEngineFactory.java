@@ -22,6 +22,7 @@ import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.security.KeyStore;
@@ -140,6 +141,12 @@ public class SSLEngineFactory {
 
             SSLEngine engine = ctx.createSSLEngine();
             engine.setUseClientMode(true);
+
+            if (env.sslHostnameVerificationEnabled()) {
+                SSLParameters sslParameters = engine.getSSLParameters();
+                sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                engine.setSSLParameters(sslParameters);
+            }
             return engine;
         } catch (Exception ex) {
             throw new SSLException("Could not create SSLEngine.", ex);
