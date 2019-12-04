@@ -220,7 +220,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -234,7 +234,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <configuration>
                     <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -252,7 +252,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -265,6 +265,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <source>7</source>
                     <links>
                         <link>http://reactivex.io/RxJava/javadoc/</link>
                         <link>http://fasterxml.github.io/jackson-databind/javadoc/2.9/</link>
@@ -278,7 +279,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.10</version>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <id>unpack</id>
@@ -307,7 +308,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.1</version>
+                <version>3.2.1</version>
                 <configuration>
                     <filters>
                         <!-- Netty Native: avoid putting the original .so in the shaded jar -->
@@ -390,7 +391,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>4.1.0</version>
+                <version>4.2.1</version>
                 <extensions>true</extensions>
                 <configuration>
                     <manifestLocation>META-INF</manifestLocation>
@@ -420,7 +421,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.8.1</version>
                 <configuration>
                     <source>${java-compat.version}</source>
                     <target>${java-compat.version}</target>
@@ -430,7 +431,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.9.1</version>
+                <version>1.12</version>
                 <executions>
                     <execution>
                         <id>add-integration-test-source-as-test-sources</id>
@@ -451,7 +452,7 @@
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
-                <version>2.2.0</version>
+                <version>4.0.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -464,7 +465,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
-                <version>1.16</version>
+                <version>1.18</version>
                 <configuration>
                     <signature>
                         <groupId>org.codehaus.mojo.signature</groupId>
@@ -546,7 +547,7 @@
         <profile>
             <id>CI</id>
             <properties>
-                <test-source-directory>src/integration/jave</test-source-directory>
+                <test-source-directory>src/integration/java</test-source-directory>
             </properties>
             <build>
                 <plugins>
