@@ -279,7 +279,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         );
         LOGGER.debug("Using a connectCallbackGracePeriod of {} on Endpoint {}:{}", connectCallbackGracePeriod,
             hostname, port);
-        this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env) : null;
+        this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env, hostname, port) : null;
         bootstrap = createBootstrap(hostname, port);
     }
 

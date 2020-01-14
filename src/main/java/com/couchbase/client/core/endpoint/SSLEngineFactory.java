@@ -62,12 +62,22 @@ public class SSLEngineFactory {
     private final String sslContextProtocol;
 
     /**
+     * The remote hostname to use (for hostname verification).
+     */
+    private final String hostname;
+
+    /**
+     * The remote port to use (for hostname verification).
+     */
+    private final int port;
+
+    /**
      * Create a new engine factory.
      *
      * @param env the config environment.
      */
-    public SSLEngineFactory(SecureEnvironment env) {
-        this(env, SSL_CONTEXT_PROTOCOL.trim());
+    public SSLEngineFactory(SecureEnvironment env, String hostname, int port) {
+        this(env, SSL_CONTEXT_PROTOCOL.trim(), hostname, port);
     }
 
     /**
@@ -76,9 +86,11 @@ public class SSLEngineFactory {
      * @param env the config environment.
      * @param sslContextProtocol the ssl context protocol used.
      */
-    SSLEngineFactory(SecureEnvironment env, String sslContextProtocol) {
+    SSLEngineFactory(SecureEnvironment env, String sslContextProtocol, String hostname, int port) {
         this.env = env;
         this.sslContextProtocol = sslContextProtocol;
+        this.hostname = hostname;
+        this.port = port;
     }
 
     /**
@@ -139,7 +151,7 @@ public class SSLEngineFactory {
             SSLContext ctx = SSLContext.getInstance(sslContextProtocol);
             ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
-            SSLEngine engine = ctx.createSSLEngine();
+            SSLEngine engine = ctx.createSSLEngine(hostname, port);
             engine.setUseClientMode(true);
 
             if (env.sslHostnameVerificationEnabled()) {

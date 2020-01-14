@@ -34,10 +34,13 @@ import static org.mockito.Mockito.when;
  */
 public class SSLEngineFactoryTest {
 
+    private final String hostname = "127.0.0.1";
+    private final int port = 1234;
+
     @Test(expected = SSLException.class)
     public void shouldFailOnEmptyKeystoreFile() {
         CoreEnvironment environment = mock(CoreEnvironment.class);
-        SSLEngineFactory factory = new SSLEngineFactory(environment);
+        SSLEngineFactory factory = new SSLEngineFactory(environment, hostname, port);
         factory.get();
     }
 
@@ -46,7 +49,7 @@ public class SSLEngineFactoryTest {
         CoreEnvironment environment = mock(CoreEnvironment.class);
         when(environment.sslKeystoreFile()).thenReturn("somefile");
 
-        SSLEngineFactory factory = new SSLEngineFactory(environment);
+        SSLEngineFactory factory = new SSLEngineFactory(environment, hostname, port);
         factory.get();
     }
 
@@ -56,7 +59,7 @@ public class SSLEngineFactoryTest {
         when(environment.sslKeystoreFile()).thenReturn(getKeystorePath());
         when(environment.sslKeystorePassword()).thenReturn("keystore");
 
-        SSLEngineFactory factory = new SSLEngineFactory(environment);
+        SSLEngineFactory factory = new SSLEngineFactory(environment, hostname, port);
         SSLEngine engine = factory.get();
         assertTrue(engine.getUseClientMode());
     }
@@ -67,7 +70,7 @@ public class SSLEngineFactoryTest {
         when(environment.sslKeystoreFile()).thenReturn(getKeystorePath());
         when(environment.sslKeystorePassword()).thenReturn("keystore");
 
-        SSLEngineFactory factory = new SSLEngineFactory(environment, "SSLv3");
+        SSLEngineFactory factory = new SSLEngineFactory(environment, "SSLv3", hostname, port);
         factory.get();
     }
 
