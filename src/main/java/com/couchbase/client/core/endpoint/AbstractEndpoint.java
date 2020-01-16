@@ -305,7 +305,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
 
         boolean tcpNodelay = environment().tcpNodelayEnabled();
         return new BootstrapAdapter(new Bootstrap()
-            .remoteAddress(hostname, port)
             .group(ioPool)
             .channel(channelClass)
             .option(ChannelOption.ALLOCATOR, allocator)
@@ -372,6 +371,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         Single.create(new Single.OnSubscribe<ChannelFuture>() {
             @Override
             public void call(final SingleSubscriber<? super ChannelFuture> ss) {
+                // We need to re-set the same remote address each time so that it gets re-resolved and not cached,
+                // This will help solve DNS updates and makes sure that the SDK picks them up on a subsequent
+                // reconnect attempt.
+                bootstrap.remoteAddress(hostname, port);
                 bootstrap.connect().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture cf) throws Exception {

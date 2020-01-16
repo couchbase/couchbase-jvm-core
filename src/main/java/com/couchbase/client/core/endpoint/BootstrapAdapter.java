@@ -50,4 +50,9 @@ public class BootstrapAdapter {
         return bootstrap.connect();
     }
 
+    public BootstrapAdapter remoteAddress(String hostname, int port) {
+        bootstrap.remoteAddress(hostname, port);
+        return this;
+    }
+
 }
