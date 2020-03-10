@@ -34,4 +34,6 @@ public interface MemcacheContent extends MemcacheObject, ByteBufHolder {
     @Override
     MemcacheContent duplicate();
 
+    @Override
+    MemcacheContent retain();
 }

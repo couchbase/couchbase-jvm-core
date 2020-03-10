@@ -63,4 +63,16 @@ public class RemoveDesignDocumentResponse extends AbstractCouchbaseResponse impl
     public boolean release(int decrement) {
         return content.release(decrement);
     }
+
+    @Override
+    public RemoveDesignDocumentResponse touch() {
+        content.touch();
+        return this;
+    }
+
+    @Override
+    public RemoveDesignDocumentResponse touch(Object hint) {
+        content.touch(hint);
+        return this;
+    }
 }

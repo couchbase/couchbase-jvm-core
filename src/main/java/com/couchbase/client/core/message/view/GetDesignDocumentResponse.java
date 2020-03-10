@@ -75,4 +75,16 @@ public class GetDesignDocumentResponse extends AbstractCouchbaseResponse impleme
     public boolean release(int decrement) {
         return content.release(decrement);
     }
+
+    @Override
+    public GetDesignDocumentResponse touch() {
+        content.touch();
+        return this;
+    }
+
+    @Override
+    public GetDesignDocumentResponse touch(Object hint) {
+        content.touch(hint);
+        return this;
+    }
 }
