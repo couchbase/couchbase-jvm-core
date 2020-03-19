@@ -176,10 +176,8 @@ public class ObserveViaCAS {
                                         public void call() {
                                             // termination may not be triggered if
                                             // early unsubscribed for some reason.
-                                            if (env.operationTracingEnabled() && parent != null) {
-                                                env.tracer().scopeManager()
-                                                    .activate(activeReq.span())
-                                                    .close();
+                                            if (env.operationTracingEnabled() && activeReq.span() != null) {
+                                                activeReq.span().finish();
                                             }
                                         }
                                     });
@@ -204,10 +202,8 @@ public class ObserveViaCAS {
                                             .doOnUnsubscribe(new Action0() {
                                                 @Override
                                                 public void call() {
-                                                    if (env.operationTracingEnabled() && parent != null) {
-                                                        env.tracer().scopeManager()
-                                                            .activate(replReq.span())
-                                                            .close();
+                                                    if (env.operationTracingEnabled() && replReq.span() != null) {
+                                                        replReq.span().finish();
                                                     }
                                                 }
                                             });

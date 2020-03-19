@@ -263,9 +263,7 @@ public class YasjlAnalyticsResponseParser {
 
                         if (currentRequest.span() != null) {
                             if (env.operationTracingEnabled()) {
-                                env.tracer().scopeManager()
-                                        .activate(response.request().span())
-                                        .close();
+                                currentRequest.span().finish();
                             }
                         }
                     }

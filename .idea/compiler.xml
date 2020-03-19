@@ -19,8 +19,5 @@
         <module name="core-io" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="core-io" target="1.7" />
-    </bytecodeTargetLevel>
   </component>
 </project>

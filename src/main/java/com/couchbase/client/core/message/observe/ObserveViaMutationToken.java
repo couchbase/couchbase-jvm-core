@@ -35,7 +35,6 @@ import com.couchbase.client.core.message.kv.NoFailoverObserveSeqnoResponse;
 import com.couchbase.client.core.message.kv.ObserveSeqnoRequest;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import rx.Observable;
 import rx.functions.Action0;
@@ -179,10 +178,8 @@ public class ObserveViaMutationToken {
                                     public void call() {
                                         // termination may not be triggered if
                                         // early unsubscribed for some reason.
-                                        if (env.operationTracingEnabled() && parent != null) {
-                                            env.tracer().scopeManager()
-                                                .activate(activeReq.span())
-                                                .close();
+                                        if (env.operationTracingEnabled() && activeReq.span() != null) {
+                                            activeReq.span().finish();
                                         }
                                     }
                                 });
@@ -208,10 +205,8 @@ public class ObserveViaMutationToken {
                                             public void call() {
                                                 // termination may not be triggered if
                                                 // early unsubscribed for some reason.
-                                                if (env.operationTracingEnabled() && parent != null) {
-                                                    env.tracer().scopeManager()
-                                                        .activate(replReq.span())
-                                                        .close();
+                                                if (env.operationTracingEnabled() && replReq.span() != null) {
+                                                    replReq.span().finish();
                                                 }
                                             }
                                         });

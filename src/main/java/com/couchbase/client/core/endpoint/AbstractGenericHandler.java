@@ -342,9 +342,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
                 }
 
                 if (currentDispatchSpan != null) {
-                    env().tracer().scopeManager()
-                        .activate(currentDispatchSpan)
-                        .close();
+                    currentDispatchSpan.finish();
                     if (currentDispatchSpan instanceof ThresholdLogSpan) {
                         currentDispatchSpan.setBaggageItem(
                             ThresholdLogReporter.KEY_DISPATCH_MICROS,
@@ -493,10 +491,8 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         if (request != null && !request.isActive()) {
             if (env().operationTracingEnabled() && request.span() != null) {
                 Span span = request.span();
-                Scope scope = env().tracer().scopeManager()
-                        .activate(span);
                 span.setBaggageItem("couchbase.orphan", "true");
-                scope.close();
+                span.finish();
             }
             if (env().orphanResponseReportingEnabled()) {
                 env().orphanResponseReporter().report(response);
