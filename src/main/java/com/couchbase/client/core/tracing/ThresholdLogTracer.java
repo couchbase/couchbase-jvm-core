@@ -22,8 +22,7 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
-
-import java.util.concurrent.TimeUnit;
+import io.opentracing.util.ThreadLocalScopeManager;
 
 /**
  * This {@link Tracer} implementation logs operations over a certain threshold based
@@ -37,7 +36,7 @@ public class ThresholdLogTracer implements Tracer {
     /**
      * The {@link ScopeManager} used.
      */
-    private final ThresholdLogScopeManager scopeManager;
+    private final ScopeManager scopeManager;
 
     /**
      * The Reporter used.
@@ -73,7 +72,7 @@ public class ThresholdLogTracer implements Tracer {
      * @param reporter the log reporter to use.
      */
     private ThresholdLogTracer(final ThresholdLogReporter reporter) {
-        this.scopeManager = new ThresholdLogScopeManager();
+        this.scopeManager = new ThreadLocalScopeManager();
         this.reporter = reporter;
     }
 
@@ -84,8 +83,12 @@ public class ThresholdLogTracer implements Tracer {
 
     @Override
     public Span activeSpan() {
-        Scope scope = scopeManager.active();
-        return scope == null ? null : scope.span();
+        return scopeManager.activeSpan();
+    }
+
+    @Override
+    public Scope activateSpan(Span span) {
+        return scopeManager.activate(span);
     }
 
     @Override
@@ -101,6 +104,11 @@ public class ThresholdLogTracer implements Tracer {
     @Override
     public <C> SpanContext extract(Format<C> format, C carrier) {
         throw new UnsupportedOperationException("Not supported by the " + getClass().getSimpleName());
+    }
+
+    @Override
+    public void close() {
+
     }
 
     /**

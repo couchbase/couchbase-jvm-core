@@ -19,10 +19,11 @@ package com.couchbase.client.core.tracing;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import io.opentracing.References;
-import io.opentracing.Scope;
+import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.tag.Tag;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +50,10 @@ public class ThresholdLogSpanBuilder implements Tracer.SpanBuilder {
     private ThresholdLogReference followRef;
     private long startTimeMicroseconds;
 
-    private final ThresholdLogScopeManager scopeManager;
+    private final ScopeManager scopeManager;
 
     ThresholdLogSpanBuilder(final ThresholdLogTracer tracer, final String operationName,
-        final ThresholdLogScopeManager scopeManager) {
+        final ScopeManager scopeManager) {
         this.tracer = tracer;
         this.scopeManager = scopeManager;
         this.operationName = operationName;
@@ -116,19 +117,15 @@ public class ThresholdLogSpanBuilder implements Tracer.SpanBuilder {
     }
 
     @Override
-    public ThresholdLogSpanBuilder withStartTimestamp(final long microseconds) {
-        this.startTimeMicroseconds = microseconds;
+    public <T> Tracer.SpanBuilder withTag(Tag<T> tag, T t) {
+        tags.put(tag.getKey(), t);
         return this;
     }
 
     @Override
-    public Scope startActive(final boolean finishSpanOnClose) {
-        return scopeManager.activate(start(), finishSpanOnClose);
-    }
-
-    @Override
-    public Span startManual() {
-        return start();
+    public ThresholdLogSpanBuilder withStartTimestamp(final long microseconds) {
+        this.startTimeMicroseconds = microseconds;
+        return this;
     }
 
     @Override
@@ -136,8 +133,8 @@ public class ThresholdLogSpanBuilder implements Tracer.SpanBuilder {
         ThresholdLogSpanContext context;
 
         // Check if active span should be established as CHILD_OF relationship
-        if (parentRef == null && !ignoreActiveSpan && null != scopeManager.active()) {
-            asChildOf(scopeManager.active().span());
+        if (parentRef == null && !ignoreActiveSpan && null != scopeManager.activeSpan()) {
+            asChildOf(scopeManager.activeSpan());
         }
 
         if (parentRef != null) {

@@ -260,7 +260,7 @@ public class YasjlQueryResponseParser {
                         if (currentRequest.span() != null) {
                             if (env.operationTracingEnabled()) {
                                 env.tracer().scopeManager()
-                                    .activate(response.request().span(), true)
+                                    .activate(response.request().span())
                                     .close();
                             }
                         }

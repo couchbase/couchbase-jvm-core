@@ -167,13 +167,12 @@ public class ObserveViaMutationToken {
                                 final ObserveSeqnoRequest activeReq = new ObserveSeqnoRequest(token.vbucketUUID(), true, (short) 0, id, bucket, cas);
                                 final CoreEnvironment env = core.ctx().environment();
                                 if (env.operationTracingEnabled() && parent != null) {
-                                    Scope scope = env.tracer()
+                                    Span span = env.tracer()
                                         .buildSpan("observe_seqno")
                                         .asChildOf(parent)
                                         .withTag("couchbase.active", true)
-                                        .startActive(false);
-                                    activeReq.span(scope.span(), env);
-                                    scope.close();
+                                        .start();
+                                    activeReq.span(span, env);
                                 }
                                 Observable<CouchbaseResponse> masterRes = core.<CouchbaseResponse>send(activeReq).doOnUnsubscribe(new Action0() {
                                     @Override
@@ -182,9 +181,10 @@ public class ObserveViaMutationToken {
                                         // early unsubscribed for some reason.
                                         if (env.operationTracingEnabled() && parent != null) {
                                             env.tracer().scopeManager()
-                                                .activate(activeReq.span(), true)
+                                                .activate(activeReq.span())
                                                 .close();
-                                        }                                        }
+                                        }
+                                    }
                                 });
                                 if (swallowErrors) {
                                     obs.add(masterRes.onErrorResumeNext(Observable.<CouchbaseResponse>empty()));
@@ -196,13 +196,12 @@ public class ObserveViaMutationToken {
                                     for (short i = 1; i <= replicas; i++) {
                                         final ObserveSeqnoRequest replReq = new ObserveSeqnoRequest(token.vbucketUUID(), false, i, id, bucket, cas);
                                         if (env.operationTracingEnabled() && parent != null) {
-                                            Scope scope = env.tracer()
+                                            Span span = env.tracer()
                                                 .buildSpan("observe_seqno")
                                                 .asChildOf(parent)
                                                 .withTag("couchbase.active", false)
-                                                .startActive(false);
-                                            replReq.span(scope.span(), env);
-                                            scope.close();
+                                                .start();
+                                            replReq.span(span, env);
                                         }
                                         Observable<CouchbaseResponse> res = core.send(replReq).doOnUnsubscribe(new Action0() {
                                             @Override
@@ -211,7 +210,7 @@ public class ObserveViaMutationToken {
                                                 // early unsubscribed for some reason.
                                                 if (env.operationTracingEnabled() && parent != null) {
                                                     env.tracer().scopeManager()
-                                                        .activate(replReq.span(), true)
+                                                        .activate(replReq.span())
                                                         .close();
                                                 }
                                             }
