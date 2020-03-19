@@ -108,7 +108,7 @@ public class ThresholdLogTracer implements Tracer {
 
     @Override
     public void close() {
-
+        reporter.shutdown();
     }
 
     /**
@@ -119,9 +119,4 @@ public class ThresholdLogTracer implements Tracer {
     public void reportSpan(final ThresholdLogSpan span) {
         reporter.report(span);
     }
-
-    public void shutdown() {
-        reporter.shutdown();
-    }
-
 }
