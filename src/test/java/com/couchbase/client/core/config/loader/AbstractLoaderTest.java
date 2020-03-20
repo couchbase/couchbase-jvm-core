@@ -166,7 +166,7 @@ public class AbstractLoaderTest {
         }
 
         @Override
-        protected int port() {
+        protected int port(String hostname) {
             return 1234;
         }
 

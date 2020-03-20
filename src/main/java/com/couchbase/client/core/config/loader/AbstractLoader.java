@@ -16,8 +16,11 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.AlternateAddress;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.LoaderType;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.lang.Tuple;
@@ -25,6 +28,8 @@ import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -32,9 +37,7 @@ import com.couchbase.client.core.message.internal.AddServiceResponse;
 import com.couchbase.client.core.message.internal.RemoveServiceRequest;
 import com.couchbase.client.core.message.internal.RemoveServiceResponse;
 import com.couchbase.client.core.service.ServiceType;
-import com.couchbase.client.core.state.LifecycleState;
 import rx.Observable;
-import rx.functions.Action1;
 import rx.functions.Func1;
 
 import java.net.InetAddress;
@@ -96,7 +99,49 @@ public abstract class AbstractLoader implements Loader {
      *
      * @return the port for the service to enable.
      */
-    protected abstract int port();
+    protected abstract int port(String hostname);
+
+    /**
+     * Tries to identify a prt from a config if present, null otherwise.
+     *
+     * @param hostname the hostname to identify a port from.
+     * @return the port if found, null otherwise.
+     */
+    protected Integer tryLoadingPortFromConfig(final String hostname) {
+        GetClusterConfigResponse response = cluster()
+            .<GetClusterConfigResponse>send(new GetClusterConfigRequest())
+            .toBlocking()
+            .single();
+        ClusterConfig clusterConfig = response.config();
+
+        if (!clusterConfig.bucketConfigs().isEmpty()) {
+            for (BucketConfig bc : clusterConfig.bucketConfigs().values()) {
+                for (NodeInfo nodeInfo : bc.nodes()) {
+                    if (nodeInfo.hostname().equals(hostname)) {
+                        final String alternate = nodeInfo.useAlternateNetwork();
+                        if (alternate != null) {
+                            AlternateAddress aa = nodeInfo.alternateAddresses().get(alternate);
+                            if (!aa.services().isEmpty() && !aa.sslServices().isEmpty()) {
+                                int port = env().sslEnabled()
+                                    ? aa.sslServices().get(serviceType)
+                                    : aa.services().get(serviceType);
+                                LOGGER.trace("Picked (aa) port " + port + " for " + hostname);
+                                return port;
+                            }
+                        }
+
+                        int port = env().sslEnabled()
+                            ? nodeInfo.sslServices().get(serviceType)
+                            : nodeInfo.services().get(serviceType);
+                        LOGGER.trace("Picked port " + port + " for " + hostname);
+                        return port;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Run the {@link BucketConfig} discovery process.
@@ -170,7 +215,7 @@ public abstract class AbstractLoader implements Loader {
                     }
                     LOGGER.debug("Successfully added Node {}", response.hostname());
                     return cluster.<AddServiceResponse>send(
-                        new AddServiceRequest(serviceType, bucket, username, password, port(), response.hostname())
+                        new AddServiceRequest(serviceType, bucket, username, password, port(response.hostname()), response.hostname())
                     ).onErrorResumeNext(new Func1<Throwable, Observable<AddServiceResponse>>() {
                         @Override
                         public Observable<AddServiceResponse> call(Throwable throwable) {

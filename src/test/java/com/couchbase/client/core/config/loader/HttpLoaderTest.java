@@ -16,13 +16,21 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.config.DefaultClusterConfig;
+import com.couchbase.client.core.config.DefaultCouchbaseBucketConfigTest;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.config.BucketConfigRequest;
 import com.couchbase.client.core.message.config.BucketConfigResponse;
+import com.couchbase.client.core.util.Resources;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -32,6 +40,7 @@ import rx.Observable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -62,9 +71,11 @@ public class HttpLoaderTest {
     @Test
     public void shouldUseDirectPortIfNotSSL() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpDirectPort(), loader.port());
+        assertEquals(environment.bootstrapHttpDirectPort(), loader.port("localhost"));
     }
 
     @Test
@@ -74,8 +85,11 @@ public class HttpLoaderTest {
         when(environment.bootstrapHttpSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
         HttpLoader loader = new HttpLoader(cluster, environment);
-        assertEquals(environment.bootstrapHttpSslPort(), loader.port());
+        assertEquals(environment.bootstrapHttpSslPort(), loader.port("localhost"));
     }
 
     @Test
@@ -190,5 +204,47 @@ public class HttpLoaderTest {
         ArgumentCaptor<BucketConfigRequest> argument = ArgumentCaptor.forClass(BucketConfigRequest.class);
         verify(cluster).send(argument.capture());
         Assert.assertEquals("/pools/default/b/default", argument.getValue().path());
+    }
+
+    @Test
+    public void shouldUsePortsFromConfigIfPresentWithAlternateNetwork() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        HttpLoader loader = new HttpLoader(cluster, environment);
+
+        ClusterConfig clusterConfig = new DefaultClusterConfig();
+
+        String raw = Resources.read("config_with_external.json", DefaultCouchbaseBucketConfigTest.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
+
+        config.useAlternateNetwork("external");
+
+        clusterConfig.setBucketConfig("foo", config);
+
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(clusterConfig, ResponseStatus.SUCCESS)
+        ));
+
+        assertEquals(32790, loader.port("172.17.0.2"));
+    }
+
+    @Test
+    public void shouldUsePortsFromConfigIfPresentWithoutAlternateNetwork() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        HttpLoader loader = new HttpLoader(cluster, environment);
+
+        ClusterConfig clusterConfig = new DefaultClusterConfig();
+
+        String raw = Resources.read("config_with_external.json", DefaultCouchbaseBucketConfigTest.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
+
+        clusterConfig.setBucketConfig("foo", config);
+
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(clusterConfig, ResponseStatus.SUCCESS)
+        ));
+
+        assertEquals(8091, loader.port("172.17.0.2"));
     }
 }
