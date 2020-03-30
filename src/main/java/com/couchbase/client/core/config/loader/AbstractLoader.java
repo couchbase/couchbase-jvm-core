@@ -144,6 +144,50 @@ public abstract class AbstractLoader implements Loader {
     }
 
     /**
+     * Maps the seed (potentially external) hostname to the internal representation if present.
+     * <p>
+     * This code will, based on the current configs, try to determine if a external seed node can be mapped to
+     * an already present internal representation of a hostname. This mapping needs to be done so we don't try
+     * to connect again to a invalid hostname if we already have a good one established. This will most likely
+     * only come into play if you open more than one bucket against a cluster with external addrs present.
+     * <p>
+     * As a fallback, and if no external configs are present, the given seed hostname will be returned to not
+     * break any current functionality.
+     *
+     * @param seedHostname the (external) seed node.
+     * @param port the mapped port to find the proper match.
+     * @return the internal hostname to use.
+     */
+    private String mapExternalToLogicalHostname(final String seedHostname, final int port) {
+        GetClusterConfigResponse response = cluster()
+            .<GetClusterConfigResponse>send(new GetClusterConfigRequest())
+            .toBlocking()
+            .single();
+        ClusterConfig clusterConfig = response.config();
+
+        if (!clusterConfig.bucketConfigs().isEmpty()) {
+            for (BucketConfig bc : clusterConfig.bucketConfigs().values()) {
+                for (NodeInfo nodeInfo : bc.nodes()) {
+                    String alternate = bc.useAlternateNetwork();
+                    if (alternate != null) {
+                        AlternateAddress aa = nodeInfo.alternateAddresses().get(alternate);
+                        if (aa.hostname().equals(seedHostname)) {
+                            int aaPort = env().sslEnabled()
+                                ? aa.sslServices().get(serviceType)
+                                : aa.services().get(serviceType);
+                            if (aaPort == port) {
+                                return nodeInfo.hostname();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return seedHostname;
+    }
+
+    /**
      * Run the {@link BucketConfig} discovery process.
      *
      * @param bucket the name of the bucket.
@@ -200,8 +244,10 @@ public abstract class AbstractLoader implements Loader {
                                                                           final String bucket,
                                                                           final String username,
                                                                           final String password) {
+        final int mappedPort = port(node);
+
         return Observable
-            .just(node)
+            .just(mapExternalToLogicalHostname(node, mappedPort))
             .flatMap(new Func1<String, Observable<AddNodeResponse>>() {
                 @Override
                 public Observable<AddNodeResponse> call(final String address) {
@@ -215,7 +261,7 @@ public abstract class AbstractLoader implements Loader {
                     }
                     LOGGER.debug("Successfully added Node {}", response.hostname());
                     return cluster.<AddServiceResponse>send(
-                        new AddServiceRequest(serviceType, bucket, username, password, port(response.hostname()), response.hostname())
+                        new AddServiceRequest(serviceType, bucket, username, password, mappedPort, response.hostname())
                     ).onErrorResumeNext(new Func1<Throwable, Observable<AddServiceResponse>>() {
                         @Override
                         public Observable<AddServiceResponse> call(Throwable throwable) {

@@ -17,12 +17,15 @@ package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
 import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.DefaultClusterConfig;
 import com.couchbase.client.core.config.LoaderType;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.lang.Tuple2;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.internal.AddNodeRequest;
 import com.couchbase.client.core.message.internal.AddNodeResponse;
 import com.couchbase.client.core.message.internal.AddServiceRequest;
@@ -34,9 +37,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.isA;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,7 +60,7 @@ public class AbstractLoaderTest {
     private static String host;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         host = "127.0.0.1";
     }
 
@@ -64,7 +70,7 @@ public class AbstractLoaderTest {
     }
 
     @Test
-    public void shouldLoadConfigForOneSeedNode() throws Exception {
+    public void shouldLoadConfigForOneSeedNode() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -72,6 +78,9 @@ public class AbstractLoaderTest {
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
 
         InstrumentedLoader loader = new InstrumentedLoader(99, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
@@ -83,7 +92,7 @@ public class AbstractLoaderTest {
     }
 
     @Test
-    public void shouldFailIfNoConfigCouldBeLoaded() throws Exception {
+    public void shouldFailIfNoConfigCouldBeLoaded() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -91,6 +100,9 @@ public class AbstractLoaderTest {
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddServiceResponse(ResponseStatus.SUCCESS, host))
         );
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
@@ -98,37 +110,41 @@ public class AbstractLoaderTest {
 
         try {
             configObservable.toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
     }
 
     @Test
-    public void shouldFailIfNodeCouldNotBeAdded() throws Exception {
+    public void shouldFailIfNodeCouldNotBeAdded() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddNodeResponse(ResponseStatus.FAILURE, host))
         );
 
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
+
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
             loader.loadConfig(host, "default", "password");
 
         try {
             configObservable.toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(IllegalStateException ex) {
             assertEquals("Could not add node for config loading.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
     }
 
     @Test
-    public void shouldFailIfServiceCouldNotBeAdded() throws Exception {
+    public void shouldFailIfServiceCouldNotBeAdded() {
         ClusterFacade cluster = mock(ClusterFacade.class);
         when(cluster.send(isA(AddNodeRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddNodeResponse(ResponseStatus.SUCCESS, host))
@@ -136,6 +152,9 @@ public class AbstractLoaderTest {
         when(cluster.send(isA(AddServiceRequest.class))).thenReturn(
                 Observable.just((CouchbaseResponse) new AddServiceResponse(ResponseStatus.FAILURE, host))
         );
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
 
         InstrumentedLoader loader = new InstrumentedLoader(0, localhostConfig, cluster, environment);
         Observable<Tuple2<LoaderType, BucketConfig>> configObservable =
@@ -143,11 +162,11 @@ public class AbstractLoaderTest {
 
         try {
             configObservable.toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(IllegalStateException ex) {
             assertEquals("Could not add service for config loading.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -157,7 +176,7 @@ public class AbstractLoaderTest {
     static class InstrumentedLoader extends AbstractLoader {
         private final String config;
         private final int failAfter;
-        private volatile int failCounter = 0;
+        private final AtomicInteger failCounter = new AtomicInteger(0);
 
         InstrumentedLoader(int failAfter, String config, ClusterFacade cluster, CoreEnvironment environment) {
             super(LoaderType.Carrier, ServiceType.BINARY, cluster, environment);
@@ -173,7 +192,7 @@ public class AbstractLoaderTest {
         @Override
         protected Observable<String> discoverConfig(String bucket, String password, String username, String hostname) {
             IllegalStateException ex = new IllegalStateException("Bucket config response did not return with success.");
-            if (failCounter++ >= failAfter) {
+            if (failCounter.getAndIncrement() >= failAfter) {
                 return Observable.error(ex);
             }
             return Observable.just(config);
