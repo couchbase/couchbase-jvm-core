@@ -1,18 +1,29 @@
-.#*
-build
-classes
-**/.DS_Store
-.gradle
-.idea/dictionaries
-.idea/gradle.xml
-.idea/libraries
-.idea/pegdown-doclet.xml
-.idea/shelf
-.idea/tasks.xml
-.idea/vcs.xml
-.idea/workspace.xml
-.idea/misc.xml
-.idea/uiDesigner.xml
-.idea/inspectionProfiles
-target
+# General Ignores
+*~
+.classpath
+.DS_Store
+.project
+build/
+target/
+log/
+META-INF/
 dependency-reduced-pom.xml
+
+# IDE Support
+# IntelliJ specific files/directories
+.idea/
+*.ipr
+*.iws
+*.iml
+atlassian-ide-plugin.xml
+
+# Eclipse
+.factorypath
+.settings/
+.externalToolBuilders
+
+# NetBeans
+.nbattrs
+
+# Gradle
+.gradle/
