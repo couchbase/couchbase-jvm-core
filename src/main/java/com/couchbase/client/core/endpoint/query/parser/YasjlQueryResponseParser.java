@@ -381,6 +381,8 @@ public class YasjlQueryResponseParser {
         queryStatusObservable = null;
         querySignatureObservable = null;
         queryProfileInfoObservable = null;
+        currentRequest = null;
+        response = null;
         this.initialized = false;
     }
 }
