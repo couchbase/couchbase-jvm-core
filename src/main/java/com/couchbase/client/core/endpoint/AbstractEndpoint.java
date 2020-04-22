@@ -55,6 +55,8 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.socket.oio.OioSocketChannel;
@@ -289,6 +291,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             channelClass = EpollSocketChannel.class;
         } else if (ioPool instanceof OioEventLoopGroup) {
             channelClass = OioSocketChannel.class;
+        } else if (ioPool instanceof KQueueEventLoopGroup) {
+            channelClass = KQueueSocketChannel.class;
         }
 
         // We've removed using NetworkAddress throughout the codebase, but we still need to handle the case

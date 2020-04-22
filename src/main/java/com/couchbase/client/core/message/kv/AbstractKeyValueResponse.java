@@ -80,6 +80,18 @@ public abstract class AbstractKeyValueResponse extends AbstractCouchbaseResponse
     }
 
     @Override
+    public BinaryResponse touch() {
+        content.touch();
+        return this;
+    }
+
+    @Override
+    public BinaryResponse touch(Object o) {
+        content.touch(o);
+        return this;
+    }
+
+    @Override
     public boolean release() {
         return content.release();
     }

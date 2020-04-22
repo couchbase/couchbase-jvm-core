@@ -79,6 +79,7 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                     currentMessage = decodeHeader(in);
                     state = State.READ_FRAMING;
                 } catch (Exception e) {
+                    resetDecoder();
                     out.add(invalidMessage(e));
                     return;
                 }
@@ -96,6 +97,7 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
 
                     state = State.READ_EXTRAS;
                 } catch (Exception e) {
+                    resetDecoder();
                     out.add(invalidMessage(e));
                     return;
                 }
@@ -113,6 +115,7 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
 
                     state = State.READ_KEY;
                 } catch (Exception e) {
+                    resetDecoder();
                     out.add(invalidMessage(e));
                     return;
                 }
@@ -130,9 +133,10 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                         currentMessage.setKey(key);
                     }
 
-                    out.add(currentMessage);
+                    out.add(currentMessage.retain());
                     state = State.READ_CONTENT;
                 } catch (Exception e) {
+                    resetDecoder();
                     out.add(invalidMessage(e));
                     return;
                 }
@@ -175,9 +179,11 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                         out.add(LastMemcacheContent.EMPTY_LAST_CONTENT);
                     }
 
+                    resetDecoder();
                     state = State.READ_HEADER;
                     return;
                 } catch (Exception e) {
+                    resetDecoder();
                     out.add(invalidChunk(e));
                     return;
                 }
@@ -224,19 +230,6 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-
-        if (currentMessage != null && currentMessage.getExtras() != null) {
-            if (currentMessage.getExtras().refCnt() > 0) {
-                currentMessage.getExtras().release();
-            }
-        }
-
-        if (currentMessage != null && currentMessage.getFramingExtras() != null) {
-            if (currentMessage.getFramingExtras().refCnt() > 0) {
-                currentMessage.getFramingExtras().release();
-            }
-        }
-
         resetDecoder();
     }
 
@@ -244,7 +237,10 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      * Prepare for next decoding iteration.
      */
     protected void resetDecoder() {
-        currentMessage = null;
+        if (currentMessage != null) {
+            currentMessage.release();
+            currentMessage = null;
+        }
         alreadyReadChunkSize = 0;
     }
 

@@ -16,11 +16,17 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.AlternateAddress;
+import com.couchbase.client.core.config.BucketConfig;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
 import com.couchbase.client.core.config.LoaderType;
+import com.couchbase.client.core.config.NodeInfo;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
 import com.couchbase.client.core.service.ServiceType;
@@ -53,8 +59,15 @@ public class CarrierLoader extends AbstractLoader {
     }
 
     @Override
-    protected int port() {
-        return env().sslEnabled() ? env().bootstrapCarrierSslPort() : env().bootstrapCarrierDirectPort();
+    protected int port(final String hostname) {
+        Integer portFromConfig = tryLoadingPortFromConfig(hostname);
+        if (portFromConfig != null) {
+            return portFromConfig;
+        }
+
+        int port = env().sslEnabled() ? env().bootstrapCarrierSslPort() : env().bootstrapCarrierDirectPort();
+        LOGGER.trace("Picked (default) port " + port + " for " + hostname);
+        return port;
     }
 
     @Override

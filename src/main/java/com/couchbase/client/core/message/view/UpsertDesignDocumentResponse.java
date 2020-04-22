@@ -63,4 +63,16 @@ public class UpsertDesignDocumentResponse extends AbstractCouchbaseResponse impl
     public boolean release(int decrement) {
         return content.release(decrement);
     }
+
+    @Override
+    public UpsertDesignDocumentResponse touch() {
+        content.touch();
+        return this;
+    }
+
+    @Override
+    public UpsertDesignDocumentResponse touch(Object hint) {
+        content.touch(hint);
+        return this;
+    }
 }

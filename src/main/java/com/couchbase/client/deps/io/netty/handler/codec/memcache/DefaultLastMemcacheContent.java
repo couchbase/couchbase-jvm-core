@@ -53,4 +53,9 @@ public class DefaultLastMemcacheContent extends DefaultMemcacheContent implement
     public LastMemcacheContent duplicate() {
         return new DefaultLastMemcacheContent(content().duplicate());
     }
+
+    @Override
+    public LastMemcacheContent replace(ByteBuf content) {
+        return new DefaultLastMemcacheContent(content);
+    }
 }

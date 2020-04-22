@@ -97,16 +97,38 @@ public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResp
 
     @Override
     public FullBinaryMemcacheResponse duplicate() {
-        ByteBuf extras = getExtras();
-        if (extras != null) {
-            extras = extras.duplicate();
-        }
-        return new DefaultFullBinaryMemcacheResponse(getKey(), extras, content().duplicate());
+        return replace(content().duplicate());
     }
 
     @Override
     public FullBinaryMemcacheResponse setContent(ByteBuf content) {
         this.content = content;
+        return this;
+    }
+
+    @Override
+    public FullBinaryMemcacheResponse retainedDuplicate() {
+        return duplicate().retain();
+    }
+
+    @Override
+    public FullBinaryMemcacheResponse replace(ByteBuf content) {
+        ByteBuf extras = getExtras();
+        if (extras != null) {
+            extras = extras.duplicate();
+        }
+        return new DefaultFullBinaryMemcacheResponse(getKey(), extras, content);
+    }
+
+    @Override
+    public FullBinaryMemcacheResponse touch() {
+        super.touch();
+        return this;
+    }
+
+    @Override
+    public FullBinaryMemcacheResponse touch(Object hint) {
+        super.touch(hint);
         return this;
     }
 }

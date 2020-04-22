@@ -16,14 +16,22 @@
 package com.couchbase.client.core.config.loader;
 
 import com.couchbase.client.core.ClusterFacade;
+import com.couchbase.client.core.config.ClusterConfig;
 import com.couchbase.client.core.config.ConfigurationException;
+import com.couchbase.client.core.config.CouchbaseBucketConfig;
+import com.couchbase.client.core.config.DefaultClusterConfig;
+import com.couchbase.client.core.config.DefaultCouchbaseBucketConfigTest;
+import com.couchbase.client.core.config.parser.BucketConfigParser;
 import com.couchbase.client.core.endpoint.kv.KeyValueStatus;
 import com.couchbase.client.core.env.CoreEnvironment;
 import com.couchbase.client.core.env.DefaultCoreEnvironment;
 import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.ResponseStatus;
+import com.couchbase.client.core.message.cluster.GetClusterConfigRequest;
+import com.couchbase.client.core.message.cluster.GetClusterConfigResponse;
 import com.couchbase.client.core.message.kv.GetBucketConfigRequest;
 import com.couchbase.client.core.message.kv.GetBucketConfigResponse;
+import com.couchbase.client.core.util.Resources;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
@@ -33,8 +41,9 @@ import org.junit.Test;
 import rx.Observable;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.isA;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +59,7 @@ public class CarrierLoaderTest {
     private static String host;
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         host = "127.0.0.1";
     }
 
@@ -62,9 +71,11 @@ public class CarrierLoaderTest {
     @Test
     public void shouldUseDirectPortIfNotSSL() {
         ClusterFacade cluster = mock(ClusterFacade.class);
-
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port());
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
+        assertEquals(environment.bootstrapCarrierDirectPort(), loader.port(host));
     }
 
     @Test
@@ -74,8 +85,11 @@ public class CarrierLoaderTest {
         when(environment.bootstrapCarrierSslPort()).thenReturn(12345);
         ClusterFacade cluster = mock(ClusterFacade.class);
 
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(new DefaultClusterConfig(), ResponseStatus.SUCCESS)
+        ));
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        assertEquals(environment.bootstrapCarrierSslPort(), loader.port());
+        assertEquals(environment.bootstrapCarrierSslPort(), loader.port(host));
     }
 
     @Test
@@ -89,7 +103,9 @@ public class CarrierLoaderTest {
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig(
+            "bucket", "bucket", "password", host
+        );
         assertEquals("myconfig", configObservable.toBlocking().single());
     }
 
@@ -103,14 +119,16 @@ public class CarrierLoaderTest {
         when(cluster.send(isA(GetBucketConfigRequest.class))).thenReturn(response);
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
-        Observable<String> configObservable = loader.discoverConfig("bucket", "bucket", "password", host);
+        Observable<String> configObservable = loader.discoverConfig(
+            "bucket", "bucket", "password", host
+        );
         try {
             configObservable.toBlocking().single();
-            assertTrue(false);
+            fail();
         } catch(IllegalStateException ex) {
             assertEquals("Bucket config response did not return with success.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue("Unexpected exception: " + ex, false);
+            fail("Unexpected exception: " + ex);
         }
     }
 
@@ -122,12 +140,58 @@ public class CarrierLoaderTest {
 
         CarrierLoader loader = new CarrierLoader(cluster, environment);
         try {
-            loader.discoverConfig("bucket", "password", "password", host).toBlocking().single();
-            assertTrue(false);
+            loader
+                .discoverConfig("bucket", "password", "password", host)
+                .toBlocking()
+                .single();
+            fail();
         } catch(ConfigurationException ex) {
             assertEquals("Carrier Bootstrap disabled through configuration.", ex.getMessage());
         } catch(Exception ex) {
-            assertTrue(false);
+            fail();
         }
     }
+
+    @Test
+    public void shouldUsePortsFromConfigIfPresentWithAlternateNetwork() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        CarrierLoader loader = new CarrierLoader(cluster, environment);
+
+        ClusterConfig clusterConfig = new DefaultClusterConfig();
+
+        String raw = Resources.read("config_with_external.json", DefaultCouchbaseBucketConfigTest.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
+
+        config.useAlternateNetwork("external");
+
+        clusterConfig.setBucketConfig("foo", config);
+
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(clusterConfig, ResponseStatus.SUCCESS)
+        ));
+
+        assertEquals(32775, loader.port("172.17.0.2"));
+    }
+
+    @Test
+    public void shouldUsePortsFromConfigIfPresentWithoutAlternateNetwork() {
+        ClusterFacade cluster = mock(ClusterFacade.class);
+        CarrierLoader loader = new CarrierLoader(cluster, environment);
+
+        ClusterConfig clusterConfig = new DefaultClusterConfig();
+
+        String raw = Resources.read("config_with_external.json", DefaultCouchbaseBucketConfigTest.class);
+        CouchbaseBucketConfig config = (CouchbaseBucketConfig)
+            BucketConfigParser.parse(raw, mock(CoreEnvironment.class), "127.0.0.1");
+
+        clusterConfig.setBucketConfig("foo", config);
+
+        when(cluster.send(any(GetClusterConfigRequest.class))).thenReturn(Observable.just(
+            (CouchbaseResponse) new GetClusterConfigResponse(clusterConfig, ResponseStatus.SUCCESS)
+        ));
+
+        assertEquals(11210, loader.port("172.17.0.2"));
+    }
+
 }

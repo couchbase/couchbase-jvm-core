@@ -230,6 +230,28 @@ public abstract class AbstractBinaryMemcacheMessage
     }
 
     @Override
+    public BinaryMemcacheMessage touch() {
+        if (extras != null) {
+            extras.touch();
+        }
+        if (framingExtras != null) {
+            framingExtras.touch();
+        }
+        return this;
+    }
+
+    @Override
+    public BinaryMemcacheMessage touch(Object hint) {
+        if (extras != null) {
+            extras.touch(hint);
+        }
+        if (framingExtras != null) {
+            framingExtras.touch(hint);
+        }
+        return this;
+    }
+
+    @Override
     public boolean release() {
         boolean result = false;
         if (extras != null) {

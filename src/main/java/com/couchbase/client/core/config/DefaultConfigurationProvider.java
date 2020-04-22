@@ -509,10 +509,16 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             newConfig.username(oldConfig.username());
         }
 
-        // this is the first config, decide on external networking
-        if (oldConfig == null) {
-            externalNetwork = determineNetworkResolution(newConfig, environment.networkResolution(), seedHosts);
-            LOGGER.info("Selected network configuration: {}", externalNetwork != null ? externalNetwork : "default");
+        // Make sure that if multiple bucket opens race, we only check on the external network
+        // configuration once.
+        synchronized (this) {
+            // this is the first config for the given bucket, decide on external networking
+            // also only do the external network check if it has not been decided for a previous
+            // opened bucket yet.
+            if (oldConfig == null && externalNetwork == null) {
+                externalNetwork = determineNetworkResolution(newConfig, environment.networkResolution(), seedHosts);
+                LOGGER.info("Selected network configuration: {}", externalNetwork != null ? externalNetwork : "default");
+            }
         }
 
         if (externalNetwork != null) {
@@ -540,9 +546,12 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
 
     /**
      * Updates the seed hosts from the current config, so it is kept up-to-date as the config topology changes.
-     *
-     * <p>Note that only nodes with the KV service are added to the seed nodes since otherwise it might end up
-     * trying to bootstrap from non-kv nodes which is not recommended in the first place (although not harmful).</p>
+     * <p>
+     * Note that only nodes with the KV service are added to the seed nodes since otherwise it might end up
+     * trying to bootstrap from non-kv nodes which is not recommended in the first place (although not harmful).
+     * <p>
+     * Also, the code takes alternate addresses into account so we do not add nodes to the seed nodes which are
+     * not reachable in the first place.
      */
     private void updateSeedHosts() {
         ClusterConfig config = currentConfig;
@@ -552,7 +561,18 @@ public class DefaultConfigurationProvider implements ConfigurationProvider {
             for (NodeInfo nodeInfo : bucketConfig.nodes()) {
                 if (nodeInfo.services().containsKey(ServiceType.BINARY) ||
                     nodeInfo.sslServices().containsKey(ServiceType.BINARY)) {
-                    newSeedHosts.add(nodeInfo.hostname());
+
+                    String alternate = bucketConfig.useAlternateNetwork();
+                    if (alternate != null) {
+                        AlternateAddress aa = nodeInfo.alternateAddresses().get(alternate);
+                        if (aa == null) {
+                            throw new IllegalStateException("Instructed to use alternate address for " +
+                                "seed nodes, but not present - this is a bug!");
+                        }
+                        newSeedHosts.add(aa.hostname());
+                    } else {
+                        newSeedHosts.add(nodeInfo.hostname());
+                    }
                 }
             }
         }
