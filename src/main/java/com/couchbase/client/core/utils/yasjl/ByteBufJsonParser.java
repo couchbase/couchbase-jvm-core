@@ -365,15 +365,7 @@ public class ByteBufJsonParser {
 
         int lastValidIndex = content.forEachByte(processor);
         if (lastValidIndex == -1) {
-            if (mode == Mode.JSON_NUMBER_VALUE && content.readableBytes() > 2) {
-                length = 1;
-                level.setCurrentValue(this.content.copy(readerIndex - 1, length), length);
-                //no need to skip here
-                this.content.discardReadBytes();
-                level.emitJsonPointerValue();
-            } else {
-                throw NEED_MORE_DATA;
-            }
+            throw NEED_MORE_DATA;
         } else {
             if (mode == Mode.JSON_OBJECT_VALUE ||
                     mode == Mode.JSON_ARRAY_VALUE ||
