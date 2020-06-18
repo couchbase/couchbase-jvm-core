@@ -367,7 +367,7 @@ public class DefaultCoreEnvironment implements CoreEnvironment {
                     return Observable.fromCallable(new Callable<Boolean>() {
                         @Override
                         public Boolean call() {
-                            ((ThresholdLogTracer) tracer).shutdown();
+                            tracer.close();
                             shutdown = true;
                             return true;
                         }

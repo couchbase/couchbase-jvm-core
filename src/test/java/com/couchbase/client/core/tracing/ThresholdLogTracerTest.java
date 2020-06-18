@@ -51,9 +51,11 @@ public class ThresholdLogTracerTest {
     @Test
     public void shouldCompleteSimpleSpanOnClose() {
         assertNull(tracer.activeSpan());
-        Scope scope = tracer.buildSpan("span").startActive(true);
+        Span span = tracer.buildSpan("span").start();
+        Scope scope = tracer.activateSpan(span);
         assertNotNull(tracer.activeSpan());
         fakeWork();
+        span.finish();
         scope.close();
         assertNull(tracer.activeSpan());
 
@@ -66,7 +68,8 @@ public class ThresholdLogTracerTest {
     @Test
     public void shouldNotCompleteSimpleSpanOnClose() {
         assertNull(tracer.activeSpan());
-        Scope scope = tracer.buildSpan("span").startActive(false);
+        Span span = tracer.buildSpan("span").start();
+        Scope scope = tracer.activateSpan(span);
         assertNotNull(tracer.activeSpan());
         fakeWork();
         scope.close();
@@ -74,7 +77,7 @@ public class ThresholdLogTracerTest {
 
         assertEquals(0, tracer.reportedSpans().size());
 
-        scope.span().finish();
+        span.finish();
         assertNull(tracer.activeSpan());
 
         assertEquals(1, tracer.reportedSpans().size());
@@ -86,12 +89,14 @@ public class ThresholdLogTracerTest {
     @Test
     public void shouldCompleteSpanWithTags() {
         assertNull(tracer.activeSpan());
-        Scope scope = tracer.buildSpan("span")
+        Span span = tracer.buildSpan("span")
             .withTag("builder-tag", true)
-            .startActive(true);
+            .start();
+        Scope scope = tracer.activateSpan(span);
         assertNotNull(tracer.activeSpan());
-        scope.span().setTag("after-tag", "set");
+        span.setTag("after-tag", "set");
         fakeWork();
+        span.finish();
         scope.close();
         assertNull(tracer.activeSpan());
 
@@ -108,10 +113,12 @@ public class ThresholdLogTracerTest {
     @Test
     public void shouldCompleteSpanWithBaggage() {
         assertNull(tracer.activeSpan());
-        Scope scope = tracer.buildSpan("span").startActive(true);
+        Span span = tracer.buildSpan("span").start();
+        Scope scope = tracer.activateSpan(span);
         assertNotNull(tracer.activeSpan());
-        scope.span().setBaggageItem("baggage-item", "baggage-value");
+        span.setBaggageItem("baggage-item", "baggage-value");
         fakeWork();
+        span.finish();
         scope.close();
         assertNull(tracer.activeSpan());
 
@@ -124,16 +131,18 @@ public class ThresholdLogTracerTest {
 
     @Test
     public void shouldCompleteClientAndParentSpanImplicit() {
-        Scope parent = tracer.buildSpan("parent").startActive(true);
-        Scope child = tracer.buildSpan("child").startActive(true);
+        Span parent = tracer.buildSpan("parent").start();
+        Scope scope = tracer.activateSpan(parent);
+        Span child = tracer.buildSpan("child").start();
 
         fakeWork();
 
         assertEquals(0, tracer.reportedSpans().size());
-        child.close();
+        child.finish();
 
         assertEquals(1, tracer.reportedSpans().size());
-        parent.close();
+        parent.finish();
+        scope.close();
 
         assertEquals(2, tracer.reportedSpans().size());
         for (Span finished : tracer.reportedSpans()) {
@@ -143,21 +152,21 @@ public class ThresholdLogTracerTest {
 
     @Test
     public void shouldCompleteClientAndParentSpanExplicit() {
-        Scope parent = tracer.buildSpan("parent").startActive(true);
-        parent.span().setBaggageItem("baggage-item", "baggage-value");
+        Span parentSpan = tracer.buildSpan("parent").start();
+        parentSpan.setBaggageItem("baggage-item", "baggage-value");
 
-        Scope child = tracer.buildSpan("child")
+        Span childSpan = tracer.buildSpan("child")
             .ignoreActiveSpan()
-            .asChildOf(parent.span())
-            .startActive(true);
+            .asChildOf(parentSpan)
+            .start();
 
         fakeWork();
 
         assertEquals(0, tracer.reportedSpans().size());
-        child.close();
+        childSpan.finish();
 
         assertEquals(1, tracer.reportedSpans().size());
-        parent.close();
+        parentSpan.finish();
 
         assertEquals(2, tracer.reportedSpans().size());
         for (Span finished : tracer.reportedSpans()) {
@@ -168,17 +177,19 @@ public class ThresholdLogTracerTest {
 
     @Test
     public void shouldPropagateBaggageToChild() {
-        Scope parent = tracer.buildSpan("parent").startActive(true);
-        parent.span().setBaggageItem("baggage", "item");
-        Scope child = tracer.buildSpan("child").startActive(true);
+        Span parent = tracer.buildSpan("parent").start();
+        parent.setBaggageItem("baggage", "item");
+        Scope parentScope = tracer.activateSpan(parent);
+        Span child = tracer.buildSpan("child").start();
 
         fakeWork();
 
         assertEquals(0, tracer.reportedSpans().size());
-        child.close();
+        child.finish();
 
         assertEquals(1, tracer.reportedSpans().size());
-        parent.close();
+        parentScope.close();
+        parent.finish();
 
         assertEquals(2, tracer.reportedSpans().size());
         for (Span finished : tracer.reportedSpans()) {

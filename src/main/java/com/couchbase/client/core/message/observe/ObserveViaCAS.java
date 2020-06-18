@@ -33,11 +33,9 @@ import com.couchbase.client.core.message.kv.ObserveRequest;
 import com.couchbase.client.core.message.kv.ObserveResponse;
 import com.couchbase.client.core.retry.RetryStrategy;
 import com.couchbase.client.core.time.Delay;
-import io.opentracing.Scope;
 import io.opentracing.Span;
 import rx.Observable;
 import rx.functions.Action0;
-import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 import rx.functions.Func2;
@@ -165,13 +163,12 @@ public class ObserveViaCAS {
                                 final ObserveRequest activeReq = new ObserveRequest(id, cas, true, (short) 0, bucket);
                                 final CoreEnvironment env = core.ctx().environment();
                                 if (env.operationTracingEnabled() && parent != null) {
-                                    Scope scope = env.tracer()
+                                    Span span = env.tracer()
                                         .buildSpan("observe_cas")
                                         .asChildOf(parent)
                                         .withTag("couchbase.active", true)
-                                        .startActive(false);
-                                    activeReq.span(scope.span(), env);
-                                    scope.close();
+                                        .start();
+                                    activeReq.span(span, env);
                                 }
                                 Observable<ObserveResponse> masterRes = core.<ObserveResponse>send(activeReq)
                                     .doOnUnsubscribe(new Action0() {
@@ -181,9 +178,10 @@ public class ObserveViaCAS {
                                             // early unsubscribed for some reason.
                                             if (env.operationTracingEnabled() && parent != null) {
                                                 env.tracer().scopeManager()
-                                                    .activate(activeReq.span(), true)
+                                                    .activate(activeReq.span())
                                                     .close();
-                                            }                                        }
+                                            }
+                                        }
                                     });
                                 if (swallowErrors) {
                                     obs.add(masterRes.onErrorResumeNext(Observable.<ObserveResponse>empty()));
@@ -195,13 +193,12 @@ public class ObserveViaCAS {
                                     for (short i = 1; i <= replicas; i++) {
                                         final ObserveRequest replReq  = new ObserveRequest(id, cas, false, i, bucket);
                                         if (env.operationTracingEnabled() && parent != null) {
-                                            Scope scope = env.tracer()
+                                            Span span = env.tracer()
                                                 .buildSpan("observe_cas")
                                                 .asChildOf(parent)
                                                 .withTag("couchbase.active", false)
-                                                .startActive(false);
-                                            replReq.span(scope.span(), env);
-                                            scope.close();
+                                                .start();
+                                            replReq.span(span, env);
                                         }
                                         Observable<ObserveResponse> res = core.<ObserveResponse>send(replReq)
                                             .doOnUnsubscribe(new Action0() {
@@ -209,7 +206,7 @@ public class ObserveViaCAS {
                                                 public void call() {
                                                     if (env.operationTracingEnabled() && parent != null) {
                                                         env.tracer().scopeManager()
-                                                            .activate(replReq.span(), true)
+                                                            .activate(replReq.span())
                                                             .close();
                                                     }
                                                 }

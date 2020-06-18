@@ -45,6 +45,16 @@ public class ThresholdLogSpanContext implements SpanContext {
     }
 
     @Override
+    public String toTraceId() {
+        return null;
+    }
+
+    @Override
+    public String toSpanId() {
+        return null;
+    }
+
+    @Override
     public Iterable<Map.Entry<String, String>> baggageItems() {
         return new HashMap<String, String>(baggageItems).entrySet();
     }

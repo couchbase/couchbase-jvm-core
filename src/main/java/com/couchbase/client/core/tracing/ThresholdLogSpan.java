@@ -20,6 +20,7 @@ import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.message.CouchbaseRequest;
 import io.opentracing.Span;
+import io.opentracing.tag.Tag;
 
 import java.util.Collections;
 import java.util.Map;
@@ -75,6 +76,12 @@ public class ThresholdLogSpan implements Span, Comparable<ThresholdLogSpan> {
     @Override
     public synchronized ThresholdLogSpan setTag(String key, Number value) {
         tags.put(key, value);
+        return this;
+    }
+
+    @Override
+    public <T> Span setTag(Tag<T> tag, T t) {
+        tags.put(tag.getKey(), t);
         return this;
     }
 

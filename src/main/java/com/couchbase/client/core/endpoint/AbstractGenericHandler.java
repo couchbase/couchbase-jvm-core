@@ -316,15 +316,14 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         msg.lastLocalId(localId);
 
         if (env().operationTracingEnabled() && msg.span() != null) {
-            Scope scope = env().tracer()
+            Span span = env().tracer()
                 .buildSpan("dispatch_to_server")
                 .asChildOf(msg.span())
                 .withTag("peer.address", remoteSocket)
                 .withTag("local.address", localSocket)
                 .withTag("local.id", localId)
-                .startActive(false);
-            dispatchSpans.offer(scope.span());
-            scope.close();
+                .start();
+            dispatchSpans.offer(span);
         }
     }
 
@@ -344,7 +343,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
                 if (currentDispatchSpan != null) {
                     env().tracer().scopeManager()
-                        .activate(currentDispatchSpan, true)
+                        .activate(currentDispatchSpan)
                         .close();
                     if (currentDispatchSpan instanceof ThresholdLogSpan) {
                         currentDispatchSpan.setBaggageItem(
@@ -493,9 +492,10 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         CouchbaseRequest request = response.request();
         if (request != null && !request.isActive()) {
             if (env().operationTracingEnabled() && request.span() != null) {
+                Span span = request.span();
                 Scope scope = env().tracer().scopeManager()
-                        .activate(request.span(), true);
-                scope.span().setBaggageItem("couchbase.orphan", "true");
+                        .activate(span);
+                span.setBaggageItem("couchbase.orphan", "true");
                 scope.close();
             }
             if (env().orphanResponseReportingEnabled()) {
@@ -928,9 +928,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
     protected void completeRequestSpan(final CouchbaseRequest request) {
         if (request != null && request.span() != null) {
             if (env().operationTracingEnabled()) {
-                env().tracer().scopeManager()
-                    .activate(request.span(), true)
-                    .close();
+                request.span().finish();
             }
         }
     }
