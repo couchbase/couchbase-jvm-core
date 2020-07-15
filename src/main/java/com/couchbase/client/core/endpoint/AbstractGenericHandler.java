@@ -62,17 +62,14 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.couchbase.client.core.endpoint.kv.KeyValueFeatureHandler.paddedHex;
-import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.logging.RedactableArgument.user;
 import static com.couchbase.client.core.utils.Observables.failSafe;
@@ -197,7 +194,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
     private final boolean pipeline;
 
-    private volatile long keepAliveThreshold;
+    private volatile long failedKeepAliveRequests;
 
     /**
      * If continuous keepalive is enabled, holds the future for continuous execution.
@@ -238,7 +235,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
         this.classNameCache = new IdentityHashMap<Class<? extends CouchbaseRequest>, String>();
         this.moveResponseOut = env() == null || !env().callbacksOnIoPool();
         this.sentQueueLimit = Integer.parseInt(System.getProperty("com.couchbase.sentRequestQueueLimit", "5120"));
-        this.keepAliveThreshold = 0;
+        this.failedKeepAliveRequests = 0;
     }
 
     /**
@@ -857,7 +854,7 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
 
         @Override
         public void onCompleted() {
-            keepAliveThreshold = 0;
+            failedKeepAliveRequests = 0;
         }
 
         @Override
@@ -865,14 +862,23 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
             if (ctx.channel() == null || !ctx.channel().isActive()) {
                 return;
             }
+
+            failedKeepAliveRequests++;
+
             if (e instanceof TimeoutException) {
+                LOGGER.warn("{}KeepAliveRequest timed out after {} ms. This was attempt #{} of {}.",
+                    logIdent(ctx, endpoint), env().keepAliveTimeout(), failedKeepAliveRequests, env().keepAliveErrorThreshold());
+
                 endpoint.setLastKeepAliveLatency(TimeUnit.MILLISECONDS.toMicros(env().keepAliveTimeout()));
+            } else {
+                LOGGER.warn("{}Got error while consuming KeepAliveResponse. This was attempt #{} of {}.",
+                    logIdent(ctx, endpoint), failedKeepAliveRequests, env().keepAliveErrorThreshold(), e);
             }
-            LOGGER.warn("{}Got error while consuming KeepAliveResponse.", logIdent(ctx, endpoint), e);
-            keepAliveThreshold++;
-            if (keepAliveThreshold >= env().keepAliveErrorThreshold()) {
-                LOGGER.warn( "{}KeepAliveThreshold reached - " +
-                    "closing this socket proactively.", system(logIdent(ctx, endpoint)));
+
+            if (failedKeepAliveRequests >= env().keepAliveErrorThreshold()) {
+                LOGGER.warn( "{}Failed to receive a KeepAliveResponse from the server after {} attempts." +
+                        " This may indicate the connection is dead. Closing this socket proactively.",
+                    system(logIdent(ctx, endpoint)), env().keepAliveErrorThreshold());
                 ctx.close().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
