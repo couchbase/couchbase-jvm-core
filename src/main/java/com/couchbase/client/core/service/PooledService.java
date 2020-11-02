@@ -51,6 +51,11 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
 
     private static final CouchbaseLogger LOGGER = CouchbaseLoggerFactory.getInstance(Service.class);
 
+    /**
+     * The interval when to check if idle sockets are to be cleaned up.
+     */
+    public static final int DEFAULT_IDLE_TIME_CHECK_INTERVAL_MS = 100;
+
     private final String hostname;
     private final String bucket;
     private final String username;
@@ -109,7 +114,7 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
             idleSubscription = null;
         } else {
             idleSubscription = Observable
-                .interval(serviceConfig.idleTime(), TimeUnit.SECONDS, env.scheduler())
+                .interval(DEFAULT_IDLE_TIME_CHECK_INTERVAL_MS, TimeUnit.MILLISECONDS, env.scheduler())
                 .subscribe(new Subscriber<Long>() {
                     @Override
                     public void onCompleted() {

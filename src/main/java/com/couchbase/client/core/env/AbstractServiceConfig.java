@@ -33,8 +33,11 @@ public abstract class AbstractServiceConfig {
 
     /**
      * The default idle time for pooled services.
+     *
+     * Note that the idle time has been reduced from 300s (5m) to 4s in order to comply with the reduced
+     * idle times in recent couchbase server versions.
      */
-    public static final int DEFAULT_IDLE_TIME = 300;
+    public static final int DEFAULT_IDLE_TIME = 4;
 
     /**
      * The minimum number of endpoints to be used for this service.
