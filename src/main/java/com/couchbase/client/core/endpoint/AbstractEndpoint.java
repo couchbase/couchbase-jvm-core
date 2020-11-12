@@ -210,6 +210,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     private volatile long lastKeepAliveLatency;
 
     /**
+     * Holds the timestamp this endpoint was last successfully connected.
+     */
+    private volatile long lastConnectedAt = 0;
+
+    /**
      * Preset the stack trace for the static exceptions.
      */
     static {
@@ -430,6 +435,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                     if (future.isSuccess()) {
                         channel = future.channel();
                         LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Connected Endpoint.");
+                        lastConnectedAt = System.nanoTime();
                         transitionState(LifecycleState.CONNECTED);
                     } else {
                         if (future.cause() instanceof AuthenticationException) {
@@ -752,6 +758,11 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     public CoreContext context() {
         return ctx;
+    }
+
+    @Override
+    public long lastConnectedAt() {
+        return lastConnectedAt;
     }
 
     /**

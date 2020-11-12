@@ -67,6 +67,13 @@ public interface Endpoint extends Stateful<LifecycleState> {
     long lastResponse();
 
     /**
+     * Returns the epoch nano timestamp when the endpoint was last connected successfully.
+     *
+     * If never connected at all, will return 0.
+     */
+    long lastConnectedAt();
+
+    /**
      * Returns health information for this endpoint.
      */
     Single<EndpointHealth> diagnostics(ServiceType type);

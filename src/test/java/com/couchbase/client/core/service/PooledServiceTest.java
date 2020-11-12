@@ -45,13 +45,15 @@ import rx.subjects.BehaviorSubject;
 
 import java.net.ConnectException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.couchbase.client.core.service.PooledServiceTest.SimpleSerivceConfig.ssc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.same;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -65,13 +67,12 @@ import static org.mockito.Mockito.when;
  */
 public class PooledServiceTest {
 
-    private static volatile CoreEnvironment ENV;
     private static CoreContext nullCtx;
     private static CoreContext envCtx;
 
     @BeforeClass
     public static void setup() {
-        ENV = mock(CoreEnvironment.class);
+        CoreEnvironment ENV = mock(CoreEnvironment.class);
         when(ENV.retryStrategy()).thenReturn(FailFastRetryStrategy.INSTANCE);
         when(ENV.scheduler()).thenReturn(Schedulers.computation());
         nullCtx = new CoreContext(null, null);
@@ -257,6 +258,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldSendToEndpointWhenFixed() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         SelectionStrategy ss = mock(SelectionStrategy.class);
@@ -274,6 +276,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldBePutIntoRetryWhenFixed() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         SelectionStrategy ss = mock(SelectionStrategy.class);
@@ -329,6 +332,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldSendFromMinPlusOne() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -358,6 +362,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRetryWhenMinEqMax() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -393,6 +398,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRetryAndAccountForPending() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -427,6 +433,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRetryWhenSocketOpenFailedOnSend() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onCreate(new Action2<Endpoint, BehaviorSubject<LifecycleState>>() {
@@ -434,7 +441,7 @@ public class PooledServiceTest {
             public void call(final Endpoint endpoint, final BehaviorSubject<LifecycleState> states) {
                 when(endpoint.connect()).then(new Answer<Observable<LifecycleState>>() {
                     @Override
-                    public Observable<LifecycleState> answer(InvocationOnMock invocation) throws Throwable {
+                    public Observable<LifecycleState> answer(InvocationOnMock invocation) {
                         states.onNext(LifecycleState.DISCONNECTED);
                         return Observable.error(new Exception("something happened"));
                     }
@@ -464,6 +471,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRetryWhenSocketOpenResultIsDisconnected() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -493,6 +501,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRetryWhenSocketOpenResultIsDisconnecting() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -522,6 +531,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void selectionStrategyShouldNotBeCalledWithEmptyEndpoints() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -543,6 +553,7 @@ public class PooledServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldCleanPendingRequestsWhenDisconnectConcurrently() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -579,7 +590,7 @@ public class PooledServiceTest {
     }
 
     @Test
-    public void shouldCloseIdleEndpointsIfTimerFires() throws Exception {
+    public void shouldCloseIdleEndpointsIfTimerFires() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
             @Override
@@ -624,7 +635,7 @@ public class PooledServiceTest {
     }
 
     @Test
-    public void shouldNotDisconnectIfQueryIsProcessingOnTimer() throws Exception {
+    public void shouldNotDisconnectIfQueryIsProcessingOnTimer() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
             @Override
@@ -669,9 +680,11 @@ public class PooledServiceTest {
                 return ms.endpoints().size() == 1;
             }
         });
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - now) >= 1000);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldRefillSlotsIfBelowMinimumOnIdleTimer() {
         EndpointFactoryMock ef = EndpointFactoryMock.simple(envCtx);
         ef.onConnectTransition(new Func1<Endpoint, LifecycleState>() {
@@ -742,7 +755,7 @@ public class PooledServiceTest {
             public void call(final Endpoint endpoint, final BehaviorSubject<LifecycleState> states) {
                 when(endpoint.connect()).then(new Answer<Observable<LifecycleState>>() {
                     @Override
-                    public Observable<LifecycleState> answer(InvocationOnMock invocation) throws Throwable {
+                    public Observable<LifecycleState> answer(InvocationOnMock invocation) {
                         states.onNext(LifecycleState.DISCONNECTING);
                         return Observable.error(new ConnectException("could not connect to remote"));
                     }
@@ -788,7 +801,7 @@ public class PooledServiceTest {
                         throw new RuntimeException(ex);
                     }
                 } else {
-                    assertTrue(false);
+                    fail();
                 }
             }
         }

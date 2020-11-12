@@ -137,7 +137,21 @@ public abstract class PooledService extends AbstractStateMachine<LifecycleState>
                                 for (int i = 0; i < endpoints.size(); i++) {
                                    Endpoint e = endpoints.get(i);
                                    if (e != null) {
-                                       long diffs = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - e.lastResponse());
+                                       long lastResponseReceived = e.lastResponse();
+                                       long actualIdleTime;
+                                       if (lastResponseReceived != 0) {
+                                           actualIdleTime = System.nanoTime() - lastResponseReceived;
+                                       } else {
+                                           long lastConnected = e.lastConnectedAt();
+                                           if (lastConnected != 0) {
+                                               actualIdleTime = System.nanoTime() - lastConnected;
+                                           } else {
+                                               // No last connected timestamp, so the endpoint isn't even fully connected yet
+                                               continue;
+                                           }
+                                       }
+
+                                       long diffs = TimeUnit.NANOSECONDS.toSeconds(actualIdleTime);
                                        if(e.isFree() && diffs >= serviceConfig.idleTime()) {
                                            if (maxToRemove > 0) {
                                                maxToRemove--;
