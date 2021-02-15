@@ -949,12 +949,16 @@ public abstract class AbstractGenericHandler<RESPONSE, ENCODED, REQUEST extends 
      */
     protected String remoteHttpHost(ChannelHandlerContext ctx) {
         if (remoteHttpHost == null) {
-            SocketAddress addr = ctx.channel().remoteAddress();
-            if (addr instanceof InetSocketAddress) {
-                InetSocketAddress inetAddr = (InetSocketAddress) addr;
-                remoteHttpHost = inetAddr.getAddress().getHostAddress() + ":" + inetAddr.getPort();
+            if (endpoint.remoteAddress() != null) {
+                remoteHttpHost = endpoint.remoteAddress();
             } else {
-                remoteHttpHost = addr.toString();
+                SocketAddress addr = ctx.channel().remoteAddress();
+                if (addr instanceof InetSocketAddress) {
+                    InetSocketAddress inetAddr = (InetSocketAddress) addr;
+                    remoteHttpHost = inetAddr.getAddress().getHostAddress() + ":" + inetAddr.getPort();
+                } else {
+                    remoteHttpHost = addr.toString();
+                }
             }
         }
         return remoteHttpHost;
