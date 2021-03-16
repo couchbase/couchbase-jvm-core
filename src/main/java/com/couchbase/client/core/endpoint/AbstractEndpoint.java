@@ -75,6 +75,7 @@ import java.net.UnknownHostException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.utils.Observables.failSafe;
@@ -188,7 +189,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     /**
      * Number of reconnects already done.
      */
-    private volatile long reconnectAttempt = 1;
+    private final AtomicLong reconnectAttempt = new AtomicLong(1);
 
     /**
      * Set to true once disconnected.
@@ -209,10 +210,8 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
      */
     private volatile long lastConnectedAt = 0;
 
-    /**
-     * Preset the stack trace for the static exceptions.
-     */
     static {
+        // Preset the stack trace for the static exceptions.
         NOT_CONNECTED_EXCEPTION.setStackTrace(new StackTraceElement[0]);
     }
 
@@ -231,7 +230,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
     protected AbstractEndpoint(final String bucket, final String username, final String password, final BootstrapAdapter adapter,
         final boolean isTransient, CoreContext ctx, final boolean pipeline) {
         super(LifecycleState.DISCONNECTED);
-        bootstrap = adapter;
+        this.bootstrap = adapter;
         this.bucket = bucket;
         this.username = username;
         this.password = password;
@@ -282,10 +281,10 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         LOGGER.debug("Using a connectCallbackGracePeriod of {} on Endpoint {}:{}", connectCallbackGracePeriod,
             hostname, port);
         this.sslEngineFactory = env.sslEnabled() ? new SSLEngineFactory(env, hostname, port) : null;
-        bootstrap = createBootstrap(hostname, port);
+        this.bootstrap = createBootstrap();
     }
 
-    private BootstrapAdapter createBootstrap(String hostname, int port) {
+    private BootstrapAdapter createBootstrap() {
         Class<? extends Channel> channelClass = NioSocketChannel.class;
         if (ioPool instanceof EpollEventLoopGroup) {
             channelClass = EpollSocketChannel.class;
@@ -293,15 +292,6 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             channelClass = OioSocketChannel.class;
         } else if (ioPool instanceof KQueueEventLoopGroup) {
             channelClass = KQueueSocketChannel.class;
-        }
-
-        // We've removed using NetworkAddress throughout the codebase, but we still need to handle the case
-        // where the user asks us to "force ipv4, even if ipv6 is enabled". So only if the flag is set, do
-        // a round trip through the NetworkAddress and let it to its resolution magic. Using it at this stage
-        // is not leading to known issues since we need to be able to use it since we are connecting to it
-        // right afterwards.
-        if (NetworkAddress.FORCE_IPV4) {
-            hostname = NetworkAddress.create(hostname).nameOrAddress();
         }
 
         ByteBufAllocator allocator = env.bufferPoolingEnabled()
@@ -375,10 +365,21 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         Single.create(new Single.OnSubscribe<ChannelFuture>() {
             @Override
             public void call(final SingleSubscriber<? super ChannelFuture> ss) {
+                String host = hostname;
+
+                // We've removed using NetworkAddress throughout the codebase, but we still need to handle the case
+                // where the user asks us to "force ipv4, even if ipv6 is enabled". So only if the flag is set, do
+                // a round trip through the NetworkAddress and let it to its resolution magic. Using it at this stage
+                // is not leading to known issues since we need to be able to use it since we are connecting to it
+                // right afterwards.
+                if (NetworkAddress.FORCE_IPV4) {
+                    host = NetworkAddress.create(host).nameOrAddress();
+                }
+
                 // We need to re-set the same remote address each time so that it gets re-resolved and not cached,
                 // This will help solve DNS updates and makes sure that the SDK picks them up on a subsequent
                 // reconnect attempt.
-                bootstrap.remoteAddress(hostname, port);
+                bootstrap.remoteAddress(host, port);
                 bootstrap.connect().addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture cf) {
@@ -495,7 +496,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                 }
                             });
                         } else if (!disconnected && !isTransient) {
-                            long delay = env.reconnectDelay().calculate(reconnectAttempt++);
+                            long delay = env.reconnectDelay().calculate(reconnectAttempt.getAndIncrement());
                             TimeUnit delayUnit = env.reconnectDelay().unit();
                             // Suppressing stack on purpose for reduced verbosity
                             String cause = future.cause() == null ? "unknown" : future.cause().toString();
@@ -503,7 +504,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                 "{}Could not connect to endpoint on reconnect attempt {}, retrying with delay " + delay + " "
                                     + delayUnit + ": {}",
                                 logIdent(channel, AbstractEndpoint.this),
-                                reconnectAttempt,
+                                reconnectAttempt.get(),
                                 cause
                             );
                             if (responseBuffer != null) {
@@ -519,9 +520,9 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                                     // and re-run the disconnect phase to make sure all is properly freed.
                                     if (!disconnected) {
                                         if (FORCE_DNS_LOOKUP_ON_RECONNECT) {
-                                            bootstrap = createBootstrap(hostname, port);
+                                            bootstrap = createBootstrap();
                                         }
-                                        doConnect(observable, bootstrapping);
+                                        doConnect(observable, false);
                                     } else {
                                         LOGGER.debug("{}Explicitly breaking retry loop because already disconnected.",
                                                 logIdent(channel, AbstractEndpoint.this));
