@@ -21,13 +21,10 @@ import com.couchbase.client.core.ResponseHandler;
 import com.couchbase.client.core.endpoint.kv.AuthenticationException;
 import com.couchbase.client.core.endpoint.util.FailedChannel;
 import com.couchbase.client.core.env.CoreEnvironment;
-import com.couchbase.client.core.logging.AbstractCouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLogger;
 import com.couchbase.client.core.logging.CouchbaseLoggerFactory;
 import com.couchbase.client.core.logging.RedactableArgument;
-import com.couchbase.client.core.logging.RedactionLevel;
 import com.couchbase.client.core.message.CouchbaseRequest;
-import com.couchbase.client.core.message.CouchbaseResponse;
 import com.couchbase.client.core.message.internal.EndpointHealth;
 import com.couchbase.client.core.message.internal.SignalConfigReload;
 import com.couchbase.client.core.message.internal.SignalFlush;
@@ -51,7 +48,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.DefaultChannelPromise;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
@@ -74,13 +70,12 @@ import rx.subjects.Subject;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import java.net.ConnectException;
-import java.net.InetAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.couchbase.client.core.logging.RedactableArgument.meta;
 import static com.couchbase.client.core.logging.RedactableArgument.system;
 import static com.couchbase.client.core.utils.Observables.failSafe;
 
@@ -321,7 +316,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, env.socketConnectTimeout())
             .handler(new ChannelInitializer<Channel>() {
                 @Override
-                protected void initChannel(Channel channel) throws Exception {
+                protected void initChannel(Channel channel) {
                     ChannelPipeline pipeline = channel.pipeline();
                     if (env.sslEnabled()) {
                         pipeline.addLast(new SslHandler(sslEngineFactory.get()));
@@ -386,12 +381,12 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                 bootstrap.remoteAddress(hostname, port);
                 bootstrap.connect().addListener(new ChannelFutureListener() {
                     @Override
-                    public void operationComplete(ChannelFuture cf) throws Exception {
+                    public void operationComplete(ChannelFuture cf) {
                         if (ss.isUnsubscribed()) {
                             if (cf.isSuccess() && cf.channel() != null) {
                                 cf.channel().close().addListener(new ChannelFutureListener() {
                                     @Override
-                                    public void operationComplete(ChannelFuture future) throws Exception {
+                                    public void operationComplete(ChannelFuture future) {
                                         if (!future.isSuccess()) {
                                             LOGGER.debug("Got exception while disconnecting " +
                                                 "stray connect attempt.", future.cause());
@@ -467,7 +462,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             );
                             transitionState(LifecycleState.DISCONNECTED);
                             observable.onError(future.cause());
-                        } else if (future.cause() instanceof ConnectException) {
+                        } else if (future.cause() instanceof ConnectException || future.cause() instanceof UnknownHostException) {
                             LOGGER.warn(
                                 "{}Could not connect to remote socket: {}",
                                 logIdent(channel, AbstractEndpoint.this), future.cause().getMessage()
@@ -479,7 +474,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
                             LOGGER.warn(future.cause().getMessage());
                             observable.onError(future.cause());
                         } else {
-                            LOGGER.debug("Unhandled exception during channel connect, ignoring.", future.cause());
+                            LOGGER.warn("Unexpected exception during channel connect!", future.cause());
                         }
 
                         if (bootstrapping) {
@@ -571,7 +566,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
         channel.disconnect().addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(final ChannelFuture future) throws Exception {
+            public void operationComplete(final ChannelFuture future) {
                 if (future.isSuccess()) {
                     LOGGER.debug(logIdent(channel, AbstractEndpoint.this) + "Disconnected Endpoint.");
                 } else {
