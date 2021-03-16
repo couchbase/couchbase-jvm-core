@@ -445,7 +445,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             // not empty, while the subsequent Observable.from is not, failing in calling last()
             List<Node> snapshotNodes;
             synchronized (nodes) {
-                snapshotNodes = new ArrayList<Node>(nodes);
+                snapshotNodes = new ArrayList<>(nodes);
             }
             if (snapshotNodes.isEmpty()) {
                 return Observable.just(config);
@@ -454,8 +454,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
             return Observable.from(snapshotNodes).doOnNext(new Action1<Node>() {
                 @Override
                 public void call(Node node) {
-                    removeNode(node);
-                    node.disconnect().subscribe(new Subscriber<LifecycleState>() {
+                    removeNode(node).subscribe(new Subscriber<LifecycleState>() {
                         @Override
                         public void onCompleted() {}
 
@@ -498,8 +497,7 @@ public class RequestHandler implements EventHandler<RequestEvent> {
                     for (Node node : nodes) {
                         if (!configNodes.contains(node.hostname())) {
                             LOGGER.debug("Removing and disconnecting node {}.", node.hostname());
-                            removeNode(node);
-                            node.disconnect().subscribe(new Subscriber<LifecycleState>() {
+                            removeNode(node).subscribe(new Subscriber<LifecycleState>() {
                                 @Override
                                 public void onCompleted() {}
 
