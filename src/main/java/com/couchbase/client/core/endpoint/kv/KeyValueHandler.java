@@ -941,6 +941,10 @@ public class KeyValueHandler
             msg.content()
         );
 
+        if (msg.getStatus() == KeyValueStatus.ERR_NOT_MY_VBUCKET.code()) {
+            request.sawNotMyVbucket();
+        }
+
         if (hasCompressionDatatype(msg.getDataType())) {
             if (!snappyEnabled) {
                 LOGGER.debug("Snappy DataType bit set, but snappy has not been negotiated! " +

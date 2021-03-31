@@ -158,7 +158,7 @@ public class KeyValueLocator implements Locator {
      * @return the calculated node id.
      */
     private static int calculateNodeId(int partitionId, BinaryRequest request, CouchbaseBucketConfig config) {
-        boolean useFastForward = request.retryCount() > 0 && config.hasFastForwardMap();
+        boolean useFastForward = request.hasSeenNotMyVbucket() && config.hasFastForwardMap();
 
         if (request instanceof ReplicaGetRequest) {
             return config.nodeIndexForReplica(partitionId, ((ReplicaGetRequest) request).replica() - 1, useFastForward);

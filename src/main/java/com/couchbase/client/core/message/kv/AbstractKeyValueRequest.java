@@ -64,6 +64,11 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
     private final int opaque;
 
     /**
+     * Indicates whether this request has seen a not my vbucket response from KV already.
+     */
+    private volatile boolean seenNotMyVbucket = false;
+
+    /**
      * Creates a new {@link AbstractKeyValueRequest}.
      *
      * @param key      the key of the document.
@@ -156,5 +161,15 @@ public abstract class AbstractKeyValueRequest extends AbstractCouchbaseRequest i
     @Override
     public String operationId() {
         return "0x" + Integer.toHexString(opaque);
+    }
+
+    @Override
+    public boolean hasSeenNotMyVbucket() {
+        return seenNotMyVbucket;
+    }
+
+    @Override
+    public void sawNotMyVbucket() {
+        seenNotMyVbucket = true;
     }
 }

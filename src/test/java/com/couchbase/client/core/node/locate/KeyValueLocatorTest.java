@@ -46,7 +46,8 @@ import static org.mockito.Mockito.when;
 public class KeyValueLocatorTest {
 
     @Test
-    public void shouldLocateGetRequestForCouchbaseBucket() throws Exception {
+    @SuppressWarnings("unchecked")
+    public void shouldLocateGetRequestForCouchbaseBucket() {
         Locator locator = new KeyValueLocator();
 
         NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
@@ -54,7 +55,7 @@ public class KeyValueLocatorTest {
 
         GetRequest getRequestMock = mock(GetRequest.class);
         ClusterConfig configMock = mock(ClusterConfig.class);
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node> nodes = new ArrayList<>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         Node node2Mock = mock(Node.class);
@@ -76,10 +77,10 @@ public class KeyValueLocatorTest {
     }
 
     @Test
-    public void shouldPickTheRightNodeForGetBucketConfigRequest() throws Exception {
+    public void shouldPickTheRightNodeForGetBucketConfigRequest() {
         Locator locator = new KeyValueLocator();
 
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node> nodes = new ArrayList<>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         when(node1Mock.isState(LifecycleState.CONNECTED)).thenReturn(true);
@@ -97,13 +98,14 @@ public class KeyValueLocatorTest {
     }
 
     @Test
-    public void shouldPickFastForwardIfAvailableAndRetry() throws Exception {
+    @SuppressWarnings("unchecked")
+    public void shouldPickFastForwardIfAvailableAndRetry() {
         Locator locator = new KeyValueLocator();
 
         // Setup 2 nodes
         NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
         NodeInfo nodeInfo2 = new DefaultNodeInfo("http://foo:1234", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node> nodes = new ArrayList<>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         Node node2Mock = mock(Node.class);
@@ -139,24 +141,26 @@ public class KeyValueLocatorTest {
         // Dispatch with retry 1
         when(getRequestMock.retryCount()).thenReturn(1);
         locator.locateAndDispatch(getRequestMock, nodes, configMock, null, null);
-        verify(node1Mock, times(1)).send(getRequestMock);
-        verify(node2Mock, times(1)).send(getRequestMock);
+        verify(node1Mock, times(2)).send(getRequestMock);
+        verify(node2Mock, never()).send(getRequestMock);
 
         // Dispatch with retry 5
-        when(getRequestMock.retryCount()).thenReturn(5);
+        when(getRequestMock.retryCount()).thenReturn(1);
+        when(getRequestMock.hasSeenNotMyVbucket()).thenReturn(true);
         locator.locateAndDispatch(getRequestMock, nodes, configMock, null, null);
-        verify(node1Mock, times(1)).send(getRequestMock);
-        verify(node2Mock, times(2)).send(getRequestMock);
+        verify(node1Mock, times(2)).send(getRequestMock);
+        verify(node2Mock, times(1)).send(getRequestMock);
     }
 
     @Test
-    public void shouldPickCurrentIfNoFFMapAndRetry() throws Exception {
+    @SuppressWarnings("unchecked")
+    public void shouldPickCurrentIfNoFFMapAndRetry() {
         Locator locator = new KeyValueLocator();
 
         // Setup 2 nodes
         NodeInfo nodeInfo1 = new DefaultNodeInfo("http://foo:1234", "192.168.56.101:11210", Collections.EMPTY_MAP, null);
         NodeInfo nodeInfo2 = new DefaultNodeInfo("http://foo:1234", "192.168.56.102:11210", Collections.EMPTY_MAP, null);
-        List<Node> nodes = new ArrayList<Node>();
+        List<Node> nodes = new ArrayList<>();
         Node node1Mock = mock(Node.class);
         when(node1Mock.hostname()).thenReturn("192.168.56.101");
         Node node2Mock = mock(Node.class);

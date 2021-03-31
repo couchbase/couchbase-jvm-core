@@ -60,4 +60,16 @@ public interface BinaryRequest extends CouchbaseRequest {
      * @return an automatically generated opaque value.
      */
     int opaque();
+
+    /**
+     * Returns true if this operation has been rejected at least once because of a KV not my vbucket operation.
+     *
+     * @return true if it has seen it, false otherwise.
+     */
+    boolean hasSeenNotMyVbucket();
+
+    /**
+     * This method should be called if during response parsing, a NMVB response got returned from the server.
+     */
+    void sawNotMyVbucket();
 }
