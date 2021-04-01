@@ -942,6 +942,7 @@ public class KeyValueHandler
         );
 
         if (msg.getStatus() == KeyValueStatus.ERR_NOT_MY_VBUCKET.code()) {
+            LOGGER.debug("Received NotMyVbucket for vbucket " + request.partition() + " from node " + endpoint().remoteAddress());
             request.sawNotMyVbucket();
         }
 
