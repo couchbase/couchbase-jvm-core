@@ -349,6 +349,7 @@ public abstract class AbstractEndpoint extends AbstractStateMachine<LifecycleSta
         final AsyncSubject<LifecycleState> observable = AsyncSubject.create();
         transitionState(LifecycleState.CONNECTING);
         hasWritten = false;
+        free = true;
         doConnect(observable, bootstrapping);
         return observable;
     }
