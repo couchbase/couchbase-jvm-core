@@ -49,6 +49,7 @@ public class HealthPingerTest extends ClusterDependentTest {
                 env(),
                 bucket(),
                 password(),
+                username(),
                 cluster(),
                 "ping-id",
                 1,

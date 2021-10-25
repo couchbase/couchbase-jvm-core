@@ -33,8 +33,8 @@ public class PingRequest
     private volatile SocketAddress local;
     private volatile SocketAddress remote;
 
-    public PingRequest(String sendTo, String bucket, String password) {
-        super(bucket, password);
+    public PingRequest(String sendTo, String bucket, String password, String username) {
+        super(bucket, username == null ? bucket : username, password);
         this.sendTo = sendTo;
     }
 
