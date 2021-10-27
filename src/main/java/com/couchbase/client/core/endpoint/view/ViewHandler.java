@@ -140,6 +140,7 @@ public class ViewHandler extends AbstractGenericHandler<HttpObject, HttpRequest,
                     Unpooled.EMPTY_BUFFER);
             request.headers().set(HttpHeaders.Names.USER_AGENT, env().userAgent());
             request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, 0);
+            addHttpBasicAuth(ctx, request, msg.username(), msg.password());
             return request;
         }
 
