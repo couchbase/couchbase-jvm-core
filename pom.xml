@@ -320,6 +320,12 @@
                                 <exclude>META-INF/native/${native-epoll.original}</exclude>
                                 <exclude>META-INF/native/${native-kqueue.original}</exclude>
                                 <exclude>META-INF/native/libnetty_resolver_dns_native_macos_x86_64.jnilib</exclude>
+                                <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
+                                <exclude>META-INF/services/com.fasterxml.jackson.core.ObjectCodec</exclude>
+                                <exclude>META-INF/services/javax.xml.stream.XMLEventFactory</exclude>
+                                <exclude>META-INF/services/javax.xml.stream.XMLInputFactory</exclude>
+                                <exclude>META-INF/services/javax.xml.stream.XMLOutputFactory</exclude>
+                                <exclude>META-INF/services/reactor.blockhound.integration.BlockHoundIntegration</exclude>
                             </excludes>
                         </filter>
                     </filters>
