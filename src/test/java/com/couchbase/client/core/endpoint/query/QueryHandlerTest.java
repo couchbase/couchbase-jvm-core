@@ -43,7 +43,6 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -61,7 +60,6 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
-import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -92,6 +90,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -1549,13 +1548,11 @@ public class QueryHandlerTest {
             error = e;
         }
 
-        SoftAssertions softly = new SoftAssertions();
-        softly.assertThat(inbound).isNotNull();
-        softly.assertThat(error).isNull();
+        assertNotNull(inbound);
+        assertNull(error);
         if (handler instanceof QueryHandler) {
-            softly.assertThat(((QueryHandler) handler).getDecodingState()).isEqualTo(DecodingState.INITIAL);
+            assertEquals(handler.getDecodingState(), DecodingState.INITIAL);
         }
-        softly.assertAll();
     }
 
     @Test
