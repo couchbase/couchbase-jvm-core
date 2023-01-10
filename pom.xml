@@ -15,7 +15,7 @@
     -->
 
     <groupId>com.couchbase.client</groupId>
-    <artifactId>core-io</artifactId>
+    <artifactId>core-io${artifact.suffix}</artifactId>
     <version>1.7.25-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
@@ -24,6 +24,8 @@
     <url>http://couchbase.com</url>
 
     <properties>
+        <artifact.suffix/>
+        <shade.skip>false</shade.skip>
         <java-compat.version>1.7</java-compat.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -310,7 +312,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>3.4.1</version>
                 <configuration>
                     <filters>
                         <!-- Netty Native: avoid putting the original .so in the shaded jar -->
@@ -391,6 +393,7 @@
                     </relocations>
                     <createSourcesJar>true</createSourcesJar>
                     <shadeSourcesContent>true</shadeSourcesContent>
+                    <skip>${shade.skip}</skip>
                 </configuration>
                 <executions>
                     <execution>
@@ -544,6 +547,17 @@
                 <useMock>false</useMock>
             </properties>
         </profile>
+
+        <profile>
+            <id>noshade</id>
+            <properties>
+                <artifact.suffix>-noshade</artifact.suffix>
+                <shade.skip>true</shade.skip>
+                <test-source-directory>src/integration/java</test-source-directory>
+                <useMock>false</useMock>
+            </properties>
+        </profile>
+
         <profile>
             <id>unit</id>
             <activation>
